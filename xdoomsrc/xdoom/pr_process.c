@@ -112,17 +112,33 @@ void pr_check(void) {
      return;
   }
 
-// Now that we're on a good level, do the 'ps' stuff.
-  f = popen("ps h a x u OT", "r"); /* ps with no header and sorted by time
-                                      in 'user' format */
-//  f = popen("ps h a x OT", "r"); /* ps with no header and sorted by time */
+// Now that we know we should run 'ps', do it!
+
+// Split the running of 'ps' into operating system-specific sections to
+// account for the different output formats of the command:
+
+// ******************** LINUX ********************
+#if defined(LINUX)
+
+  /* 'ps' suppressing the header (h),
+          showing all users' processes (a),
+          showing processes without a controlling terminal (x),
+          in 'user' format (u),
+          sorted by process start time (OT).
+     Sample output:
+root       302  0.1  1.9  1304   756   1 S    19:55   0:00 pico pr_process.c
+root       321  0.2  2.1  1268   844   2 S    20:01   0:00 -bash
+root       334  0.0  1.2   848   476   2 R    20:06   0:00 ps h a x u OT
+  */
+  f = popen("ps h a x u OT", "r");
 
   if (!f) {
     fprintf(stderr, "ERROR: pr_check could not open ps\n");
     return;
   }
 
-  /* read in all process information, excluding the last process, which is ps */
+  /* Read in all process information.  Exclude the last process in the
+     list (the 'ps' we just ran). */
 
   while (fgets(buf, 255, f)) {
     if ( pid != 0 ) {
@@ -134,12 +150,65 @@ void pr_check(void) {
     }
     sscanf(buf, "%s %d %*f %*f %*d %*d %s %*4c %*s %*s %s",
           username, &pid,              tty,            namebuf);
-//    sscanf(buf, "%d %s %*4c %*s %s", &pid, tty, namebuf);
     if (tty[0]=='?')  /* if there is no tty, then it is a daemon */
       demon = true;
     else
       demon = false;
   }
+
+// ******************** SOLARIS ********************
+#elif defined(SOLARIS)
+
+  /* Solaris 2.6 (on my development machine, at least) had two versions of
+     'ps' installed.  One was in /usr/bin and the other in /usr/ucb.  The
+     version in /usr/bin seemed to have the better options of the two. */
+  /* 'ps' showing all processes (-A),
+          showing the username (-o user=),
+          showing the pid (-o pid=),
+          showing the tty (-o tty=),
+          showing the command (-o comm=).
+          headers are suppressed by appending an equal sign to the
+            display field name then starting another argument instead of
+            telling what header text to print.
+          unfortunately, there is no way to sort the processes, so we'll
+            just have to deal with spawning the process monster
+            representing 'ps' itself.
+     Sample output:
+root    302   1  pico
+root    334   2  ps
+root    321   2  -bash
+  */
+
+  f = popen("/usr/bin/ps -A -o user= -o pid= -o tty= -o comm=", "r");
+
+  if (!f) {
+    fprintf(stderr, "ERROR: pr_check could not open ps\n");
+    return;
+  }
+
+  /* Read in all process information.  Since we can't sort by process
+     start time, we can't tell which process is the 'ps' we just ran, so
+     that process will be spawned as a monster, too. */
+
+  while (fgets(buf, 255, f)) {
+    sscanf(buf, "%s %d %s %s",
+                 username, &pid, tty, namebuf);
+    if (tty[0]=='?')  /* if there is no tty, then it is a daemon */
+      demon = true;
+    else
+      demon = false;
+    // Check for username validity before adding to pid list.
+    if ( (psallusers || in_ps_userlist(psuser_list_head, username)) &&
+         !(in_ps_userlist(psnotuser_list_head, username)) ) {
+       add_to_pid_list(pid, namebuf, demon);
+    }
+  }
+
+// ******************** UNSUPPORTED OS ********************
+#else
+  fprintf(stderr, "ERROR: a version of 'ps' with the proper output formatting\n       is not available for this OS.\n");
+  return;
+#endif
 
   pclose(f);
 

@@ -16,7 +16,7 @@ N-toggle monster intra-fighting (ie. Human vs Human on(default)/off
                                    Demon vs Demon on/off(default) )
 X-OR as an alternative to the above 2, have pid monsters only take damage
     from a player
-  --command line flag to allow pid monsters to be damaged normally
+  O-command line flag to allow pid monsters to be damaged normally
       (-nopssafety)
 X-better process management:
   N-non-blocking process manager so pauses aren't as noticable
@@ -156,3 +156,11 @@ X-the demo that plays immediately after ending a game (options->end game)
 --incorporate the Back Orifice port of psdoom
   --command line flag to use Back Orifice rather than local admining
       (-psbo)
+O-support multiple operating systems (the ones xdoom supports)
+  --freebsd
+  X-linux
+  --openserver 5
+  --unixware 2
+  --unixware 7
+  O-solaris
+  --aix

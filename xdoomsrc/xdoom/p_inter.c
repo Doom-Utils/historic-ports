@@ -41,8 +41,11 @@ rcsid[] = "$Id:$";
 #include "am_map.h"
 #include "p_local.h"
 #include "s_sound.h"
+
+// *** PID BEGIN ***
 #include "pr_process.h"
- 
+// *** PID END *** 
+
 #ifdef __GNUG__
 #pragma implementation "p_inter.h"
 #endif
@@ -776,11 +779,13 @@ if (source != NULL )
 // If the target is a pid monster, make it only take damage from
 // a player.  Keeps monsters (and environment) from killing off
 // processes when we don't want them to.
+// If the nopssafety flag was given, let the pid mobjs be damaged
+// normally.
 // Note: If we 'return' in this case, the monster takes no damage, but
 // also doesn't target its attacker.  I like it better if the pid monsters
 // behave as if they are damaged.  Change the 'damage' statement back to the
 // 'return' statement if they should not even react to damage from others.
-    if (target->m_pid != 0) {
+    if (target->m_pid != 0 && !nopssafety) {
        if (source && !source->player) {
           damage = 0;
 //          return;

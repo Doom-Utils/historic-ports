@@ -1,5 +1,11 @@
 Changelog for psDooM:
 
+Release 2000.05.03.a - Changes since 2000.05.03
+  -Support for Solaris' version of 'ps'.
+  -Added command line flag that allows pid monsters to be damaged by
+    things other than the player.  This is the original behavior of the
+    program. (-nopssafety)
+
 Release 2000.05.03 - Changes since 2000.02.21
   -Moved project to SourceForge. (http://psdoom.sourceforge.net/)
   -Changed distribution format and file name:

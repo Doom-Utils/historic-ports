@@ -79,6 +79,7 @@ boolean ps_level_loaded = false;
 boolean nopsmon;  // checkparm for -nopsmon
 boolean nopsact;  // checkparm for -nopsact
 boolean psallusers;  // checkparm for -psallusers
+boolean nopssafety;  // checkparm for -nopssafety
 
 // To automagically add psdoom1.wad and psdoom2.wad upon load.
 static char *psdoom1wad;
@@ -920,6 +921,10 @@ void D_DoomMain(void)
 // Get flag to determine whether to execute the actual re-nice and kill
 // of processes.
     nopsact = M_CheckParm("-nopsact");
+
+// Get flag to determine whether pid monsters can be hurt and killed by
+// things other than a player.  They can be hurt if this flag is true.
+    nopssafety = M_CheckParm("-nopssafety");
 
 // Get flag to tell if we show all users' processes.  userlist_arg_given
 // is assigned so we don't set defaults later on since we specified

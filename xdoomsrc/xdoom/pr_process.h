@@ -19,6 +19,9 @@ extern boolean nopsmon;
 // Flag to prevent the execution of process re-nicing and killing.
 extern boolean nopsact;
 
+// Flag to allow pid monsters to be damaged by things other than a player.
+extern boolean nopssafety;
+
 // Flag to show all users' processes.
 extern boolean psallusers;
 

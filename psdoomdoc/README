@@ -34,11 +34,13 @@ Supported Platforms
 psDooM has been tested on the following platforms:
 
     Linux x86 2.0.x, X11, and [S]VGA
+    Solaris SPARC 2.6, X11
 
 psDooM can probably be made to work on any version of UNIX which runs
 XDoom.  It uses several system commands in order to do its work: 'ps',
 'renice', and 'kill'.  Formats of the commands _must_ be as follows:
 
+*** LINUX 'ps' ***
 ps h a x u OT  ==  no header, list other user's processes, list processes
                    without a controlling terminal, in 'user format',
                    sorted by process start time.  example output follows:
@@ -52,6 +54,21 @@ daemon     163  0.0  1.0   784   404  ?  S    18:39   0:00 /usr/sbin/atd
 david      218  0.0  2.1  1280   856   1 S    18:39   0:00 -bash
 root       221  0.0  0.7   724   296   4 S    18:39   0:00 /sbin/mingetty tty4
 david      598  0.0  1.2   844   472   2 R    22:14   0:00 ps h a x u OT
+
+*** SOLARIS 'ps' ***
+/usr/bin/ps -A -o user= -o pid= -o tty= -o comm=
+     list all processes, show username, show process id, show terminal,
+     show user's command, suppress headers.  example output follows:
+root       1  ?  init
+root      28  ?  /sbin/kerneld
+root       2  ?  (kflushd)
+root       3  ?  (kswapd)
+root     152  ?  klogd
+root     143  ?  syslogd
+daemon   163  ?  /usr/sbin/atd
+david    598  2  ps
+david    218  1  -bash
+root     221  4  /sbin/mingetty
 
 renice +5 <pid>  == renices process number <pid> to +5 priority.
 
@@ -161,10 +178,17 @@ in a given area must be depressingly small in order for them to avoid both
 intentional infighting and friendly fire.  Since monsters would tend to
 kill each other off until only a few remained in the area, the user was
 severely hampered in the ability to orderly control processes on the
-machine.  Therefore, in psDooM, the player is the only character in the
-game who can wound and kill 'pid monsters'.  This avoids accidental
-process deaths from monster infighting.  Unfortunately, it doesn't prevent
-accidental process deaths from a user's poor aim. ;-}
+machine.  Therefore, the default behavior of psDooM is to ensure the
+player is the only character in the game who can wound and kill 'pid
+monsters'.  This avoids accidental process deaths from monster infighting.
+Unfortunately, it doesn't prevent accidental process deaths from a user's
+poor aim. ;-}  The original behavior of 'pid monsters' being as vunerable
+as other monsters may be enabled with the command line flag:
+
+ -nopssafety
+   Causes the 'pid monsters' to not be protected against damage from each
+   other, normal Doom monsters, and the environment.  Normally, only the
+   player may inflict damage on 'pid monsters'.
 
 Which processes are represented by default depends on whether you're
 running psDooM as the root user or not.  If you are root, then all
