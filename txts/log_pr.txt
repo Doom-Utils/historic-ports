@@ -1,0 +1,477 @@
+Log of changes to my Boom Engine-Port to Windows 95/98/NT 4.0 (+SP3)
+
+Florian 'Proff' Schulze
+
+---------------------------------------------------------------------------
+11/14/98
+
+*.TXT       : Updated the most textfiles.
+
+11/13/98
+
+WINSTUFF.C  : Changed handling of DirectDraw.
+I_SOUND.C   : Slightly changed the sound-handling.
+LPRINTF.C   : Fixed small bug where everything was written to the console, not
+              only the masked priorities.
+
+11/09/98
+
+README.TXT  : Updated and made more detailed.
+
+WINSTUFF.C  : Added code to center the console window on the screen.
+
+11/08/98
+
+I_SYSTEM.C  : Removed the last newline in I_EndDoom because it does not work
+              like in DOS.
+
+11/06/98
+
+WINSTUFF.C  : Added setting of the console title.
+
+M_FIXED.H   : Changed FixedDiv slightly.
+
+11/05/98
+
+I_SYSTEM.C  : Changed handling of console-colors for I_EndDoom.
+WINSTUFF.C  : Fixed mouse buttons getting stuck. Fixed ALT getting stuck when
+              ALT-TABing away (I hope).
+
+11/03/98
+
+D_NET.C     : In D_ArbitraryNetStart I changed netbuffer->numtics from 2 to 4.
+              I hope this helps with networking.
+
+I_MAIN.C
+I_SYSTEM.C
+LPRINTF.C
+WINSTUFF.*  : Replaced the old Console with a new Window based one.
+              (Inspired by ZDoom)
+
+11/01/98
+
+D_MAIN.C
+I_SYSTEM.C  : Fixed some compatibility problems with mingw32 and cygwin32.
+
+10/31/98
+
+I_SOUND.C   : Changed sound-code a little bit.
+
+I_SYSTEM.*  : Changed and fixed the time functions. Added function I_GetTrueTime which
+              returns the highest accurate time possible (Used in I_SOUND).
+
+I_SOUND.C
+M_MISC.C
+TI*.*       : Removed all DigiMid (Timid) stuff, because it does not work completly.
+
+10/30/98
+
+Some Files  : Added latest changes from Boom 2.02 release.
+
+10/06/98
+
+WINSTUFF.C  : Removed setting of clip-range when moving the window, this removes the problem
+              that the window slides down the screen when moved with the titlebar.
+
+09/30/98
+
+Some Files  : Removed nearly every typecast, now it runs a bit more stable but not perfect.
+
+09/24/98
+
+R_MAIN.C    : Changed R_ExecuteViewSize a little bit to fix a bug in 400x300.
+
+WINSTUFF.C  : Added resolutions 800x600,1024x768 and 1280x1024.
+
+I_SYSTEM.C  : Changed I_GetTime_RealTime to use realtic.
+              In I_EndDoom I now use _cprintf instead of putchar.
+
+09/21/98
+
+F_FINALE.C  : Added stretching to BunnyScroller.
+
+V_VIDEO.*   : Tweaked the stretching functions.
+
+09/20/98
+
+Many Files  : Substituted V_DrawPatchDirect with V_DrawPatchStretched.
+
+V_VIDEO.*   : Added functions for stretching patches to fullscreen for high-res.
+              Thanks to Nicolas Kalkhof.
+
+09/17/98
+
+I_NET.C     : Removed obsolete debugging stuff.
+
+D_MAIN.C    : Removed the hack in D_DoomExeDir from 08/15/98 and simply removed the
+              first backslash before prboom.cfg.
+
+Many Files  : Added latest changes from Boom 2.02f and removed c_out.*, because they
+              are substituded by lprintf.*.
+
+08/18/98
+
+D_MAIN.C
+DOOMDEF.H
+F_FINALE.C
+M_MENU.C
+R_MAIN.C
+R_THINGS.C
+ST_STUFF.C
+ST_STUFF.H
+WINSTUFF.C  : Added some more support for high-res, now the statusbar and the weapon
+              are drawed correctly. If you have an aspectratio different from 0.625
+              the sky will NOT be drawed correctly. The menus and intermissionscreens
+              are not scaled. Added commandline switches '-width' and '-height', they
+              are currently limited from 320x200 to 640x480.
+
+WINSTUFF.C  : Mainly in WndProc I changed the following things:
+              Now the pause-key works. (Inspired by ZDoom)
+              If you switch to another application the priority-class is set to idle,
+              you can turn this off with '-noidle'. (Taken from ZDoom)
+              Removed sensless DefWindowProc.
+
+08/17/98
+
+D_MAIN.C
+DOOMDEF.C
+DOOMDEF.H
+F_FINALE.C
+M_MENU.C
+R_DRAW.C
+R_MAIN.C
+WINSTUFF.C  : Added very crude high-res support. Currently it's still hardcoded.
+
+G_GAME.C
+M_MENU.C
+M_MISC.C    : Added mousebbackward for my mouse config (left key -> forward,
+              right key -> backward). But does not fully work, in the keybindings
+              it's not displayed and sometimes the button hangs.
+
+I_SOUND.C
+M_MISC.C    : Reworked the music-code, now you can switch with mus_card in the
+              cfg-file between three different midi-players:
+              -1  Autoselect
+               0  No Music
+               1  MCI-Midi, this uses the mci-interface and needs a temporary
+                  file called prboom.mid
+               2  Stream-Midi, this uses the streaming midi-interface and needs
+                  no more temp-file, but it seems to chrash sometimes.
+                  Not fully tested.
+               3  Timidity, this uses gus-patches like allegro in DOS-Boom.
+                  Currently it does not loop and its very slow, but it works.
+                  It only works when DirectX is available and the sfx are enabled.
+
+TI_*.*      : These are the files from Timidity.
+
+WINSTUFF.C  : Removed '-nomouse', because there allready was use_mouse in the
+              cfg-file which I use now.
+
+08/15/98
+
+I_SYSTEM.C  : In I_GetTime_RealTime I now use QueryPerformanceCounter when evailable,
+              because it's more accurate in NT.
+
+WINSTUFF.C  : Made '-grabmouse' default, because without it's stupid.
+              Removed the command-line option.
+
+Most        : Converted all tabs to two spaces. Started to indent correctly.
+
+M_MENU.C    : I changed the message printing in M_Drawer a bit, because when it
+              should write:
+                'INCOMPATIBLE SAVEGAME!!!
+                '
+                'WADS EXPECTED:
+                '
+                './PLUTONIA.WAD
+                '
+                'ARE YOU SURE?
+              it wrotes:
+                'INCOMPATIBLE SAVEGAME!!!
+                '
+                'WADS EXPECTED:
+                '
+                '
+                'ARE YOU SURE?
+
+D_MAIN.C    : I'm removing the last (back)slash in the ExeDir in D_DoomExeDir,
+              because you got directorys like 'c:\doom\/prboom.cfg' and NT
+              doesn't like those.
+
+07/29/98
+
+WINSTUFF.C  : I added WM_CLOSE to the WndProc switch. Now you can't close the
+              window and the game-screen is not blitted wildly over the screen.
+              Thanks to Willem Rothe.
+
+I_SYSTEM.C  : In I_Quit I changed the title of the MessageBox from
+              "PrBoom - Error !!!" to "PrBoom", because on some messages it's
+              stupid, i.e. if a demo ends its not a error. Thanks to Willem Rothe.
+
+C_OUT.C     : In C_fprintf I added #ifdef _DEBUG to output messages on stderr
+              to the console when compiled in DEBUG-Mode.
+
+07/26/98 after version 1.03 release
+
+I_SOUND.C   : Added volume check in I_StartSound and I_UpdateSoundParams.
+              Now the sound is really off when volume is 0. Thanks to 
+              Willem Rothe, who noticed it.
+
+Released version 1.03 on 07/23/98 to ftp://ftp.cdrom.com/pub/doom/incoming
+
+07/22/98
+
+WINSTUFF.C  : Added two new commandline options:
+                -fullscr     Forces fullscreen-mode at startup if it's available
+                -nofullscr   Forces window-mode at startup
+
+D_DEH.C     : Added the last source changes from original BOOM.
+
+07/14/98
+
+I_SOUND.C   : In I_SoundIsPlaying I forgot to check noDSound, this caused a
+              SEGV if DirectSound was not initialized.
+
+07/10/98
+
+I_SOUND.C   : Again ;)
+              I had many problems:
+              1. The chainsaw stuttered.
+              2. Some sounds were stoped were they shouldn't.
+              3. Some sounds were overwritten by others.
+
+              One major change since yesterday was the addition of the endtime
+              of every sound, it is used in I_SoundIsPlaying. Now it really
+              seems to work as I wanted it.
+
+07/09/98
+
+S_SOUND.C   : After the start of a sound I change the purge-level of the
+              sound data to PU_CACHE, before that change the sounds were
+              not freed before the game terminates.
+
+I_SOUND.C   : I have changed the handling of Sound again. Added a return when
+              DirectSound failed to initialize, before this it caused a SEGV.
+              Added macros for calculation of VOL, SEP and PITCH.
+
+WINSTUFF.C  : Added set of palette when switching from fullscreen to window-mode.
+
+07/08/98
+
+I_SOUND.C   : I have totally changed the handling of Sound and Music. Now the
+              chainsaw stutters far less than before, and the music behaves
+              better.
+
+07/05/98 after version 1.02 release
+
+D_DEH.C     : In deh_procStringSub where the function writes to dehout.txt I 
+              added spaces before and after the "=" sign, because I have
+              written a small perlscript to extract the bex format of the
+              string replacement from dehout.txt.
+
+Released version 1.02 on 07/05/98 to ftp://ftp.cdrom.com/pub/doom/incoming
+
+07/05/98
+
+README.TXT
+COMPILE.TXT : Rewritten.
+
+07/04/98
+
+README.TXT  : Updated. Changed version-number for prboom from 2.01 to 1.02 because
+              this is the real-version.
+
+WINSTUFF.C  : Updated version-number for prboom to 1.02
+
+C_OUT.C
+D_MAIN.C
+DOOMTYPE.H
+G_GAME.C
+G_GAME.H
+I_MAIN.C
+I_SOUND.C
+I_SYSTEM.C
+M_MENU.C
+M_SWAP.H
+W_WAD.C
+WINSTUFF.C
+Z_ZONE.H    : Added and changed some things for compatibility to CYGWIN32 and MINGW32
+
+07/02/98
+
+WINSTUFF.C  : Added inputhandling for the console-window. This is for pressing
+              ESC in net-startup. You can't really play, because it stutters.
+
+07/01/98
+
+I_SOUND.C   : Changed the filename of the temporary midifile to prboom.mid.
+              Added I_InitMusic to I_InitSound. Added I_StopSong to 
+              I_UnRegisterSong and I_RegisterSong.
+
+D_MAIN.C
+F_FINALE.C
+HU_STUFF.C  : Added check for TNT.WAD and PLUTONIA.WAD with set of gamemission.
+              Now levelnames and endtexts are correct.
+
+06/30/98 after first release
+
+WINSTUFF.C  : I changed every constant wich has to do with screensizes to their
+              defined name (SCREENWIDTH and SCREENHEIGHT). WARNING: In the
+              assembler functions the values are still hardcoded.
+
+R_DRAW.C    : I forgot NOASM in the ifdefined statement before R_DrawColumn.
+
+WINSTUFF.C  : I have changed V_EndFrame a little bit, the DirectDraw handling was stupid.
+              After the changes it's even a bit faster.
+
+WINSTUFF.C  : I have removed the fFullscreen variable and now use only the
+              vidFullScreen variable. Now, when you switch from fullscreen to
+              windowed-mode it will be saved in the config-file, not only when
+              you switched to fullscreen.
+
+I_SYSTEM.C  : I changed the calculation of the delaytime in I_WaitVBL.
+              In I_Quit I'm using I_WaitVBL instead of Sleep and I increased the delaytime.
+
+INFO.C      : I changed almost every 'static const char' to 'static const unsigned char' to
+              avoid warning messages in Visual C.
+AM_MAP.C
+D_DEH.C
+DOOMTYPE.H
+F_FINALE.C
+G_GAME.C
+I_SYSTEM.C
+INFO.C
+M_MENU.C
+MMUS2MID.C
+MMUS2MID.H
+R_BSP.C
+R_DATA.C
+R_MAIN.C
+R_PLANE.C
+R_SEGS.C
+R_THINGS.C
+W_WAD.C
+WINSTUFF.C  : I added some typecasts and a few other things to avoid warning messages in Visual C.
+
+Released on midday the 06/30/98 to ftp://ftp.cdrom.com/pub/doom/incoming
+
+06/29/98
+
+After I got the mail from Ty Halderman I did the following changes:
+
+1. I commented everything I changed.
+2. I removed the display of the key-scancodes (this was a leftover from debugging).
+3. I changed the name of the config-file to 'prboom.cfg'.
+4. I included the textfiles from Boom.
+
+06/28/98
+HU_STUFF.C  : In HU_Responder I added three typecasts.
+F_FINALE.C  : In F_BunnyScroll I change the tags for PFUB1 and PFUB2 to PU_CACHE.
+I_VIDEO.C   : In I_ScanCode2DoomCode the parameter 'a' was sometimes 
+              out of range. Added rangecheck.
+MMUS2MID.C  : In mmus2mid I changed the definition of two arrays,
+              which were too small.
+M_MISC.C    : Changed a few defaults and added vid_fullscreen in the config-file.
+
+I think the change in I_VIDEO.C or in MMUS2MID.C or in both has fixed the bug which
+changed the keys sometimes. I have tested it 10 times or so, and the keys didn't change.
+
+06/01/98 - 06/22/98
+
+On 06/22/98 I included all source changes by TeamTNT till 06/16/98
+
+added WINSTUFF.H and WINSTUFF.C
+I_MAIN.C
+I_SYSTEM.H
+I_SYSTEM.C
+I_VIDEO.C   : Changed most functions to work with Windows and DirectDraw.
+I_NET.C     : Changed most functions to work with Windows and TCP/IP.
+I_SOUND.H
+I_SOUND.C   : Changed most functions to work with Windows, MCI and DirectSound.
+S_SOUND.C   : In S_StartSoundAtVolume the sfx-data is given to I_StartSound.
+MMUS2MID.H  : added struct MIDI for compiling in VC.
+MMUS2MID.C  : removed <allegro.h>. Moved #ifdef STANDALONE to use MIDItoMidi in WIN32.
+
+DOOMTYPE.H  : Added the missing MIN/MAX definitions, because VC has no <values.h>.
+
+M_BBOX.H    : Included "doomtype.h" instead of <values.h>.
+
+D_THINK.H   : in the typedef of actionf_t I swapped actionf_v from Pos 2 to Pos 1 because
+              it produced warnings.
+
+D_DEH.H     : Corrected the multiline comments.
+
+M_CHEAT.C
+M_CHEAT.H
+M_FIXED.H
+R_SEGS.C    : Changed "long long" to "__int64".
+
+D_MAIN.C
+INFO.C
+M_MENU.C
+M_MISC.C
+W_WAD.C     : Included <io.h> instead of <unistd.h>.
+
+P_GENLIN.C  : Changed the Evaluate Expression in EV_DoGenCeiling 
+       from   "Dirn? ceiling->topheight : ceiling->bottomheight = targheight;"
+         to   "(Dirn) ? (ceiling->topheight=targheight) : (ceiling->bottomheight=targheight);".
+
+ST_STUFF.C  : Changed the assignment in ST_doPaletteStuff 
+       form   "pal = W_CacheLumpNum(lu_palette, PU_CACHE)+palette*768;"
+         to   "pal = (char *) W_CacheLumpNum(lu_palette, PU_CACHE)+palette*768;".
+
+M_ARGV.C
+P_SETUP.C
+R_DATA.C
+W_WAD.C     : Added definition for strncasecmp = _strnicmp and strcasecmp = _stricmp.
+
+W_WAD.C     : Removed filelength function. Changed call of open
+              function in WritePredefinedLumpWad.
+
+D_MAIN.C    : Included <direct.h> and changed the mkdir call.
+
+G_GAME.C    : Set rndseed with timeGetTime.
+
+M_SWAP.H    : defined SHORT and LONG as no op.
+
+P_SPEC.C
+P_SPEC.H    : added pragmas for byte-alignment.
+
+M_MISC.C    : removed "#ifdef NORMALUNIX".
+
+added DRAWASM.NAS
+R_DRAW.C    : I added #ifndef _WIN32 before R_DrawColumn, because its in DRAWASM.NAS.
+              It seems that the functions R_DrawTLColumn and R_DrawSpan are optimized better
+              by the compiler than the ASM functions in DRAWASM.NAS.
+
+added VSCALE.NAS
+WINSTUFF.C  : Added the function V_ScaleBy2 (C only) and V_ScaleBy2a (ASM in VSCALE.NAS) to scale
+              the output myself, because in NT the function StretchDIBits is horrobly slow.
+
+M_FIXED.H   : Converted FixedMul and FixedDiv to ASM.
+
+P_ENEMY.C 
+P_MAP.C 
+P_MAPUTL.C
+P_SETUP.C 
+P_SPEC.C  
+P_TELEPT.C  
+R_MAIN.C  
+R_PLANE.C 
+R_SEGS.C  
+R_THINGS.C  
+S_SOUND.C 
+M_FIXED.H   : Converted abs to ASM. I had to change the name of abs to D_abs.
+
+added C_OUT.H and C_OUT.C
+AM_MAP.C
+D_DEH.C 
+D_MAIN.C
+D_NET.C 
+M_MENU.C  
+M_MISC.C  
+R_DATA.C  
+R_MAIN.C  
+S_SOUND.C 
+WI_STUFF.C  : Now all text-output is redirected to the console and to the files
+              disp.txt and error.txt.
