@@ -35,7 +35,7 @@
 
 #define HU_BROADCAST	5
 
-#define HU_MSGREFRESH	KEY_ENTER
+#define HU_MSGREFRESH	KEYD_ENTER
 #define HU_MSGX		0
 #define HU_MSGY		0
 #define HU_MSGWIDTH	64	// in characters

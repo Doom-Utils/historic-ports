@@ -1363,34 +1363,34 @@ boolean M_Responder (event_t* ev)
     {
 	if (ev->data3 == -1)
 	{
-	    ch = KEY_UPARROW;
+	    ch = KEYD_UPARROW;
 	    joywait = I_GetTime() + 5;
 	}
 	else if (ev->data3 == 1)
 	{
-	    ch = KEY_DOWNARROW;
+	    ch = KEYD_DOWNARROW;
 	    joywait = I_GetTime() + 5;
 	}
 		
 	if (ev->data2 == -1)
 	{
-	    ch = KEY_LEFTARROW;
+	    ch = KEYD_LEFTARROW;
 	    joywait = I_GetTime() + 2;
 	}
 	else if (ev->data2 == 1)
 	{
-	    ch = KEY_RIGHTARROW;
+	    ch = KEYD_RIGHTARROW;
 	    joywait = I_GetTime() + 2;
 	}
 		
 	if (ev->data1&1)
 	{
-	    ch = KEY_ENTER;
+	    ch = KEYD_ENTER;
 	    joywait = I_GetTime() + 5;
 	}
 	if (ev->data1&2)
 	{
-	    ch = KEY_BACKSPACE;
+	    ch = KEYD_BACKSPACE;
 	    joywait = I_GetTime() + 5;
 	}
     }
@@ -1401,13 +1401,13 @@ boolean M_Responder (event_t* ev)
 	    mousey += ev->data3;
 	    if (mousey < lasty-30)
 	    {
-		ch = KEY_DOWNARROW;
+		ch = KEYD_DOWNARROW;
 		mousewait = I_GetTime() + 5;
 		mousey = lasty -= 30;
 	    }
 	    else if (mousey > lasty+30)
 	    {
-		ch = KEY_UPARROW;
+		ch = KEYD_UPARROW;
 		mousewait = I_GetTime() + 5;
 		mousey = lasty += 30;
 	    }
@@ -1415,26 +1415,26 @@ boolean M_Responder (event_t* ev)
 	    mousex += ev->data2;
 	    if (mousex < lastx-30)
 	    {
-		ch = KEY_LEFTARROW;
+		ch = KEYD_LEFTARROW;
 		mousewait = I_GetTime() + 5;
 		mousex = lastx -= 30;
 	    }
 	    else if (mousex > lastx+30)
 	    {
-		ch = KEY_RIGHTARROW;
+		ch = KEYD_RIGHTARROW;
 		mousewait = I_GetTime() + 5;
 		mousex = lastx += 30;
 	    }
 		
 	    if (ev->data1&1)
 	    {
-		ch = KEY_ENTER;
+		ch = KEYD_ENTER;
 		mousewait = I_GetTime() + 15;
 	    }
 			
 	    if (ev->data1&2)
 	    {
-		ch = KEY_BACKSPACE;
+		ch = KEYD_BACKSPACE;
 		mousewait = I_GetTime() + 15;
 	    }
 	}
@@ -1454,7 +1454,7 @@ boolean M_Responder (event_t* ev)
     {
 	switch(ch)
 	{
-	  case KEY_BACKSPACE:
+	  case KEYD_BACKSPACE:
 	    if (saveCharIndex > 0)
 	    {
 		saveCharIndex--;
@@ -1462,12 +1462,12 @@ boolean M_Responder (event_t* ev)
 	    }
 	    break;
 				
-	  case KEY_ESCAPE:
+	  case KEYD_ESCAPE:
 	    saveStringEnter = 0;
 	    strcpy(&savegamestrings[saveSlot][0],saveOldString);
 	    break;
 				
-	  case KEY_ENTER:
+	  case KEYD_ENTER:
 	    saveStringEnter = 0;
 	    if (savegamestrings[saveSlot][0])
 		M_DoSave(saveSlot);
@@ -1495,7 +1495,7 @@ boolean M_Responder (event_t* ev)
     if (messageToPrint)
     {
 	if (messageNeedsInput == true &&
-	    !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEY_ESCAPE))
+	    !(ch == ' ' || ch == 'n' || ch == 'y' || ch == KEYD_ESCAPE))
 	    return false;
 		
 	menuactive = messageLastMenuActive;
@@ -1508,7 +1508,7 @@ boolean M_Responder (event_t* ev)
 	return true;
     }
 	
-    if (devparm && ch == KEY_F1)
+    if (devparm && ch == KEYD_F1)
     {
 	G_ScreenShot ();
 	return true;
@@ -1519,21 +1519,21 @@ boolean M_Responder (event_t* ev)
     if (!menuactive)
 	switch(ch)
 	{
-	  case KEY_MINUS:         // Screen size down
+	  case KEYD_MINUS:         // Screen size down
 	    if (automapactive || chat_on)
 		return false;
 	    M_SizeDisplay(0);
 	    S_StartSound(NULL,sfx_stnmov);
 	    return true;
 				
-	  case KEY_EQUALS:        // Screen size up
+	  case KEYD_EQUALS:        // Screen size up
 	    if (automapactive || chat_on)
 		return false;
 	    M_SizeDisplay(1);
 	    S_StartSound(NULL,sfx_stnmov);
 	    return true;
 				
-	  case KEY_F1:            // Help key
+	  case KEYD_F1:            // Help key
 	    M_StartControlPanel ();
 
 	    if ( gamemode == retail )
@@ -1545,56 +1545,56 @@ boolean M_Responder (event_t* ev)
 	    S_StartSound(NULL,sfx_swtchn);
 	    return true;
 				
-	  case KEY_F2:            // Save
+	  case KEYD_F2:            // Save
 	    M_StartControlPanel();
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_SaveGame(0);
 	    return true;
 				
-	  case KEY_F3:            // Load
+	  case KEYD_F3:            // Load
 	    M_StartControlPanel();
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_LoadGame(0);
 	    return true;
 				
-	  case KEY_F4:            // Sound Volume
+	  case KEYD_F4:            // Sound Volume
 	    M_StartControlPanel ();
 	    currentMenu = &SoundDef;
 	    itemOn = sfx_vol;
 	    S_StartSound(NULL,sfx_swtchn);
 	    return true;
 				
-	  case KEY_F5:            // Detail toggle
+	  case KEYD_F5:            // Detail toggle
 	    M_ChangeDetail(0);
 	    S_StartSound(NULL,sfx_swtchn);
 	    return true;
 				
-	  case KEY_F6:            // Quicksave
+	  case KEYD_F6:            // Quicksave
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_QuickSave();
 	    return true;
 				
-	  case KEY_F7:            // End game
+	  case KEYD_F7:            // End game
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_EndGame(0);
 	    return true;
 				
-	  case KEY_F8:            // Toggle messages
+	  case KEYD_F8:            // Toggle messages
 	    M_ChangeMessages(0);
 	    S_StartSound(NULL,sfx_swtchn);
 	    return true;
 				
-	  case KEY_F9:            // Quickload
+	  case KEYD_F9:            // Quickload
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_QuickLoad();
 	    return true;
 				
-	  case KEY_F10:           // Quit DOOM
+	  case KEYD_F10:           // Quit DOOM
 	    S_StartSound(NULL,sfx_swtchn);
 	    M_QuitDOOM(0);
 	    return true;
 				
-	  case KEY_F11:           // gamma toggle
+	  case KEYD_F11:           // gamma toggle
 	    usegamma++;
 	    if (usegamma > 4)
 		usegamma = 0;
@@ -1608,7 +1608,7 @@ boolean M_Responder (event_t* ev)
     // Pop-up menu?
     if (!menuactive)
     {
-	if (ch == KEY_ESCAPE)
+	if (ch == KEYD_ESCAPE)
 	{
 	    M_StartControlPanel ();
 	    S_StartSound(NULL,sfx_swtchn);
@@ -1621,7 +1621,7 @@ boolean M_Responder (event_t* ev)
     // Keys usable within menu
     switch (ch)
     {
-      case KEY_DOWNARROW:
+      case KEYD_DOWNARROW:
 	do
 	{
 	    if (itemOn+1 > currentMenu->numitems-1)
@@ -1631,7 +1631,7 @@ boolean M_Responder (event_t* ev)
 	} while(currentMenu->menuitems[itemOn].status==-1);
 	return true;
 		
-      case KEY_UPARROW:
+      case KEYD_UPARROW:
 	do
 	{
 	    if (!itemOn)
@@ -1641,7 +1641,7 @@ boolean M_Responder (event_t* ev)
 	} while(currentMenu->menuitems[itemOn].status==-1);
 	return true;
 
-      case KEY_LEFTARROW:
+      case KEYD_LEFTARROW:
 	if (currentMenu->menuitems[itemOn].routine &&
 	    currentMenu->menuitems[itemOn].status == 2)
 	{
@@ -1650,7 +1650,7 @@ boolean M_Responder (event_t* ev)
 	}
 	return true;
 		
-      case KEY_RIGHTARROW:
+      case KEYD_RIGHTARROW:
 	if (currentMenu->menuitems[itemOn].routine &&
 	    currentMenu->menuitems[itemOn].status == 2)
 	{
@@ -1659,7 +1659,7 @@ boolean M_Responder (event_t* ev)
 	}
 	return true;
 
-      case KEY_ENTER:
+      case KEYD_ENTER:
 	if (currentMenu->menuitems[itemOn].routine &&
 	    currentMenu->menuitems[itemOn].status)
 	{
@@ -1677,13 +1677,13 @@ boolean M_Responder (event_t* ev)
 	}
 	return true;
 		
-      case KEY_ESCAPE:
+      case KEYD_ESCAPE:
 	currentMenu->lastOn = itemOn;
 	M_ClearMenus ();
 	S_StartSound(NULL,sfx_swtchx);
 	return true;
 		
-      case KEY_BACKSPACE:
+      case KEYD_BACKSPACE:
 	currentMenu->lastOn = itemOn;
 	if (currentMenu->prevMenu)
 	{

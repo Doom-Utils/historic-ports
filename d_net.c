@@ -464,7 +464,7 @@ void CheckAbort (void)
 	      ; eventtail = (++eventtail)&(MAXEVENTS-1) ) 
     { 
 	ev = &events[eventtail]; 
-	if (ev->type == ev_keydown && ev->data1 == KEY_ESCAPE)
+	if (ev->type == ev_keydown && ev->data1 == KEYD_ESCAPE)
 	    I_Error ("Network game synchronization aborted.");
     } 
 }
@@ -492,8 +492,8 @@ void D_ArbitrateNetStart (void)
 		continue;
 	    if (netbuffer->checksum & NCMD_SETUP)
 	    {
-		if (netbuffer->player != VERSION)
-		    I_Error ("Different DOOM versions cannot play a net game!");
+//		if (netbuffer->player != VERSION)
+//		    I_Error ("Different DOOM versions cannot play a net game!");
 		startskill = netbuffer->retransmitfrom & 15;
 		deathmatch = (netbuffer->retransmitfrom & 0xc0) >> 6;
 		nomonsters = (netbuffer->retransmitfrom & 0x20) > 0;

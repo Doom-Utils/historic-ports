@@ -126,11 +126,12 @@ asm("sti");
 }
 
 byte ASCIINames[] =		// Unshifted ASCII for scan codes
+                  //left-shift must be turned to right shift, cuz doom doesnt recognize left-shit
 					{
 //	 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
 	0  ,27 ,'1','2','3','4','5','6','7','8','9','0','-','=',8  ,9  ,	// 0
 	'q','w','e','r','t','y','u','i','o','p','[',']',13 ,0  ,'a','s',	// 1
-	'd','f','g','h','j','k','l',';',39 ,'`',0  ,92 ,'z','x','c','v',	// 2
+	'd','f','g','h','j','k','l',';',39 ,'`',KEYD_RSHIFT,92 ,'z','x','c','v',	// 2
 	'b','n','m',',','.','/',0  ,'*',0  ,' ',0  ,0  ,0  ,0  ,0  ,0  ,	// 3
 	0  ,0  ,0  ,0  ,0  ,0  ,0  ,'7','8','9','-','4','5','6','+','1',	// 4
 	'2','3','0',127,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 5
@@ -207,10 +208,10 @@ void I_GetEvent()
       event.type=ev_keydown;
       switch (i)
         {
-        case 0x48: event.data1=KEY_UPARROW; D_PostEvent(&event); break;
-        case 0x4d: event.data1=KEY_RIGHTARROW; D_PostEvent(&event); break;
-        case 0x50: event.data1=KEY_DOWNARROW; D_PostEvent(&event); break;
-        case 0x4b: event.data1=KEY_LEFTARROW; D_PostEvent(&event); break;
+        case 0x48: event.data1=KEYD_UPARROW; D_PostEvent(&event); break;
+        case 0x4d: event.data1=KEYD_RIGHTARROW; D_PostEvent(&event); break;
+        case 0x50: event.data1=KEYD_DOWNARROW; D_PostEvent(&event); break;
+        case 0x4b: event.data1=KEYD_LEFTARROW; D_PostEvent(&event); break;
         }
       }
     if ((tempextendedkey[i]==0)&&(oldextendedkeystate[i]==1))
@@ -218,10 +219,10 @@ void I_GetEvent()
       event.type=ev_keyup;
       switch (i)
         {
-        case 0x48: event.data1=KEY_UPARROW; D_PostEvent(&event); break;
-        case 0x4d: event.data1=KEY_RIGHTARROW; D_PostEvent(&event); break;
-        case 0x50: event.data1=KEY_DOWNARROW; D_PostEvent(&event); break;
-        case 0x4b: event.data1=KEY_LEFTARROW; D_PostEvent(&event); break;
+        case 0x48: event.data1=KEYD_UPARROW; D_PostEvent(&event); break;
+        case 0x4d: event.data1=KEYD_RIGHTARROW; D_PostEvent(&event); break;
+        case 0x50: event.data1=KEYD_DOWNARROW; D_PostEvent(&event); break;
+        case 0x4b: event.data1=KEYD_LEFTARROW; D_PostEvent(&event); break;
         }
       }
     }

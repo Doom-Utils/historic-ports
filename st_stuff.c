@@ -80,7 +80,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #define ST_FACEPROBABILITY		96
 
 // For Responder
-#define ST_TOGGLECHAT		KEY_ENTER
+#define ST_TOGGLECHAT		KEYD_ENTER
 
 // Location of status bar
 #define ST_X				0

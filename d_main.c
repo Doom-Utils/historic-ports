@@ -610,9 +610,10 @@ void IdentifyVersion (void)
 
     home = getenv("HOME");
     if (!home)
-//      I_Error("Please set $HOME to your home directory");
-      strcpy(home,".");  //this isnt really unix
-    sprintf(basedefault, "%s/.doomrc", home);
+      sprintf(basedefault,"default.chi");
+    else
+      sprintf(basedefault, "%s\\default.chi", home);
+
 #endif
 
     if (M_CheckParm ("-shdev"))

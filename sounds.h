@@ -23,6 +23,7 @@
 #ifndef __SOUNDS__
 #define __SOUNDS__
 
+#include <allegro.h>  //because sfxinfo_struct now has a SAMPLE*
 
 //
 // SoundFX struct.
@@ -50,7 +51,7 @@ struct sfxinfo_struct
     int		volume;
 
     // sound data
-    void*	data;
+    SAMPLE*	data;
 
     // this is checked every second to see if sound
     // can be thrown out (if 0, then decrement, if -1,
