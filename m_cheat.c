@@ -65,7 +65,11 @@ cht_CheckCheat
 
     if (*cht->p == 1)
 	cht->p++;
+#ifdef NEWCHEAT
+    else if (*cht->p == 0x20) // end of sequence character
+#else
     else if (*cht->p == 0xff) // end of sequence character
+#endif
     {
 	cht->p = cht->sequence;
 	rc = 1;

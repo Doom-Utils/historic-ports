@@ -219,6 +219,12 @@ typedef enum
     pw_ironfeet,
     pw_allmap,
     pw_infrared,
+#ifdef FLIGHT
+    pw_flight,
+#endif
+#ifdef QUAD
+    pw_quad,
+#endif
     NUMPOWERS
     
 } powertype_t;
@@ -235,12 +241,20 @@ typedef enum
     INVULNTICS	= (30*TICRATE),
     INVISTICS	= (60*TICRATE),
     INFRATICS	= (120*TICRATE),
-    IRONTICS	= (60*TICRATE)
-    
+    IRONTICS    = (60*TICRATE),
+#ifdef FLIGHT
+    FLIGHTTICS   = (60*TICRATE),
+#endif
+#ifdef QUAD
+    QUADTICS    = (30*TICRATE),
+#endif
+    NULLTICS    = 0
 } powerduration_t;
 
-
-
+#ifdef QUAD
+// Quad damage multiplier (i.e. 4 !)
+#define QUAD_MULT   4
+#endif
 
 //
 // DOOM keyboard definition.
@@ -278,6 +292,14 @@ typedef enum
 #define KEYD_RALT	(0x80+0x38)
 
 #define KEYD_LALT	KEYD_RALT
+
+#define KEYD_INS    (0x80+0x52)
+#define KEYD_DEL    (0x80+0x53)
+#define KEYD_HOME   (0x80+0x47)
+#define KEYD_END    (0x80+0x4F)
+#define KEYD_PGUP   (0x80+0x49)
+#define KEYD_PGDN   (0x80+0x51)
+
 
 // DOOM basic types (boolean),
 //  and max/min values.

@@ -72,8 +72,7 @@ typedef enum
     // No damage, no health loss.
     CF_GODMODE		= 2,
     // Not really a cheat, just a debug aid.
-    CF_NOMOMENTUM	= 4
-
+    CF_NOMOMENTUM   = 4,
 } cheat_t;
 
 
@@ -95,7 +94,7 @@ typedef struct player_s
     // Bob/squat speed.
     fixed_t         	deltaviewheight;
     // bounded/scaled total momentum.
-    fixed_t         	bob;	
+    fixed_t             bob;
 
     // This is only used between levels,
     // mo->health is used during levels.

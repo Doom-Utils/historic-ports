@@ -182,6 +182,12 @@ extern int	key_use;
 extern int	key_strafe;
 extern int	key_speed;
 
+#ifdef FLIGHT
+extern int  key_flyup;
+extern int  key_flystop;
+extern int  key_flydown;
+#endif
+
 extern int	mousebfire;
 extern int	mousebstrafe;
 extern int	mousebforward;
@@ -251,6 +257,12 @@ default_t	defaults[] =
     {"key_use",&key_use, ' '},
     {"key_strafe",&key_strafe, KEYD_RALT},
     {"key_speed",&key_speed, KEYD_RSHIFT},
+
+#ifdef FLIGHT
+    {"key_flyup",&key_flyup, KEYD_INS},
+    {"key_flydown",&key_flydown, KEYD_PGUP},
+    {"key_flystop",&key_flystop, KEYD_HOME},
+#endif
 
 // UNIX hack, to be removed. 
 #ifdef SNDSERV

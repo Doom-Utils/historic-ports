@@ -322,7 +322,24 @@ P_GivePower
 	player->powers[power] = 1;
 	return true;
     }
-	
+
+#ifdef FLIGHT
+    if (power == pw_flight)
+    {
+        player->mo->flags |= (MF_FLOAT | MF_NOGRAVITY);
+        player->powers[power] = FLIGHTTICS;
+        player->cmd.stopfly=false;
+        return true;
+    }
+#endif
+
+#ifdef QUAD
+    if (power == pw_quad)
+    {
+        player->powers[power]=QUADTICS;
+    }
+#endif
+
     if (player->powers[power])
 	return false;	// already got it
 		
@@ -798,7 +815,11 @@ P_DamageMobj
     player = target->player;
     if (player && gameskill == sk_baby)
 	damage >>= 1; 	// take half damage in trainer mode
-		
+
+#ifdef QUAD
+    if ((source) && (source->player) && (source->player->powers[pw_quad]))
+        damage *=QUAD_MULT;     // do quad dammage
+#endif
 
     // Some close combat weapons should not
     // inflict thrust and push the victim out of reach,

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -80,7 +80,6 @@ void PacketGet (void)
 
 }
 
-
 //
 // I_InitNetwork
 //
@@ -89,7 +88,7 @@ void I_InitNetwork (void)
     int			i,j;
 	
     // set up for network
-
+			    
     // parse network game options,
     //  -net <consoleplayer> <host> <host> ...
     i = M_CheckParm ("-net");
@@ -131,7 +130,7 @@ void I_InitNetwork (void)
 
     netsend = PacketSend;
     netget = PacketGet;
-    netgame = true;
+    netgame = true;    
 }
 
 

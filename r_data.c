@@ -654,13 +654,13 @@ void R_InitColormaps (void)
 void R_InitData (void)
 {
     R_InitTextures ();
-    printf ("\nInitTextures");
+//    printf ("\nInitTextures");
     R_InitFlats ();
-    printf ("\nInitFlats");
+//    printf ("\nInitFlats");
     R_InitSpriteLumps ();
-    printf ("\nInitSprites");
+//    printf ("\nInitSprites");
     R_InitColormaps ();
-    printf ("\nInitColormaps");
+//    printf ("\nInitColormaps");
 }
 
 

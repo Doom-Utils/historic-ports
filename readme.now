@@ -1,0 +1,56 @@
+Phill's Doom v0.1.based on v0.2 of a DOS port of LinuxDOOM
+
+-This particular port was written by Phill Harvey-Smith
+ (phill@mail.tilehill.ac.uk) and based on the port of the Linux source code
+ to DOS done by  Chi Hoang (cyhoang@acs.ucalgary.ca)
+        The origanal readme for DosDoom v0.2 is in readme.dos
+-DOOM is copyright ID software (www.idsoftware.com)
+-This port is not endorsed by id software, so don't bug them about it
+-I am not responsible for any damage that may be done by this program
+
+What's implemented :-
+
+- New cheat codes as follows :-
+
+"FLYBOY"  Turns on flying mode as used in Heretic & Hexen use the keys Insert
+ and PgUp to fly up and down, and Home to stop flying. Hopefully eventually
+ this will be able to be activated by picking up an item (as in Heretic/Hexen). Flying lasts for a limited period of time (by default set to 1 minute).
+
+"NOFLY" Turns off flight mode if it is turned on.
+
+"MASSACRE" Will kill all currently active monsters on the level and print a
+ message telling you how many monsters have been killed.
+
+"QUAD" Turns on Quad Damage mode as used in Quake, this is also is only active
+ for a limited period of time (30 seconds by default).
+
+- I have "fixed" some of the keyboard code so that you can use the numeric
+  keypad keys as direction arrows.
+
+- I have also altered some of the collision detection code so that you cannot
+  be attacked by a monster that is either completely above or below you, also
+  if it is completely below you, you should now be able to jump over it (it
+  always bugged me that ID never took account of height when they wrote their
+  attack code !).
+
+Notes on compiling the source.
+
+Most of the implemented features are governed by the use of #ifdef statements
+in the code and are turned on by adding -DXXXX type statements to the make file.
+The associations are as follows :-
+
+
+-DPHILL         Turns on new keyboard routines for numeric keypad use.
+-DNEWCHEAT      Use new cheats, MUST be used if you wish to use QUAD/FLIGHT
+                below.
+-DQUAD          Turns on quad damage facility.
+-DFLIGHT	Turns on code allowing flight.
+
+Duration that the flight power lasts is determined by FLIGHTTICS defined in
+doomdef.h, and the duration of Quad damage is defined by QUADTICS, also in
+doomdef.h. The multiplier for Quad damage is defined by QUAD_MULT also in
+doomdef.h
+
+The source *SHOULD* compile without error, but if you do have problems mail
+be at the address listed above.
+

@@ -36,6 +36,13 @@ main
 ( int		argc,
   char**	argv ) 
 { 
+#ifdef PHILLDEBUG
+    int i;
+    for(i=0;i<argc;i++)
+        printf("in doom argv[%d]=%s\n",i,argv[i]);
+    printf("Press enter to continue !\n");
+    getche();
+#endif
     myargc = argc; 
     myargv = argv; 
  

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -270,6 +270,16 @@ boolean PIT_CheckThing (mobj_t* thing)
     // don't clip against self
     if (thing == tmthing)
 	return true;
+
+#ifdef FLIGHT
+    if (tmthing->player)
+    {
+        if (tmthing->z > thing->z + thing->height)
+            return true;        // overhead
+        if (tmthing->z+tmthing->height < thing->z)
+            return true;        // underneath
+    }
+#endif
     
     // check for skulls slamming into things
     if (tmthing->flags & MF_SKULLFLY)
@@ -470,14 +480,26 @@ P_TryMove
 
 	floatok = true;
 	
+#ifdef FLIGHT
+    if (!(thing->player) ||
+         (thing->player && !(thing->flags & MF_NOGRAVITY)))
+    {
+        if ( !(thing->flags&MF_TELEPORT)
+	     &&tmceilingz - thing->z < thing->height)
+            return false;   // mobj must lower itself to fit
+        if ( !(thing->flags&MF_TELEPORT)
+             && (tmfloorz - thing->z > 24*FRACUNIT))
+            return false;   // too big a step up
+    }
+#else
 	if ( !(thing->flags&MF_TELEPORT) 
 	     &&tmceilingz - thing->z < thing->height)
 	    return false;	// mobj must lower itself to fit
 
-	if ( !(thing->flags&MF_TELEPORT)
+    if ( !(thing->flags&MF_TELEPORT)
 	     && tmfloorz - thing->z > 24*FRACUNIT )
 	    return false;	// too big a step up
-
+#endif
 	if ( !(thing->flags&(MF_DROPOFF|MF_FLOAT))
 	     && tmfloorz - tmdropoffz > 24*FRACUNIT )
 	    return false;	// don't stand over a dropoff

@@ -168,7 +168,14 @@ void P_XYMovement (mobj_t* mo)
 	    // blocked move
 	    if (mo->player)
 	    {	// try to slide along it
-		P_SlideMove (mo);
+#ifdef XFLIGHT
+        if (mo->player->cheats & CF_FLYING)
+        {
+
+        }
+        else
+#endif
+            P_SlideMove (mo);
 	    }
 	    else if (mo->flags & MF_MISSILE)
 	    {
@@ -200,10 +207,13 @@ void P_XYMovement (mobj_t* mo)
 
     if (mo->flags & (MF_MISSILE | MF_SKULLFLY) )
 	return; 	// no friction for missiles ever
-		
+#ifdef FLIGHT
+    if ((mo->z > mo->floorz) && (player==NULL))
+    return;      // no friction when airborne UNLESS we are a player !
+#else
     if (mo->z > mo->floorz)
 	return;		// no friction when airborne
-
+#endif
     if (mo->flags & MF_CORPSE)
     {
 	// do not stop sliding

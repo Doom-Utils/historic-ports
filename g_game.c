@@ -156,7 +156,13 @@ int             key_fire;
 int		key_use;
 int		key_strafe;
 int		key_speed; 
- 
+
+#ifdef FLIGHT
+int     key_flyup;
+int     key_flystop;
+int     key_flydown;
+#endif
+
 int             mousebfire; 
 int             mousebstrafe; 
 int             mousebforward; 
@@ -175,6 +181,10 @@ int             joybspeed;
 fixed_t		forwardmove[2] = {0x19, 0x32}; 
 fixed_t		sidemove[2] = {0x18, 0x28}; 
 fixed_t		angleturn[3] = {640, 1280, 320};	// + slow turn 
+
+#ifdef FLIGHT
+fixed_t     updownmove[2]  = {0x50,0x70};
+#endif
 
 #define SLOWTURNTICS	6 
  
@@ -324,6 +334,26 @@ void G_BuildTiccmd (ticcmd_t* cmd)
     if (gamekeydown[key_strafeleft]) 
 	side -= sidemove[speed];
     
+#ifdef FLIGHT
+    if (gamekeydown[key_flyup])
+    {
+        cmd->updnmove += updownmove[speed];
+        cmd->stopfly=false;
+    }
+    else
+        if (gamekeydown[key_flydown])
+            {
+                cmd->updnmove -= updownmove[speed];
+                cmd->stopfly=false;
+            }
+        else
+            cmd->updnmove=0;
+    if (gamekeydown[key_flystop])
+    {
+        cmd->stopfly=true;
+    }
+#endif
+
     // buttons
     cmd->chatchar = HU_dequeueChatChar(); 
  
@@ -505,7 +535,7 @@ boolean G_Responder (event_t* ev)
 { 
     // allow spy mode changes even during the demo
     if (gamestate == GS_LEVEL && ev->type == ev_keydown 
-	&& ev->data1 == KEY_F12 && (singledemo || !deathmatch) )
+        && ev->data1 == KEYD_F12 && (singledemo || !deathmatch) )
     {
 	// spy mode 
 	do 
@@ -558,7 +588,7 @@ boolean G_Responder (event_t* ev)
     switch (ev->type) 
     { 
       case ev_keydown: 
-	if (ev->data1 == KEY_PAUSE) 
+        if (ev->data1 == KEYD_PAUSE) 
 	{ 
 	    sendpause = true; 
 	    return true; 

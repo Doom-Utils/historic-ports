@@ -1047,8 +1047,8 @@ void D_DoomMain (void)
 		if (W_CheckNumForName(name[i])<0)
 		    I_Error("\nThis is not the registered version.");
     }
-    
-    // Iff additonal PWAD files are used, print modified banner
+#ifndef PHILL
+    // If additonal PWAD files are used, print modified banner
     if (modifiedgame)
     {
 	/*m*/printf (
@@ -1061,7 +1061,7 @@ void D_DoomMain (void)
 	    );
 	getchar ();
     }
-	
+#endif
 
     // Check and print which version is executed.
     switch ( gamemode )

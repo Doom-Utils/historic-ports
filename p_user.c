@@ -48,7 +48,7 @@ rcsid[] = "$Id: p_user.c,v 1.3 1997/01/28 22:08:29 b1 Exp $";
 // 16 pixels of bob
 #define MAXBOB	0x100000	
 
-boolean		onground;
+boolean onground;
 
 
 //
@@ -155,8 +155,25 @@ void P_MovePlayer (player_t* player)
 
     // Do not let the player control movement
     //  if not onground.
+#ifdef FLIGHT
+    onground = ((player->mo->z <= player->mo->floorz) |
+                (player->powers[pw_flight]>0));
+#else
     onground = (player->mo->z <= player->mo->floorz);
-	
+#endif
+
+#ifdef FLIGHT
+    if ((cmd->updnmove) && (player->powers[pw_flight]>0))
+    {
+        player->mo->z += cmd->updnmove * 2048;
+        player->mo->flags |= (MF_FLOAT | MF_NOGRAVITY);
+    }
+    if (cmd->stopfly)
+    {
+        player->mo->flags &= ~(MF_FLOAT | MF_NOGRAVITY);
+    }
+#endif
+
     if (cmd->forwardmove && onground)
 	P_Thrust (player, player->mo->angle, cmd->forwardmove*2048);
     
@@ -351,14 +368,23 @@ void P_PlayerThink (player_t* player)
 		
     if (player->powers[pw_ironfeet])
 	player->powers[pw_ironfeet]--;
-		
+
+#ifdef FLIGHT
+    if (player->powers[pw_flight])
+        player->powers[pw_flight]--;
+#endif
+        
+#ifdef QUAD
+    if (player->powers[pw_quad])
+        player->powers[pw_quad]--;
+#endif
+
     if (player->damagecount)
 	player->damagecount--;
 		
     if (player->bonuscount)
 	player->bonuscount--;
 
-    
     // Handling colormaps.
     if (player->powers[pw_invulnerability])
     {

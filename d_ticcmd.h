@@ -39,7 +39,12 @@ typedef struct
     char	sidemove;	// *2048 for move
     short	angleturn;	// <<16 for angle delta
     short	consistancy;	// checks for net game
-    byte	chatchar;
+#ifdef FLIGHT
+    char    updnmove;   // Movement up/down if in flight !
+    boolean stopfly;    // If true, stop flying, let gravity take over but
+                        // don't reset flight ticcount, so we can fly again !
+#endif
+    byte    chatchar;
     byte	buttons;
 } ticcmd_t;
 

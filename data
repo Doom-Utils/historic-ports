@@ -1,0 +1,110 @@
+d_net.c:    doomcom->command = CMD_SEND;
+d_net.c:    doomcom->remotenode = node;
+d_net.c:    doomcom->datalength = NetbufferSize ();
+d_net.c:		 netbuffer->numtics, realretrans, doomcom->datalength);
+d_net.c:	for (i=0 ; i<doomcom->datalength ; i++)
+d_net.c:	doomcom->remotenode = 0;
+d_net.c:    doomcom->command = CMD_GET;
+d_net.c:    if (doomcom->remotenode == -1)
+d_net.c:    if (doomcom->datalength != NetbufferSize ())
+d_net.c:	    fprintf (debugfile,"bad packet length %i\n",doomcom->datalength);
+d_net.c:		     doomcom->remotenode,
+d_net.c:		     netbuffer->numtics, realretrans, doomcom->datalength);
+d_net.c:	    for (i=0 ; i<doomcom->datalength ; i++)
+d_net.c:	netnode = doomcom->remotenode;
+d_net.c:    for (i=0 ; i<doomcom->numnodes ; i++)
+d_net.c:	    resendto[i] = maketic - doomcom->extratics;
+d_net.c:    if (doomcom->consoleplayer)
+d_net.c:	    for (i=0 ; i<doomcom->numnodes ; i++)
+d_net.c:	    for (i=1 ; i<doomcom->numnodes ; i++)
+d_net.c:	} while (i < doomcom->numnodes);
+d_net.c:    if (doomcom->id != DOOMCOM_ID)
+d_net.c:    netbuffer = &doomcom->data;
+d_net.c:    consoleplayer = displayplayer = doomcom->consoleplayer;
+d_net.c:    ticdup = doomcom->ticdup;
+d_net.c:    for (i=0 ; i<doomcom->numplayers ; i++)
+d_net.c:    for (i=0 ; i<doomcom->numnodes ; i++)
+d_net.c:	    consoleplayer+1, doomcom->numplayers, doomcom->numnodes);
+d_net.c:	for (j=1 ; j<doomcom->numnodes ; j++)
+d_net.c:    for (i=0 ; i<doomcom->numnodes ; i++)
+d_net.c:	for (i=0 ; i<doomcom->numnodes ; i++)
+i_net.c:    c = sendto (sendsocket , &sw, doomcom->datalength
+i_net.c:		,0,(void *)&sendaddress[doomcom->remotenode]
+i_net.c:		,sizeof(sendaddress[doomcom->remotenode]));
+i_net.c:    memcpy(&(doomcom->data),sw,sizeof(sw));
+i_net.c:    __dpmi_int(doomcom->intnum,&r);
+i_net.c:	doomcom->remotenode = -1;		// no packet
+i_net.c:    for (i=0 ; i<doomcom->numnodes ; i++)
+i_net.c:    if (i == doomcom->numnodes)
+i_net.c:	doomcom->remotenode = -1;		// no packet
+i_net.c:    doomcom->remotenode = i;			// good packet from a game player
+i_net.c:    doomcom->datalength = c;
+i_net.c:	doomcom->ticdup = myargv[i+1][0]-'0';
+i_net.c:	if (doomcom->ticdup < 1)
+i_net.c:	    doomcom->ticdup = 1;
+i_net.c:	if (doomcom->ticdup > 9)
+i_net.c:	    doomcom->ticdup = 9;
+i_net.c:	doomcom-> ticdup = 1;
+i_net.c:	doomcom-> extratics = 1;
+i_net.c:	doomcom-> extratics = 0;
+i_net.c:	doomcom->id = DOOMCOM_ID;
+i_net.c:	doomcom->numplayers = doomcom->numnodes = 1;
+i_net.c:	doomcom->deathmatch = false;
+i_net.c:	doomcom->consoleplayer = 0;
+i_net.c:    doomcom->consoleplayer = myargv[i+1][0]-'1';
+i_net.c:    doomcom->numnodes = 1;	// this node for sure
+i_net.c:	sendaddress[doomcom->numnodes].sin_family = AF_INET;
+i_net.c:	sendaddress[doomcom->numnodes].sin_port = htons(DOOMPORT);
+i_net.c:	    sendaddress[doomcom->numnodes].sin_addr.s_addr 
+i_net.c:	    sendaddress[doomcom->numnodes].sin_addr.s_addr 
+i_net.c:	doomcom->numnodes++;
+i_net.c:    doomcom->id = DOOMCOM_ID;
+i_net.c:    doomcom->numplayers = doomcom->numnodes;
+i_net.c:    if (doomcom->command == CMD_SEND)
+i_net.c:    else if (doomcom->command == CMD_GET)
+i_net.c:	I_Error ("Bad net cmd: %i\n",doomcom->command);
+i_netbak.c:    c = sendto (sendsocket , &sw, doomcom->datalength
+i_netbak.c:		,0,(void *)&sendaddress[doomcom->remotenode]
+i_netbak.c:		,sizeof(sendaddress[doomcom->remotenode]));
+i_netbak.c:	doomcom->remotenode = -1;		// no packet
+i_netbak.c:    for (i=0 ; i<doomcom->numnodes ; i++)
+i_netbak.c:    if (i == doomcom->numnodes)
+i_netbak.c:	doomcom->remotenode = -1;		// no packet
+i_netbak.c:    doomcom->remotenode = i;			// good packet from a game player
+i_netbak.c:    doomcom->datalength = c;
+i_netbak.c:	doomcom->ticdup = myargv[i+1][0]-'0';
+i_netbak.c:	if (doomcom->ticdup < 1)
+i_netbak.c:	    doomcom->ticdup = 1;
+i_netbak.c:	if (doomcom->ticdup > 9)
+i_netbak.c:	    doomcom->ticdup = 9;
+i_netbak.c:	doomcom-> ticdup = 1;
+i_netbak.c:	doomcom-> extratics = 1;
+i_netbak.c:	doomcom-> extratics = 0;
+i_netbak.c:  doomcom->id = DOOMCOM_ID;
+i_netbak.c:  doomcom->numplayers = doomcom->numnodes = 1;
+i_netbak.c:  doomcom->deathmatch = false;
+i_netbak.c:  doomcom->consoleplayer = 0;
+i_netbak.c:	doomcom->ticdup = myargv[i+1][0]-'0';
+i_netbak.c:	if (doomcom->ticdup < 1)
+i_netbak.c:	    doomcom->ticdup = 1;
+i_netbak.c:	if (doomcom->ticdup > 9)
+i_netbak.c:	    doomcom->ticdup = 9;
+i_netbak.c:	doomcom-> ticdup = 1;
+i_netbak.c:	doomcom-> extratics = 1;
+i_netbak.c:	doomcom-> extratics = 0;
+i_netbak.c:	doomcom->id = DOOMCOM_ID;
+i_netbak.c:	doomcom->numplayers = doomcom->numnodes = 1;
+i_netbak.c:	doomcom->deathmatch = false;
+i_netbak.c:	doomcom->consoleplayer = 0;
+i_netbak.c:    doomcom->consoleplayer = myargv[i+1][0]-'1';
+i_netbak.c:    doomcom->numnodes = 1;	// this node for sure
+i_netbak.c:	sendaddress[doomcom->numnodes].sin_family = AF_INET;
+i_netbak.c:	sendaddress[doomcom->numnodes].sin_port = htons(DOOMPORT);
+i_netbak.c:	    sendaddress[doomcom->numnodes].sin_addr.s_addr 
+i_netbak.c:	    sendaddress[doomcom->numnodes].sin_addr.s_addr 
+i_netbak.c:	doomcom->numnodes++;
+i_netbak.c:    doomcom->id = DOOMCOM_ID;
+i_netbak.c:    doomcom->numplayers = doomcom->numnodes;
+i_netbak.c:    if (doomcom->command == CMD_SEND)
+i_netbak.c:    else if (doomcom->command == CMD_GET)
+i_netbak.c:	I_Error ("Bad net cmd: %i\n",doomcom->command);

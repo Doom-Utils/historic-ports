@@ -7,11 +7,11 @@
 CC=  gcc  # gcc or g++
 
 #CFLAGS=-g -Wall -DNORMALUNIX -DLINUX # -DUSEASM
-CFLAGS=-g -O3 -Wall -DNORMALUNIX
+CFLAGS=-O3 -ffast-math -fomit-frame-pointer -m486 -Wall -DNORMALUNIX -s -DPHILL -DNEWCHEAT -DFLIGHT -DQUAD #-DFIELD -DPHILLDEBUG
 #LDFLAGS=-L/usr/X11R6/lib
 #LIBS=-lXext -lX11 -lnsl -lm
-LDFLAGS=
-LIBS=
+LDFLAGS=-s
+LIBS=-lemu -lalleg
 
 # subdirectory for objects
 O=dos
@@ -78,7 +78,8 @@ OBJS=				\
 		$(O)/s_sound.o		\
 		$(O)/z_zone.o			\
 		$(O)/info.o				\
-		$(O)/sounds.o
+		$(O)/sounds.o		\
+		$(O)/util.o
 
 all:	 $(O)/dosdoom
 

@@ -184,7 +184,17 @@ boolean P_CheckMeleeRange (mobj_t*	actor)
 
     if (dist >= MELEERANGE-20*FRACUNIT+pl->info->radius)
 	return false;
-	
+
+#ifdef FLIGHT
+    // If actor is completely above target (such as on a ledge) then
+    // attack in real life should be impossible, doom shoud be the same
+    // and it always bugged me that it wasn't ! Well it is now !
+    // also returns false if target completely above actor.
+    if (((actor->target->z > (actor->z+actor->height))) ||
+        ((actor->z+actor->height) < actor->target->z))
+        return false;
+#endif
+    
     if (! P_CheckSight (actor, actor->target) )
 	return false;
 							

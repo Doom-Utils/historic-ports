@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -60,6 +60,9 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+
+//Debug Utils ! 30/12/97, PHS
+#include "util.h"
 
 //
 // STATUS BAR DATA
@@ -393,7 +396,9 @@ static int	keyboxes[3];
 static int	st_randomnumber;  
 
 
-
+#ifdef NEWCHEAT
+#include "newcheat.h"
+#else
 // Massive bunches of cheat shit
 //  to keep it from being easy to figure them out.
 // Yeah, right...
@@ -461,7 +466,7 @@ unsigned char	cheat_mypos_seq[] =
 {
     0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff	// idmypos
 }; 
-
+#endif
 
 // Now what?
 cheatseq_t	cheat_mus = { cheat_mus_seq, 0 };
@@ -486,6 +491,16 @@ cheatseq_t	cheat_choppers = { cheat_choppers_seq, 0 };
 cheatseq_t	cheat_clev = { cheat_clev_seq, 0 };
 cheatseq_t	cheat_mypos = { cheat_mypos_seq, 0 };
 
+#ifdef NEWCHEAT
+cheatseq_t  cheat_kill_all = { cheat_kill_all_seq, 0 };
+#ifdef QUAD
+cheatseq_t  cheat_quad = { cheat_quad_seq, 0 };
+#endif
+#ifdef FLIGHT
+cheatseq_t  cheat_fly = { cheat_fly_seq, 0 };
+cheatseq_t  cheat_nofly = { cheat_nofly_seq, 0 };
+#endif
+#endif
 
 // 
 extern char*	mapnames[];
@@ -678,7 +693,8 @@ ST_Responder (event_t* ev)
       char		buf[3];
       int		epsd;
       int		map;
-      
+
+    plyr->message="clev";
       cht_GetParam(&cheat_clev, buf);
       
       if (gamemode == commercial)
@@ -719,12 +735,59 @@ ST_Responder (event_t* ev)
       // So be it.
       plyr->message = STSTR_CLEV;
       G_DeferedInitNew(gameskill, epsd, map);
-    }    
+    }
+
+#ifdef NEWCHEAT
+    if (cht_CheckCheat(&cheat_kill_all, ev->data1))
+    {
+        thinker_t   *th;
+        mobj_t      *mob;
+        int         killed; // no of monsters massacred
+        static char outbuff[80];
+
+        killed=0;           // zero kill count
+        for (th = thinkercap.next ; th != &thinkercap; th=th->next)
+        {
+            mob=(mobj_t *)th;
+            if ((th->function.acp1 == (actionf_p1)P_MobjThinker) && // if it is active
+                (mob->type != MT_PLAYER) &&                         // and is not a player
+                ((mob->flags & MF_COUNTKILL)==MF_COUNTKILL))        // and conts towards killcount
+            {
+                P_DamageMobj((mobj_t *)th,plyr->mo,plyr->mo,10000);         // damage it !
+                killed++;                                           // increment killcount
+            }
+        }
+        sprintf(outbuff,"%d Actors Massacred !",killed);
+        plyr->message = outbuff;
+        return false;
+    }
+#endif
+#ifdef QUAD
+    if (cht_CheckCheat(&cheat_quad, ev->data1))
+    {
+        P_GivePower(plyr,pw_quad);
+        plyr->message = "Ok, Quad dammage QuakeHead !";
+        return false;
+    }
+#endif
+#ifdef FLIGHT
+    if (cht_CheckCheat(&cheat_fly, ev->data1))
+    {
+        P_GivePower(plyr,pw_flight);
+        plyr->message = "Now we're floating !";
+        return false;
+    }
+    if (cht_CheckCheat(&cheat_nofly, ev->data1))
+    {
+        plyr->mo->flags &= ~(MF_NOGRAVITY | MF_FLOAT);
+        plyr->powers[pw_flight]=0;
+        plyr->message = "Falling from the sky !";
+        return false;
+    }
+#endif
   }
   return false;
 }
-
-
 
 int ST_calcPainOffset(void)
 {
@@ -983,6 +1046,13 @@ void ST_updateWidgets(void)
     if (!--st_msgcounter)
 	st_chat = st_oldchat;
 
+#ifdef FLIGHT
+    // if not in flight, turn on gravity, turn off float & flag not flying !
+    if (!plyr->powers[pw_flight])
+    {
+        plyr->mo->flags &= ~(MF_NOGRAVITY | MF_FLOAT);
+    }
+#endif
 }
 
 void ST_Ticker (void)
