@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c,v 1.59 1998/05/21 12:12:28 jim Exp $
+// $Id: m_misc.c,v 1.62 1998/09/07 20:19:07 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_misc.c,v 1.59 1998/05/21 12:12:28 jim Exp $";
+rcsid[] = "$Id: m_misc.c,v 1.62 1998/09/07 20:19:07 jim Exp $";
 
 #include "doomstat.h"
 #include "m_argv.h"
@@ -42,6 +42,7 @@ rcsid[] = "$Id: m_misc.c,v 1.59 1998/05/21 12:12:28 jim Exp $";
 #include "m_misc.h"
 #include "s_sound.h"
 #include "sounds.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -169,6 +170,8 @@ extern int tran_filter_pct;            // killough 2/21/98
 
 extern int screenblocks;
 extern int showMessages;
+
+extern boolean pause_init;             //jff 8/3/98 logical output controls
 
 #ifdef LINUX
 char*  mousetype;
@@ -404,7 +407,7 @@ default_t defaults[] =
      0,255,0,ss_keys,   "[0-255(48)] key to chat with player 2"},
     {"key_chatplayer3",  &destination_keys[2], 'i'            ,
      0,255,0,ss_keys,   "[0-255(23)] key to chat with player 3"},
-    {"key_ch atplayer4",  &destination_keys[3], 'r'            ,
+    {"key_chatplayer4",  &destination_keys[3], 'r'            ,
      0,255,0,ss_keys,   "[0-255(19)] key to chat with player 4"},
     {"key_weapontoggle", &key_weapontoggle,    '0'            ,
      0,255,0,ss_keys,   "[0-255(139)] key to toggle between two most preferred weapons with ammo"},
@@ -703,7 +706,8 @@ void M_LoadDefaults (void)
   if (i && i < myargc-1)
     {
     defaultfile = myargv[i+1];
-    printf (" default file: %s\n",defaultfile);
+    //jff 8/3/98 use logical output routine
+    lprintf (LO_CONFIRM," default file: %s\n",defaultfile);
     }
   else
     defaultfile = basedefault;
@@ -1035,6 +1039,12 @@ void M_ScreenShot (void)
 //----------------------------------------------------------------------------
 //
 // $Log: m_misc.c,v $
+// Revision 1.62  1998/09/07  20:19:07  jim
+// Added logical output routine
+//
+// Revision 1.60  1998/06/03  20:32:12  jim
+// Fixed mispelling of key_chat string
+//
 // Revision 1.59  1998/05/21  12:12:28  jim
 // Removed conditional from net code
 //

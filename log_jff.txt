@@ -1,3 +1,160 @@
+10/12/98
+
+Rand's seg adjust proved to be the better after measuring, so
+my experiment was removed in favor of his code. 
+
+Fixed a calculation in the blockmap that now allows zero guardband
+around level, hence slightly smaller blockmaps.
+
+10/8/98
+
+Replaced brute force internal blockmap calculation with one much
+faster. Difference on a 64K blockmap is 5 sec vs 32 sec.
+
+Wrote a slightly different implementation of the seg adjustment
+idea of Rand's that uses a bit more accurate arithmetic and
+provably flattens all vertices to the line they came from. Rand's
+code is more elegant, but I believe this is slightly better.
+
+9/23/98
+
+Fixed a bug that didn't allow trailing backslashes in parameters for
+the -save option.
+
+9/12/98
+
+DETH can now be put in the path and work anywhere. The DETH.INI in
+the local directory is still required - but can now load the pwads,
+so typing DETH in a directory can open the wad developed there
+automatically (along with any resource wads it requires). This makes
+creating shortcuts to wad sessions far simpler - just set the working
+directory on a shortcut to DETH.EXE, and set the mode to full screen.
+
+CMAPTOOL now generates a BMP consisting of an array of squares of
+color not a spectrum of vertical lines, making editing the palette by
+hand easier. It also supports +V and -V for only modifying the invuln
+colormap or not modifying the invuln colormap.
+
+9/11/98
+
+Thanks to Rand's analysis of the underwater fireball medusa problem
+-- tracking it down to there being far more sprites active than there
+should have been, was able to trace the problem to a mistaken
+parameter to R_AddSprites in R_Subsector in R_BSP. The temporary
+sector used to fake the heights underwater was being passed and
+validcount was not working to stop the sprites from being added
+once per subsector instead of once per sector.
+
+Fixed a bug in R_SEG's R_PointToDist that allowed division by zero if
+the player was exactly on a vertex, and the node builder worked a
+certain way, causing segviol on startup. Fixed the sole call to it to
+avoid doing so when division by zero would result.
+
+9/8/98
+
+Removed 1S wall escape. Was causing problems when the player was
+moved by monster attacks and was not sufficient to solve line-line
+teleporter problem.
+
+9/6/98
+
+Added a logical console output routine that all console output is directed
+thru. Each physical output is tagged with by a class identifer from:
+
+LO_INFO      informational header - no new information present
+LO_CONFIRM   informational - but outputs information that confirms a setting
+LO_WARN      an error, but not too serious - execution continues
+LO_ERROR     an error, may be serious enough to abort - execution continues
+LO_FATAL     an error, BOOM will exit
+LO_DEBUG     used for outputs that are for debugging
+LO_ALWAYS    used to tag outputs that should always be shown, like build date
+
+Which outputs are allowed to pass to standard output, and which are
+sent to the console when standard output is redirected is
+controllable by two masks. These masks can be set by command line
+switches -cout and -cerr, each followed by a string of letters from
+ICWEFDA to indicate which classes pass to output and error console
+resp.
+
+Added files LPRINTF.C and LPRINTF.H. Modified G_GAME.C, HU_STUFF.C,
+AM_MAP.C, D_DEH.C, D_NET.C, I_SOUND.C, I_SYSTEM.C, M_MENU.C,
+MMUS2MID.C, I_MAIN.C, S_SOUND.C, W_WAD.C, WI_STUFF.C, R_MAIN.C,
+R_DATA.C, M_MISC.C, D_MAIN.C, MAKEFILE.
+
+Modified BOOM.TXT to change "No Limits" to "No Static Limits".
+
+8/28/98
+
+Added right shift to "into/outof wall" calculation to avoid overflow
+in FixedMul. This was causing 1S walls to be walkable thru on
+occasion. Also added compatibility flag to change. All in P_MAP.C.
+
+8/14/98
+
+Restricted escape from 1S walls to players until I can figure out
+why it allows monsters to embed themselves in walls while walking around.
+
+Fixed IDCLEV to not accept 33 or 34 in DOOM2. Leads to crash if
+allowed. Affected M_CHEAT.C
+
+Fixed "Raise to shortest texture linedefs". Now the regular linedef
+triggers raise to actual texture height, not min(64,textureheight)
+unless compatibility mode is set. Generalized linedefs always raise
+to actual texture height now. Problem was caused by missing textures
+being represented by texture 0, AASHITTY, which had height 64.
+Affects P_SPEC.C and P_FLOOR.C.
+
+8/13/98
+
+Fixed tendency of monsters to get stuck in doorways, flagged by
+compatibility global. P_ENEMY.C affected.
+
+8/9/98
+
+Imported ZDoom's fix to the openings limit removal to R_SEGS.C
+
+8/8/98
+
+Changed behavior of being stuck in a 1S wall so that motion out of
+the wall is still allowed. This "fixes" the line-line teleport problem
+and the DM start embedding problem. P_MAP.C affected.
+
+Added the Flicker special to P_SAVEG, where it was left out when
+the special was added to DOOM II. P_SAVEG.C and P_SPEC.H affected.
+
+Added better initialization of scrolling message display to
+HU_STUFF.C
+
+8/7/98
+
+Fixed update of HUD so it occurs on every refresh to avoid problems
+caused by lag on slower systems. HU_STUFF.C affected
+
+7/14/98
+
+Corrected padding size in G_GAME.C to allow for 128 bytes in v200
+demos and 64 bytes in v201 and later demos.
+
+Fixed EV_BuildStairs routine in p_floor.c to use the buggy code order
+in compatibility mode, and the new order otherwise. This fixes some
+problems with existing wads that depended on the old buggy order.
+
+Fixed the comment for MIDItoMidi in MMUS2MID.C
+
+6/19/98
+
+Fixed rising stairs so that the step height does not increase twice
+as much when redirected by a moving step.
+
+6/3/98
+
+Fixed misspelling in chat string variable in M_MISC.C.
+
+6/1/98
+
+Fixed bug in switches caused by inadvertant deletion of sidedness
+check, in P_SWITCH.C
+
 5/24/98
 
 Added documentation on predefined lumps to BOOMREF.TXT

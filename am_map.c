@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c,v 1.24 1998/05/10 12:05:24 jim Exp $
+// $Id: am_map.c,v 1.25 1998/09/07 20:05:44 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char rcsid[] =
-  "$Id: am_map.c,v 1.24 1998/05/10 12:05:24 jim Exp $";
+  "$Id: am_map.c,v 1.25 1998/09/07 20:05:44 jim Exp $";
 
 #include "doomstat.h"
 #include "st_stuff.h"
@@ -33,6 +33,7 @@ static const char rcsid[] =
 #include "am_map.h"
 #include "dstrings.h"
 #include "d_deh.h"    // Ty 03/27/98 - externalizations
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 //jff 1/7/98 default automap colors added
 int mapcolor_back;    // map background
@@ -1043,7 +1044,8 @@ void AM_drawFline
     || fl->b.y < 0 || fl->b.y >= f_h
   )
   {
-    fprintf(stderr, "fuck %d \r", fuck++);
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_DEBUG, "fuck %d \r", fuck++);
     return;
   }
 #endif
@@ -1738,6 +1740,9 @@ void AM_Drawer (void)
 //----------------------------------------------------------------------------
 //
 // $Log: am_map.c,v $
+// Revision 1.25  1998/09/07  20:05:44  jim
+// Added logical output routine
+//
 // Revision 1.24  1998/05/10  12:05:24  jim
 // formatted/documented am_map
 //

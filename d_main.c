@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c,v 1.47 1998/05/16 09:16:51 killough Exp $
+// $Id: d_main.c,v 1.54 1998/10/04 13:20:32 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,7 +23,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char rcsid[] = "$Id: d_main.c,v 1.47 1998/05/16 09:16:51 killough Exp $";
+static const char rcsid[] = "$Id: d_main.c,v 1.54 1998/10/04 13:20:32 thldrmn Exp $";
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -56,11 +56,15 @@ static const char rcsid[] = "$Id: d_main.c,v 1.47 1998/05/16 09:16:51 killough E
 #include "r_main.h"
 #include "d_main.h"
 #include "d_deh.h"  // Ty 04/08/98 - Externalizations
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // DEHacked support - Ty 03/09/97
 void ProcessDehFile(char *filename, char *outfilename);
 
+void GetFirstMap(int *ep, int *map); // Ty 08/29/98 - add "-warp x" functionality
+
 char *wadfiles[MAXWADFILES];
+int wadfilesource[MAXWADFILES];  // Ty 08/29/98 - add source of lumps/files
 
 boolean devparm;        // started game with -devparm
 
@@ -319,7 +323,8 @@ static void D_DoomLoop(void)
     {
       char    filename[20];
       sprintf(filename,"debug%i.txt",consoleplayer);
-      printf("debug output to: %s\n",filename);
+      //jff 9/3/98 use logical output routine
+      lprintf(LO_DEBUG,"debug output to: %s\n",filename);
       debugfile = fopen(filename,"w");
     }
 
@@ -486,8 +491,9 @@ static char title[128];
 //
 // Rewritten by Lee Killough
 //
+// Ty 08/29/98 - add source parm to indicate where this came from
 
-void D_AddFile (char *file)
+void D_AddFile (char *file, int source)
 {
   static int numwadfiles;
 
@@ -496,6 +502,8 @@ void D_AddFile (char *file)
 
   wadfiles[numwadfiles++] =
     AddDefaultExtension(strcpy(malloc(strlen(file)+5), file), ".wad");
+  wadfilesource[numwadfiles-1] = source; // Ty 08/29/98
+
 }
 
 // Return the path where the executable lies -- Lee Killough
@@ -763,7 +771,8 @@ char *FindIWADFile()
   }
 
   strcpy(iwad,".");
-  fprintf(stderr,"Looking in %s\n",iwad);
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"Looking in %s\n",iwad);
   if (*customiwad)
   {
     strcat(iwad,customiwad);
@@ -784,7 +793,8 @@ char *FindIWADFile()
 
   strcpy(iwad,D_DoomExeDir());
   NormalizeSlashes(iwad);
-  fprintf(stderr,"Looking in %s\n",iwad);
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"Looking in %s\n",iwad);
   if (*customiwad)
   {
     strcat(iwad,customiwad);
@@ -814,7 +824,8 @@ char *FindIWADFile()
       {
         if (!*customiwad)
         {
-          fprintf(stderr,"Looking for %s\n",iwad);
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_INFO,"Looking for %s\n",iwad);
           return iwad;
         }
         else
@@ -824,7 +835,8 @@ char *FindIWADFile()
           {
             *p=0;
             strcat(iwad,customiwad);
-            fprintf(stderr,"Looking for %s\n",iwad);
+            //jff 9/3/98 use logical output routine
+            lprintf(LO_INFO,"Looking for %s\n",iwad);
             if (WadFileStatus(iwad,&isdir) && !isdir)
               return iwad;
           }
@@ -832,7 +844,8 @@ char *FindIWADFile()
       }
       else
       {
-        fprintf(stderr,"Looking in %s\n",iwad);
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_INFO,"Looking in %s\n",iwad);
         if (*customiwad)
         {
           strcat(iwad,customiwad);
@@ -859,14 +872,16 @@ char *FindIWADFile()
   {
     strcpy(iwad,p);
     NormalizeSlashes(iwad);
-    fprintf(stderr,"Looking in %s\n",iwad);
+    //jff 9/3/98 use logical output routine
+    lprintf(LO_INFO,"Looking in %s\n",iwad);
     if (WadFileStatus(iwad,&isdir))
     {
       if (!isdir)
       {
         if (!*customiwad)
         {
-          fprintf(stderr,"Looking for %s\n",iwad);
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_INFO,"Looking for %s\n",iwad);
           return iwad;
         }
         else
@@ -876,7 +891,8 @@ char *FindIWADFile()
           {
             *p=0;
             strcat(iwad,customiwad);
-            fprintf(stderr,"Looking for %s\n",iwad);
+            //jff 9/3/98 use logical output routine
+            lprintf(LO_INFO,"Looking for %s\n",iwad);
             if (WadFileStatus(iwad,&isdir) && !isdir)
               return iwad;
           }
@@ -884,7 +900,8 @@ char *FindIWADFile()
       }
       else
       {
-        fprintf(stderr,"Looking in %s\n",iwad);
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_INFO,"Looking in %s\n",iwad);
         if (*customiwad)
         {
           strcat(iwad,customiwad);
@@ -947,8 +964,12 @@ void IdentifyVersion (void)
   if ((i=M_CheckParm("-save")) && i<myargc-1) //jff 3/24/98 if -save present
   {
     if (!stat(myargv[i+1],&sbuf) && S_ISDIR(sbuf.st_mode)) // and is a dir
+    {
       strcpy(basesavegame,myargv[i+1]);  //jff 3/24/98 use that for savegame
-    else fprintf(stderr,"Error: -save path does not exist, using current dir\n");
+      NormalizeSlashes(basesavegame);    //jff 9/22/98 fix c:\ not working
+    }
+    //jff 9/3/98 use logical output routine
+    else lprintf(LO_ERROR,"Error: -save path does not exist, using current dir\n");
   }
 
   // locate the IWAD and determine game mode from it
@@ -957,36 +978,61 @@ void IdentifyVersion (void)
 
   if (iwad && *iwad)
   {
-    printf("IWAD found: %s\n",iwad); //jff 4/20/98 print only if found
+    //jff 9/3/98 use logical output routine
+    lprintf(LO_CONFIRM,"IWAD found: %s\n",iwad); //jff 4/20/98 print only if found
     CheckIWAD(iwad,&gamemode,&haswolflevels);
 
+    //jff 8/23/98 set gamemission global appropriately in all cases
     switch(gamemode)
     {
       case retail:
-        fprintf(stderr,"Ultimate DOOM version\n");
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_CONFIRM,"Ultimate DOOM version\n");
+        gamemission = doom;
         break;
       case registered:
-        fprintf(stderr,"DOOM Registered version\n");
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_CONFIRM,"DOOM Registered version\n");
+        gamemission = doom;
         break;
       case shareware:
-        fprintf(stderr,"DOOM Shareware version\n");
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_CONFIRM,"DOOM Shareware version\n");
+        gamemission = doom;
         break;
       case commercial:
         i = strlen(iwad);
+        gamemission = doom2;
         if (i>=10 && !strnicmp(iwad+i-10,"doom2f.wad",10))
         {
           language=french;
-          fprintf(stderr,"DOOM II version, french language\n");
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_CONFIRM,"DOOM II version, french language\n");
+        } 
+        else if (i>=7 && !strnicmp(iwad+i-7,"tnt.wad",7))
+        {
+          gamemission = pack_tnt;
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_CONFIRM,"TNT version\n");
+        }
+        else if (i>=12 && !strnicmp(iwad+i-12,"plutonia.wad",12))
+        {
+          gamemission = pack_plut;
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_CONFIRM,"PLUTONIA version\n");
         }
         else
-          fprintf(stderr,"DOOM II version%s\n",haswolflevels? "" : ", german edition, no wolf levels");
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_CONFIRM,"DOOM II version%s\n",haswolflevels? "" : ", german edition, no wolf levels");
         break;
       default:
+        gamemission = none;
         break;
     }
     if (gamemode == indetermined)
-      fprintf(stderr,"Unknown Game Version, may not work\n");
-    D_AddFile(iwad);
+      //jff 9/3/98 use logical output routine
+      lprintf(LO_WARN,"Unknown Game Version, may not work\n");
+    D_AddFile(iwad,source_iwad);
   }
   else
     I_Error("IWAD not found\n");
@@ -1021,10 +1067,12 @@ void FindResponseFile (void)
         handle = fopen (&myargv[i][1],"rb");
         if (!handle)
           {
-            printf("\nNo such response file!");
+            //jff 9/3/98 use logical output routine
+            lprintf(LO_FATAL,"\nNo such response file!\n");
             exit(1);
           }
-        printf("Found response file %s!\n",&myargv[i][1]);
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_CONFIRM,"Found response file %s!\n",&myargv[i][1]);
         fseek(handle,0,SEEK_END);
         size = ftell(handle);
         fseek(handle,0,SEEK_SET);
@@ -1061,11 +1109,137 @@ void FindResponseFile (void)
         myargc = indexinfile;
 
         // DISPLAY ARGS
-        printf("%d command-line args:\n",myargc);
+        //jff 9/3/98 use logical output routine
+        lprintf(LO_CONFIRM,"%d command-line args:\n",myargc);
         for (k=1;k<myargc;k++)
-          printf("%s\n",myargv[k]);
+          //jff 9/3/98 use logical output routine
+          lprintf(LO_CONFIRM,"%s\n",myargv[k]);
         break;
       }
+}
+
+//
+// DoLooseFiles
+//
+// Take any file names on the command line before the first switch parm
+// and insert the appropriate -file, -deh or -playdemo switch in front
+// of them.
+//
+// Note that more than one -file, etc. entry on the command line won't
+// work, so we have to go get all the valid ones if any that show up
+// after the loose ones.  This means that boom fred.wad -file wilma
+// will still load fred.wad and wilma.wad, in that order.
+// The response file code kludges up its own version of myargv[] and 
+// unfortunately we have to do the same here because that kludge only
+// happens if there _is_ a response file.  Truth is, it's more likely
+// that there will be a need to do one or the other so it probably 
+// isn't important.  We'll point off to the original argv[], or the 
+// area allocated in FindResponseFile, or our own areas from strdups.
+//
+
+void DoLooseFiles(void)
+{
+  char *wads[MAXARGVS];  // store the respective loose filenames
+  char *lmps[MAXARGVS];
+  char *dehs[MAXARGVS];
+  int wadcount = 0;      // count the loose filenames
+  int lmpcount = 0;
+  int dehcount = 0;
+  int i,j,p;
+  char **tmyargv;  // use these to recreate the argv array
+  int tmyargc;
+
+  for (i=1;i<myargc;i++)
+  {
+    if (*myargv[i] == '-') break;  // quit at first switch 
+
+    // so now we must have a loose file.  Find out what kind and store it.
+    j = strlen(myargv[i]);
+    if (!stricmp(&myargv[i][j-4],".wad")) 
+      wads[wadcount++] = strdup(myargv[i]);
+    if (!stricmp(&myargv[i][j-4],".lmp")) 
+      lmps[lmpcount++] = strdup(myargv[i]);
+    if (!stricmp(&myargv[i][j-4],".deh")) 
+      dehs[dehcount++] = strdup(myargv[i]);
+    if (!stricmp(&myargv[i][j-4],".bex")) 
+      dehs[dehcount++] = strdup(myargv[i]);
+    if (myargv[i][j-4] != '.')  // assume wad if no extension
+      wads[wadcount++] = strdup(myargv[i]);
+    *myargv[i] = '\0'; // nuke that entry so it won't repeat later
+  }
+
+  // Now, if we didn't find any loose files, we can just leave.
+  if (wadcount+lmpcount+dehcount == 0) return;  // ******* early return ****
+
+  if ((p = M_CheckParm ("-file")))
+  {
+    *myargv[p] = '\0';    // nuke the entry
+    while (++p != myargc && *myargv[p] != '-')
+    {
+      wads[wadcount++] = strdup(myargv[p]);
+      *myargv[p] = '\0';  // null any we find and save
+    }
+  }
+
+  if ((p = M_CheckParm ("-deh")))
+  {
+    *myargv[p] = '\0';    // nuke the entry
+    while (++p != myargc && *myargv[p] != '-')
+    {
+      dehs[dehcount++] = strdup(myargv[p]);
+      *myargv[p] = '\0';  // null any we find and save
+    }
+  }
+
+  if ((p = M_CheckParm ("-playdemo")))
+  {
+    *myargv[p] = '\0';    // nuke the entry
+    while (++p != myargc && *myargv[p] != '-')
+    {
+      lmps[lmpcount++] = strdup(myargv[p]);
+      *myargv[p] = '\0';  // null any we find and save
+    }
+  }
+
+  // Now go back and redo the whole myargv array with our stuff in it.
+  // First, create a new myargv array to copy into
+  tmyargv = calloc(sizeof(char *),MAXARGVS);
+  tmyargv[0] = myargv[0]; // invocation 
+  tmyargc = 1;
+
+  // put our stuff into it
+  if (wadcount > 0)
+  {
+    tmyargv[tmyargc++] = strdup("-file"); // put the switch in
+    for (i=0;i<wadcount;)
+      tmyargv[tmyargc++] = wads[i++]; // allocated by strdup above
+  }
+
+  // for -deh
+  if (dehcount > 0)
+  {
+    tmyargv[tmyargc++] = strdup("-deh"); 
+    for (i=0;i<dehcount;)
+      tmyargv[tmyargc++] = dehs[i++]; 
+  }
+
+  // for -playdemo
+  if (lmpcount > 0)
+  {
+    tmyargv[tmyargc++] = strdup("-playdemo"); 
+    for (i=0;i<lmpcount;)
+      tmyargv[tmyargc++] = lmps[i++]; 
+  }
+
+  // then copy everything that's there now
+  for (i=1;i<myargc;i++)
+  {
+    if (*myargv[i])  // skip any null entries
+      tmyargv[tmyargc++] = myargv[i];  // pointers are still valid
+  }
+  // now make the global variables point to our array
+  myargv = tmyargv;
+  myargc = tmyargc;
 }
 
 //
@@ -1074,12 +1248,28 @@ void FindResponseFile (void)
 
 void D_DoomMain(void)
 {
-  int p;
+  int p,i;
   char file[PATH_MAX+1];      // killough 3/22/98
+  char *cena="ICWEFDA",*pos;  //jff 9/3/98 use this for parsing console masks
+
+  //jff 9/3/98 get mask for console output filter
+  if ((p = M_CheckParm ("-cout")))
+    if (++p != myargc && *myargv[p] != '-')
+      for (i=0,cons_output_mask=0;i<strlen(myargv[p]);i++)
+        if ((pos = strchr(cena,toupper(myargv[p][i]))))
+          cons_output_mask |= (1<<(pos-cena));
+
+  //jff 9/3/98 get mask for redirected console error filter
+  if ((p = M_CheckParm ("-cerr")))
+    if (++p != myargc && *myargv[p] != '-')
+      for (i=0,cons_error_mask=0;i<strlen(myargv[p]);i++)
+        if ((pos = strchr(cena,toupper(myargv[p][i]))))
+          cons_error_mask |= (1<<(pos-cena));
 
   setbuf(stdout,NULL);
 
   FindResponseFile();
+  DoLooseFiles();  // Ty 08/29/98 - handle "loose" files on command line
   IdentifyVersion();
 
   modifiedgame = false;
@@ -1149,29 +1339,32 @@ void D_DoomMain(void)
                "                           ",
                VERSION/100,VERSION%100);
       break;
-    case commercial:
-      sprintf (title,
+    case commercial:  // Ty 08/27/98 - fixed gamemode vs gamemission
+      switch (gamemission)
+      {
+        case pack_plut:
+          sprintf (title,
+              "                   "
+              "DOOM 2: Plutonia Experiment v%i.%02i"
+              "                           ",
+              VERSION/100,VERSION%100);
+          break;
+        case pack_tnt:
+          sprintf (title,
+              "                     "
+              "DOOM 2: TNT - Evilution v%i.%02i"
+              "                           ",
+              VERSION/100,VERSION%100);
+          break;
+        default:
+          sprintf (title,
                "                         "
                "DOOM 2: Hell on Earth v%i.%02i"
                "                           ",
                VERSION/100,VERSION%100);
+          break;
+      }
       break;
-      /*FIXME
-        case pack_plut:
-        sprintf (title,
-        "                   "
-        "DOOM 2: Plutonia Experiment v%i.%02i"
-        "                           ",
-        VERSION/100,VERSION%100);
-        break;
-        case pack_tnt:
-        sprintf (title,
-        "                     "
-        "DOOM 2: TNT - Evilution v%i.%02i"
-        "                           ",
-        VERSION/100,VERSION%100);
-        break;
-        */
     default:
       sprintf (title,
                "                     "
@@ -1181,14 +1374,17 @@ void D_DoomMain(void)
       break;
     }
 
-  printf ("%s\nBuilt on %s\n", title, version_date);    // killough 2/1/98
+  //jff 9/3/98 use logical output routine
+  lprintf (LO_ALWAYS,"%s\nBuilt on %s\n", title, version_date);    // killough 2/1/98
 
   if (devparm)
-    printf(D_DEVSTR);
+    //jff 9/3/98 use logical output routine
+    lprintf(LO_CONFIRM,D_DEVSTR);
 
   if (M_CheckParm("-cdrom"))
     {
-      printf(D_CDROM);
+      //jff 9/3/98 use logical output routine
+      lprintf(LO_CONFIRM,D_CDROM);
       mkdir("c:\\doomdata",0);
       strcpy(basedefault, "c:/doomdata/boom.cfg");       // killough 3/22/98
     }
@@ -1206,7 +1402,8 @@ void D_DoomMain(void)
         scale = 10;
       if (scale > 400)
         scale = 400;
-      printf ("turbo scale: %i%%\n",scale);
+      //jff 9/3/98 use logical output routine
+      lprintf (LO_CONFIRM,"turbo scale: %i%%\n",scale);
       forwardmove[0] = forwardmove[0]*scale/100;
       forwardmove[1] = forwardmove[1]*scale/100;
       sidemove[0] = sidemove[0]*scale/100;
@@ -1224,7 +1421,7 @@ void D_DoomMain(void)
       // until end of parms or another - preceded parm
       modifiedgame = true;            // homebrew levels
       while (++p != myargc && *myargv[p] != '-')
-        D_AddFile(myargv[p]);
+        D_AddFile(myargv[p],source_pwad);
     }
 
   if (!(p = M_CheckParm("-playdemo")) || p >= myargc-1)    // killough
@@ -1237,8 +1434,9 @@ void D_DoomMain(void)
     {
       strcpy(file,myargv[p+1]);
       AddDefaultExtension(file,".lmp");     // killough
-      D_AddFile (file);
-      printf("Playing demo %s\n",file);
+      D_AddFile (file,source_lmp);
+      //jff 9/3/98 use logical output routine
+      lprintf(LO_CONFIRM,"Playing demo %s\n",file);
     }
 
   // get skill / episode / map from parms
@@ -1264,26 +1462,37 @@ void D_DoomMain(void)
   if ((p = M_CheckParm ("-timer")) && p < myargc-1 && deathmatch)
     {
       int time = atoi(myargv[p+1]);
-      printf("Levels will end after %d minute%s.\n", time, time>1 ? "s" : "");
+      //jff 9/3/98 use logical output routine
+      lprintf(LO_CONFIRM,"Levels will end after %d minute%s.\n", time, time>1 ? "s" : "");
     }
 
   if ((p = M_CheckParm ("-avg")) && p < myargc-1 && deathmatch)
-    puts("Austin Virtual Gaming: Levels will end after 20 minutes");
+    //jff 9/3/98 use logical output routine
+    lprintf(LO_CONFIRM,"Austin Virtual Gaming: Levels will end after 20 minutes\n");
 
-  if (((p = M_CheckParm ("-warp")) ||      // killough 5/2/98
-       (p = M_CheckParm ("-wart"))) && p < myargc-1)
+  if ((p = M_CheckParm ("-warp")) ||      // killough 5/2/98
+       (p = M_CheckParm ("-wart"))) 
+       // Ty 08/29/98 - moved this check later so we can have -warp alone: && p < myargc-1)
+  {
+    startmap = 0; // Ty 08/29/98 - allow "-warp x" to go to first map in wad(s)
+    autostart = true; // Ty 08/29/98 - move outside the decision tree
     if (gamemode == commercial)
-      {
-        startmap = atoi(myargv[p+1]);
-        autostart = true;
-      }
+    {
+      if (p < myargc-1) 
+        startmap = atoi(myargv[p+1]);   // Ty 08/29/98 - add test if last parm
+    }
     else    // 1/25/98 killough: fix -warp xxx from crashing Doom 1 / UD
+    {
       if (p < myargc-2)
-        {
-          startepisode = atoi(myargv[++p]);
-          startmap = atoi(myargv[p+1]);
-          autostart = true;
-        }
+      {
+        startepisode = atoi(myargv[++p]);
+        startmap = atoi(myargv[p+1]);
+      }
+    }
+  }
+  // Ty 08/29/98 - later we'll check for startmap=0 and autostart=true
+  // as a special case that -warp * was used.  Actually -warp with any
+  // non-numeric will do that but we'll only document "*"
 
   //jff 1/22/98 add command line parms to disable sound and music
   {
@@ -1301,11 +1510,13 @@ void D_DoomMain(void)
   if ((p = M_CheckParm("-dumplumps")) && p < myargc-1)
     WritePredefinedLumpWad(myargv[p+1]);
 
-    // init subsystems
-  puts("V_Init: allocate screens.");
+  // init subsystems
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"V_Init: allocate screens.\n");
   V_Init();
 
-  puts("M_LoadDefaults: Load system defaults.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"M_LoadDefaults: Load system defaults.\n");
   M_LoadDefaults();              // load before initing other systems
 
   G_ReloadDefaults();    // killough 3/4/98: set defaults just loaded.
@@ -1318,10 +1529,11 @@ void D_DoomMain(void)
 
   // 1/18/98 killough: Z_Init() call moved to i_main.c
 
-  puts("W_Init: Init WADfiles.");
-  W_InitMultipleFiles(wadfiles);
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"W_Init: Init WADfiles.\n");
+  W_InitMultipleFiles(wadfiles,wadfilesource);
 
-  putchar('\n');     // killough 3/6/98: add a newline, by popular demand :)
+  lprintf(LO_INFO,"\n");     // killough 3/6/98: add a newline, by popular demand :)
 
   // Check for -file in shareware
   if (modifiedgame)
@@ -1352,35 +1564,44 @@ void D_DoomMain(void)
 
   // Ty 04/08/98 - Add 5 lines of misc. data, only if nonblank
   // The expectation is that these will be set in a .bex file
-  if (*startup1) puts(startup1);
-  if (*startup2) puts(startup2);
-  if (*startup3) puts(startup3);
-  if (*startup4) puts(startup4);
-  if (*startup5) puts(startup5);
+  //jff 9/3/98 use logical output routine
+  if (*startup1) lprintf(LO_INFO,startup1);
+  if (*startup2) lprintf(LO_INFO,startup2);
+  if (*startup3) lprintf(LO_INFO,startup3);
+  if (*startup4) lprintf(LO_INFO,startup4);
+  if (*startup5) lprintf(LO_INFO,startup5);
   // End new startup strings
 
-  puts("M_Init: Init miscellaneous info.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"M_Init: Init miscellaneous info.\n");
   M_Init();
 
-  printf("R_Init: Init DOOM refresh daemon - ");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"R_Init: Init DOOM refresh daemon - ");
   R_Init();
 
-  puts("\nP_Init: Init Playloop state.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"\nP_Init: Init Playloop state.\n");
   P_Init();
 
-  puts("I_Init: Setting up machine state.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"I_Init: Setting up machine state.\n");
   I_Init();
 
-  puts("D_CheckNetGame: Checking network game status.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"D_CheckNetGame: Checking network game status.\n");
   D_CheckNetGame();
 
-  puts("S_Init: Setting up sound.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"S_Init: Setting up sound.\n");
   S_Init(snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
 
-  puts("HU_Init: Setting up heads up display.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"HU_Init: Setting up heads up display.\n");
   HU_Init();
 
-  puts("ST_Init: Init status bar.");
+  //jff 9/3/98 use logical output routine
+  lprintf(LO_INFO,"ST_Init: Init status bar.\n");
   ST_Init();
 
   idmusnum = -1; //jff 3/17/98 insure idmus number is blank
@@ -1395,7 +1616,8 @@ void D_DoomMain(void)
       // address as an integer on the command line!
 
       statcopy = (void*) atoi(myargv[p+1]);
-      printf ("External statistics registered.\n");
+      //jff 9/3/98 use logical output routine
+      lprintf (LO_CONFIRM,"External statistics registered.\n");
     }
 
   // start the apropriate game based on parms
@@ -1435,17 +1657,115 @@ void D_DoomMain(void)
     }
 
   if (gameaction != ga_loadgame)
-    if (autostart || netgame)
+    if (autostart || netgame)  // Ty 08/29/98 get first map if startmap==0
+    {
+      GetFirstMap(&startepisode, &startmap);  // sets first map and first episode if unknown
       G_InitNew (startskill, startepisode, startmap);
+    }
     else
       D_StartTitle();                // start up intro loop
 
   D_DoomLoop ();  // never returns
 }
 
+//
+// GetFirstMap
+//
+// Ty 08/29/98 - determine first available map from the loaded wads and run it
+// 
+
+void GetFirstMap(int *ep, int *map)
+{
+  int i,j; // used to generate map name
+  boolean done = FALSE;  // Ty 09/13/98 - to exit inner loops
+  char test[6];  // MAPxx or ExMx plus terminator for testing
+  char name[6];  // MAPxx or ExMx plus terminator for display
+  boolean newlevel = FALSE;  // Ty 10/04/98 - to test for new level
+  int ix;  // index for lookup
+
+  strcpy(name,""); // initialize
+  if (*map == 0) // unknown so go search for first changed one
+  {
+    *ep = 1;
+    *map = 1; // default E1M1 or MAP01
+    if (gamemode == commercial)
+    {
+      for (i=1;!done && i<33;i++)  // Ty 09/13/98 - add use of !done
+      {
+        sprintf(test,"MAP%02d",i);
+        ix = W_CheckNumForName(test);
+        if (ix != -1)  // Ty 10/04/98 avoid -1 subscript
+        {
+          if (lumpinfo[ix].source == source_pwad)
+          {
+            *map = i;
+            strcpy(name,test);  // Ty 10/04/98
+            done = TRUE;  // Ty 09/13/98
+            newlevel = TRUE; // Ty 10/04/98
+          }
+          else
+          {
+            if (!*name)  // found one, not pwad.  First default.
+               strcpy(name,test);
+          }
+        }
+      }
+    }
+    else // one of the others
+    {
+      strcpy(name,"E1M1");  // Ty 10/04/98 - default for display
+      for (i=1;!done && i<5;i++)  // Ty 09/13/98 - add use of !done
+      {
+        for (j=1;!done && j<10;j++)  // Ty 09/13/98 - add use of !done
+        {
+          sprintf(test,"E%dM%d",i,j);
+          ix = W_CheckNumForName(test);
+          if (ix != -1)  // Ty 10/04/98 avoid -1 subscript
+          {
+            if (lumpinfo[ix].source == source_pwad)
+            {
+              *ep = i;
+              *map = j;
+              strcpy(name,test); // Ty 10/04/98
+              done = TRUE;  // Ty 09/13/98
+              newlevel = TRUE; // Ty 10/04/98
+            }
+            else
+            {
+              if (!*name)  // found one, not pwad.  First default.
+                 strcpy(name,test);
+            }
+          }
+        }
+      }
+    }   
+    //jff 9/3/98 use logical output routine
+    lprintf(LO_CONFIRM,"Auto-warping to first %slevel: %s\n",
+      newlevel ? "new " : "", name);  // Ty 10/04/98 - new level test
+  }
+}
+
 //----------------------------------------------------------------------------
 //
 // $Log: d_main.c,v $
+// Revision 1.54  1998/10/04  13:20:32  thldrmn
+// Fix autowarp message and subscript bug
+//
+// Revision 1.53  1998/09/24  19:02:41  jim
+// Fixed -save parm for x:/
+//
+// Revision 1.52  1998/09/14  01:27:38  thldrmn
+// Fixed autowarp message for DOOM1/UDOOM
+//
+// Revision 1.51  1998/09/07  20:18:09  jim
+// Added logical output routine
+//
+// Revision 1.49  1998/08/29  22:57:45  thldrmn
+// Updates to -warp and switchless filename handling
+//
+// Revision 1.48  1998/08/24  20:28:26  jim
+// gamemission support in IdentifyVersion
+//
 // Revision 1.47  1998/05/16  09:16:51  killough
 // Make loadgame checksum friendlier
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c,v 1.14 1998/05/12 12:47:25 phares Exp $
+// $Id: p_user.c,v 1.15 1998/09/10 20:13:01 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_user.c,v 1.14 1998/05/12 12:47:25 phares Exp $";
+rcsid[] = "$Id: p_user.c,v 1.15 1998/09/10 20:13:01 phares Exp $";
 
 #include "doomstat.h"
 #include "d_event.h"
@@ -82,9 +82,18 @@ void P_CalcHeight (player_t* player)
     {
     player->bob = FixedMul(player->mo->momx,player->mo->momx)
                 + FixedMul(player->mo->momy,player->mo->momy);
-    player->bob >>= 2;                                      //   ^
-    if (player->bob > MAXBOB)                               //   |
-      player->bob = MAXBOB;                                 // phares 2/26/98
+    player->bob >>= 2;
+
+    // phares 9/9/98: If player is standing on ice, reduce his bobbing.
+
+    if (player->mo->friction > ORIG_FRICTION) // ice?
+      {
+      if (player->bob > (MAXBOB>>2))
+        player->bob = MAXBOB>>2;
+      }
+    else                                                    //   ^
+      if (player->bob > MAXBOB)                             //   |
+        player->bob = MAXBOB;                               // phares 2/26/98
     }
 
   if ((player->cheats & CF_NOMOMENTUM) || !onground)
@@ -149,8 +158,6 @@ void P_MovePlayer (player_t* player)
   ticcmd_t* cmd;
   int       movefactor;       // movement factor                    // phares
   mobj_t*   thismo;           // local object                       // phares
-  sector_t* sec;              // sector player is in                // phares
-  int       special;          // special sector value               // phares
   boolean   onobject = false; // on top of an object?               // phares
 
   cmd = &player->cmd;
@@ -161,10 +168,6 @@ void P_MovePlayer (player_t* player)
 // Do not let the player control movement if not on ground.
 
   onground = (thismo->z <= thismo->floorz);
-
-  sec = thismo->subsector->sector;
-  special = sec->special;
-
   if (onground || onobject)
     {
     movefactor = P_GetMoveFactor(thismo);
@@ -173,7 +176,6 @@ void P_MovePlayer (player_t* player)
     if (cmd->sidemove)
       P_Thrust(player,thismo->angle-ANG90,cmd->sidemove*movefactor);
     }
-
   if ((cmd->forwardmove || cmd->sidemove) &&
     (thismo->state == &states[S_PLAY]))                             //   ^
     P_SetMobjState(thismo,S_PLAY_RUN1);                             //   |
@@ -287,20 +289,6 @@ void P_PlayerThink (player_t* player)
   if (player->mo->subsector->sector->special)
     P_PlayerInSpecialSector (player);
 
-// Sprite Height problem...                                         // phares
-// Future code:                                                     //  |
-// It's possible that at this point the player is standing on top   //  V
-// of a Thing that could cause him some damage, like a torch or
-// burning barrel. We need a way to generalize Thing damage by
-// grabbing a bit in the Thing's options to indicate damage. Since
-// this is competing with other attributes we may want to add,
-// we'll put this off for future consideration when more is
-// known.
-
-// Future Code:                                                     //  ^
-// Check to see if the object you've been standing on has moved     //  |
-// out from underneath you.                                         // phares
-
   // Check for weapon change.
 
   // A special event has no other buttons.
@@ -401,6 +389,9 @@ void P_PlayerThink (player_t* player)
 //----------------------------------------------------------------------------
 //
 // $Log: p_user.c,v $
+// Revision 1.15  1998/09/10  20:13:01  phares
+// Fix DM Stuck bug and refix ice-bobbing/momentum
+//
 // Revision 1.14  1998/05/12  12:47:25  phares
 // Removed OVER_UNDER code
 //

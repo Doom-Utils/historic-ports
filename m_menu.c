@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c,v 1.53 1998/05/16 09:17:09 killough Exp $
+// $Id: m_menu.c,v 1.55 1998/09/07 20:06:56 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -25,7 +25,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_menu.c,v 1.53 1998/05/16 09:17:09 killough Exp $";
+rcsid[] = "$Id: m_menu.c,v 1.55 1998/09/07 20:06:56 jim Exp $";
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -46,6 +46,7 @@ rcsid[] = "$Id: m_menu.c,v 1.53 1998/05/16 09:17:09 killough Exp $";
 #include "m_menu.h"
 #include "d_deh.h"
 #include "m_misc.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 extern patch_t* hu_font[HU_FONTSIZE];
 extern boolean  message_dontfuckwithme;
@@ -652,7 +653,8 @@ void M_Episode(int choice)
   // Yet another hack...
   if ( (gamemode == registered) && (choice > 2))
     {
-    fprintf( stderr,
+    //jff 8/3/98 use logical output routine
+    lprintf( LO_WARN,
      "M_Episode: 4th episode requires UltimateDOOM\n");
     choice = 0;
     }
@@ -714,6 +716,14 @@ void M_NewGame(int choice)
   if (netgame && !demoplayback)
     {
     M_StartMessage(s_NEWGAME,NULL,false); // Ty 03/27/98 - externalized
+    return;
+    }
+  
+  if (demorecording)   // killough 5/26/98: exclude during demo recordings
+    {
+    M_StartMessage("you can't start a new game\n"
+                   "while recording a demo!\n\n"PRESSKEY,
+                   NULL, false); // killough 5/26/98: not externalized
     return;
     }
   
@@ -864,9 +874,17 @@ void M_ForcedLoadGame(const char *msg)
 
 void M_LoadGame (int choice)
   {
-  if (netgame)
+    if (netgame && !demoplayback)     // killough 5/26/98: add !demoplayback
     {
     M_StartMessage(s_LOADNET,NULL,false); // Ty 03/27/98 - externalized
+    return;
+    }
+
+    if (demorecording)   // killough 5/26/98: exclude during demo recordings
+    {
+    M_StartMessage("you can't load a game\n"
+                   "while recording a demo!\n\n"PRESSKEY,
+                   NULL, false); // killough 5/26/98: not externalized
     return;
     }
   
@@ -1380,9 +1398,17 @@ void M_QuickLoadResponse(int ch)
 
 void M_QuickLoad(void)
   {
-  if (netgame)
+  if (netgame && !demoplayback)    // killough 5/26/98: add !demoplayback
     {
     M_StartMessage(s_QLOADNET,NULL,false); // Ty 03/27/98 - externalized
+    return;
+    }
+  
+  if (demorecording)   // killough 5/26/98: exclude during demo recordings
+    {
+    M_StartMessage("you can't quickload\n"
+                   "while recording a demo!\n\n"PRESSKEY,
+                   NULL, false); // killough 5/26/98: not externalized
     return;
     }
   
@@ -1404,7 +1430,10 @@ void M_EndGameResponse(int ch)
   {
   if (ch != 'y')
     return;
-  
+
+  if (demorecording) // killough 5/26/98: make endgame quit if recording demo
+    exit(0);
+
   currentMenu->lastOn = itemOn;
   M_ClearMenus ();
   D_StartTitle ();
@@ -1424,7 +1453,7 @@ void M_EndGame(int choice)
     M_StartMessage(s_NETEND,NULL,false); // Ty 03/27/98 - externalized
     return;
     }
-  
+
   M_StartMessage(s_ENDGAME,M_EndGameResponse,true); // Ty 03/27/98 - externalized
   }
 
@@ -1446,34 +1475,6 @@ void M_ChangeMessages(int choice)
 
   message_dontfuckwithme = true;
   }
-
-/////////////////////////////
-//
-// CHANGE DETAIL (OBSOLETE)
-//
-
-#if 0   // obsolete -- killough
-// Ty 03/27/98 - externalized even though unused and obsolete,
-// for completeness
-void M_ChangeDetail(int choice)
-{
-  choice = 0;
-  detailLevel = 1 - detailLevel;
-
-  // FIXME - does not work. Remove anyway?
-  fprintf( stderr, "M_ChangeDetail: low detail mode n.a.\n");
-
-  return;
-  
-  /*R_SetViewSize (screenblocks, detailLevel);
-
-  if (!detailLevel)
-    players[consoleplayer].message = s_DETAILHI;
-  else
-    players[consoleplayer].message = s_DETAILLO;*/ 
-  }
-#endif // killough
-
 
 /////////////////////////////
 //
@@ -5088,6 +5089,12 @@ void M_Init (void)
 //----------------------------------------------------------------------------
 //
 // $Log: m_menu.c,v $
+// Revision 1.55  1998/09/07  20:06:56  jim
+// Added logical output routine
+//
+// Revision 1.54  1998/05/28  05:27:13  killough
+// Fix some load / save / end game handling r.w.t. demos
+//
 // Revision 1.53  1998/05/16  09:17:09  killough
 // Make loadgame checksum friendlier
 //

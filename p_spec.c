@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c,v 1.56 1998/05/25 10:40:30 killough Exp $
+// $Id: p_spec.c,v 1.57 1998/08/14 11:27:27 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -29,7 +29,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_spec.c,v 1.56 1998/05/25 10:40:30 killough Exp $";
+rcsid[] = "$Id: p_spec.c,v 1.57 1998/08/14 11:27:27 jim Exp $";
 
 #include "doomstat.h"
 #include "p_spec.h"
@@ -541,11 +541,11 @@ fixed_t P_FindShortestTextureAround(int secnum)
     if (twoSided(secnum, i))
     {
       side = getSide(secnum,i,0);
-      if (side->bottomtexture >= 0)
+      if (side->bottomtexture > 0)  //jff 8/14/98 texture 0 is a placeholder
         if (textureheight[side->bottomtexture] < minsize)
           minsize = textureheight[side->bottomtexture];
       side = getSide(secnum,i,1);
-      if (side->bottomtexture >= 0)
+      if (side->bottomtexture > 0)  //jff 8/14/98 texture 0 is a placeholder
         if (textureheight[side->bottomtexture] < minsize)
           minsize = textureheight[side->bottomtexture];
     }
@@ -580,11 +580,11 @@ fixed_t P_FindShortestUpperAround(int secnum)
     if (twoSided(secnum, i))
     {
       side = getSide(secnum,i,0);
-      if (side->toptexture >= 0)
+      if (side->toptexture > 0)     //jff 8/14/98 texture 0 is a placeholder
         if (textureheight[side->toptexture] < minsize)
           minsize = textureheight[side->toptexture];
       side = getSide(secnum,i,1);
-      if (side->toptexture >= 0)
+      if (side->toptexture > 0)     //jff 8/14/98 texture 0 is a placeholder
         if (textureheight[side->toptexture] < minsize)
           minsize = textureheight[side->toptexture];
     }
@@ -3210,6 +3210,9 @@ static void P_SpawnPushers(void)
 //----------------------------------------------------------------------------
 //
 // $Log: p_spec.c,v $
+// Revision 1.57  1998/08/14  11:27:27  jim
+// Fixed raise shortest texture linedefs
+//
 // Revision 1.56  1998/05/25  10:40:30  killough
 // Fix wall scrolling bug
 //

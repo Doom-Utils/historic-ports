@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h,v 1.7 1998/05/06 15:32:19 jim Exp $
+// $Id: d_main.h,v 1.8 1998/08/29 22:58:49 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -31,11 +31,12 @@
 
 #define MAXWADFILES 256        /* make it ridiculously large -- killough */
 extern char *wadfiles[MAXWADFILES];
+extern int wadfilesource[MAXWADFILES];  // Ty 08/29/98 - added source of lumps info
 
 // jff make startskill globally visible
 extern skill_t startskill;
 
-void D_AddFile(char *file);
+void D_AddFile(char *file, int source);
 
 char *D_DoomExeDir(void); // killough 2/16/98: path to executable's dir
 
@@ -68,6 +69,9 @@ void D_DoomMain(void);
 //----------------------------------------------------------------------------
 //
 // $Log: d_main.h,v $
+// Revision 1.8  1998/08/29  22:58:49  thldrmn
+// Changed prototype for D_Addfile()
+//
 // Revision 1.7  1998/05/06  15:32:19  jim
 // document g_game.c, change externals
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c,v 1.23 1998/05/23 08:05:57 killough Exp $
+// $Id: r_data.c,v 1.24 1998/09/07 20:11:45 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,12 +21,13 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: r_data.c,v 1.23 1998/05/23 08:05:57 killough Exp $";
+rcsid[] = "$Id: r_data.c,v 1.24 1998/09/07 20:11:45 jim Exp $";
 
 #include "doomstat.h"
 #include "w_wad.h"
 #include "r_main.h"
 #include "r_sky.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 //
 // Graphics.
@@ -311,7 +312,8 @@ static void R_GenerateLookup(int texnum, int *const errors)
       {
         if (!count[x].patches)          // killough 4/9/98
           {
-            fprintf(stderr,
+            //jff 8/3/98 use logical output routine
+            lprintf(LO_WARN,
                     "\nR_GenerateLookup: Column %d is without a patch in texture %.8s",
                     x, texture->name);
             ++*errors;
@@ -407,7 +409,8 @@ void R_InitTextures (void)
           patchlookup[i] = (W_CheckNumForName)(name, ns_sprites);
 
           if (patchlookup[i] == -1 && devparm)
-            fprintf(stderr,"\nWarning: patch %.8s, index %d does not exist",name,i);
+            //jff 8/3/98 use logical output routine
+            lprintf(LO_WARN,"\nWarning: patch %.8s, index %d does not exist",name,i);
         }
     }
   Z_Free(names);
@@ -461,18 +464,20 @@ void R_InitTextures (void)
     // and make more accurate
 
     int temp3 = 8+(temp2-temp1+255)/128 + (numtextures+255)/128;  // killough
-    putchar('[');
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_INFO,"[");
     for (i = 0; i < temp3; i++)
-      putchar(' ');
-    putchar(']');
+      lprintf(LO_INFO," ");
+    lprintf(LO_INFO,"]");
     for (i = 0; i < temp3; i++)
-      putchar('\x8');
+      lprintf(LO_INFO,"\x8");
   }
 
   for (i=0 ; i<numtextures ; i++, directory++)
     {
+      //jff 8/3/98 use logical output routine
       if (!(i&127))          // killough
-        putchar('.');
+        lprintf(LO_INFO,".");
 
       if (i == numtextures1)
         {
@@ -509,7 +514,8 @@ void R_InitTextures (void)
           patch->patch = patchlookup[SHORT(mpatch->patch)];
           if (patch->patch == -1)
             {
-              fprintf(stderr,"\nR_InitTextures: Missing patch %d in texture %.8s",
+              //jff 8/3/98 use logical output routine
+              lprintf(LO_ERROR,"\nR_InitTextures: Missing patch %d in texture %.8s",
                      SHORT(mpatch->patch), texture->name); // killough 4/17/98
               ++errors;
             }
@@ -615,7 +621,8 @@ void R_InitSpriteLumps(void)
   for (i=0 ; i< numspritelumps ; i++)
     {
       if (!(i&127))            // killough
-        putchar ('.');
+        //jff 8/3/98 use logical output routine
+        lprintf(LO_INFO,".");
 
       patch = W_CacheLumpNum(firstspritelump+i, PU_CACHE);
       spritewidth[i] = SHORT(patch->width)<<FRACBITS;
@@ -735,7 +742,8 @@ void R_InitTranMap(int progress)
                 long g1 = pal[1][i] * w2;
                 long b1 = pal[2][i] * w2;
                 if (!(i & 31) && progress)
-                  putchar('.');
+                  //jff 8/3/98 use logical output routine
+                  lprintf(LO_INFO,".");
                 for (j=0;j<256;j++,tp++)
                   {
                     register int color = 255;
@@ -763,8 +771,9 @@ void R_InitTranMap(int progress)
             }
         }
       else
-        if (progress)
-          fputs("........",stdout);
+        if (progress) //jff 8/3/98 use logical output routine
+          //jff 8/3/98 use logical output routine
+          lprintf(LO_INFO,"........");
       Z_ChangeTag(playpal, PU_CACHE);
     }
 }
@@ -926,6 +935,9 @@ void R_PrecacheLevel(void)
 //-----------------------------------------------------------------------------
 //
 // $Log: r_data.c,v $
+// Revision 1.24  1998/09/07  20:11:45  jim
+// Logical output routine added
+//
 // Revision 1.23  1998/05/23  08:05:57  killough
 // Reformatting
 //

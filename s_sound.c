@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c,v 1.11 1998/05/03 22:57:06 killough Exp $
+// $Id: s_sound.c,v 1.12 1998/09/07 20:10:13 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: s_sound.c,v 1.11 1998/05/03 22:57:06 killough Exp $";
+rcsid[] = "$Id: s_sound.c,v 1.12 1998/09/07 20:10:13 jim Exp $";
 
 // killough 3/7/98: modified to allow arbitrary listeners in spy mode
 // killough 5/2/98: reindented, removed useless code, beautified
@@ -31,6 +31,7 @@ rcsid[] = "$Id: s_sound.c,v 1.11 1998/05/03 22:57:06 killough Exp $";
 #include "r_main.h"
 #include "m_random.h"
 #include "w_wad.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // when to clip out sounds
 // Does not fit the large outdoor areas.
@@ -111,7 +112,8 @@ void S_Init(int sfxVolume, int musicVolume)
   //jff 1/22/98 skip sound init if sound not enabled
   if (snd_card && !nosfxparm)
   {
-    fprintf( stderr, "S_Init: default sfx volume %d\n", sfxVolume);
+    //jff 8/3/98 use logical output routine
+    lprintf( LO_CONFIRM, "S_Init: default sfx volume %d\n", sfxVolume);
 
     // Whatever these did with DMX, these are rather dummies now.
     I_SetChannels();
@@ -611,6 +613,9 @@ static int S_getChannel(void *origin, sfxinfo_t *sfxinfo, int is_pickup)
 //----------------------------------------------------------------------------
 //
 // $Log: s_sound.c,v $
+// Revision 1.12  1998/09/07  20:10:13  jim
+// Logical output routine added
+//
 // Revision 1.11  1998/05/03  22:57:06  killough
 // beautification, #include fix
 //

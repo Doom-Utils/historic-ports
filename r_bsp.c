@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c,v 1.17 1998/05/03 22:47:33 killough Exp $
+// $Id: r_bsp.c,v 1.20 1998/10/05 21:46:36 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: r_bsp.c,v 1.17 1998/05/03 22:47:33 killough Exp $";
+rcsid[] = "$Id: r_bsp.c,v 1.20 1998/10/05 21:46:36 phares Exp $";
 
 #include "doomstat.h"
 #include "m_bbox.h"
@@ -385,6 +385,7 @@ static void R_AddLine (seg_t *line)
 
   // Global angle needed by segcalc.
   rw_angle1 = angle1;
+
   angle1 -= viewangle;
   angle2 -= viewangle;
 
@@ -609,7 +610,6 @@ static void R_Subsector(int num)
   frontsector = sub->sector;
   count = sub->numlines;
   line = &segs[sub->firstline];
-
   // killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
   frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
                            &ceilinglightlevel, false);   // killough 4/11/98
@@ -626,7 +626,6 @@ static void R_Subsector(int num)
                 frontsector->floor_xoffs,       // killough 3/7/98
                 frontsector->floor_yoffs
                 ) : NULL;
-
   ceilingplane = frontsector->ceilingheight > viewz ||
     frontsector->ceilingpic == skyflatnum ||
     (frontsector->heightsec != -1 &&
@@ -637,11 +636,13 @@ static void R_Subsector(int num)
                 frontsector->ceiling_xoffs,     // killough 3/7/98
                 frontsector->ceiling_yoffs
                 ) : NULL;
-
-  R_AddSprites (frontsector);
+  R_AddSprites (sub->sector); //jff 9/11/98 passing frontsector here was
+                              //causing the underwater fireball medusa problem
+                              //when R_FakeFlat substituted a fake sector
 
   while (count--)
     R_AddLine (line++);
+
 }
 
 //
@@ -677,6 +678,15 @@ void R_RenderBSPNode(int bspnum)
 //----------------------------------------------------------------------------
 //
 // $Log: r_bsp.c,v $
+// Revision 1.20  1998/10/05  21:46:36  phares
+// Cleanup fireline checkin
+//
+// Revision 1.19  1998/10/05  21:29:27  phares
+// Fixed firelines
+//
+// Revision 1.18  1998/09/12  01:06:34  jim
+// Fixed underwater fireball slowdown
+//
 // Revision 1.17  1998/05/03  22:47:33  killough
 // beautification
 //

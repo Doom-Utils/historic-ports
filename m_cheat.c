@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c,v 1.7 1998/05/12 12:47:00 phares Exp $
+// $Id: m_cheat.c,v 1.8 1998/08/14 19:51:45 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_cheat.c,v 1.7 1998/05/12 12:47:00 phares Exp $";
+rcsid[] = "$Id: m_cheat.c,v 1.8 1998/08/14 19:51:45 jim Exp $";
 
 #include "doomstat.h"
 #include "g_game.h"
@@ -396,8 +396,8 @@ char buf[3];
       (gamemode == retail     && (epsd > 4 || map > 9  )) ||
       (gamemode == registered && (epsd > 3 || map > 9  )) ||
       (gamemode == shareware  && (epsd > 1 || map > 9  )) ||
-      (gamemode == commercial && (epsd > 1 || map > 34 )) )
-    return;
+      (gamemode == commercial && (epsd > 1 || map > 32 )) )  //jff no 33 and 34
+    return;                                                  //8/14/98 allowed
 
   // So be it.
 
@@ -688,6 +688,9 @@ boolean M_FindCheats(int key)
 //----------------------------------------------------------------------------
 //
 // $Log: m_cheat.c,v $
+// Revision 1.8  1998/08/14  19:51:45  jim
+// Clamp IDCLEV to 32 Maps
+//
 // Revision 1.7  1998/05/12  12:47:00  phares
 // Removed OVER_UNDER code
 //

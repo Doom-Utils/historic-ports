@@ -20,7 +20,7 @@
 //  Much of the code here is thanks to S. Bacquet's source for QMUS2MID.C
 //
 //-----------------------------------------------------------------------------
-static const char rcsid[] = "$Id: mmus2mid.c,v 1.10 1998/05/10 23:00:43 jim Exp $";
+static const char rcsid[] = "$Id: mmus2mid.c,v 1.12 1998/09/07 20:09:38 jim Exp $";
 
 #include <ctype.h>
 #include <stdio.h>
@@ -31,6 +31,7 @@ static const char rcsid[] = "$Id: mmus2mid.c,v 1.10 1998/05/10 23:00:43 jim Exp 
 #include <malloc.h>
 #include <allegro.h>
 #include "mmus2mid.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 //#define STANDALONE  /* uncomment this to make MMUS2MID.EXE */
 #ifndef STANDALONE
@@ -636,8 +637,8 @@ static void TWriteLength(UBYTE **midiptr,ULONG length)
 //
 // MIDIToMidi()
 //
-// This routine converts a midi 1 format file in memory to a MIDI structure
-// that Allegro can play. It is used to support native midi lumps in BOOM.
+// This routine converts an Allegro MIDI structure to a midi 1 format file
+// in memory. It is used to support memory MUS -> MIDI conversion
 //
 // Passed a pointer to an Allegro MIDI structure, a pointer to a pointer to
 // a buffer containing midi data, and a pointer to a length return.
@@ -719,9 +720,10 @@ int main(int argc,char **argv)
 
   if (argc<2)
   {
-    printf("Usage: MMUS2MID musfile[.MUS]\n");
-    printf("writes musfile.MID as output\n");
-    printf("musfile may contain wildcards\n");
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_INFO,"Usage: MMUS2MID musfile[.MUS]\n");
+    lprintf(LO_INFO,"writes musfile.MID as output\n");
+    lprintf(LO_INFO,"musfile may contain wildcards\n");
     exit(1);
   }
 
@@ -745,7 +747,8 @@ int main(int argc,char **argv)
         fseek(musst,0,SEEK_SET);
         if (!fread(mus,MUSh.ScoreLength+MUSh.ScoreStart,1,musst))
         {
-          printf("Error reading MUS file\n");
+          //jff 8/3/98 use logical output routine
+          lprintf(LO_FATAL,"Error reading MUS file\n");
           free(mus);
           exit(1);
         }
@@ -753,7 +756,8 @@ int main(int argc,char **argv)
       }
       else
       {
-        printf("Out of memory\n");
+        //jff 8/3/98 use logical output routine
+        lprintf(LO_FATAL,"Out of memory\n");
         free(mus);
         exit(1);
       }
@@ -761,7 +765,8 @@ int main(int argc,char **argv)
       err = mmus2mid(mus,&mididata,89,1);
       if (err)
       {
-        printf("Error converting MUS file to MIDI: %d\n",err);
+        //jff 8/3/98 use logical output routine
+        lprintf(LO_FATAL,"Error converting MUS file to MIDI: %d\n",err);
         exit(1);
       }
       free(mus);
@@ -773,7 +778,8 @@ int main(int argc,char **argv)
       {
         if (!fwrite(mid,midlen,1,midst))
         {
-          printf("Error writing MIDI file\n");
+          //jff 8/3/98 use logical output routine
+          lprintf(LO_FATAL,"Error writing MIDI file\n");
           FreeTracks(&mididata);
           free(mid);
           exit(1);
@@ -782,7 +788,8 @@ int main(int argc,char **argv)
       }
       else
       {
-        printf("Can't open MIDI file for output: %s\n", midfile);
+        //jff 8/3/98 use logical output routine
+        lprintf(LO_FATAL,"Can't open MIDI file for output: %s\n", midfile);
         FreeTracks(&mididata);
         free(mid);
         exit(1);
@@ -790,11 +797,13 @@ int main(int argc,char **argv)
     }
     else
     {
-      printf("Can't open MUS file for input: %s\n", midfile);
+      //jff 8/3/98 use logical output routine
+      lprintf(LO_FATAL,"Can't open MUS file for input: %s\n", midfile);
       exit(1);
     }
 
-    printf("MUS file %s converted to MIDI file %s\n",musfile,midfile);
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_CONFIRM,"MUS file %s converted to MIDI file %s\n",musfile,midfile);
     FreeTracks(&mididata);
     free(mid);
   }
@@ -805,6 +814,12 @@ int main(int argc,char **argv)
 //----------------------------------------------------------------------------
 //
 // $Log: mmus2mid.c,v $
+// Revision 1.12  1998/09/07  20:09:38  jim
+// Logical output routine added
+//
+// Revision 1.11  1998/07/14  20:07:21  jim
+// correction of minor errors
+//
 // Revision 1.10  1998/05/10  23:00:43  jim
 // formatted/documented mmus2mid
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.c,v 1.15 1998/05/03 22:32:33 killough Exp $
+// $Id: i_sound.c,v 1.16 1998/09/07 20:06:36 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: i_sound.c,v 1.15 1998/05/03 22:32:33 killough Exp $";
+rcsid[] = "$Id: i_sound.c,v 1.16 1998/09/07 20:06:36 jim Exp $";
 
 #include <stdio.h>
 #include <allegro.h>
@@ -32,6 +32,7 @@ rcsid[] = "$Id: i_sound.c,v 1.15 1998/05/03 22:32:33 killough Exp $";
 #include "w_wad.h"
 #include "g_game.h"     //jff 1/21/98 added to use dprintf in I_RegisterSong
 #include "d_main.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // Needed for calling the actual sound output.
 #define SAMPLECOUNT             512
@@ -277,7 +278,8 @@ void I_InitSound(void)
   int i, snd_c = snd_card;
 
   // Secure and configure sound device first.
-  fputs("I_InitSound: ", stderr);
+  //jff 8/3/98 use logical output routine
+  lprintf(LO_INFO,"I_InitSound: ");
 
   if (detect_voices && snd_card>=0 && mus_card>=0)
     {
@@ -296,7 +298,8 @@ void I_InitSound(void)
 
   if (install_sound(snd_c, mus_card, "none")==-1) //jff 1/18/98 autodect MIDI
     {
-      fprintf(stderr, "ALLEGRO SOUND INIT ERROR!!!!\n%s\n", allegro_error);
+      //jff 8/3/98 use logical output routine
+      lprintf(LO_ERROR, "ALLEGRO SOUND INIT ERROR!!!!\n%s\n", allegro_error);
       //jff 1/22/98 on error, disable sound this invocation
       //in future - nice to detect if either sound or music might be ok
       nosfxparm = true;
@@ -305,13 +308,15 @@ void I_InitSound(void)
     }
   else //jff 1/22/98 don't register I_ShutdownSound if errored
     {
-      fputs(" configured audio device\n", stderr);
+      //jff 8/3/98 use logical output routine
+      lprintf(LO_CONFIRM," configured audio device\n");
       LOCK_VARIABLE(channel);  // killough 2/7/98: prevent VM swapping of sfx
       atexit(I_ShutdownSound); // killough
     }
 
   // Initialize external data (all sounds) at start, keep static.
-  fputs("I_InitSound: ",stderr);
+  //jff 8/3/98 use logical output routine
+  lprintf(LO_INFO,"I_InitSound: ");
 
   for (i=1; i<NUMSFX; i++)
     if (!S_sfx[i].link)   // Load data from WAD file.
@@ -324,7 +329,8 @@ void I_InitSound(void)
       }
 
   // Finished initialization.
-  fputs("I_InitSound: sound module ready\n",stderr);
+  //jff 8/3/98 use logical output routine
+  lprintf(LO_CONFIRM,"I_InitSound: sound module ready\n");
 }
 
 ///
@@ -431,6 +437,9 @@ int I_QrySongPlaying(int handle)
 //----------------------------------------------------------------------------
 //
 // $Log: i_sound.c,v $
+// Revision 1.16  1998/09/07  20:06:36  jim
+// Added logical output routine
+//
 // Revision 1.15  1998/05/03  22:32:33  killough
 // beautification, use new headers/decls
 //

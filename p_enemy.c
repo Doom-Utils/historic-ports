@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c,v 1.22 1998/05/12 12:47:10 phares Exp $
+// $Id: p_enemy.c,v 1.23 1998/08/13 15:27:26 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,7 +23,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_enemy.c,v 1.22 1998/05/12 12:47:10 phares Exp $";
+rcsid[] = "$Id: p_enemy.c,v 1.23 1998/08/13 15:27:26 jim Exp $";
 
 #include "doomstat.h"
 #include "m_random.h"
@@ -261,9 +261,9 @@ boolean P_Move(mobj_t *actor)
       for (good = false; numspechit--; )
         if (P_UseSpecialLine(actor, spechit[numspechit], 0))
           good = true;
-      return good;
-    }
-  else
+      return good && (compatibility || (P_Random(pr_trywalk)&3)); //jff 8/13/98
+    }                                          // 1 in 4 try a different dir
+  else                                         // avoid stuck in doorway
     actor->flags &= ~MF_INFLOAT;
 
   if (!(actor->flags & MF_FLOAT))
@@ -1796,6 +1796,9 @@ void A_PlayerScream(mobj_t *mo)
 //----------------------------------------------------------------------------
 //
 // $Log: p_enemy.c,v $
+// Revision 1.23  1998/08/13  15:27:26  jim
+// Doorjamb fix
+//
 // Revision 1.22  1998/05/12  12:47:10  phares
 // Removed OVER_UNDER code
 //

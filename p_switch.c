@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c,v 1.24 1998/05/11 14:04:46 jim Exp $
+// $Id: p_switch.c,v 1.25 1998/06/01 14:48:19 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_switch.c,v 1.24 1998/05/11 14:04:46 jim Exp $";
+rcsid[] = "$Id: p_switch.c,v 1.25 1998/06/01 14:48:19 jim Exp $";
 
 #include "doomstat.h"
 #include "w_wad.h"
@@ -214,7 +214,11 @@ P_UseSpecialLine
 ( mobj_t*       thing,
   line_t*       line,
   int           side )
-{               
+{
+
+  if (side) //jff 6/1/98 fix inadvertent deletion of side test
+    return false;
+
   //jff 02/04/98 add check here for generalized floor/ceil mover
   if (!demo_compatibility)
   {
@@ -1108,6 +1112,9 @@ P_UseSpecialLine
 //----------------------------------------------------------------------------
 //
 // $Log: p_switch.c,v $
+// Revision 1.25  1998/06/01  14:48:19  jim
+// Fix switch use from back side
+//
 // Revision 1.24  1998/05/11  14:04:46  jim
 // Fix endianess of speed field in SWITCH predefined lump
 //

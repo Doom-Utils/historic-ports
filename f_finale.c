@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c,v 1.16 1998/05/10 23:39:25 killough Exp $
+// $Id: f_finale.c,v 1.17 1998/08/29 23:00:55 thldrmn Exp $
 //
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
@@ -23,7 +23,7 @@
 
 
 static const char
-rcsid[] = "$Id: f_finale.c,v 1.16 1998/05/10 23:39:25 killough Exp $";
+rcsid[] = "$Id: f_finale.c,v 1.17 1998/08/29 23:00:55 thldrmn Exp $";
 
 #include "doomstat.h"
 #include "d_event.h"
@@ -61,8 +61,8 @@ int finalecount;
 // char*  p1text = s_P1TEXT;  // Ty - note these don't seem to be used here
 // char*  p2text = s_P2TEXT;  // Does the Linux version not have support for
 // char*  p3text = s_P3TEXT;  // intermission screens for Plutonia and TNT????
-// char*  p4text = s_P4TEXT;
-// char*  p5text = s_P5TEXT;
+// char*  p4text = s_P4TEXT;  // Ty 08/27/98 - incorporated gamemission variable
+// char*  p5text = s_P5TEXT;  // to use the right intermission texts
 // char*  p6text = s_P6TEXT;
 
 // char*  t1text = s_T1TEXT;
@@ -154,37 +154,45 @@ void F_StartFinale (void)
     {
       S_ChangeMusic(mus_read_m, true);
 
+      // Ty 08/27/98 - added the gamemission logic
       switch (gamemap)
       {
         case 6:
              finaleflat = bgflat06;
-             finaletext = s_C1TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T1TEXT :
+                          (gamemission==pack_plut) ? s_P1TEXT : s_C1TEXT;
              break;
         case 11:
              finaleflat = bgflat11;
-             finaletext = s_C2TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T2TEXT :
+                          (gamemission==pack_plut) ? s_P2TEXT : s_C2TEXT;
              break;
         case 20:
              finaleflat = bgflat20;
-             finaletext = s_C3TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T3TEXT :
+                          (gamemission==pack_plut) ? s_P3TEXT : s_C3TEXT;
              break;
         case 30:
              finaleflat = bgflat30;
-             finaletext = s_C4TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T4TEXT :
+                          (gamemission==pack_plut) ? s_P4TEXT : s_C4TEXT;
              break;
         case 15:
              finaleflat = bgflat15;
-             finaletext = s_C5TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T5TEXT :
+                          (gamemission==pack_plut) ? s_P5TEXT : s_C5TEXT;
              break;
         case 31:
              finaleflat = bgflat31;
-             finaletext = s_C6TEXT;
+             finaletext = (gamemission==pack_tnt)  ? s_T6TEXT :
+                          (gamemission==pack_plut) ? s_P6TEXT : s_C6TEXT;
              break;
         default:
              // Ouch.
              break;
       }
       break;
+      // Ty 08/27/98 - end gamemission logic
     } 
 
     // Indeterminate.
@@ -779,6 +787,9 @@ void F_Drawer (void)
 //----------------------------------------------------------------------------
 //
 // $Log: f_finale.c,v $
+// Revision 1.17  1998/08/29  23:00:55  thldrmn
+// Gamemission fixes for TNT and Plutonia
+//
 // Revision 1.16  1998/05/10  23:39:25  killough
 // Restore v1.9 demo sync on text intermission screens
 //

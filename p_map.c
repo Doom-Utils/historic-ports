@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c,v 1.35 1998/05/12 12:47:16 phares Exp $
+// $Id: p_map.c,v 1.40 1998/09/10 20:12:48 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_map.c,v 1.35 1998/05/12 12:47:16 phares Exp $";
+rcsid[] = "$Id: p_map.c,v 1.40 1998/09/10 20:12:48 phares Exp $";
 
 #include "doomstat.h"
 #include "r_main.h"
@@ -89,6 +89,13 @@ boolean PIT_StompThing (mobj_t* thing)
   {
   fixed_t blockdist;
 
+  // phares 9/10/98: moved this self-check to start of routine
+
+  // don't clip against self
+
+  if (thing == tmthing)
+    return true;
+
   if (!(thing->flags & MF_SHOOTABLE)) // Can't shoot it? Can't stomp it!
     return true;
 
@@ -96,11 +103,6 @@ boolean PIT_StompThing (mobj_t* thing)
 
   if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
     return true; // didn't hit it
-
-  // don't clip against self
-
-  if (thing == tmthing)
-    return true;
 
   // monsters don't stomp things except on boss level
 
@@ -293,8 +295,9 @@ boolean PIT_CheckLine (line_t* ld)
   // so two special lines that are only 8 pixels apart
   // could be crossed in either order.
 
-  if (!ld->backsector)
-    return false;   // one sided line
+  if (!ld->backsector) // one-sided line
+    return false; // 9/8/98 remove 1S wall escape - causes problems w
+                 // motion by monsters or caused by monster attacks
 
   if (!(tmthing->flags & MF_MISSILE) )
     {
@@ -352,6 +355,13 @@ boolean PIT_CheckThing (mobj_t* thing)
   fixed_t blockdist;
   boolean solid;
   int     damage;
+
+  // phares 9/10/98: moved this self-check to start of routine
+
+  // don't clip against self
+
+  if (thing == tmthing)
+    return true;
 
   if (!(thing->flags & (MF_SOLID|MF_SPECIAL|MF_SHOOTABLE) ))
     return true;
@@ -978,14 +988,7 @@ retry:
     // killough 3/15/98: Allow objects to drop off ledges
 
     if (!P_TryMove (mo, mo->x, mo->y + mo->momy, true))
-
-      // phares 5/4/98: kill momentum if you can't move at all
-      // This eliminates player bobbing if pressed against a wall
-      // while on ice.
-
-      if (!P_TryMove (mo, mo->x + mo->momx, mo->y, true))
-        if (!compatibility)
-          mo->momx = mo->momy = 0;
+      P_TryMove (mo, mo->x + mo->momx, mo->y, true);
     return;
     }
 
@@ -1914,6 +1917,18 @@ void P_CreateSecNodeList(mobj_t* thing,fixed_t x,fixed_t y)
 //----------------------------------------------------------------------------
 //
 // $Log: p_map.c,v $
+// Revision 1.40  1998/09/10  20:12:48  phares
+// Fix DM Stuck bug and refix ice-bobbing/momentum
+//
+// Revision 1.39  1998/09/09  14:29:38  jim
+// Back out 1S Wall fix
+//
+// Revision 1.38  1998/08/21  10:09:52  jim
+// into/outof wall fix
+//
+// Revision 1.36  1998/08/08  15:19:44  jim
+// 1S wall embedding escape
+//
 // Revision 1.35  1998/05/12  12:47:16  phares
 // Removed OVER_UNDER code
 //

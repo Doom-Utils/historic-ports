@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_deh.c,v 1.19 1998/05/17 09:39:48 thldrmn Exp $
+// $Id: d_deh.c,v 1.23 1998/09/07 20:06:01 jim Exp $
 //
 // Dehacked file support
 // New for the TeamTNT "Boom" engine
@@ -11,7 +11,7 @@
 //--------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: d_deh.c,v 1.19 1998/05/17 09:39:48 thldrmn Exp $";
+rcsid[] = "$Id: d_deh.c,v 1.23 1998/09/07 20:06:01 jim Exp $";
 
 // killough 5/2/98: fixed headers, removed rendunant external declarations:
 #include "doomdef.h"
@@ -22,6 +22,7 @@ rcsid[] = "$Id: d_deh.c,v 1.19 1998/05/17 09:39:48 thldrmn Exp $";
 #include "p_inter.h"
 #include "g_game.h"
 #include "d_think.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 #define TRUE 1
 #define FALSE 0
@@ -960,6 +961,51 @@ char *deh_mobjinfo[DEH_MOBJINFOMAX] =
   "Respawn frame"        // .raisestate
 };
 
+// Strings that are used to indicate flags ("Bits" in mobjinfo)
+// This is an array of bit masks that are related to p_mobj.h
+// values, using the smae names without the MF_ in front.
+// Ty 08/27/98 new code
+
+#define DEH_MOBJFLAGMAX 32
+char *deh_mobjflags[DEH_MOBJFLAGMAX] =
+{
+  "SPECIAL",      // 0x00000001 - call  P_Specialthing when touched
+  "SOLID",        // 0x00000002 - block movement
+  "SHOOTABLE",    // 0x00000004 - can be hit
+  "NOSECTOR",     // 0x00000008 - invisible but touchable
+  "NOBLOCKMAP",   // 0x00000010 - inert but displayable
+  "AMBUSH",       // 0x00000020 - deaf monster
+  "JUSTHIT",      // 0x00000040 - will try to attack right back
+  "JUSTATTACKED", // 0x00000080 - take at least 1 step before attacking
+  "SPAWNCEILING", // 0x00000100 - initially hang from ceiling
+  "NOGRAVITY",    // 0x00000200 - don't apply gravity during play
+  "DROPOFF",      // 0x00000400 - can jump from high places
+  "PICKUP",       // 0x00000800 - will pick up items
+  "NOCLIP",       // 0x00001000 - goes through walls
+  "SLIDE",        // 0x00002000 - keep info about sliding along walls
+  "FLOAT",        // 0x00004000 - allow movement to any height
+  "TELEPORT",     // 0x00008000 - don't cross lines or look at heights
+                  //              on teleport
+  "MISSILE",      // 0x00010000 - don't hit same species, explode on block
+  "DROPPED",      // 0x00020000 - dropped, not spawned (like ammo clip)
+  "SHADOW",       // 0x00040000 - use fuzzy draw like spectres
+  "NOBLOOD",      // 0x00080000 - puffs instead of blood when shot
+  "CORPSE",       // 0x00100000 - so it will slide down steps when dead
+  "INFLOAT",      // 0x00200000 - float but not to target height
+  "COUNTKILL",    // 0x00400000 - count toward the kills total
+  "COUNTITEM",    // 0x00800000 - count toward the items total
+  "SKULLFLY",     // 0x01000000 - special handling for flying skulls
+  "NOTDMATCH",    // 0x02000000 - do not spawn in deathmatch
+  "TRANSLATION",  // 0x04000000 - use translation table for color (players)
+  "UNUSED1",      // 0x08000000 - unused bit # 1
+  "UNUSED2",      // 0x10000000 - unused bit # 2
+  "UNUSED3",      // 0x20000000 - unused bit # 3
+  "UNUSED4",      // 0x40000000 - unused bit # 4
+  "TRANSLUCENT",  // 0x80000000 - apply translucency to sprite (BOOM)
+};
+
+
+// 
 // STATE - Dehacked block name = "Frame" and "Pointer"
 // Usage: Frame nn
 // Usage: Pointer nn (Frame nn)
@@ -1276,7 +1322,8 @@ void ProcessDehFile(char *filename, char *outfilename)
   {
     if (!(fileout=fopen(outfilename, firstfile ? "w+t" : "a+t")))
     {
-      printf("Could not open -dehout file %s\n...using stdout.\n",
+      //jff 8/3/98 use logical output routine
+      lprintf(LO_WARN,"Could not open -dehout file %s\n...using stdout.\n",
         outfilename);
       fileout = stdout;
     }
@@ -1284,10 +1331,11 @@ void ProcessDehFile(char *filename, char *outfilename)
   }
   if (!(filein=fopen(filename,"rt")))
   {
-    printf("-deh file %s not found\n",filename);
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_ERROR,"-deh file %s not found\n",filename);
     return;  // should be checked up front anyway
   }
-  printf("Loading DEH file %s\n",filename);
+  lprintf(LO_INFO,"Loading DEH file %s\n",filename);
   if (fileout) fprintf(fileout,"\nLoading DEH file %s\n\n",filename);
 
   for (i=0; i<NUMSTATES; i++)
@@ -1406,8 +1454,8 @@ void deh_procBexCodePointers(FILE *fpin, FILE* fpout, char *line)
     {
       ++i;
       if (!stricmp(key,deh_bexptrs[i].lookup))
-      {
-        states[indexnum].action = deh_bexptrs[i].cptr.acv; // assign
+      {  // Ty 06/01/98  - add .acv to states[].action for new djgcc version
+        states[indexnum].action.acv = deh_bexptrs[i].cptr.acv; // assign
         if (fpout) fprintf(fpout,
           " - applied %p from codeptr[%d] to states[%d]\n",
           deh_bexptrs[i].cptr.acv,i,indexnum);
@@ -1432,13 +1480,21 @@ void deh_procBexCodePointers(FILE *fpin, FILE* fpout, char *line)
 //          line  -- current line in file to process
 // Returns: void
 //
+// Ty 8/27/98 - revised to also allow mnemonics for
+// bit masks for monster attributes
+//
 void deh_procThing(FILE *fpin, FILE* fpout, char *line)
 {
   char key[DEH_MAXKEYLEN];
   char inbuffer[DEH_BUFFERMAX]; 
   long value;      // All deh values are ints or longs
   int indexnum;
+  int found;  // to see if all mnemonics are valid
+  char *strval = "";  // pointer to the value area
+  char *p, *q;  // utility pointers
+  long bits;  // to build bits from mnemonics
   int ix;
+  int iy;
   int *pix;  // Ptr to int, since all Thing structure entries are ints
 
   strncpy(inbuffer,line,DEH_BUFFERMAX);
@@ -1461,7 +1517,7 @@ void deh_procThing(FILE *fpin, FILE* fpout, char *line)
     if (!fgets(inbuffer, sizeof(inbuffer), fpin)) break;
     lfstrip(inbuffer);  // toss the end of line
     if (!*inbuffer) continue;  // bail out with blank line between sections
-    if (!deh_GetData(inbuffer,key,&value,NULL,fpout)) // returns TRUE if ok
+    if (!deh_GetData(inbuffer,key,&value,&strval,fpout)) // returns TRUE if ok
     {
       if (fpout) fprintf(fpout,"Bad data pair in '%s'\n",inbuffer);
       continue;
@@ -1471,6 +1527,46 @@ void deh_procThing(FILE *fpin, FILE* fpout, char *line)
       if (!strcmp(key,deh_mobjinfo[ix]))
       {
         pix = (int *)&mobjinfo[indexnum];
+        if (ix == 21 && value==0)
+        {
+          // figure out what the bits are
+          bits = 0;
+          p = q = ptr_lstrip(strval);  // get rid of leading blanks
+
+          // tack a plus sign on the end so it'll have double null later
+          // this is ok to do because p points into strval which is
+          // actually a pointer inside the original inbuffer array,
+          // and it's very large (DEH_BUFFERMAX, 1024 at the time of this
+          // writing).
+          strcat(p,"+");
+          while (*q)
+          {
+            if (*q=='+')
+              *q = '\0';
+            ++q;
+          }
+          found = FALSE;
+          while (*p)
+          {
+            // p points to a word at a time
+            for (iy=0; iy < DEH_MOBJFLAGMAX; iy++)
+            {
+              if (!strcmp(p,deh_mobjflags[iy]))
+              {
+                if (fpout) fprintf(fpout,"Summed bit %d=%08x %s\n",iy,1<<iy,p);
+                bits += (1 << iy);
+                found = TRUE;
+                break;
+              }
+            }
+            if (!found)
+              if (fpout) fprintf(fpout,"Could not find bit mnemonic %s\n",p);
+
+            p += (strlen(p)+1); // to next word
+          }
+          value = (int)bits;                  
+          if (fpout) fprintf(fpout,"Bits %ld => %ld\n",bits, value);
+        }
         *(pix+ix) = (int)value;
         if (fpout) fprintf(fpout,"Assigned %d to %s(%d) at index %d\n",
           (int)value, key, indexnum, ix);
@@ -1857,7 +1953,8 @@ void deh_procPars(FILE *fpin, FILE* fpout, char *line) // extension
       }
       else
       { // is 2
-        if (level < 0 || level >= 32)  // base 0 array
+        // Ty 07/11/98 - wrong range check, not zero-based
+        if (level < 1 || level > 32)  // base 0 array (but 1-based parm)
         {
           if (fpout) fprintf(fpout,"Invalid MAPnn value MAP%d\n",level);
         }
@@ -1874,7 +1971,10 @@ void deh_procPars(FILE *fpin, FILE* fpout, char *line) // extension
     { // is 3
       // note that though it's a [4][10] array, the "left" and "top" aren't used,
       // effectively making it a base 1 array.
-      if (episode < 1 || episode > 3 || level < 1 || level > 3)
+      // Ty 07/11/98 - level was being checked against max 3 - dumb error
+      // Note that episode 4 does not have par times per original design
+      // in Ultimate DOOM so that is not supported here.
+      if (episode < 1 || episode > 3 || level < 1 || level > 9)
       {
         if (fpout) fprintf(fpout,
           "Invalid ExMx values E%dM%d\n",episode, level);
@@ -2462,6 +2562,18 @@ boolean deh_GetData(char *s, char *k, long *l, char **strval, FILE *fpout)
 //---------------------------------------------------------------------
 //
 // $Log: d_deh.c,v $
+// Revision 1.23  1998/09/07  20:06:01  jim
+// Added logical output routine
+//
+// Revision 1.22  1998/08/29  23:02:02  thldrmn
+// Added mnemonics for bit fields in DEH Thing specs
+//
+// Revision 1.21  1998/07/12  08:21:23  thldrmn
+// Fix par time code
+//
+// Revision 1.20  1998/06/01  22:30:38  thldrmn
+// fix .acv pointer for new GCC version
+//
 // Revision 1.19  1998/05/17  09:39:48  thldrmn
 // Bug fix to avoid processing last line twice
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c,v 1.11 1998/05/04 21:36:02 thldrmn Exp $
+// $Id: wi_stuff.c,v 1.12 1998/09/07 20:10:39 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,14 +14,13 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-//
 // DESCRIPTION:
 //  Intermission screens.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: wi_stuff.c,v 1.11 1998/05/04 21:36:02 thldrmn Exp $";
+rcsid[] = "$Id: wi_stuff.c,v 1.12 1998/09/07 20:10:39 jim Exp $";
 
 #include "doomstat.h"
 #include "m_random.h"
@@ -32,6 +31,7 @@ rcsid[] = "$Id: wi_stuff.c,v 1.11 1998/05/04 21:36:02 thldrmn Exp $";
 #include "wi_stuff.h"
 #include "s_sound.h"
 #include "sounds.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // Ty 03/17/98: flag that new par times have been loaded in d_deh
 extern boolean deh_pars;  
@@ -504,7 +504,8 @@ WI_drawOnLnode  // draw stuff at a location by episode/map#
   else
   {
     // DEBUG
-    printf("Could not place patch on level %d", n+1);
+    //jff 8/3/98 use logical output routine
+    lprintf(LO_DEBUG,"Could not place patch on level %d", n+1);
   }
 }
 
@@ -2065,6 +2066,9 @@ void WI_Start(wbstartstruct_t* wbstartstruct)
 //----------------------------------------------------------------------------
 //
 // $Log: wi_stuff.c,v $
+// Revision 1.12  1998/09/07  20:10:39  jim
+// Logical output routine added
+//
 // Revision 1.11  1998/05/04  21:36:02  thldrmn
 // commenting and reformatting
 //

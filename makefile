@@ -1,6 +1,6 @@
 ################################################################
 #
-# $Id: makefile,v 1.38 1998/05/18 22:59:22 killough Exp $
+# $Id: makefile,v 1.40 1998/10/17 03:11:37 jim Exp $
 #
 ################################################################
 
@@ -13,7 +13,7 @@ RM = del
 CP = copy /y
 
 # options common to all builds
-CFLAGS_common = -Wall -Winline -DNORMALUNIX
+CFLAGS_common = -Wall -Winline -Wno-parentheses -DNORMALUNIX
 
 # debug options
 #CFLAGS_debug = -g -O2 -DRANGECHECK -DINSTRUMENTED -DCHECKHEAP
@@ -110,6 +110,7 @@ OBJS=   $(O)/doomdef.o      \
         $(O)/drawcol.o      \
         $(O)/p_genlin.o     \
         $(O)/d_deh.o	    \
+        $(O)/lprintf.o	    \
 	$(O)/keyboard.o     \
 	$(O)/emu8kmid.o
 
@@ -470,6 +471,8 @@ $(O)/d_deh.o: d_deh.c doomdef.h z_zone.h m_swap.h version.h doomstat.h \
  i_system.h d_ticcmd.h tables.h info.h d_think.h p_mobj.h sounds.h \
  m_cheat.h p_inter.h g_game.h d_event.h dstrings.h d_englsh.h
 
+$(O)/lprintf.o: lprintf.c lprintf.h
+
 $(O)/version.o: version.c version.h z_zone.h
 
 # Allegro patches required for Boom to function satisfactorily
@@ -497,6 +500,12 @@ dckboom.zip: doom17.dat doom19.dat watermap.wad dckboom.txt
 
 ###############################################################################
 # $Log: makefile,v $
+# Revision 1.40  1998/10/17  03:11:37  jim
+# Suppressed if/else warnings
+#
+# Revision 1.39  1998/09/07  20:12:32  jim
+# Logical output routine added
+#
 # Revision 1.38  1998/05/18  22:59:22  killough
 # Update p_lights.o depedencies
 #

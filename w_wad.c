@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c,v 1.20 1998/05/06 11:32:00 jim Exp $
+// $Id: w_wad.c,v 1.22 1998/09/07 20:10:30 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,9 +20,10 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: w_wad.c,v 1.20 1998/05/06 11:32:00 jim Exp $";
+rcsid[] = "$Id: w_wad.c,v 1.22 1998/09/07 20:10:30 jim Exp $";
 
 #include "doomstat.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -103,8 +104,9 @@ char *AddDefaultExtension(char *path, const char *ext)
 //
 // Reload hack removed by Lee Killough
 //
+// Ty 08/29/98 - added source parm to indicate iwad, pwad or lmp loaded file
 
-static void W_AddFile(const char *filename) // killough 1/31/98: static, const
+static void W_AddFile(const char *filename,int source) // killough 1/31/98: static, const
 {
   wadinfo_t   header;
   lumpinfo_t* lump_p;
@@ -125,7 +127,8 @@ static void W_AddFile(const char *filename) // killough 1/31/98: static, const
       return;
     }
 
-  fprintf (stderr," adding %s\n",filename);
+  //jff 8/3/98 use logical output routine
+  lprintf (LO_INFO," adding %s\n",filename);
   startlump = numlumps;
 
   // killough:
@@ -166,6 +169,7 @@ static void W_AddFile(const char *filename) // killough 1/31/98: static, const
         lump_p->size = LONG(fileinfo->size);
         lump_p->data = NULL;                        // killough 1/31/98
         lump_p->namespace = ns_global;              // killough 4/17/98
+        lump_p->source = source;                    // Ty 08/29/98
         strncpy (lump_p->name, fileinfo->name, 8);
       }
 
@@ -350,8 +354,10 @@ int W_GetNumForName (const char* name)     // killough -- const added
 //  does override all earlier ones.
 //
 
-void W_InitMultipleFiles(char *const *filenames)
+void W_InitMultipleFiles(char *const *filenames, int *const pfilesource)
 {
+  int *filesource = pfilesource;  // to iterate with
+
   // killough 1/31/98: add predefined lumps first
 
   numlumps = num_predefined_lumps;
@@ -360,10 +366,16 @@ void W_InitMultipleFiles(char *const *filenames)
   lumpinfo = malloc(numlumps*sizeof(*lumpinfo));
 
   memcpy(lumpinfo, predefined_lumps, numlumps*sizeof(*lumpinfo));
+  // Ty 08/29/98 - add source flag to the predefined lumps
+  {
+    int i;
+    for (i=0;i<numlumps;i++)
+      lumpinfo[i].source = source_pre;
+  }
 
   // open all the files, load headers, and count lumps
   while (*filenames)
-    W_AddFile(*filenames++);
+    W_AddFile(*filenames++,*filesource++);
 
   if (!numlumps)
     I_Error ("W_InitFiles: no files found");
@@ -509,6 +521,12 @@ void WritePredefinedLumpWad(const char *filename)
 //----------------------------------------------------------------------------
 //
 // $Log: w_wad.c,v $
+// Revision 1.22  1998/09/07  20:10:30  jim
+// Logical output routine added
+//
+// Revision 1.21  1998/08/29  22:59:55  thldrmn
+// Lump source field logic etc.
+//
 // Revision 1.20  1998/05/06  11:32:00  jim
 // Moved predefined lump writer info->w_wad
 //

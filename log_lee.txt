@@ -7,6 +7,16 @@ http://www.trailerpark.com/tequila/killough/
 
 ---------------------------------------------------------------------------
 
+6/3/98  (post-source-code release):
+
+Fixed problems with v2.00 demo headers being a different size from v2.01
+headers, causing game lockups when playing back v2.00 demos.
+
+5/27/98 (post-source-code release):
+
+Fixed problem with End Game and Load Game during demo recordings, and Load
+Game during demo playbacks.
+
 5/27/98:
 
 Investigated problem where monsters awaken when carried by conveyors to
@@ -3554,9 +3564,15 @@ http://www.trailerpark.com/tequila/killough/
 
 ----------------------------------------------------------------------------
 #
-# $Id: log_lee.txt,v 1.41 1998/05/26 10:51:54 killough Exp $
+# $Id: log_lee.txt,v 1.43 1998/06/03 20:23:20 killough Exp $
 #
 # $Log: log_lee.txt,v $
+# Revision 1.43  1998/06/03  20:23:20  killough
+# fix v2.00 demos
+#
+# Revision 1.42  1998/05/28  06:04:20  killough
+# cleanup for public release, update
+#
 # Revision 1.41  1998/05/26  10:51:54  killough
 # Add address at top
 #
@@ -3684,4 +3700,4 @@ http://www.trailerpark.com/tequila/killough/
 # update
 #
 #
-
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $
+// $Id: r_main.c,v 1.14 1998/09/07 20:11:36 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,7 +22,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char rcsid[] = "$Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $";
+static const char rcsid[] = "$Id: r_main.c,v 1.14 1998/09/07 20:11:36 jim Exp $";
 
 #include "doomstat.h"
 #include "r_main.h"
@@ -33,6 +33,7 @@ static const char rcsid[] = "$Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough E
 #include "m_bbox.h"
 #include "r_sky.h"
 #include "v_video.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048    
@@ -408,16 +409,17 @@ extern int screenblocks;
 void R_Init (void)
 {
   R_InitData();
-  puts("\nR_InitData");
+  //jff 8/3/98 use logical output routine
+  lprintf(LO_INFO,"\nR_InitData\n");
   R_SetViewSize(screenblocks);
   R_InitPlanes();
-  puts("R_InitPlanes");
+  lprintf(LO_INFO,"R_InitPlanes\n");
   R_InitLightTables();
-  puts("R_InitLightTables");
+  lprintf(LO_INFO,"R_InitLightTables\n");
   R_InitSkyMap();
-  puts("R_InitSkyMap");
+  lprintf(LO_INFO,"R_InitSkyMap\n");
   R_InitTranslationTables();
-  puts("R_InitTranslationsTables");
+  lprintf(LO_INFO,"R_InitTranslationsTables\n");
 }
 
 //
@@ -597,6 +599,9 @@ void R_RenderPlayerView (player_t* player)
 //----------------------------------------------------------------------------
 //
 // $Log: r_main.c,v $
+// Revision 1.14  1998/09/07  20:11:36  jim
+// Logical output routine added
+//
 // Revision 1.13  1998/05/07  00:47:52  killough
 // beautification
 //

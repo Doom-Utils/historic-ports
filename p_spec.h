@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h,v 1.30 1998/05/04 02:22:23 jim Exp $
+// $Id: p_spec.h,v 1.31 1998/08/08 15:19:04 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -859,6 +859,10 @@ void T_LightFlash
 void T_StrobeFlash
 ( strobe_t* flash );
 
+// jff 8/8/98 add missing thinker for flicker
+void T_FireFlicker
+( fireflicker_t* flick );
+
 void T_Glow
 ( glow_t* g );
 
@@ -1125,6 +1129,9 @@ mobj_t* P_GetPushThing(int);                                // phares 3/23/98
 //----------------------------------------------------------------------------
 //
 // $Log: p_spec.h,v $
+// Revision 1.31  1998/08/08  15:19:04  jim
+// flicker special restora
+//
 // Revision 1.30  1998/05/04  02:22:23  jim
 // formatted p_specs, moved a coupla routines to p_floor
 //

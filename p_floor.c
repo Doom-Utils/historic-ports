@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_floor.c,v 1.23 1998/05/23 10:23:16 jim Exp $
+// $Id: p_floor.c,v 1.27 1998/08/15 06:36:29 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_floor.c,v 1.23 1998/05/23 10:23:16 jim Exp $";
+rcsid[] = "$Id: p_floor.c,v 1.27 1998/08/15 06:36:29 jim Exp $";
 
 #include "doomstat.h"
 #include "r_main.h"
@@ -559,11 +559,15 @@ int EV_DoFloor
             if (twoSided (secnum, i) )
             {
               side = getSide(secnum,i,0);
-              if (side->bottomtexture >= 0)
+              // jff 8/14/98 don't scan texture 0, its not real
+              if (side->bottomtexture > 0 ||
+                  (compatibility && !side->bottomtexture))
                 if (textureheight[side->bottomtexture] < minsize)
                   minsize = textureheight[side->bottomtexture];
               side = getSide(secnum,i,1);
-              if (side->bottomtexture >= 0)
+              // jff 8/14/98 don't scan texture 0, its not real
+              if (side->bottomtexture > 0 ||
+                  (compatibility && !side->bottomtexture))
                 if (textureheight[side->bottomtexture] < minsize)
                   minsize = textureheight[side->bottomtexture];
             }
@@ -767,13 +771,17 @@ int EV_BuildStairs
         // if sector's floor is different texture, look for another
         if (tsec->floorpic != texture)
           continue;
-                                  
-        height += stairsize;
+
+        if (compatibility) // jff 6/19/98 prevent double stepsize
+          height += stairsize; // jff 6/28/98 change demo compatibility
 
         // if sector's floor already moving, look for another
         if (P_SectorActive(floor_special,tsec)) //jff 2/22/98
           continue;
                                   
+        if (!compatibility) // jff 6/19/98 increase height AFTER continue
+          height += stairsize; // jff 6/28/98 change demo compatibility
+
         sec = tsec;
         secnum = newsecnum;
 
@@ -971,6 +979,18 @@ int EV_DoElevator
 //----------------------------------------------------------------------------
 //
 // $Log: p_floor.c,v $
+// Revision 1.27  1998/08/15  06:36:29  jim
+// Fixed mispelling
+//
+// Revision 1.26  1998/08/14  11:27:11  jim
+// Fixed raise shortest texture linedefs
+//
+// Revision 1.25  1998/07/14  20:07:32  jim
+// correction of minor errors
+//
+// Revision 1.24  1998/06/20  09:04:39  jim
+// Fix bug in stairs re moving steps
+//
 // Revision 1.23  1998/05/23  10:23:16  jim
 // Fix numeric changer loop corruption
 //

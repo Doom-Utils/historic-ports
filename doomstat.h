@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h,v 1.13 1998/05/12 12:47:28 phares Exp $
+// $Id: doomstat.h,v 1.14 1998/08/11 19:31:46 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -240,6 +240,8 @@ extern  int             mouseSensitivity_vert;
 extern  boolean         singletics;
 
 extern  int             bodyqueslot;
+extern  int             bodyquesize;                        // phares 8/10/98
+extern  mobj_t          **bodyque;                          // phares 8/10/98
 
 // Needed to store the number of the dummy sky flat.
 // Used for rendering, as well as tracking projectiles etc.
@@ -286,6 +288,9 @@ extern int default_player_bobbing;  // killough 3/1/98: make local to each game
 //----------------------------------------------------------------------------
 //
 // $Log: doomstat.h,v $
+// Revision 1.14  1998/08/11  19:31:46  phares
+// DM Weapon bug fix
+//
 // Revision 1.13  1998/05/12  12:47:28  phares
 // Removed OVER_UNDER code
 //

@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------
 //
-// $Id: d_deh.h,v 1.5 1998/05/04 21:36:33 thldrmn Exp $
+// $Id: d_deh.h,v 1.6 1998/07/12 08:23:49 thldrmn Exp $
 //
 // Dehacked file support
 // New for the TeamTNT "Boom" engine
@@ -58,19 +58,22 @@ extern char *s_QSPROMPT; // = QSPROMPT;
 //#define QLPROMPT      "do you want to quickload the game named\n\n'%s'?\n\n"PRESSYN
 extern char *s_QLPROMPT; // = QLPROMPT;
 
-//#define NEWGAME       \
+/*#define NEWGAME       \
 "you can't start a new game\n"\
 "while in a network game.\n\n"PRESSKEY
+*/
 extern char *s_NEWGAME; // = NEWGAME;
 
-//#define NIGHTMARE     \
+/*#define NIGHTMARE     \
 "are you sure? this skill level\n"\
 "isn't even remotely fair.\n\n"PRESSYN
+*/
 extern char *s_NIGHTMARE; // = NIGHTMARE;
 
-//#define SWSTRING      \
+/*#define SWSTRING      \
 "this is the shareware version of doom.\n\n"\
 "you need to order the entire trilogy.\n\n"PRESSKEY
+*/
 extern char *s_SWSTRING; // = SWSTRING;
 
 //#define MSGOFF        "Messages OFF"
@@ -628,7 +631,7 @@ extern char *s_STSTR_COMPOFF; // = STSTR_COMPOFF;
 //
 //      F_Finale.C
 //
-//#define E1TEXT \
+/*#define E1TEXT \
 "Once you beat the big badasses and\n"\
 "clean out the moon base you're supposed\n"\
 "to win, aren't you? Aren't you? Where's\n"\
@@ -644,10 +647,11 @@ extern char *s_STSTR_COMPOFF; // = STSTR_COMPOFF;
 "To continue the DOOM experience, play\n"\
 "The Shores of Hell and its amazing\n"\
 "sequel, Inferno!\n"
+*/
 extern char *s_E1TEXT; // = E1TEXT;
 
 
-//#define E2TEXT \
+/*#define E2TEXT \
 "You've done it! The hideous cyber-\n"\
 "demon lord that ruled the lost Deimos\n"\
 "moon base has been slain and you\n"\
@@ -665,10 +669,11 @@ extern char *s_E1TEXT; // = E1TEXT;
 "\n" \
 "Now, it's on to the final chapter of\n"\
 "DOOM! -- Inferno."
+*/
 extern char *s_E2TEXT; // = E2TEXT;
 
 
-//#define E3TEXT \
+/*#define E3TEXT \
 "The loathsome spiderdemon that\n"\
 "masterminded the invasion of the moon\n"\
 "bases and caused so much death has had\n"\
@@ -686,10 +691,11 @@ extern char *s_E2TEXT; // = E2TEXT;
 "unleashed. It's good that no Hell-\n"\
 "spawn could have come through that\n"\
 "door with you ..."
+*/
 extern char *s_E3TEXT; // = E3TEXT;
 
 
-//#define E4TEXT \
+/*#define E4TEXT \
 "the spider mastermind must have sent forth\n"\
 "its legions of hellspawn before your\n"\
 "final confrontation with that terrible\n"\
@@ -706,12 +712,13 @@ extern char *s_E3TEXT; // = E3TEXT;
 "of demons run amok among our cities.\n"\
 "\n"\
 "next stop, hell on earth!"
+*/
 extern char *s_E4TEXT; // = E4TEXT;
 
 
 // after level 6, put this:
 
-//#define C1TEXT \
+/*#define C1TEXT \
 "YOU HAVE ENTERED DEEPLY INTO THE INFESTED\n" \
 "STARPORT. BUT SOMETHING IS WRONG. THE\n" \
 "MONSTERS HAVE BROUGHT THEIR OWN REALITY\n" \
@@ -724,11 +731,12 @@ extern char *s_E4TEXT; // = E4TEXT;
 "OF THE STARBASE AND FIND THE CONTROLLING\n" \
 "SWITCH WHICH HOLDS EARTH'S POPULATION\n" \
 "HOSTAGE."
+*/
 extern char *s_C1TEXT; // = C1TEXT;
 
 // After level 11, put this:
 
-//#define C2TEXT \
+/*#define C2TEXT \
 "YOU HAVE WON! YOUR VICTORY HAS ENABLED\n" \
 "HUMANKIND TO EVACUATE EARTH AND ESCAPE\n"\
 "THE NIGHTMARE.  NOW YOU ARE THE ONLY\n"\
@@ -746,12 +754,13 @@ extern char *s_C1TEXT; // = C1TEXT;
 "YOUR OWN HOME CITY, NOT FAR FROM THE\n"\
 "STARPORT.\" SLOWLY AND PAINFULLY YOU GET\n"\
 "UP AND RETURN TO THE FRAY."
+*/
 extern char *s_C2TEXT; // = C2TEXT;
 
 
 // After level 20, put this:
 
-//#define C3TEXT \
+/*#define C3TEXT \
 "YOU ARE AT THE CORRUPT HEART OF THE CITY,\n"\
 "SURROUNDED BY THE CORPSES OF YOUR ENEMIES.\n"\
 "YOU SEE NO WAY TO DESTROY THE CREATURES'\n"\
@@ -761,12 +770,13 @@ extern char *s_C2TEXT; // = C2TEXT;
 "THERE MUST BE A WAY TO CLOSE IT ON THE\n"\
 "OTHER SIDE. WHAT DO YOU CARE IF YOU'VE\n"\
 "GOT TO GO THROUGH HELL TO GET TO IT?"
+*/
 extern char *s_C3TEXT; // = C3TEXT;
 
 
 // After level 29, put this:
 
-//#define C4TEXT \
+/*#define C4TEXT \
 "THE HORRENDOUS VISAGE OF THE BIGGEST\n"\
 "DEMON YOU'VE EVER SEEN CRUMBLES BEFORE\n"\
 "YOU, AFTER YOU PUMP YOUR ROCKETS INTO\n"\
@@ -782,33 +792,36 @@ extern char *s_C3TEXT; // = C3TEXT;
 "FOREHEAD YOU BEGIN THE LONG TREK BACK\n"\
 "HOME. REBUILDING EARTH OUGHT TO BE A\n"\
 "LOT MORE FUN THAN RUINING IT WAS.\n"
+*/
 extern char *s_C4TEXT; // = C4TEXT;
 
 
 
 // Before level 31, put this:
 
-//#define C5TEXT \
+/*#define C5TEXT \
 "CONGRATULATIONS, YOU'VE FOUND THE SECRET\n"\
 "LEVEL! LOOKS LIKE IT'S BEEN BUILT BY\n"\
 "HUMANS, RATHER THAN DEMONS. YOU WONDER\n"\
 "WHO THE INMATES OF THIS CORNER OF HELL\n"\
 "WILL BE."
+*/
 extern char *s_C5TEXT; // = C5TEXT;
 
 
 // Before level 32, put this:
 
-//#define C6TEXT \
+/*#define C6TEXT \
 "CONGRATULATIONS, YOU'VE FOUND THE\n"\
 "SUPER SECRET LEVEL!  YOU'D BETTER\n"\
 "BLAZE THROUGH THIS ONE!\n"
+*/
 extern char *s_C6TEXT; // = C6TEXT;
 
 
 // after map 06 
 
-//#define P1TEXT  \
+/*#define P1TEXT  \
 "You gloat over the steaming carcass of the\n"\
 "Guardian.  With its death, you've wrested\n"\
 "the Accelerator from the stinking claws\n"\
@@ -821,24 +834,26 @@ extern char *s_C6TEXT; // = C6TEXT;
 "struggles will have been wasted. Keep\n"\
 "moving, keep fighting, keep killing.\n"\
 "Oh yes, keep living, too."
+*/
 extern char *s_P1TEXT; // = P1TEXT;
 
 
 // after map 11
 
-//#define P2TEXT \
+/*#define P2TEXT \
 "Even the deadly Arch-Vile labyrinth could\n"\
 "not stop you, and you've gotten to the\n"\
 "prototype Accelerator which is soon\n"\
 "efficiently and permanently deactivated.\n"\
 "\n"\
 "You're good at that kind of thing."
+*/
 extern char *s_P2TEXT; // = P2TEXT;
 
 
 // after map 20
 
-//#define P3TEXT \
+/*#define P3TEXT \
 "You've bashed and battered your way into\n"\
 "the heart of the devil-hive.  Time for a\n"\
 "Search-and-Destroy mission, aimed at the\n"\
@@ -849,11 +864,12 @@ extern char *s_P2TEXT; // = P2TEXT;
 "Grinning evilly, you check your gear, and\n"\
 "get ready to give the bastard a little Hell\n"\
 "of your own making!"
+*/
 extern char *s_P3TEXT; // = P3TEXT;
 
 // after map 30
 
-//#define P4TEXT \
+/*#define P4TEXT \
 "The Gatekeeper's evil face is splattered\n"\
 "all over the place.  As its tattered corpse\n"\
 "collapses, an inverted Gate forms and\n"\
@@ -866,27 +882,30 @@ extern char *s_P3TEXT; // = P3TEXT;
 "launcher in your coffin. If you go to Hell\n"\
 "when you die, you'll need it for some\n"\
 "final cleaning-up ..."
+*/
 extern char *s_P4TEXT; // = P4TEXT;
 
 // before map 31
 
-//#define P5TEXT \
+/*#define P5TEXT \
 "You've found the second-hardest level we\n"\
 "got. Hope you have a saved game a level or\n"\
 "two previous.  If not, be prepared to die\n"\
 "aplenty. For master marines only."
+*/
 extern char *s_P5TEXT; // = P5TEXT;
 
 // before map 32
 
-//#define P6TEXT \
+/*#define P6TEXT \
 "Betcha wondered just what WAS the hardest\n"\
 "level we had ready for ya?  Now you know.\n"\
 "No one gets out alive."
+*/
 extern char *s_P6TEXT; // = P6TEXT;
 
 
-//#define T1TEXT \
+/*#define T1TEXT \
 "You've fought your way out of the infested\n"\
 "experimental labs.   It seems that UAC has\n"\
 "once again gulped it down.  With their\n"\
@@ -899,10 +918,11 @@ extern char *s_P6TEXT; // = P6TEXT;
 "their teeth into you. With luck, the\n"\
 "complex still has some warlike ordnance\n"\
 "laying around."
+*/
 extern char *s_T1TEXT; // = T1TEXT;
 
 
-//#define T2TEXT \
+/*#define T2TEXT \
 "You hear the grinding of heavy machinery\n"\
 "ahead.  You sure hope they're not stamping\n"\
 "out new hellspawn, but you're ready to\n"\
@@ -912,10 +932,11 @@ extern char *s_T1TEXT; // = T1TEXT;
 "maniacs packed into one mad killer.\n"\
 "\n"\
 "You don't plan to go down easy."
+*/
 extern char *s_T2TEXT; // = T2TEXT;
 
 
-//#define T3TEXT \
+/*#define T3TEXT \
 "The vista opening ahead looks real damn\n"\
 "familiar. Smells familiar, too -- like\n"\
 "fried excrement. You didn't like this\n"\
@@ -924,9 +945,10 @@ extern char *s_T2TEXT; // = T2TEXT;
 "brood on it, the madder you get.\n"\
 "Hefting your gun, an evil grin trickles\n"\
 "onto your face. Time to take some names."
+*/
 extern char *s_T3TEXT; // = T3TEXT;
 
-//#define T4TEXT \
+/*#define T4TEXT \
 "Suddenly, all is silent, from one horizon\n"\
 "to the other. The agonizing echo of Hell\n"\
 "fades away, the nightmare sky turns to\n"\
@@ -938,19 +960,21 @@ extern char *s_T3TEXT; // = T3TEXT;
 "Something rumbles in the distance.\n"\
 "A blue light begins to glow inside the\n"\
 "ruined skull of the demon-spitter."
+*/
 extern char *s_T4TEXT; // = T4TEXT;
 
 
-//#define T5TEXT \
+/*#define T5TEXT \
 "What now? Looks totally different. Kind\n"\
 "of like King Tut's condo. Well,\n"\
 "whatever's here can't be any worse\n"\
 "than usual. Can it?  Or maybe it's best\n"\
 "to let sleeping gods lie.."
+*/
 extern char *s_T5TEXT; // = T5TEXT;
 
 
-//#define T6TEXT \
+/*#define T6TEXT \
 "Time for a vacation. You've burst the\n"\
 "bowels of hell and by golly you're ready\n"\
 "for a break. You mutter to yourself,\n"\
@@ -961,6 +985,7 @@ extern char *s_T5TEXT; // = T5TEXT;
 "\n"\
 "As you step off the transport, you hear\n"\
 "the stomp of a cyberdemon's iron shoe."
+*/
 extern char *s_T6TEXT; // = T6TEXT;
 
 
@@ -1048,6 +1073,9 @@ extern char *savegamename;
 //--------------------------------------------------------------------
 //
 // $Log: d_deh.h,v $
+// Revision 1.6  1998/07/12  08:23:49  thldrmn
+// Correct multiline comments
+//
 // Revision 1.5  1998/05/04  21:36:33  thldrmn
 // commenting, reformatting and savegamename change
 //

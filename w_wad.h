@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h,v 1.10 1998/05/06 11:32:05 jim Exp $
+// $Id: w_wad.h,v 1.11 1998/08/29 22:59:17 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -70,6 +70,13 @@ typedef struct
 
   int handle;
   int position;
+  // Ty 08/29/98 - add source field to identify where this lump came from
+  enum {
+    source_iwad=0, // iwad file load 
+    source_pwad,   // pwad file load
+    source_lmp,    // lmp file load
+    source_pre     // predefined lump
+  } source;  
 } lumpinfo_t;
 
 // killough 1/31/98: predefined lumps
@@ -80,7 +87,7 @@ extern void       **lumpcache;
 extern lumpinfo_t *lumpinfo;
 extern int        numlumps;
 
-void W_InitMultipleFiles(char *const*filenames);
+void W_InitMultipleFiles(char *const*filenames, int *const filesource);
 
 // killough 4/17/98: if W_CheckNumForName() called with only
 // one argument, pass ns_global as the default namespace
@@ -107,6 +114,9 @@ extern void WritePredefinedLumpWad(const char *filename); // jff 5/6/98
 //----------------------------------------------------------------------------
 //
 // $Log: w_wad.h,v $
+// Revision 1.11  1998/08/29  22:59:17  thldrmn
+// Added source field to lumpinfo_t
+//
 // Revision 1.10  1998/05/06  11:32:05  jim
 // Moved predefined lump writer info->w_wad
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c,v 1.16 1998/05/07 00:56:49 killough Exp $
+// $Id: p_setup.c,v 1.21 1998/10/13 03:19:21 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_setup.c,v 1.16 1998/05/07 00:56:49 killough Exp $";
+rcsid[] = "$Id: p_setup.c,v 1.21 1998/10/13 03:19:21 jim Exp $";
 
 #include "doomstat.h"
 #include "m_bbox.h"
@@ -38,6 +38,7 @@ rcsid[] = "$Id: p_setup.c,v 1.16 1998/05/07 00:56:49 killough Exp $";
 #include "p_tick.h"
 #include "p_enemy.h"
 #include "s_sound.h"
+#include "lprintf.h" //jff 10/6/98 for debug outputs
 
 //
 // MAP related Lookup tables.
@@ -138,6 +139,7 @@ void P_LoadVertexes (int lump)
   Z_Free (data);
 }
 
+
 //
 // P_LoadSegs
 //
@@ -147,11 +149,31 @@ void P_LoadSegs (int lump)
 {
   int  i;
   byte *data;
+  byte *vertchanged = Z_Malloc(numvertexes,PU_LEVEL,0); // phares 10/4/98
+  line_t* line;     // phares 10/4/98
+  int ptp_angle;    // phares 10/4/98
+  int delta_angle;  // phares 10/4/98
+  int dis;          // phares 10/4/98
+  int dx,dy;        // phares 10/4/98
+  int vnum1,vnum2;  // phares 10/4/98
+
+  memset(vertchanged,0,numvertexes); // phares 10/4/98
 
   numsegs = W_LumpLength(lump) / sizeof(mapseg_t);
   segs = Z_Malloc(numsegs*sizeof(seg_t),PU_LEVEL,0);
   memset(segs, 0, numsegs*sizeof(seg_t));
   data = W_CacheLumpNum(lump,PU_STATIC);
+
+  // phares: 10/4/98: Vertchanged is an array that represents the vertices.
+  // Mark those used by linedefs. A marked vertex is one that is not a
+  // candidate for movement further down.
+
+  line = lines;
+  for (i = 0; i < numlines ; i++,line++)
+    {
+    vertchanged[line->v1 - vertexes] = 1;
+    vertchanged[line->v2 - vertexes] = 1;
+    }
 
   for (i=0; i<numsegs; i++)
     {
@@ -165,6 +187,64 @@ void P_LoadSegs (int lump)
       li->v2 = &vertexes[SHORT(ml->v2)];
 
       li->angle = (SHORT(ml->angle))<<16;
+
+// phares 10/4/98: In the case of a lineseg that was created by splitting
+// another line, it appears that the line angle is inherited from the
+// father line. Due to roundoff, the new vertex may have been placed 'off
+// the line'. When you get close to such a line, and it is very short,
+// it's possible that the roundoff error causes 'firelines', the thin
+// lines that can draw from screen top to screen bottom occasionally. This
+// is due to all the angle calculations that are done based on the line
+// angle, the angles from the viewer to the vertices, and the viewer's
+// angle in the world. In the case of firelines, the rounded-off position
+// of one of the vertices determines one of these angles, and introduces
+// an error in the scaling factor for mapping textures and determining
+// where on the screen the ceiling and floor spans should be shown. For a
+// fireline, the engine thinks the ceiling bottom and floor top are at the
+// midpoint of the screen. So you get ceilings drawn all the way down to the
+// screen midpoint, and floors drawn all the way up. Thus 'firelines'. The
+// name comes from the original sighting, which involved a fire texture.
+//
+// To correct this, reset the vertex that was added so that it sits ON the
+// split line.
+//
+// To know which of the two vertices was added, its number is greater than
+// that of the last of the author-created vertices. If both vertices of the
+// line were added by splitting, pick the higher-numbered one. Once you've
+// changed a vertex, don't change it again if it shows up in another seg.
+//
+// To determine if there's an error in the first place, find the
+// angle of the line between the two seg vertices. If it's one degree or more
+// off, then move one vertex. This may seem insignificant, but one degree
+// errors _can_ cause firelines.
+
+      ptp_angle = R_PointToAngle2(li->v1->x,li->v1->y,li->v2->x,li->v2->y);
+      dis = 0;
+      delta_angle = (abs(ptp_angle-li->angle)>>ANGLETOFINESHIFT)*360/8192;
+
+      if (delta_angle != 0)
+        {
+        dx = (li->v1->x - li->v2->x)>>FRACBITS;
+        dy = (li->v1->y - li->v2->y)>>FRACBITS;
+        dis = ((int) sqrt(dx*dx + dy*dy))<<FRACBITS;
+        dx = finecosine[li->angle>>ANGLETOFINESHIFT];
+        dy = finesine[li->angle>>ANGLETOFINESHIFT];
+        vnum1 = li->v1 - vertexes; 
+        vnum2 = li->v2 - vertexes; 
+        if ((vnum2 > vnum1) && (vertchanged[vnum2] == 0))
+          {
+          li->v2->x = li->v1->x + FixedMul(dis,dx);
+          li->v2->y = li->v1->y + FixedMul(dis,dy);
+          vertchanged[vnum2] = 1; // this was changed
+          }
+        else if (vertchanged[vnum1] == 0)
+          {
+          li->v1->x = li->v2->x - FixedMul(dis,dx);
+          li->v1->y = li->v2->y - FixedMul(dis,dy);
+          vertchanged[vnum1] = 1; // this was changed
+          }
+        }
+
       li->offset = (SHORT(ml->offset))<<16;
       linedef = SHORT(ml->linedef);
       ldef = &lines[linedef];
@@ -181,6 +261,7 @@ void P_LoadSegs (int lump)
     }
 
   Z_Free (data);
+  Z_Free(vertchanged); // phares 10/4/98
 }
 
 
@@ -514,6 +595,324 @@ void P_LoadSideDefs2(int lump)
   Z_Free (data);
 }
 
+//
+// jff 10/6/98
+// New code added to speed up calculation of internal blockmap
+// Algorithm is order of nlines*(ncols+nrows) not nlines*ncols*nrows
+// 
+
+#define blkshift 7               /* places to shift rel position for cell num */
+#define blkmask ((1<<blkshift)-1)/* mask for rel position within cell */
+#define blkmargin 0              /* size guardband around map used */
+                                 // jff 10/8/98 use guardband>0 
+                                 // jff 10/12/98 0 ok with + 1 in rows,cols
+
+typedef struct linelist_t        // type used to list lines in each block
+{
+  long num;
+  struct linelist_t *next;
+} linelist_t;
+
+//
+// Subroutine to add a line number to a block list
+// It simply returns if the line is already in the block
+//
+
+static void AddBlockLine
+(
+  linelist_t **lists,
+  int *count,
+  int *done,
+  int blockno,
+  long lineno
+)
+{
+  linelist_t *l;
+
+  if (done[blockno])
+    return;
+
+  l = malloc(sizeof(linelist_t));
+  l->num = lineno;
+  l->next = lists[blockno];
+  lists[blockno] = l;
+  count[blockno]++;
+  done[blockno] = 1;
+}
+
+//
+// Actually construct the blockmap lump from the level data
+//
+// This finds the intersection of each linedef with the column and
+// row lines at the left and bottom of each blockmap cell. It then
+// adds the line to all block lists touching the intersection.
+//
+
+void P_CreateBlockMap()
+{
+  int xorg,yorg;                 // blockmap origin (lower left)
+  int nrows,ncols;               // blockmap dimensions
+  linelist_t **blocklists=NULL;  // array of pointers to lists of lines
+  int *blockcount=NULL;          // array of counters of line lists
+  int *blockdone=NULL;           // array keeping track of blocks/line
+  int NBlocks;                   // number of cells = nrows*ncols
+  long linetotal=0;              // total length of all blocklists
+  int i,j;
+  int map_minx=INT_MAX;          // init for map limits search
+  int map_miny=INT_MAX;
+  int map_maxx=INT_MIN;
+  int map_maxy=INT_MIN;
+
+  // scan for map limits, which the blockmap must enclose
+
+  for (i=0;i<numvertexes;i++)
+  {
+    fixed_t t;
+
+    if ((t=vertexes[i].x) < map_minx)
+      map_minx = t;
+    else if (t > map_maxx)
+      map_maxx = t;
+    if ((t=vertexes[i].y) < map_miny)
+      map_miny = t;
+    else if (t > map_maxy)
+      map_maxy = t;
+  }
+  map_minx >>= FRACBITS;    // work in map coords, not fixed_t
+  map_maxx >>= FRACBITS;
+  map_miny >>= FRACBITS;
+  map_maxy >>= FRACBITS;
+
+  // set up blockmap area to enclose level plus margin
+
+  xorg = map_minx-blkmargin;
+  yorg = map_miny-blkmargin;
+  ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift;  //jff 10/12/98
+  nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift;  //+1 needed for
+  NBlocks = ncols*nrows;                                  //map exactly 1 cell
+
+  // create the array of pointers on NBlocks to blocklists
+  // also create an array of linelist counts on NBlocks
+  // finally make an array in which we can mark blocks done per line
+
+  blocklists = malloc(NBlocks*sizeof(linelist_t *));
+  memset(blocklists,0,NBlocks*sizeof(linelist_t *));
+  blockcount = malloc(NBlocks*sizeof(int));
+  memset(blockcount,0,NBlocks*sizeof(int));
+  blockdone = malloc(NBlocks*sizeof(int));
+
+  // initialize each blocklist, and enter the trailing -1 in all blocklists
+  // note the linked list of lines grows backwards
+
+  for (i=0;i<NBlocks;i++)
+  {
+    blocklists[i] = malloc(sizeof(linelist_t));
+    blocklists[i]->num = -1;
+    blocklists[i]->next = NULL;
+    blockcount[i]++;
+  }
+
+  // For each linedef in the wad, determine all blockmap blocks it touches,
+  // and add the linedef number to the blocklists for those blocks
+
+  for (i=0;i<numlines;i++)
+  {
+    int x1 = lines[i].v1->x>>FRACBITS;         // lines[i] map coords
+    int y1 = lines[i].v1->y>>FRACBITS;
+    int x2 = lines[i].v2->x>>FRACBITS;
+    int y2 = lines[i].v2->y>>FRACBITS;
+    int dx = x2-x1;
+    int dy = y2-y1;
+    int vert = !dx;                            // lines[i] slopetype
+    int horiz = !dy;
+    int spos = (dx^dy) > 0;
+    int sneg = (dx^dy) < 0;
+    int bx,by;                                 // block cell coords
+    int minx = x1>x2? x2 : x1;                 // extremal lines[i] coords
+    int maxx = x1>x2? x1 : x2;
+    int miny = y1>y2? y2 : y1;
+    int maxy = y1>y2? y1 : y2;
+
+    // no blocks done for this linedef yet
+
+    memset(blockdone,0,NBlocks*sizeof(int));
+
+    // The line always belongs to the blocks containing its endpoints
+
+    bx = (x1-xorg)>>blkshift;
+    by = (y1-yorg)>>blkshift;
+    AddBlockLine(blocklists,blockcount,blockdone,by*ncols+bx,i);
+    bx = (x2-xorg)>>blkshift;
+    by = (y2-yorg)>>blkshift;
+    AddBlockLine(blocklists,blockcount,blockdone,by*ncols+bx,i);
+
+
+    // For each column, see where the line along its left edge, which 
+    // it contains, intersects the Linedef i. Add i to each corresponding
+    // blocklist.
+
+    if (!vert)    // don't interesect vertical lines with columns
+    {
+      for (j=0;j<ncols;j++)
+      {
+        // intersection of Linedef with x=xorg+(j<<blkshift)
+        // (y-y1)*dx = dy*(x-x1)
+        // y = dy*(x-x1)+y1*dx;
+
+        int x = xorg+(j<<blkshift);       // (x,y) is intersection
+        int y = (dy*(x-x1))/dx+y1;
+        int yb = (y-yorg)>>blkshift;      // block row number
+        int yp = (y-yorg)&blkmask;        // y position within block
+
+        if (yb<0 || yb>nrows-1)     // outside blockmap, continue
+          continue;
+
+        if (x<minx || x>maxx)       // line doesn't touch column
+          continue;
+
+        // The cell that contains the intersection point is always added
+
+        AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j,i);
+
+        // if the intersection is at a corner it depends on the slope
+        // (and whether the line extends past the intersection) which 
+        // blocks are hit
+
+        if (yp==0)        // intersection at a corner
+        {
+          if (sneg)       //   \ - blocks x,y-, x-,y
+          {
+            if (yb>0 && miny<y)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*(yb-1)+j,i);
+            if (j>0 && minx<x)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j-1,i);
+          }
+          else if (spos)  //   / - block x-,y-
+          {
+            if (yb>0 && j>0 && minx<x)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*(yb-1)+j-1,i);
+          }
+          else if (horiz) //   - - block x-,y
+          {
+            if (j>0 && minx<x)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j-1,i);
+          }
+        }
+        else if (j>0 && minx<x) // else not at corner: x-,y
+          AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j-1,i);
+      }
+    }
+
+    // For each row, see where the line along its bottom edge, which 
+    // it contains, intersects the Linedef i. Add i to all the corresponding
+    // blocklists.
+
+    if (!horiz)
+    {
+      for (j=0;j<nrows;j++)
+      {
+        // intersection of Linedef with y=yorg+(j<<blkshift)
+        // (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
+        // x = dx*(y-y1)/dy+x1;
+
+        int y = yorg+(j<<blkshift);       // (x,y) is intersection
+        int x = (dx*(y-y1))/dy+x1;
+        int xb = (x-xorg)>>blkshift;      // block column number
+        int xp = (x-xorg)&blkmask;        // x position within block
+
+        if (xb<0 || xb>ncols-1)   // outside blockmap, continue
+          continue;
+
+        if (y<miny || y>maxy)     // line doesn't touch row
+          continue;
+
+        // The cell that contains the intersection point is always added
+
+        AddBlockLine(blocklists,blockcount,blockdone,ncols*j+xb,i);
+
+        // if the intersection is at a corner it depends on the slope
+        // (and whether the line extends past the intersection) which 
+        // blocks are hit
+
+        if (xp==0)        // intersection at a corner
+        {
+          if (sneg)       //   \ - blocks x,y-, x-,y
+          {
+            if (j>0 && miny<y)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*(j-1)+xb,i);
+            if (xb>0 && minx<x)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*j+xb-1,i);
+          }
+          else if (vert)  //   | - block x,y-
+          {
+            if (j>0 && miny<y)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*(j-1)+xb,i);
+          }
+          else if (spos)  //   / - block x-,y-
+          {
+            if (xb>0 && j>0 && miny<y)
+              AddBlockLine(blocklists,blockcount,blockdone,ncols*(j-1)+xb-1,i);
+          }
+        }
+        else if (j>0 && miny<y) // else not on a corner: x,y-
+          AddBlockLine(blocklists,blockcount,blockdone,ncols*(j-1)+xb,i);
+      }
+    }
+  }
+
+  // Add initial 0 to all blocklists
+  // count the total number of lines (and 0's and -1's)
+
+  memset(blockdone,0,NBlocks*sizeof(int));
+  for (i=0,linetotal=0;i<NBlocks;i++)
+  {
+    AddBlockLine(blocklists,blockcount,blockdone,i,0);
+    linetotal += blockcount[i];
+  }
+
+  // Create the blockmap lump
+
+  blockmaplump = Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal),
+                          PU_LEVEL, 0);
+  // blockmap header
+
+  blockmaplump[0] = bmaporgx = xorg << FRACBITS;
+  blockmaplump[1] = bmaporgy = yorg << FRACBITS;
+  blockmaplump[2] = bmapwidth  = ncols;
+  blockmaplump[3] = bmapheight = nrows;
+
+  // offsets to lists and block lists
+
+  for (i=0;i<NBlocks;i++)
+  {
+    linelist_t *bl = blocklists[i];
+    long offs = blockmaplump[4+i] =   // set offset to block's list
+      (i? blockmaplump[4+i-1] : 4+NBlocks) + (i? blockcount[i-1] : 0);
+
+    // add the lines in each block's list to the blockmaplump
+    // delete each list node as we go
+
+    while (bl)
+    {
+      linelist_t *tmp = bl->next;
+      blockmaplump[offs++] = bl->num;
+      free(bl);
+      bl = tmp;
+    }
+  }
+
+  // free all temporary storage
+
+  free (blocklists);
+  free (blockcount);
+  free (blockdone);
+}
+
+// jff 10/6/98
+// End new code added to speed up calculation of internal blockmap
+
+#if 0   /*jff 10/6/98 this code superseded by faster blockmap routine above */
+
 // killough 5/3/98: tests whether a linedef is inside a block.
 static boolean IsLineDefInside(const line_t *l, int x, int y)
 {
@@ -613,6 +1012,8 @@ static void P_CreateBlockMap(void)
   memcpy(blockmaplump, bmap, count * sizeof(*bmap));
   free(bmap);
 }
+
+#endif
 
 //
 // P_LoadBlockMap
@@ -802,6 +1203,16 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
   P_GroupLines();
 
   bodyqueslot = 0;
+
+// phares 8/10/98: Clear body queue so the corpses from previous games are
+// not assumed to be from this one. The mobj_t's belonging to these corpses
+// are cleared in the normal freeing of zoned memory between maps, so all
+// we have to do here is clear the pointers to them.
+
+  if (bodyque)
+    for (i = 0 ; i < bodyquesize ; i++)
+      bodyque[i] = 0;
+
   deathmatch_p = deathmatchstarts;
   P_LoadThings(lumpnum+ML_THINGS);
 
@@ -842,6 +1253,15 @@ void P_Init (void)
 //----------------------------------------------------------------------------
 //
 // $Log: p_setup.c,v $
+// Revision 1.21  1998/10/13  03:19:21  jim
+// Rand's segadjust chosen, Blockmap tweak
+//
+// Revision 1.18  1998/10/05  21:29:21  phares
+// Fixed firelines
+//
+// Revision 1.17  1998/08/11  19:32:07  phares
+// DM Weapon bug fix
+//
 // Revision 1.16  1998/05/07  00:56:49  killough
 // Ignore translucency lumps that are not exactly 64K long
 //

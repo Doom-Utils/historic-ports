@@ -1,5 +1,76 @@
 Ty Halderman - change log and diary
 
+10/04/98
+
+If -warp without a level number was used without having specified a 
+PWAD, it would correctly warp to the first map in the IWAD but would
+report to the screen that it was warping to the highest map number
+(typically MAP32).  Discovered and fixed a potential out of range 
+subscript while fixing that message.
+
+9/13/98
+
+Fixed looping bug in new -warp routine that would print the wrong
+map name to the console, though it would still warp correctly.  Only
+occurred with DOOM 1 or Ultimate DOOM.
+
+Updated documentation in BOOMDEH.TXT to match actual Thing bit 
+mnemonics for unused bits 27-30 as "UNUSED1...UNUSED4"
+
+8/29/98
+
+Added the ability to put files on the command line and have them 
+understood without the -file, -deh and -playdemo switches, so long
+as they come before the first -switch on the line.  A file with no
+extension is assumed a .wad file.  .bex and .deh files are handled
+as if they were preceded by -deh, and .lmp files are handled as if
+they were preceded by -loadfile
+
+Added functionality to the -warp parameter.  If -warp does not have
+any map number after it, then the game will automatically warp to
+the first map of all files loaded at the command line.  This allows a
+pwad to be run without concern for where the actual maps start.
+
+Added a new element to the lumpinfo_t structure: source
+This is set to an enum of source_iwad, source_pwad, source_lmp 
+or source_pre (that latter indicates a predefined lump in the EXE, and
+the others should be obvious).  Anywhere that the source of a lump needs
+to be determined, just use lumpinfo[i].source.  This is used in the
+-warp functionality above, to allow searching for the first pwad-loaded
+map.
+
+Affected: W_WAD.C, W_WAD.H, D_MAIN.C, D_MAIN.H.  Note many object files
+became obsolete with these .H changes and had to be recompiled.
+
+Changed BOOM.TXT to describe the above functionality with sections
+marked *New:
+
+8/28/98
+
+Fixed map names and intermission texts to properly display for Final 
+DOOM episodes The Plutonia Experiment and TNT:Evilution.  This also fixes
+the title display during startup.
+
+Added a new mnemonic feature to BEX to allow characteristics of a Thing
+to be set by real words and not just a huge "bits" number.  Full list of
+default Thing bits included, along with documentation on the mnemonics,
+in BOOMDEH.TXT.
+
+Affected: BOOMDEH.TXT, D_DEH.C, HU_STUFF.C, F_FINALE.C
+
+7/11/98
+
+Fixed par times parsing and assignment problems. Had overcompensated for 
+non-zero based arrays, and other general confusion.  Now supports 
+MAP[01-32] and E[1-3]M[1-9].  Note Ultimate DOOM never did have par times
+and so E4xx is not supported.
+
+Also corrected multi-line comments in D_DEH.H (thanks to Florian Schultze)
+
+6/01/98
+
+Altered a pointer assignment statement for compatibility with GCC v2.8.1
+
 5/17/98
 
 Fixed a bug that would process the last line of each deh/bex file twice.

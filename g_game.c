@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c,v 1.58 1998/05/16 09:16:57 killough Exp $
+// $Id: g_game.c,v 1.63 1998/09/16 06:59:50 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: g_game.c,v 1.58 1998/05/16 09:16:57 killough Exp $";
+rcsid[] = "$Id: g_game.c,v 1.63 1998/09/16 06:59:50 phares Exp $";
 
 #include <time.h>
 #include <stdarg.h>
@@ -213,6 +213,7 @@ int defaultskill;               //note 1-based
 
 // killough 2/8/98: make corpse queue variable in size
 int    bodyqueslot, bodyquesize;        // killough 2/8/98
+mobj_t **bodyque = 0;                   // phares 8/10/98
 
 void   *statcopy;       // for statistics driver
 
@@ -939,7 +940,7 @@ boolean G_CheckSpot(int playernum, mapthing_t *mthing)
   // killough 2/8/98: make corpse queue have an adjustable limit
   if (bodyquesize > 0)
     {
-      static mobj_t **bodyque;
+//    static mobj_t **bodyque;       // phares 8/10/98: moved outside routine
       if (!bodyque)
         bodyque = calloc(bodyquesize,sizeof*bodyque);
       if (bodyque[bodyqueslot])
@@ -1490,9 +1491,23 @@ void G_DoSaveGame (void)
   Z_CheckHeap();
   P_ArchivePlayers();
   Z_CheckHeap();
+
+  // phares 9/13/98: Move mobj_t->index out of P_ArchiveThinkers so the
+  // indices can be used by P_ArchiveWorld when the sectors are saved.
+  // This is so we can save the index of the mobj_t of the thinker that
+  // caused a sound, referenced by sector_t->soundtarget.
+
+  P_ThinkerToIndex();
+
   P_ArchiveWorld();
   Z_CheckHeap();
   P_ArchiveThinkers();
+
+  // phares 9/13/98: Move index->mobj_t out of P_ArchiveThinkers, simply
+  // for symmetry with the P_ThinkerToIndex call above.
+
+  P_IndexToThinker();
+
   Z_CheckHeap();
   P_ArchiveSpecials();
   P_ArchiveRNG();    // killough 1/18/98: save RNG information
@@ -1976,6 +1991,9 @@ void G_DoPlayDemo (void)
       deathmatch = *demo_p++;
       consoleplayer = *demo_p++;
       demo_p = G_ReadOptions(demo_p);  // killough 3/1/98: Read game options
+
+      if (demover == 200)              // killough 6/3/98: partially fix v2.00 demos
+        demo_p += 128-GAME_OPTION_SIZE;
     }
 
   if (demo_compatibility)  // only 4 players can exist in old demos
@@ -2094,6 +2112,21 @@ void dprintf(const char *s, ...)
 //----------------------------------------------------------------------------
 //
 // $Log: g_game.c,v $
+// Revision 1.63  1998/09/16  06:59:50  phares
+// Save soundtarget across savegames
+//
+// Revision 1.62  1998/08/11  19:31:58  phares
+// DM Weapon bug fix
+//
+// Revision 1.61  1998/07/14  20:06:45  jim
+// correction of minor errors
+//
+// Revision 1.60  1998/06/04  13:03:42  killough
+// Fix v2.00 demos (was 256 not 128)
+//
+// Revision 1.59  1998/06/03  20:23:10  killough
+// fix v2.00 demos
+//
 // Revision 1.58  1998/05/16  09:16:57  killough
 // Make loadgame checksum friendlier
 //

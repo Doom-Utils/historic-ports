@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_system.c,v 1.14 1998/05/03 22:33:13 killough Exp $
+// $Id: i_system.c,v 1.15 1998/09/07 20:06:44 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: i_system.c,v 1.14 1998/05/03 22:33:13 killough Exp $";
+rcsid[] = "$Id: i_system.c,v 1.15 1998/09/07 20:06:44 jim Exp $";
 
 #include <stdio.h>
 
@@ -35,6 +35,7 @@ extern void (*keyboard_lowlevel_callback)(int);  // should be in <allegro.h>
 #include "m_misc.h"
 #include "g_game.h"
 #include "w_wad.h"
+#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 #ifdef __GNUG__
 #pragma implementation "i_system.h"
@@ -226,7 +227,8 @@ void I_Quit (void)
   M_SaveDefaults ();
 
   if (*errmsg)
-    fprintf (stderr, "%s\n", errmsg);
+    //jff 8/3/98 use logical output routine
+    lprintf (LO_ERROR, "%s\n", errmsg);
   else
     I_EndDoom();
 }
@@ -274,6 +276,9 @@ void I_EndDoom(void)
 //----------------------------------------------------------------------------
 //
 // $Log: i_system.c,v $
+// Revision 1.15  1998/09/07  20:06:44  jim
+// Added logical output routine
+//
 // Revision 1.14  1998/05/03  22:33:13  killough
 // beautification
 //

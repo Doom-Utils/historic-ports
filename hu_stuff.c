@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c,v 1.27 1998/05/10 19:03:41 jim Exp $
+// $Id: hu_stuff.c,v 1.30 1998/09/07 20:05:25 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -20,7 +20,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: hu_stuff.c,v 1.27 1998/05/10 19:03:41 jim Exp $";
+rcsid[] = "$Id: hu_stuff.c,v 1.30 1998/09/07 20:05:25 jim Exp $";
 
 // killough 5/3/98: remove unnecessary headers
 
@@ -530,8 +530,7 @@ void HU_Start(void)
   if (hud_msg_lines>HU_MAXMESSAGES)
     hud_msg_lines=HU_MAXMESSAGES;
   //jff 4/21/98 if setup has disabled message list while active, turn it off
-  if (hud_msg_lines<=1)
-    message_list=false;
+  message_list = hud_msg_lines > 1; //jff 8/8/98 initialize both ways
   //jff 2/26/98 add the text refresh widget initialization
   HUlib_initMText
   (
@@ -557,8 +556,9 @@ void HU_Start(void)
       break;
 
     case commercial:
-    default:
-      s = HU_TITLE2;
+    default:  // Ty 08/27/98 - modified to check mission for TNT/Plutonia
+      s = (gamemission==pack_tnt)  ? HU_TITLET : 
+          (gamemission==pack_plut) ? HU_TITLEP : HU_TITLE2;
       break;
   }
   while (*s)
@@ -782,8 +782,8 @@ void HU_Drawer(void)
     !automapactive                   // automap is not active
   )
   {
-    doit = !(gametic&3); //jff 3/4/98 speed update up for slow systems
-    if (doit)            
+    doit = !(gametic&1); //jff 3/4/98 speed update up for slow systems
+    if (doit)            //jff 8/7/98 update every time, avoid lag in update
     {
       HU_MoveHud();                  // insure HUD display coords are correct
 
@@ -1528,7 +1528,6 @@ boolean HU_Responder(event_t *ev)
       c = c - '0';
       if (c > 9)
         return false;
-      // fprintf(stderr, "got here\n");
       macromessage = chat_macros[c];
       
       // kill last message with a '\n'
@@ -1573,6 +1572,15 @@ boolean HU_Responder(event_t *ev)
 //----------------------------------------------------------------------------
 //
 // $Log: hu_stuff.c,v $
+// Revision 1.30  1998/09/07  20:05:25  jim
+// Added logical output routine
+//
+// Revision 1.29  1998/08/29  23:01:05  thldrmn
+// Gamemission fixes for TNT and Plutonia
+//
+// Revision 1.28  1998/08/08  15:17:58  jim
+// HUD update fixes
+//
 // Revision 1.27  1998/05/10  19:03:41  jim
 // formatted/documented hu_stuff
 //

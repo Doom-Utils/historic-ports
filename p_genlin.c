@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c,v 1.18 1998/05/23 10:23:23 jim Exp $
+// $Id: p_genlin.c,v 1.19 1998/06/20 09:04:52 jim Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -22,8 +22,9 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_genlin.c,v 1.18 1998/05/23 10:23:23 jim Exp $";
+rcsid[] = "$Id: p_genlin.c,v 1.19 1998/06/20 09:04:52 jim Exp $";
 
+#include "doomstat.h" //jff 6/19/98 for demo_compatibility
 #include "r_main.h"
 #include "p_spec.h"
 #include "p_tick.h"
@@ -744,13 +745,17 @@ manual_stair:
 
         if (!Igno && tsec->floorpic != texture)
           continue;
-                                  
-        height += floor->direction * stairsize;
+
+        if (demo_compatibility) // jff 6/19/98 prevent double stepsize
+          height += floor->direction * stairsize;
 
         //jff 2/26/98 special lockout condition for retriggering
         if (P_SectorActive(floor_special,tsec) || tsec->stairlock)
           continue;
         
+        if (!demo_compatibility) // jff 6/19/98 increase height AFTER continue
+          height += floor->direction * stairsize;
+
         // jff 2/26/98
         // link the stair chain in both directions
         // lock the stair sector until building complete
@@ -1133,6 +1138,9 @@ manual_door:
 //----------------------------------------------------------------------------
 //
 // $Log: p_genlin.c,v $
+// Revision 1.19  1998/06/20  09:04:52  jim
+// Fix bug in stairs re moving steps
+//
 // Revision 1.18  1998/05/23  10:23:23  jim
 // Fix numeric changer loop corruption
 //
