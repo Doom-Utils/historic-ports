@@ -1,0 +1,33 @@
+---------------------------------------------------------
+What is this release?
+---------------------------------------------------------
+
+This release of BOOM does not involve any changes in the binaries or
+sources from the v2.02 release, it is simply a relicensing of BOOM
+under the GPL. The old license file DOOMLIC.TXT has been replaced by
+a new one, COPYING, copied verbatim from the pages of the GNU
+organization (Free Software Foundation). This was undertaken only
+after permission had been obtained from all copyright holders: id
+Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, and Ty
+Halderman.
+
+The main purpose of relicensing was to clear the path for works derived
+from BOOM to also relicense under the GPL if they wish.
+
+Note that this license only applies to this executable engine and its
+sources. All artwork, sounds, music, and other intellectual property of
+DOOM is not affected by this license.
+
+Any questions regarding the license for BOOM should be sent to:
+
+jflynn@pacbell.net
+
+---------------------------------------------------------
+Specific changes from BOOM v2.02
+---------------------------------------------------------
+
+1) DOOMLIC.TXT replaced by COPYING, the GPL license
+2) All source headers rewritten to reflect license change
+3) .TXT files leftover from original source release renamed .OLD
+
+
