@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_genlin.c,v 1.19 1998/06/20 09:04:52 jim Exp $
+// $Id: p_genlin.c,v 1.18 1998/05/23 10:23:23 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //  Generalized linedef type handlers
 //  Floors, Ceilings, Doors, Locked Doors, Lifts, Stairs, Crushers
@@ -29,9 +29,9 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_genlin.c,v 1.19 1998/06/20 09:04:52 jim Exp $";
+rcsid[] = "$Id: p_genlin.c,v 1.18 1998/05/23 10:23:23 jim Exp $";
 
-#include "doomstat.h" //jff 6/19/98 for demo_compatibility
+#include "doomstat.h"
 #include "r_main.h"
 #include "p_spec.h"
 #include "p_tick.h"
@@ -110,7 +110,7 @@ manual_floor:
     floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
     P_AddThinker (&floor->thinker);
     sec->floordata = floor;
-    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+    floor->thinker.function = T_MoveFloor;
     floor->crush = Crsh;
     floor->direction = Dirn? 1 : -1;
     floor->sector = sec;
@@ -313,7 +313,7 @@ manual_ceiling:
     ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
     P_AddThinker (&ceiling->thinker);
     sec->ceilingdata = ceiling; //jff 2/22/98
-    ceiling->thinker.function.acp1 = (actionf_p1) T_MoveCeiling;
+    ceiling->thinker.function = T_MoveCeiling;
     ceiling->crush = Crsh;
     ceiling->direction = Dirn? 1 : -1;
     ceiling->sector = sec;
@@ -520,7 +520,7 @@ manual_lift:
               
     plat->sector = sec;
     plat->sector->floordata = plat;
-    plat->thinker.function.acp1 = (actionf_p1) T_PlatRaise;
+    plat->thinker.function = T_PlatRaise;
     plat->crush = false;
     plat->tag = line->tag;
 
@@ -678,7 +678,7 @@ manual_stair:
     floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
     P_AddThinker (&floor->thinker);
     sec->floordata = floor;
-    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+    floor->thinker.function = T_MoveFloor;
     floor->direction = Dirn? 1 : -1;
     floor->sector = sec;
 
@@ -753,14 +753,18 @@ manual_stair:
         if (!Igno && tsec->floorpic != texture)
           continue;
 
-        if (demo_compatibility) // jff 6/19/98 prevent double stepsize
+	// jff 6/19/98 prevent double stepsize
+	// killough 10/98: corrected use of demo compatibility flag
+        if (demo_version < 202)
           height += floor->direction * stairsize;
 
         //jff 2/26/98 special lockout condition for retriggering
         if (P_SectorActive(floor_special,tsec) || tsec->stairlock)
           continue;
-        
-        if (!demo_compatibility) // jff 6/19/98 increase height AFTER continue
+
+	// jff 6/19/98 increase height AFTER continue        
+	// killough 10/98: corrected use of demo compatibility flag
+        if (demo_version >= 202)
           height += floor->direction * stairsize;
 
         // jff 2/26/98
@@ -778,7 +782,7 @@ manual_stair:
         P_AddThinker (&floor->thinker);
 
         sec->floordata = floor;
-        floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
+        floor->thinker.function = T_MoveFloor;
         floor->direction = Dirn? 1 : -1;
         floor->sector = sec;
         floor->speed = speed;
@@ -860,7 +864,7 @@ manual_crusher:
     ceiling = Z_Malloc (sizeof(*ceiling), PU_LEVSPEC, 0);
     P_AddThinker (&ceiling->thinker);
     sec->ceilingdata = ceiling; //jff 2/22/98
-    ceiling->thinker.function.acp1 = (actionf_p1) T_MoveCeiling;
+    ceiling->thinker.function = T_MoveCeiling;
     ceiling->crush = true;
     ceiling->direction = -1;
     ceiling->sector = sec;
@@ -956,13 +960,17 @@ manual_locked:
     P_AddThinker (&door->thinker);
     sec->ceilingdata = door; //jff 2/22/98
 
-    door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
+    door->thinker.function = T_VerticalDoor;
     door->sector = sec;
     door->topwait = VDOORWAIT;
     door->line = line;
     door->topheight = P_FindLowestCeilingSurrounding(sec);
     door->topheight -= 4*FRACUNIT;
     door->direction = 1;
+
+    // killough 10/98: implement gradual lighting
+    door->lighttag = !comp[comp_doorlight] && (line->special&6) == 6 && 
+      line->special > GenLockedBase ? line->tag : 0;
 
     // setup speed of door motion
     switch(Sped)
@@ -1060,7 +1068,7 @@ manual_door:
     P_AddThinker (&door->thinker);
     sec->ceilingdata = door; //jff 2/22/98
 
-    door->thinker.function.acp1 = (actionf_p1) T_VerticalDoor;
+    door->thinker.function = T_VerticalDoor;
     door->sector = sec;
     // setup delay for door remaining open/closed
     switch(Dely)
@@ -1098,6 +1106,10 @@ manual_door:
         break;
     }
     door->line = line; // jff 1/31/98 remember line that triggered us
+
+    // killough 10/98: implement gradual lighting
+    door->lighttag = !comp[comp_doorlight] && (line->special&6) == 6 && 
+      line->special > GenLockedBase ? line->tag : 0;
 
     // set kind of door, whether it opens then close, opens, closes etc.
     // assign target heights accordingly
@@ -1145,9 +1157,6 @@ manual_door:
 //----------------------------------------------------------------------------
 //
 // $Log: p_genlin.c,v $
-// Revision 1.19  1998/06/20  09:04:52  jim
-// Fix bug in stairs re moving steps
-//
 // Revision 1.18  1998/05/23  10:23:23  jim
 // Fix numeric changer loop corruption
 //

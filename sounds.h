@@ -3,7 +3,6 @@
 //
 // $Id: sounds.h,v 1.3 1998/05/03 22:44:30 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -45,7 +44,16 @@ struct sfxinfo_struct {
   char *name;
 
   // Sfx singularity (only one at a time)
-  int singularity;
+  // killough 12/98: implement separate classes of singularity
+  enum
+  {
+    sg_none,
+    sg_itemup,
+    sg_wpnup,
+    sg_oof,
+    sg_getpow
+  }
+  singularity;
 
   // Sfx priority
   int priority;
@@ -285,6 +293,16 @@ typedef enum {
   sfx_skesit,
   sfx_skeatk,
   sfx_radio,
+
+#ifdef DOGS
+  // killough 11/98: dog sounds
+  sfx_dgsit,
+  sfx_dgatk,
+  sfx_dgact,
+  sfx_dgdth,
+  sfx_dgpain,
+#endif
+
   NUMSFX
 } sfxenum_t;
 

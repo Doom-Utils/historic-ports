@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h,v 1.11 1998/08/29 22:59:17 thldrmn Exp $
+// $Id: w_wad.h,v 1.10 1998/05/06 11:32:05 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,13 +26,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __W_WAD__
 #define __W_WAD__
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 //
 // TYPES
@@ -78,13 +72,6 @@ typedef struct
 
   int handle;
   int position;
-  // Ty 08/29/98 - add source field to identify where this lump came from
-  enum {
-    source_iwad=0, // iwad file load 
-    source_pwad,   // pwad file load
-    source_lmp,    // lmp file load
-    source_pre     // predefined lump
-  } source;  
 } lumpinfo_t;
 
 // killough 1/31/98: predefined lumps
@@ -95,7 +82,7 @@ extern void       **lumpcache;
 extern lumpinfo_t *lumpinfo;
 extern int        numlumps;
 
-void W_InitMultipleFiles(char *const*filenames, int *const filesource);
+void W_InitMultipleFiles(char *const*filenames);
 
 // killough 4/17/98: if W_CheckNumForName() called with only
 // one argument, pass ns_global as the default namespace
@@ -109,10 +96,12 @@ void*   W_CacheLumpNum (int lump, int tag);
 
 #define W_CacheLumpName(name,tag) W_CacheLumpNum (W_GetNumForName(name),(tag))
 
-
+void NormalizeSlashes(char *);                    // killough 11/98
 char *AddDefaultExtension(char *, const char *);  // killough 1/18/98
 void ExtractFileBase(const char *, char *);       // killough
 unsigned W_LumpNameHash(const char *s);           // killough 1/31/98
+
+void I_BeginRead(void), I_EndRead(void); // killough 10/98
 
 // Function to write all predefined lumps to a PWAD if requested
 extern void WritePredefinedLumpWad(const char *filename); // jff 5/6/98
@@ -122,9 +111,6 @@ extern void WritePredefinedLumpWad(const char *filename); // jff 5/6/98
 //----------------------------------------------------------------------------
 //
 // $Log: w_wad.h,v $
-// Revision 1.11  1998/08/29  22:59:17  thldrmn
-// Added source field to lumpinfo_t
-//
 // Revision 1.10  1998/05/06  11:32:05  jim
 // Moved predefined lump writer info->w_wad
 //

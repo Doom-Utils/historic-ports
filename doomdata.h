@@ -3,7 +3,6 @@
 //
 // $Id: doomdata.h,v 1.4 1998/05/03 22:39:10 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //  all external data is defined here

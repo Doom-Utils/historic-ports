@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h,v 1.8 1998/08/29 22:58:49 thldrmn Exp $
+// $Id: d_main.h,v 1.7 1998/05/06 15:32:19 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      System specific interface stuff.
 //
@@ -32,21 +32,16 @@
 
 #include "d_event.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
-#define MAXWADFILES 256        /* make it ridiculously large -- killough */
-extern char *wadfiles[MAXWADFILES];
-extern int wadfilesource[MAXWADFILES];  // Ty 08/29/98 - added source of lumps info
+extern char **wadfiles;       // killough 11/98
 
 // jff make startskill globally visible
 extern skill_t startskill;
 
-void D_AddFile(char *file, int source);
+void D_AddFile(char *file);
 
-char *D_DoomExeDir(void); // killough 2/16/98: path to executable's dir
-
+char *D_DoomExeDir(void);       // killough 2/16/98: path to executable's dir
+char *D_DoomExeName(void);      // killough 10/98: executable's name
+void NormalizeSlashes(char *);  // killough 11/98
 extern char basesavegame[];     // killough 2/16/98: savegame path
 
 //jff 1/24/98 make command line copies of play modes available
@@ -76,9 +71,6 @@ void D_DoomMain(void);
 //----------------------------------------------------------------------------
 //
 // $Log: d_main.h,v $
-// Revision 1.8  1998/08/29  22:58:49  thldrmn
-// Changed prototype for D_Addfile()
-//
 // Revision 1.7  1998/05/06  15:32:19  jim
 // document g_game.c, change externals
 //

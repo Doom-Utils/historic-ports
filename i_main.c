@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_main.c,v 1.9 1998/09/07 20:10:02 jim Exp $
+// $Id: i_main.c,v 1.8 1998/05/15 00:34:03 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,13 +21,14 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Main program, simply calls D_DoomMain high level loop.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: i_main.c,v 1.9 1998/09/07 20:10:02 jim Exp $";
+rcsid[] = "$Id: i_main.c,v 1.8 1998/05/15 00:34:03 killough Exp $";
 
 #include "doomdef.h"
 #include "m_argv.h"
@@ -39,7 +39,6 @@ rcsid[] = "$Id: i_main.c,v 1.9 1998/09/07 20:10:02 jim Exp $";
 #include <sys/nearptr.h>  /* needed for __djgpp_nearptr_enable() -- stan */
 #include <dpmi.h>
 #include <allegro.h>
-#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // cleanup handling -- killough:
 static void handler(int s)
@@ -103,8 +102,8 @@ int main(int argc, char **argv)
 
   if (__djgpp_nearptr_enable())  //handle nearptr now
     D_DoomMain ();
-  else  //jff 8/3/98 use logical output routine
-    lprintf (LO_FATAL,"Failed trying to allocate DOS near pointers.\n");
+  else
+    printf ("Failed trying to allocate DOS near pointers.\n");
 
   return 0;
 }
@@ -113,9 +112,6 @@ int main(int argc, char **argv)
 //----------------------------------------------------------------------------
 //
 // $Log: i_main.c,v $
-// Revision 1.9  1998/09/07  20:10:02  jim
-// Logical output routine added
-//
 // Revision 1.8  1998/05/15  00:34:03  killough
 // Remove unnecessary crash hack
 //

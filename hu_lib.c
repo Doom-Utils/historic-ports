@@ -1,9 +1,8 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id: hu_lib.c,v 1.13 1998/05/11 10:13:26 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:  heads-up text and input code
 //
@@ -69,10 +69,10 @@ void HUlib_init(void)
 //
 void HUlib_clearTextLine(hu_textline_t* t)
 {
-    t->linelen =         // killough 1/23 98: support multiple lines
-    t->len = 0;
-    t->l[0] = 0;
-    t->needsupdate = true;
+  t->linelen = 0;        // killough 1/23/98: support multiple lines
+  t->len = 0;
+  t->l[0] = 0;
+  t->needsupdate = true;
 }
 
 //
@@ -84,13 +84,9 @@ void HUlib_clearTextLine(hu_textline_t* t)
 // Passed a hu_textline_t, and the values used to initialize
 // Returns nothing
 //
-void HUlib_initTextLine
-( hu_textline_t* t,
-  int x,
-  int y,
-  patch_t** f,
-  int sc,
-  char *cr  )           //jff 2/16/98 add color range parameter
+
+void HUlib_initTextLine(hu_textline_t *t, int x, int y, patch_t **f, int sc,
+                        char *cr) //jff 2/16/98 add color range parameter
 {
   t->x = x;
   t->y = y;
@@ -108,25 +104,22 @@ void HUlib_initTextLine
 // Passed the hu_textline_t and the char to add
 // Returns false if already at length limit, true if the character added
 //
-boolean HUlib_addCharToTextLine
-( hu_textline_t*  t,
-  char      ch )
+
+boolean HUlib_addCharToTextLine(hu_textline_t *t, char ch)
 {
   // killough 1/23/98 -- support multiple lines
   if (t->linelen == HU_MAXLINELENGTH)
     return false;
   else
-  {
-    t->linelen++;
-    if (ch == '\n') 
-      t->linelen=0;
-
-    t->l[t->len++] = ch;
-    t->l[t->len] = 0;
-    t->needsupdate = 4;
-    return true;
-  }
-
+    {
+      t->linelen++;
+      if (ch == '\n')
+        t->linelen=0;
+      t->l[t->len++] = ch;
+      t->l[t->len] = 0;
+      t->needsupdate = 4;
+      return true;
+    }
 }
 
 //
@@ -137,15 +130,10 @@ boolean HUlib_addCharToTextLine
 // Passed the hu_textline_t
 // Returns false if already empty, true if the character deleted
 //
+
 boolean HUlib_delCharFromTextLine(hu_textline_t* t)
 {
-  if (!t->len) return false;
-  else
-  {
-    t->l[--t->len] = 0;
-    t->needsupdate = 4;
-    return true;
-  }
+  return t->len ? t->l[--t->len] = 0, t->needsupdate = 4, true : false;
 }
 
 //
@@ -156,58 +144,50 @@ boolean HUlib_delCharFromTextLine(hu_textline_t* t)
 // Passed the hu_textline_t and flag whether to draw a cursor
 // Returns nothing
 //
-void HUlib_drawTextLine
-( hu_textline_t* l,
-  boolean drawcursor )
-{
 
-  int     i;
-  int     w;
-  int     x;
+void HUlib_drawTextLine(hu_textline_t *l, boolean drawcursor)
+{
+  int i, x = l->x, y = l->y;  // killough 1/18/98 -- support multiple lines
   unsigned char c;
   char *oc = l->cr;       //jff 2/17/98 remember default color
-  int y = l->y;           // killough 1/18/98 -- support multiple lines
 
   // draw the new stuff
-  x = l->x;
-  for (i=0;i<l->len;i++)
-  {
-    c = toupper(l->l[i]); //jff insure were not getting a cheap toupper conv.
+  for (i = 0; i < l->len; i++)
+    {
+      c = toupper(l->l[i]); //jff insure were not getting a cheap toupper conv.
 
-    if (c=='\n')         // killough 1/18/98 -- support multiple lines
-      x=0,y+=8;
-    else if (c=='\t')    // killough 1/23/98 -- support tab stops
-      x=x-x%80+80;
-    else if (c=='\x1b')  //jff 2/17/98 escape code for color change
-    {                    //jff 3/26/98 changed to actual escape char
-      if (++i<l->len)
-        if (l->l[i]>='0' && l->l[i]<='9')
-          l->cr = colrngs[l->l[i]-'0'];
+      if (c=='\n')         // killough 1/18/98 -- support multiple lines
+        x = 0, y += 8;
+      else
+        if (c=='\t')    // killough 1/23/98 -- support tab stops
+          x = x - x%80 + 80;
+        else
+          if (c == '\x1b')  //jff 2/17/98 escape code for color change
+            {               //jff 3/26/98 changed to actual escape char
+              if (++i < l->len && l->l[i] >= '0' && l->l[i] <= '9')
+                l->cr = colrngs[l->l[i]-'0'];
+            }
+          else
+            if (c != ' ' && c >= l->sc && c <= 127)
+              {
+                int w = SHORT(l->f[c - l->sc]->width);
+                if (x+w > SCREENWIDTH)
+                  break;
+                // killough 1/18/98 -- support multiple lines:
+                V_DrawPatchTranslated(x, y, FG, l->f[c - l->sc], l->cr, 0);
+                x += w;
+              }
+            else
+              if ((x+=4) >= SCREENWIDTH)
+                break;
     }
-    else  if (c != ' ' && c >= l->sc && c <= 127)
-    {
-      w = SHORT(l->f[c - l->sc]->width);
-      if (x+w > SCREENWIDTH)
-        break;
-      // killough 1/18/98 -- support multiple lines:
-      V_DrawPatchTranslated(x, y, FG, l->f[c - l->sc], l->cr, 0);
-      x += w;
-    }
-    else
-    {
-      x += 4;
-      if (x >= SCREENWIDTH)
-      break;
-    }
-  }
+
   l->cr = oc; //jff 2/17/98 restore original color
 
   // draw the cursor if requested
+  // killough 1/18/98 -- support multiple lines
   if (drawcursor && x + SHORT(l->f['_' - l->sc]->width) <= SCREENWIDTH)
-  {
-    // killough 1/18/98 -- support multiple lines
     V_DrawPatchDirect(x, y, FG, l->f['_' - l->sc]);
-  }
 }
 
 //
@@ -219,37 +199,34 @@ void HUlib_drawTextLine
 // Passed the hu_textline_t
 // Returns nothing
 //
+
 void HUlib_eraseTextLine(hu_textline_t* l)
 {
-  int lh;
-  int y;
-  int yoffset;
-  static boolean lastautomapactive = true;
+  // killough 11/98: trick to shadow variables
+  int x = viewwindowx, y = viewwindowy; 
+  int viewwindowx = x >> hires, viewwindowy = y >> hires;  // killough 11/98
 
   // Only erases when NOT in automap and the screen is reduced,
   // and the text must either need updating or refreshing
   // (because of a recent change back from the automap)
 
-  if (!automapactive &&
-  viewwindowx && l->needsupdate)
-  {
-    lh = SHORT(l->f[0]->height) + 1;
-    for (y=l->y,yoffset=y*SCREENWIDTH ; y<l->y+lh ; y++,yoffset+=SCREENWIDTH)
-      {
-      if (y < viewwindowy || y >= viewwindowy + viewheight)
-        R_VideoErase(yoffset, SCREENWIDTH); // erase entire line
-      else
-      {
-        // erase left border
-        R_VideoErase(yoffset, viewwindowx); 
-        // erase right border
-        R_VideoErase(yoffset + viewwindowx + viewwidth, viewwindowx);
-      }
+  if (!automapactive && viewwindowx && l->needsupdate)
+    {
+      int yoffset, lh = SHORT(l->f[0]->height) + 1;
+      for (y=l->y,yoffset=y*SCREENWIDTH ; y<l->y+lh ; y++,yoffset+=SCREENWIDTH)
+        if (y < viewwindowy || y >= viewwindowy + scaledviewheight) // killough 11/98:
+          R_VideoErase(yoffset, SCREENWIDTH); // erase entire line
+        else
+          {
+            // erase left border
+            R_VideoErase(yoffset, viewwindowx);
+            // erase right border
+            R_VideoErase(yoffset + viewwindowx + scaledviewwidth, viewwindowx); // killough 11/98
+          }
     }
-  }
 
-  lastautomapactive = automapactive;
-  if (l->needsupdate) l->needsupdate--;
+  if (l->needsupdate)
+    l->needsupdate--;
 }
 
 ////////////////////////////////////////////////////////
@@ -267,17 +244,11 @@ void HUlib_eraseTextLine(hu_textline_t* l)
 // Passed a hu_stext_t, and the values used to initialize
 // Returns nothing
 //
-void HUlib_initSText
-( hu_stext_t* s,
-  int   x,
-  int   y,
-  int   h,
-  patch_t** font,
-  int   startchar,
-  char *cr,       //jff 2/16/98 add color range parameter
-  boolean*  on )
-{
+//jff 2/16/98 add color range parameter
 
+void HUlib_initSText(hu_stext_t *s, int x, int y, int h, patch_t **font,
+                     int startchar, char *cr, boolean *on)
+{
   int i;
 
   s->h = h;
@@ -285,15 +256,8 @@ void HUlib_initSText
   s->laston = true;
   s->cl = 0;
   for (i=0;i<h;i++)
-    HUlib_initTextLine
-    (
-      &s->l[i],
-      x,
-      y - i*(SHORT(font[0]->height)+1),
-      font,
-      startchar,
-      cr
-    );
+    HUlib_initTextLine(s->l+i, x, y - i*(SHORT(font[0]->height)+1),
+                       font, startchar, cr);
 }
 
 //
@@ -304,20 +268,15 @@ void HUlib_initSText
 // Passed a hu_stext_t
 // Returns nothing
 //
+
 void HUlib_addLineToSText(hu_stext_t* s)
 {
-
   int i;
-
-  // add a clear line
-  if (++s->cl == s->h)
+  if (++s->cl >= s->h)                  // add a clear line
     s->cl = 0;
-  HUlib_clearTextLine(&s->l[s->cl]);
-
-  // everything needs updating
-  for (i=0 ; i<s->h ; i++)
+  HUlib_clearTextLine(s->l + s->cl);
+  for (i=0 ; i<s->h ; i++)              // everything needs updating
     s->l[i].needsupdate = 4;
-
 }
 
 //
@@ -328,18 +287,15 @@ void HUlib_addLineToSText(hu_stext_t* s)
 // Passed a hu_stext_t, the prefix string, and a message string
 // Returns nothing
 //
-void HUlib_addMessageToSText
-( hu_stext_t* s,
-  char*   prefix,
-  char*   msg )
+
+void HUlib_addMessageToSText(hu_stext_t *s, char *prefix, char *msg)
 {
   HUlib_addLineToSText(s);
-    if (prefix)
-      while (*prefix)
-        HUlib_addCharToTextLine(&s->l[s->cl], *(prefix++));
-
+  if (prefix)
+    while (*prefix)
+      HUlib_addCharToTextLine(&s->l[s->cl], *prefix++);
   while (*msg)
-    HUlib_addCharToTextLine(&s->l[s->cl], *(msg++));
+    HUlib_addCharToTextLine(&s->l[s->cl], *msg++);
 }
 
 //
@@ -350,26 +306,19 @@ void HUlib_addMessageToSText
 // Passed a hu_stext_t
 // Returns nothing
 //
+
 void HUlib_drawSText(hu_stext_t* s)
 {
-  int i, idx;
-  hu_textline_t *l;
-
-  if (!*s->on)
-    return; // if not on, don't draw
-
-  // draw everything
-  for (i=0 ; i<s->h ; i++)
-  {
-    idx = s->cl - i;
-    if (idx < 0)
-      idx += s->h; // handle queue of lines
-  
-    l = &s->l[idx];
-
-    // need a decision made here on whether to skip the draw
-    HUlib_drawTextLine(l, false); // no cursor, please
-  }
+  int i;
+  if (*s->on)
+    for (i=0; i<s->h; i++)
+      {
+	int idx = s->cl - i;
+	if (idx < 0)
+	  idx += s->h; // handle queue of lines
+	// need a decision made here on whether to skip the draw
+	HUlib_drawTextLine(&s->l[idx], false); // no cursor, please
+      }
 }
 
 //
@@ -380,16 +329,17 @@ void HUlib_drawSText(hu_stext_t* s)
 // Passed a hu_stext_t
 // Returns nothing
 //
+
 void HUlib_eraseSText(hu_stext_t* s)
 {
   int i;
 
   for (i=0 ; i<s->h ; i++)
-  {
-    if (s->laston && !*s->on)
-       s->l[i].needsupdate = 4;
-    HUlib_eraseTextLine(&s->l[i]);
-  }
+    {
+      if (s->laston && !*s->on)
+        s->l[i].needsupdate = 4;
+      HUlib_eraseTextLine(&s->l[i]);
+    }
   s->laston = *s->on;
 }
 
@@ -397,32 +347,23 @@ void HUlib_eraseSText(hu_stext_t* s)
 //
 // Scrolling message review widget
 //
-// jff added 2/26/98 
+// jff added 2/26/98
 //
 ////////////////////////////////////////////////////////
 
 //
 // HUlib_initMText()
 //
-// Initialize a hu_mtext_t widget. Set the position, width, number of lines, 
+// Initialize a hu_mtext_t widget. Set the position, width, number of lines,
 // font, start char of the font, color range, background font, and whether
 // enabled.
 //
 // Passed a hu_mtext_t, and the values used to initialize
 // Returns nothing
 //
-void HUlib_initMText
-( hu_mtext_t *m,
-  int x,
-  int y,
-  int w,
-  int h,
-  patch_t** font,
-  int startchar,
-  char *cr, 
-  patch_t** bgfont,
-  boolean *on
-)
+
+void HUlib_initMText(hu_mtext_t *m, int x, int y, int w, int h, patch_t **font,
+                     int startchar, char *cr, patch_t** bgfont, boolean *on)
 {
   int i;
 
@@ -435,18 +376,15 @@ void HUlib_initMText
   m->h = h;
   m->bg = bgfont;
   m->on = on;
-  for (i=0;i<HU_MAXMESSAGES;i++)
-  {
-    HUlib_initTextLine
-    (
-      &m->l[i],
-      x,
-      y + (hud_list_bgon? i+1 : i)*HU_REFRESHSPACING,
-      font,
-      startchar,
-      cr
-    );
-  }
+
+  // killough 11/98: simplify
+
+  if (hud_list_bgon)
+    y += HU_REFRESHSPACING;
+
+  y += HU_REFRESHSPACING * hud_msg_lines;
+  for (i=0; i<hud_msg_lines; i++, y -= HU_REFRESHSPACING)
+    HUlib_initTextLine(&m->l[i], x, y, font, startchar, cr);
 }
 
 //
@@ -457,15 +395,16 @@ void HUlib_initMText
 // Passed a hu_mtext_t
 // Returns nothing
 //
-void HUlib_addLineToMText
-( hu_mtext_t* m )
+
+void HUlib_addLineToMText(hu_mtext_t *m)
 {
   // add a clear line
-  if (++m->cl == hud_msg_lines)
+  if (++m->cl >= hud_msg_lines)
     m->cl = 0;
+
   HUlib_clearTextLine(&m->l[m->cl]);
 
-  if (m->nl<hud_msg_lines)
+  if (m->nl < hud_msg_lines)
     m->nl++;
 
   // needs updating
@@ -480,18 +419,17 @@ void HUlib_addLineToMText
 // Passed a hu_mtext_t, the prefix string, and a message string
 // Returns nothing
 //
-void HUlib_addMessageToMText
-( hu_mtext_t* m,
-  char*   prefix,
-  char*   msg )
+
+void HUlib_addMessageToMText(hu_mtext_t *m, char *prefix, char *msg)
 {
   HUlib_addLineToMText(m);
+
   if (prefix)
     while (*prefix)
-      HUlib_addCharToTextLine(&m->l[m->cl], *(prefix++));
+      HUlib_addCharToTextLine(&m->l[m->cl], *prefix++);
 
   while (*msg)
-    HUlib_addCharToTextLine(&m->l[m->cl], *(msg++));
+    HUlib_addCharToTextLine(&m->l[m->cl], *msg++);
 }
 
 //
@@ -503,13 +441,8 @@ void HUlib_addMessageToMText
 // Passed position, width, height, and the background patches
 // Returns nothing
 //
-void HUlib_drawMBg
-( int x,
-  int y,
-  int w,
-  int h,
-  patch_t** bgp
-)
+
+void HUlib_drawMBg(int x, int y, int w, int h, patch_t **bgp)
 {
   int xs = bgp[0]->width;
   int ys = bgp[0]->height;
@@ -517,23 +450,23 @@ void HUlib_drawMBg
 
   // top rows
   V_DrawPatchDirect(x, y, FG, bgp[0]);    // ul
-  for (j=x+xs;j<x+w-xs;j+=xs)           // uc
-    V_DrawPatchDirect(j, y, FG, bgp[1]);  
+  for (j = x+xs; j < x+w-xs; j += xs)     // uc
+    V_DrawPatchDirect(j, y, FG, bgp[1]);
   V_DrawPatchDirect(j, y, FG, bgp[2]);    // ur
 
   // middle rows
   for (i=y+ys;i<y+h-ys;i+=ys)
-  {
-    V_DrawPatchDirect(x, i, FG, bgp[3]);    // cl
-    for (j=x+xs;j<x+w-xs;j+=xs)           // cc
-      V_DrawPatchDirect(j, i, FG, bgp[4]);  
-    V_DrawPatchDirect(j, i, FG, bgp[5]);    // cr
-  }
+    {
+      V_DrawPatchDirect(x, i, FG, bgp[3]);    // cl
+      for (j = x+xs; j < x+w-xs; j += xs)     // cc
+        V_DrawPatchDirect(j, i, FG, bgp[4]);
+      V_DrawPatchDirect(j, i, FG, bgp[5]);    // cr
+    }
 
   // bottom row
   V_DrawPatchDirect(x, i, FG, bgp[6]);    // ll
-  for (j=x+xs;j<x+w-xs;j+=xs)           // lc
-    V_DrawPatchDirect(j, i, FG, bgp[7]);  
+  for (j = x+xs; j < x+w-xs; j += xs)     // lc
+    V_DrawPatchDirect(j, i, FG, bgp[7]);
   V_DrawPatchDirect(j, i, FG, bgp[8]);    // lr
 }
 
@@ -545,39 +478,34 @@ void HUlib_drawMBg
 // Passed a hu_mtext_t
 // Returns nothing
 //
+// killough 11/98: Simplified, allowed text to scroll in either direction
+
 void HUlib_drawMText(hu_mtext_t* m)
 {
-  int i, idx, y;
-  hu_textline_t *l;
+  int i;
 
   if (!*m->on)
     return; // if not on, don't draw
 
   // draw everything
   if (hud_list_bgon)
-    HUlib_drawMBg(m->x,m->y,m->w,m->h,m->bg);
-  y = m->y + HU_REFRESHSPACING;
-  for (i=0 ; i<m->nl ; i++)
-  {
-    idx = m->cl - i;
-    if (idx < 0)
-      idx += m->nl; // handle queue of lines
-  
-    l = &m->l[idx];
-    if (hud_list_bgon)
-    {
-      l->x = m->x + 4;                      
-      l->y = m->y + (i+1)*HU_REFRESHSPACING;
-    }
-    else
-    {
-      l->x = m->x;                      
-      l->y = m->y + i*HU_REFRESHSPACING;
-    }
+    HUlib_drawMBg(m->x, m->y, m->w, m->h, m->bg);
 
-    // need a decision made here on whether to skip the draw
-    HUlib_drawTextLine(l, false); // no cursor, please
-  }
+  for (i=0 ; i<m->nl ; i++)
+    {
+      int idx = m->cl - i;
+
+      if (idx < 0)
+	idx += m->nl; // handle queue of lines
+
+      m->l[idx].x = m->x;       // killough 11/98: optional scroll up/down:
+      m->l[idx].y = m->y+(hud_msg_scrollup ? m->nl-1-i : i)*HU_REFRESHSPACING;
+
+      if (hud_list_bgon)
+	m->l[idx].x += 4, m->l[idx].y += HU_REFRESHSPACING;
+
+      HUlib_drawTextLine(&m->l[idx], false); // no cursor, please
+    }
 }
 
 //
@@ -588,33 +516,33 @@ void HUlib_drawMText(hu_mtext_t* m)
 // Passed a hu_mtext_t
 // Returns nothing
 //
-static void HUlib_eraseMBg(hu_mtext_t* m)
+
+static void HUlib_eraseMBg(hu_mtext_t *m)
 {
-  int     lh;
-  int     y;
-  int     yoffset;
+  // killough 11/98: trick to shadow variables
+  int x = viewwindowx, y = viewwindowy; 
+  int viewwindowx = x >> hires, viewwindowy = y >> hires;  // killough 11/98
 
   // Only erases when NOT in automap and the screen is reduced,
   // and the text must either need updating or refreshing
   // (because of a recent change back from the automap)
 
   if (!automapactive && viewwindowx)
-  {
-    lh = SHORT(m->l[0].f[0]->height) + 1;
-    for (y=m->y,yoffset=y*SCREENWIDTH ; y<m->y+lh*(hud_msg_lines+2) ; y++,yoffset+=SCREENWIDTH)
     {
-      if (y < viewwindowy || y >= viewwindowy + viewheight)
-        R_VideoErase(yoffset, SCREENWIDTH); // erase entire line
-      else
-      {
-        // erase left border
-        R_VideoErase(yoffset, viewwindowx);
-        // erase right border
-        R_VideoErase(yoffset + viewwindowx + viewwidth, viewwindowx);
-        
-      }
+      int yoffset, lh = SHORT(m->l[0].f[0]->height) + 1;
+      for (y=m->y, yoffset=y*SCREENWIDTH;
+           y < m->y+lh*(hud_msg_lines+2);
+           y++, yoffset+=SCREENWIDTH)
+        if (y < viewwindowy || y >= viewwindowy + scaledviewheight) // killough 11/98
+          R_VideoErase(yoffset, SCREENWIDTH); // erase entire line
+        else
+          {
+            // erase left border
+            R_VideoErase(yoffset, viewwindowx);
+            // erase right border
+            R_VideoErase(yoffset + viewwindowx + scaledviewwidth, viewwindowx); // killough 11/98
+          }
     }
-  }
 }
 
 //
@@ -625,18 +553,19 @@ static void HUlib_eraseMBg(hu_mtext_t* m)
 // Passed a hu_mtext_t
 // Returns nothing
 //
-void HUlib_eraseMText(hu_mtext_t* m)
+
+void HUlib_eraseMText(hu_mtext_t *m)
 {
   int i;
 
-  if (hud_list_bgon)  
+  if (hud_list_bgon)
     HUlib_eraseMBg(m);
 
   for (i=0 ; i< m->nl ; i++)
-  {
-    m->l[i].needsupdate = 4;
-    HUlib_eraseTextLine(&m->l[i]);
-  }
+    {
+      m->l[i].needsupdate = 4;
+      HUlib_eraseTextLine(&m->l[i]);
+    }
 }
 
 ////////////////////////////////////////////////////////
@@ -648,20 +577,16 @@ void HUlib_eraseMText(hu_mtext_t* m)
 //
 // HUlib_initIText()
 //
-// Initialize a hu_itext_t widget. Set the position, font, 
+// Initialize a hu_itext_t widget. Set the position, font,
 // start char of the font, color range, and whether enabled.
 //
 // Passed a hu_itext_t, and the values used to initialize
 // Returns nothing
 //
-void HUlib_initIText
-( hu_itext_t* it,
-  int   x,
-  int   y,
-  patch_t** font,
-  int   startchar,
-  char *cr,   //jff 2/16/98 add color range parameter
-  boolean*  on )
+//jff 2/16/98 add color range parameter
+
+void HUlib_initIText(hu_itext_t *it, int x, int y, patch_t **font,
+                     int startchar, char *cr, boolean *on)
 {
   it->lm = 0; // default left margin is start of text
   it->on = on;
@@ -679,7 +604,8 @@ void HUlib_initIText
 // Passed the hu_itext_t
 // Returns nothing
 //
-void HUlib_delCharFromIText(hu_itext_t* it)
+
+void HUlib_delCharFromIText(hu_itext_t *it)
 {
   if (it->l.len != it->lm)
     HUlib_delCharFromTextLine(&it->l);
@@ -693,7 +619,8 @@ void HUlib_delCharFromIText(hu_itext_t* it)
 // Passed the hu_itext_t
 // Returns nothing
 //
-void HUlib_eraseLineFromIText(hu_itext_t* it)
+
+void HUlib_eraseLineFromIText(hu_itext_t *it)
 {
   while (it->lm != it->l.len)
     HUlib_delCharFromTextLine(&it->l);
@@ -708,10 +635,11 @@ void HUlib_eraseLineFromIText(hu_itext_t* it)
 // Passed the hu_itext_t
 // Returns nothing
 //
-void HUlib_resetIText(hu_itext_t* it)
+
+void HUlib_resetIText(hu_itext_t *it)
 {
   it->lm = 0;
-    HUlib_clearTextLine(&it->l);
+  HUlib_clearTextLine(&it->l);
 }
 
 //
@@ -723,12 +651,11 @@ void HUlib_resetIText(hu_itext_t* it)
 // Passed the hu_itext_t and the prefix string
 // Returns nothing
 //
-void HUlib_addPrefixToIText
-( hu_itext_t* it,
-  char*   str )
+
+void HUlib_addPrefixToIText(hu_itext_t *it, char *str)
 {
   while (*str)
-    HUlib_addCharToTextLine(&it->l, *(str++));
+    HUlib_addCharToTextLine(&it->l, *str++);
   it->lm = it->l.len;
 }
 
@@ -740,19 +667,18 @@ void HUlib_addPrefixToIText
 // Passed the hu_itext_t and the char input
 // Returns true if it ate the key
 //
-boolean HUlib_keyInIText
-( hu_itext_t* it,
-  unsigned char ch )
+
+boolean HUlib_keyInIText(hu_itext_t *it, unsigned char ch)
 {
-
-  if (ch >= ' ' && ch <= '_') 
+  if (ch >= ' ' && ch <= '_')
     HUlib_addCharToTextLine(&it->l, (char) ch);
-  else if (ch == key_backspace)                   // phares 
-    HUlib_delCharFromIText(it);
-  else if (ch != key_enter)                       // phares 
-    return false;                                 // did not eat key
-
-  return true;                                    // ate the key
+  else
+    if (ch == key_backspace)                   // phares
+      HUlib_delCharFromIText(it);
+  else
+    if (ch != key_enter)                       // phares
+      return false;                            // did not eat key
+  return true;                                 // ate the key
 }
 
 //
@@ -763,13 +689,12 @@ boolean HUlib_keyInIText
 // Passed the hu_itext_t
 // Returns nothing
 //
-void HUlib_drawIText(hu_itext_t* it)
+
+void HUlib_drawIText(hu_itext_t *it)
 {
   hu_textline_t *l = &it->l;
-
-  if (!*it->on)
-    return;
-  HUlib_drawTextLine(l, true); // draw the line w/ cursor
+  if (*it->on)
+    HUlib_drawTextLine(l, true); // draw the line w/ cursor
 }
 
 //
@@ -780,6 +705,7 @@ void HUlib_drawIText(hu_itext_t* it)
 // Passed the hu_itext_t
 // Returns nothing
 //
+
 void HUlib_eraseIText(hu_itext_t* it)
 {
   if (it->laston && !*it->on)
@@ -829,6 +755,5 @@ void HUlib_eraseIText(hu_itext_t* it)
 //
 // Revision 1.1.1.1  1998/01/19  14:02:55  rand
 // Lee's Jan 19 sources
-//
 //
 //----------------------------------------------------------------------------

@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h,v 1.9 1998/06/20 09:09:14 jim Exp $
+// $Id: d_net.h,v 1.8 1998/05/21 12:12:16 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,22 +21,16 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Networking stuff.
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __D_NET__
 #define __D_NET__
 
 #include "d_player.h"
-
-
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 
 //
 // Network play related stuff.
@@ -60,7 +53,6 @@ typedef enum
 {
     CMD_SEND    = 1,
     CMD_GET     = 2
-
 } command_t;
 
 
@@ -78,9 +70,7 @@ typedef struct
     byte                player;
     byte                numtics;
     ticcmd_t            cmds[BACKUPTICS];
-
 } doomdata_t;
-
 
 //
 // Startup packet difference
@@ -123,7 +113,6 @@ typedef struct
   unsigned long rngseed;
   char filler[sizeof(ticcmd_t)*BACKUPTICS-STARTUPLEN];
 } startup_t;
-
 
 typedef struct
 {
@@ -175,8 +164,6 @@ typedef struct
     
 } doomcom_t;
 
-
-
 // Create any new ticcmds and broadcast to other players.
 void NetUpdate (void);
 
@@ -187,14 +174,16 @@ void D_QuitNetGame (void);
 //? how many ticks to run?
 void TryRunTics (void);
 
-
 #endif
 
 //----------------------------------------------------------------------------
 //
 // $Log: d_net.h,v $
-// Revision 1.9  1998/06/20  09:09:14  jim
-// change of net code to older version without consistency errors
+// Revision 1.8  1998/05/21  12:12:16  jim
+// Removed conditional from net code
+//
+// Revision 1.7  1998/05/16  09:52:21  jim
+// add temporary switch for Lee/Stan's code in d_net.c
 //
 // Revision 1.6  1998/05/03  23:40:38  killough
 // Fix net consistency problems, using G_WriteOptions/G_Readoptions

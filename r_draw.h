@@ -3,7 +3,6 @@
 //
 // $Id: r_draw.h,v 1.5 1998/05/03 22:42:23 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -32,10 +31,6 @@
 
 #include "r_defs.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 extern lighttable_t *dc_colormap;
 extern int      dc_x;
 extern int      dc_yl;
@@ -43,6 +38,8 @@ extern int      dc_yh;
 extern fixed_t  dc_iscale;
 extern fixed_t  dc_texturemid;
 extern int      dc_texheight;    // killough
+extern int      linesize;        // killough 11/98
+extern int      hires;           // killough 11/98
 
 // first pixel in a column
 extern byte     *dc_source;         
@@ -90,10 +87,11 @@ void R_FillBackScreen(void);
 // If the view size is not full screen, draws a border around it.
 void R_DrawViewBorder(void);
 
+void R_DrawTLColumn(void);    // drawing translucent textures     // phares
+
 extern byte *tranmap;         // translucency filter maps 256x256  // phares 
 extern byte *main_tranmap;    // killough 4/11/98
-
-void R_DrawTLColumn(void);    // drawing translucent textures     // phares
+extern byte *ylookup[];       // killough 11/98
 
 #endif
 

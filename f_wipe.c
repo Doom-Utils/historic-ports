@@ -3,7 +3,6 @@
 //
 // $Id: f_wipe.c,v 1.3 1998/05/03 22:11:24 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -192,6 +191,10 @@ static int (*const wipes[])(int, int, int) = {
 int wipe_ScreenWipe(int wipeno, int x, int y, int width, int height, int ticks)
 {
   static boolean go;                               // when zero, stop the wipe
+
+  if (hires)     // killough 11/98: hires support
+    width <<= 1, height <<= 1, ticks <<= 1;
+
   if (!go)                                         // initial stuff
     {
       go = 1;

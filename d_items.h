@@ -3,7 +3,6 @@
 //
 // $Id: d_items.h,v 1.3 1998/05/04 21:34:12 thldrmn Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,16 +26,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __D_ITEMS__
 #define __D_ITEMS__
 
 #include "doomdef.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 
 // Weapon info: sprite frames, ammunition use.
 typedef struct
@@ -47,7 +40,6 @@ typedef struct
   int         readystate;
   int         atkstate;
   int         flashstate;
-
 } weaponinfo_t;
 
 extern  weaponinfo_t    weaponinfo[NUMWEAPONS];

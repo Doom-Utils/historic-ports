@@ -3,9 +3,9 @@
 //
 // $Id: d_player.h,v 1.3 1998/05/04 21:34:15 thldrmn Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+//
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -22,15 +22,14 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __D_PLAYER__
 #define __D_PLAYER__
-
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -47,11 +46,6 @@
 // is buffered within the player data struct,
 // as commands per game tick.
 #include "d_ticcmd.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 
 //
 // Player states.
@@ -102,6 +96,12 @@ typedef struct player_s
   fixed_t             deltaviewheight;
   // bounded/scaled total momentum.
   fixed_t             bob;    
+
+  // killough 10/98: used for realistic bobbing (i.e. not simply overall speed)
+  // mo->momx and mo->momy represent true momenta experienced by player.
+  // This only represents the thrust that the player applies himself.
+  // This avoids anomolies with such things as Boom ice and conveyors.
+  fixed_t            momx, momy;      // killough 10/98
 
   // This is only used between levels,
   // mo->health is used during levels.

@@ -3,7 +3,6 @@
 //
 // $Id: p_maputl.c,v 1.13 1998/05/03 22:16:48 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //      Movement/collision utility functions,
@@ -207,29 +207,29 @@ void P_UnsetThingPosition (mobj_t *thing)
 {
   if (!(thing->flags & MF_NOSECTOR))
     {
-      // inert things don't need to be in blockmap?
+      // invisible things don't need to be in sector list
       // unlink from subsector
-      if (thing->snext)
-        thing->snext->sprev = thing->sprev;
 
-      if (thing->sprev)
-        thing->sprev->snext = thing->snext;
-      else
-        thing->subsector->sector->thinglist = thing->snext;
+      // killough 8/11/98: simpler scheme using pointers-to-pointers for prev
+      // pointers, allows head node pointers to be treated like everything else
+      mobj_t **sprev = thing->sprev;
+      mobj_t  *snext = thing->snext;
+      if ((*sprev = snext))  // unlink from sector list
+	snext->sprev = sprev;
 
-        // phares 3/14/98
-        //
-        // Save the sector list pointed to by touching_sectorlist.
-        // In P_SetThingPosition, we'll keep any nodes that represent
-        // sectors the Thing still touches. We'll add new ones then, and
-        // delete any nodes for sectors the Thing has vacated. Then we'll
-        // put it back into touching_sectorlist. It's done this way to
-        // avoid a lot of deleting/creating for nodes, when most of the
-        // time you just get back what you deleted anyway.
-        //
-        // If this Thing is being removed entirely, then the calling
-        // routine will clear out the nodes in sector_list.
-
+      // phares 3/14/98
+      //
+      // Save the sector list pointed to by touching_sectorlist.
+      // In P_SetThingPosition, we'll keep any nodes that represent
+      // sectors the Thing still touches. We'll add new ones then, and
+      // delete any nodes for sectors the Thing has vacated. Then we'll
+      // put it back into touching_sectorlist. It's done this way to
+      // avoid a lot of deleting/creating for nodes, when most of the
+      // time you just get back what you deleted anyway.
+      //
+      // If this Thing is being removed entirely, then the calling
+      // routine will clear out the nodes in sector_list.
+      
       sector_list = thing->touching_sectorlist;
       thing->touching_sectorlist = NULL; //to be restored by P_SetThingPosition
     }
@@ -237,20 +237,18 @@ void P_UnsetThingPosition (mobj_t *thing)
   if (!(thing->flags & MF_NOBLOCKMAP))
     {
       // inert things don't need to be in blockmap
+      
+      // killough 8/11/98: simpler scheme using pointers-to-pointers for prev
+      // pointers, allows head node pointers to be treated like everything else
+      //
+      // Also more robust, since it doesn't depend on current position for
+      // unlinking. Old method required computing head node based on position
+      // at time of unlinking, assuming it was the same position as during
+      // linking.
 
-      if (thing->bnext) // unlink from block map
-        thing->bnext->bprev = thing->bprev;
-
-      if (thing->bprev)
-        thing->bprev->bnext = thing->bnext;
-      else
-        {
-          int blockx = (thing->x - bmaporgx)>>MAPBLOCKSHIFT;
-          int blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
-          if (blockx>=0 && blockx < bmapwidth &&
-              blocky>=0 && blocky <bmapheight)
-            blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
-        }
+      mobj_t *bnext, **bprev = thing->bprev;
+      if (bprev && (*bprev = bnext = thing->bnext))  // unlink from block map
+	bnext->bprev = bprev;
     }
 }
 
@@ -265,18 +263,20 @@ void P_UnsetThingPosition (mobj_t *thing)
 void P_SetThingPosition(mobj_t *thing)
 {                                                      // link into subsector
   subsector_t *ss = thing->subsector = R_PointInSubsector(thing->x, thing->y);
+
   if (!(thing->flags & MF_NOSECTOR))
     {
       // invisible things don't go into the sector links
-      sector_t *sec = ss->sector;
 
-      thing->sprev = NULL;
-      thing->snext = sec->thinglist;
+      // killough 8/11/98: simpler scheme using pointer-to-pointer prev
+      // pointers, allows head nodes to be treated like everything else
 
-      if (sec->thinglist)
-        sec->thinglist->sprev = thing;
-
-      sec->thinglist = thing;
+      mobj_t **link = &ss->sector->thinglist;
+      mobj_t *snext = *link;
+      if ((thing->snext = snext))
+	snext->sprev = &thing->snext;
+      thing->sprev = link;
+      *link = thing;
 
       // phares 3/16/98
       //
@@ -291,7 +291,7 @@ void P_SetThingPosition(mobj_t *thing)
       // at sector_t->touching_thinglist) are broken. When a node is
       // added, new sector links are created.
 
-      P_CreateSecNodeList(thing,thing->x,thing->y);
+      P_CreateSecNodeList(thing, thing->x, thing->y);
       thing->touching_sectorlist = sector_list; // Attach to Thing's mobj_t
       sector_list = NULL; // clear for next time
     }
@@ -302,17 +302,21 @@ void P_SetThingPosition(mobj_t *thing)
       // inert things don't need to be in blockmap
       int blockx = (thing->x - bmaporgx)>>MAPBLOCKSHIFT;
       int blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
+
       if (blockx>=0 && blockx < bmapwidth && blocky>=0 && blocky < bmapheight)
         {
+	  // killough 8/11/98: simpler scheme using pointer-to-pointer prev
+	  // pointers, allows head nodes to be treated like everything else
+
           mobj_t **link = &blocklinks[blocky*bmapwidth+blockx];
-          thing->bprev = NULL;
-          thing->bnext = *link;
-          if (*link)
-            (*link)->bprev = thing;
+	  mobj_t *bnext = *link;
+          if ((thing->bnext = bnext))
+	    bnext->bprev = &thing->bnext;
+	  thing->bprev = link;
           *link = thing;
         }
       else        // thing is off the map
-        thing->bnext = thing->bprev = NULL;
+        thing->bnext = NULL, thing->bprev = NULL;
     }
 }
 

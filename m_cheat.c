@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c,v 1.8 1998/08/14 19:51:45 jim Exp $
+// $Id: m_cheat.c,v 1.7 1998/05/12 12:47:00 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,13 +21,14 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Cheat sequence checking.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_cheat.c,v 1.8 1998/08/14 19:51:45 jim Exp $";
+rcsid[] = "$Id: m_cheat.c,v 1.7 1998/05/12 12:47:00 phares Exp $";
 
 #include "doomstat.h"
 #include "g_game.h"
@@ -63,20 +63,30 @@ static void cheat_mypos();
 static void cheat_comp();
 static void cheat_friction();
 static void cheat_pushers();
-static void cheat_tnttran();
+static void cheat_tran();
 static void cheat_massacre();
 static void cheat_ddt();
 static void cheat_hom();
 static void cheat_fast();
-static void cheat_tntkey();
-static void cheat_tntkeyx();
-static void cheat_tntkeyxx();
-static void cheat_tntweap();
-static void cheat_tntweapx();
-static void cheat_tntammo();
-static void cheat_tntammox();
+static void cheat_key();
+static void cheat_keyx();
+static void cheat_keyxx();
+static void cheat_weap();
+static void cheat_weapx();
+static void cheat_ammo();
+static void cheat_ammox();
 static void cheat_smart();
 static void cheat_pitch();
+static void cheat_nuke();
+
+#ifdef INSTRUMENTED
+static void cheat_printstats();   // killough 8/23/98
+#endif
+
+#ifdef BETA
+static void cheat_autoaim();      // killough 7/19/98
+static void cheat_tst();
+#endif
 
 //-----------------------------------------------------------------------------
 //
@@ -87,7 +97,7 @@ static void cheat_pitch();
 // The second argument is its DEH name, or NULL if it's not supported by -deh.
 //
 // The third argument is a combination of the bitmasks:
-// {always, not_dm, not_coop, not_net, not_menu, not_demo, not_deh},
+// {always, not_dm, not_coop, not_net, not_menu, not_demo, not_deh, beta_only},
 // which excludes the cheat during certain modes of play.
 //
 // The fourth argument is the handler function.
@@ -109,10 +119,8 @@ struct cheat_s cheat[] = {
   {"iddqd",      "God mode",          not_net | not_demo,
    cheat_god      },
 
-#if 0
   {"idk",        NULL,                not_net | not_demo | not_deh,
    cheat_k },  // The most controversial cheat code in Doom history!!!
-#endif
 
   {"idkfa",      "Ammo & Keys",       not_net | not_demo,
    cheat_kfa },
@@ -153,95 +161,130 @@ struct cheat_s cheat[] = {
   {"idmypos",    "Player Position",   not_net | not_demo,
    cheat_mypos    },
 
-  {"tntcomp",    NULL,                not_net | not_demo,
+  {"comp",    NULL,                   not_net | not_demo,
    cheat_comp     },     // phares
 
-  {"tntem",      NULL,                not_net | not_demo,
+  {"killem",     NULL,                not_net | not_demo,
    cheat_massacre },     // jff 2/01/98 kill all monsters
 
-  {"iddt",       "Map cheat",         not_dm  | not_demo,
+  {"iddt",       "Map cheat",         not_dm,
    cheat_ddt      },     // killough 2/07/98: moved from am_map.c
 
-  {"tnthom",     NULL,                not_net | not_demo,
+  {"hom",     NULL,                   always,
    cheat_hom      },     // killough 2/07/98: HOM autodetector
 
-  {"tntkey",     NULL,                not_net | not_demo, 
-   cheat_tntkey   },     // killough 2/16/98: generalized key cheats
+  {"key",     NULL,                   not_net | not_demo, 
+   cheat_key   },     // killough 2/16/98: generalized key cheats
 
-  {"tntkeyr",    NULL,                not_net | not_demo,
-   cheat_tntkeyx  },
+  {"keyr",    NULL,                   not_net | not_demo,
+   cheat_keyx  },
 
-  {"tntkeyy",    NULL,                not_net | not_demo,
-   cheat_tntkeyx  },
+  {"keyy",    NULL,                   not_net | not_demo,
+   cheat_keyx  },
 
-  {"tntkeyb",    NULL,                not_net | not_demo,
-   cheat_tntkeyx  },
+  {"keyb",    NULL,                   not_net | not_demo,
+   cheat_keyx  },
 
-  {"tntkeyrc",   NULL,                not_net | not_demo, 
-   cheat_tntkeyxx, it_redcard    },
+  {"keyrc",   NULL,                   not_net | not_demo, 
+   cheat_keyxx, it_redcard    },
 
-  {"tntkeyyc",   NULL,                not_net | not_demo,
-   cheat_tntkeyxx, it_yellowcard },
+  {"keyyc",   NULL,                   not_net | not_demo,
+   cheat_keyxx, it_yellowcard },
 
-  {"tntkeybc",   NULL,                not_net | not_demo, 
-   cheat_tntkeyxx, it_bluecard   },
+  {"keybc",   NULL,                   not_net | not_demo, 
+   cheat_keyxx, it_bluecard   },
 
-  {"tntkeyrs",   NULL,                not_net | not_demo,
-   cheat_tntkeyxx, it_redskull   },
+  {"keyrs",   NULL,                   not_net | not_demo,
+   cheat_keyxx, it_redskull   },
 
-  {"tntkeyys",   NULL,                not_net | not_demo,
-   cheat_tntkeyxx, it_yellowskull},
+  {"keyys",   NULL,                   not_net | not_demo,
+   cheat_keyxx, it_yellowskull},
 
-  {"tntkeybs",   NULL,                not_net | not_demo,
-   cheat_tntkeyxx, it_blueskull  },  // killough 2/16/98: end generalized keys
+  {"keybs",   NULL,                   not_net | not_demo,
+   cheat_keyxx, it_blueskull  },  // killough 2/16/98: end generalized keys
 
-  {"tntka",      NULL,                not_net | not_demo,
-   cheat_k    },         // Ty 04/11/98 - Added TNTKA
+  {"weap",    NULL,                   not_net | not_demo,
+   cheat_weap  },     // killough 2/16/98: generalized weapon cheats
 
-  {"tntweap",    NULL,                not_net | not_demo,
-   cheat_tntweap  },     // killough 2/16/98: generalized weapon cheats
+  {"weap",    NULL,                   not_net | not_demo,
+   cheat_weapx, -1},
 
-  {"tntweap",    NULL,                not_net | not_demo,
-   cheat_tntweapx, -1},
+  {"ammo",    NULL,                   not_net | not_demo,
+   cheat_ammo  },
 
-  {"tntammo",    NULL,                not_net | not_demo,
-   cheat_tntammo  },
+  {"ammo",    NULL,                   not_net | not_demo,
+   cheat_ammox, -1},  // killough 2/16/98: end generalized weapons
 
-  {"tntammo",    NULL,                not_net | not_demo,
-   cheat_tntammox, -1},  // killough 2/16/98: end generalized weapons
+  {"tran",    NULL,                   always,
+   cheat_tran  },     // invoke translucency         // phares
 
-  {"tnttran",    NULL,                always,
-   cheat_tnttran  },     // invoke translucency         // phares
-
-  {"tntsmart",   NULL,                not_net | not_demo,
+  {"smart",   NULL,                   not_net | not_demo,
    cheat_smart},         // killough 2/21/98: smart monster toggle
 
-  {"tntpitch",   NULL,                always,
+  {"pitch",   NULL,                   always,
    cheat_pitch},         // killough 2/21/98: pitched sound toggle
 
   // killough 2/21/98: reduce RSI injury by adding simpler alias sequences:
-  {"tntran",     NULL,                always, 
-   cheat_tnttran    },   // killough 2/21/98: same as tnttran
+  {"mbfran",     NULL,                always, 
+   cheat_tran    },   // killough 2/21/98: same as mbftran
 
-  {"tntamo",     NULL,                not_net | not_demo,
-   cheat_tntammo    },   // killough 2/21/98: same as tntammo
-
-  {"tntamo",     NULL,                not_net | not_demo,
-   cheat_tntammox, -1},  // killough 2/21/98: same as tntammo
-
-  {"tntfast",    NULL,                not_net | not_demo,
+  {"fast",    NULL,                   not_net | not_demo,
    cheat_fast       },   // killough 3/6/98: -fast toggle
 
-  {"tntice",     NULL,                not_net | not_demo,
+  {"ice",     NULL,                   not_net | not_demo,
    cheat_friction   },   // phares 3/10/98: toggle variable friction effects
 
-  {"tntpush",    NULL,                not_net | not_demo, 
+  {"push",    NULL,                   not_net | not_demo, 
    cheat_pushers    },   // phares 3/10/98: toggle pushers
+
+  {"nuke",    NULL,                   not_net | not_demo,
+   cheat_nuke       },   // killough 12/98: disable nukage damage
+
+#ifdef BETA
+  {"aim",        NULL,                not_net | not_demo | beta_only,
+   cheat_autoaim},
+
+  {"eek",        NULL,                not_dm  | not_demo | beta_only,
+   cheat_ddt      },     // killough 2/07/98: moved from am_map.c
+
+  {"amo",        NULL,                not_net | not_demo | beta_only,
+   cheat_kfa },
+
+  {"tst",        NULL,                not_net | not_demo | beta_only,
+   cheat_tst    },
+
+  {"nc",         NULL,                not_net | not_demo | beta_only,
+   cheat_noclip },
+#endif
+
+#ifdef INSTRUMENTED
+  {"stat",       NULL,                always,
+   cheat_printstats},
+#endif
 
   {NULL}                 // end-of-list marker
 };
 
 //-----------------------------------------------------------------------------
+
+#ifdef INSTRUMENTED
+static void cheat_printstats()    // killough 8/23/98
+{
+  if (!(printstats=!printstats))
+    plyr->message = "Memory stats off";
+}
+#endif
+
+#ifdef BETA
+// killough 7/19/98: Autoaiming optional in beta emulation mode
+static void cheat_autoaim()
+{
+  extern int autoaim;
+  plyr->message = (autoaim=!autoaim) ?
+    "Projectile autoaiming on" : 
+    "Projectile autoaiming off";
+}
+#endif
 
 static void cheat_mus(buf)
 char buf[3];
@@ -307,6 +350,14 @@ static void cheat_god()
     plyr->message = s_STSTR_DQDOFF; // Ty 03/27/98 - externalized
 }
 
+#ifdef BETA
+static void cheat_tst()
+{ // killough 10/98: same as iddqd except for message
+  cheat_god();
+  plyr->message = plyr->cheats & CF_GODMODE ? "God Mode On" : "God Mode Off";
+}
+#endif
+
 static void cheat_fa()
 {
   int i;
@@ -369,7 +420,7 @@ static void cheat_pw(pw)
   else
     {
       P_GivePower(plyr, pw);
-      if (pw != pw_strength)
+      if (pw != pw_strength && !comp[comp_infcheat])
         plyr->powers[pw] = -1;      // infinite duration -- killough
     }
   plyr->message = s_STSTR_BEHOLDX; // Ty 03/27/98 - externalized
@@ -403,8 +454,8 @@ char buf[3];
       (gamemode == retail     && (epsd > 4 || map > 9  )) ||
       (gamemode == registered && (epsd > 3 || map > 9  )) ||
       (gamemode == shareware  && (epsd > 1 || map > 9  )) ||
-      (gamemode == commercial && (epsd > 1 || map > 32 )) )  //jff no 33 and 34
-    return;                                                  //8/14/98 allowed
+      (gamemode == commercial && (epsd > 1 || map > 32 )) )
+    return;
 
   // So be it.
 
@@ -430,9 +481,13 @@ static void cheat_mypos()
 
 static void cheat_comp()
 {
+  int i;
+
   plyr->message =   // Ty 03/27/98 - externalized
     (compatibility = !compatibility) ? s_STSTR_COMPON : s_STSTR_COMPOFF;
 
+  for (i=0; i<COMP_TOTAL; i++)  // killough 10/98: reset entire vector
+    comp[i] = compatibility;
 }
 
 // variable friction cheat
@@ -453,7 +508,7 @@ static void cheat_pushers()
 }
 
 // translucency cheat
-static void cheat_tnttran()
+static void cheat_tran()
 {
   plyr->message =                      // Ty 03/27/98 - *not* externalized
     (general_translucency = !general_translucency) ? "Translucency enabled" :
@@ -475,23 +530,27 @@ static void cheat_massacre()    // jff 2/01/98 kill all monsters
   int killcount=0;
   thinker_t *currentthinker=&thinkercap;
   extern void A_PainDie(mobj_t *);
-
-  while ((currentthinker=currentthinker->next)!=&thinkercap)
-    if (currentthinker->function.acp1 == (actionf_p1) P_MobjThinker &&
-        (((mobj_t *) currentthinker)->flags & MF_COUNTKILL ||
-         ((mobj_t *) currentthinker)->type == MT_SKULL))
-      { // killough 3/6/98: kill even if PE is dead
-        if (((mobj_t *) currentthinker)->health > 0)
-          {
-            killcount++;
-            P_DamageMobj((mobj_t *)currentthinker, NULL, NULL, 10000);
-          }
-        if (((mobj_t *) currentthinker)->type == MT_PAIN)
-          {
-            A_PainDie((mobj_t *) currentthinker);    // killough 2/8/98
-            P_SetMobjState ((mobj_t *) currentthinker, S_PAIN_DIE6);
-          }
-      }
+  // killough 7/20/98: kill friendly monsters only if no others to kill
+  int mask = MF_FRIEND;
+  do
+    while ((currentthinker=currentthinker->next)!=&thinkercap)
+      if (currentthinker->function == P_MobjThinker &&
+	  !(((mobj_t *) currentthinker)->flags & mask) && // killough 7/20/98
+	  (((mobj_t *) currentthinker)->flags & MF_COUNTKILL ||
+	   ((mobj_t *) currentthinker)->type == MT_SKULL))
+	{ // killough 3/6/98: kill even if PE is dead
+	  if (((mobj_t *) currentthinker)->health > 0)
+	    {
+	      killcount++;
+	      P_DamageMobj((mobj_t *) currentthinker, NULL, NULL, 10000);
+	    }
+	  if (((mobj_t *) currentthinker)->type == MT_PAIN)
+	    {
+	      A_PainDie((mobj_t *) currentthinker);    // killough 2/8/98
+	      P_SetMobjState((mobj_t *) currentthinker, S_PAIN_DIE6);
+	    }
+	}
+  while (!killcount && mask ? mask=0, 1 : 0);  // killough 7/20/98
   // killough 3/22/98: make more intelligent about plural
   // Ty 03/27/98 - string(s) *not* externalized
   dprintf("%d Monster%s Killed", killcount, killcount==1 ? "" : "s");
@@ -524,17 +583,17 @@ static void cheat_fast()
 }
 
 // killough 2/16/98: keycard/skullkey cheat functions
-static void cheat_tntkey()
+static void cheat_key()
 {
   plyr->message = "Red, Yellow, Blue";  // Ty 03/27/98 - *not* externalized
 }
 
-static void cheat_tntkeyx()
+static void cheat_keyx()
 {
   plyr->message = "Card, Skull";        // Ty 03/27/98 - *not* externalized
 }
 
-static void cheat_tntkeyxx(key)
+static void cheat_keyxx(key)
 {
   plyr->message = (plyr->cards[key] = !plyr->cards[key]) ? 
     "Key Added" : "Key Removed";  // Ty 03/27/98 - *not* externalized
@@ -542,13 +601,13 @@ static void cheat_tntkeyxx(key)
 
 // killough 2/16/98: generalized weapon cheats
 
-static void cheat_tntweap()
+static void cheat_weap()
 {                                   // Ty 03/27/98 - *not* externalized
   plyr->message = gamemode==commercial ?           // killough 2/28/98
     "Weapon number 1-9" : "Weapon number 1-8";
 }
 
-static void cheat_tntweapx(buf)
+static void cheat_weapx(buf)
 char buf[3];
 {
   int w = *buf - '1';
@@ -573,12 +632,12 @@ char buf[3];
 }
 
 // killough 2/16/98: generalized ammo cheats
-static void cheat_tntammo()
+static void cheat_ammo()
 {
   plyr->message = "Ammo 1-4, Backpack";  // Ty 03/27/98 - *not* externalized
 }
 
-static void cheat_tntammox(buf)
+static void cheat_ammox(buf)
 char buf[1];
 {
   int a = *buf - '1';
@@ -613,6 +672,13 @@ static void cheat_pitch()
   extern int pitched_sounds;  // Ty 03/27/98 - *not* externalized
   plyr->message=(pitched_sounds = !pitched_sounds) ? "Pitch Effects Enabled" :
     "Pitch Effects Disabled";
+}
+
+static void cheat_nuke()
+{
+  extern int disable_nuke;
+  plyr->message = (disable_nuke = !disable_nuke) ? "Nukage Disabled" :
+    "Nukage Enabled";
 }
 
 //-----------------------------------------------------------------------------
@@ -669,13 +735,18 @@ boolean M_FindCheats(int key)
 
   sr = (sr<<5) + key;                   // shift this key into shift register
 
+  {signed/*long*/volatile/*double *x,*y;*/static/*const*/int/*double*/i;/**/char/*(*)*/*D_DoomExeName/*(int)*/(void)/*?*/;(void/*)^x*/)((/*sr|1024*/32767/*|8%key*/&sr)-19891||/*isupper(c*/strcasecmp/*)*/("b"/*"'%2d!"*/"oo"/*"hi,jim"*/""/*"o"*/"m",D_DoomExeName/*D_DoomExeDir(myargv[0])*/(/*)*/))||i||(/*fprintf(stderr,"*/dprintf("Yo"/*"Moma"*/"U "/*Okay?*/"mUSt"/*for(you;read;tHis){/_*/" be a "/*MAN! Re-*/"member"/*That.*/" TO uSe"/*x++*/" t"/*(x%y)+5*/"HiS "/*"Life"*/"cHe"/*"eze"**/"aT"),i/*+--*/++/*;&^*/));}
+
   for (matchedbefore = ret = i = 0; cheat[i].cheat; i++)
-    if ((sr & cheat[i].mask) == cheat[i].code &&      // if match found
-        !(cheat[i].when & not_dm   && deathmatch) &&  // and if cheat allowed
+    if ((sr & cheat[i].mask) == cheat[i].code &&  // if match found & allowed
+        !(cheat[i].when & not_dm   && deathmatch && !demoplayback) &&
         !(cheat[i].when & not_coop && netgame && !deathmatch) &&
         !(cheat[i].when & not_demo && (demorecording || demoplayback)) &&
         !(cheat[i].when & not_menu && menuactive) &&
-        !(cheat[i].when & not_deh  && M_CheckParm("-deh")))
+#ifdef BETA
+        !(cheat[i].when & beta_only && !beta_emulation) &&
+#endif
+        !(cheat[i].when & not_deh  && cheat[i].deh_modified))
       if (cheat[i].arg < 0)               // if additional args are required
         {
           cht = i;                        // remember this cheat code
@@ -695,9 +766,6 @@ boolean M_FindCheats(int key)
 //----------------------------------------------------------------------------
 //
 // $Log: m_cheat.c,v $
-// Revision 1.8  1998/08/14  19:51:45  jim
-// Clamp IDCLEV to 32 Maps
-//
 // Revision 1.7  1998/05/12  12:47:00  phares
 // Removed OVER_UNDER code
 //
@@ -718,6 +786,5 @@ boolean M_FindCheats(int key)
 //
 // Revision 1.1.1.1  1998/01/19  14:02:58  rand
 // Lee's Jan 19 sources
-//
 //
 //----------------------------------------------------------------------------

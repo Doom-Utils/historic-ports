@@ -3,7 +3,6 @@
 //
 // $Id: p_inter.h,v 1.3 1998/05/03 23:08:57 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -32,10 +31,6 @@
 
 #include "d_player.h"
 #include "p_mobj.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Ty 03/09/98 Moved to an int in p_inter.c for deh and externalization 
 #define MAXHEALTH maxhealth

@@ -3,7 +3,6 @@
 //
 // $Id: g_game.h,v 1.10 1998/05/16 09:17:02 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 //-----------------------------------------------------------------------------
 
@@ -47,12 +47,10 @@ void G_DeferedInitNew(skill_t skill, int episode, int map);
 void G_DeferedPlayDemo(char *demo);
 void G_LoadGame(char *name, int slot, boolean is_command); // killough 5/15/98
 void G_ForcedLoadGame(void);           // killough 5/15/98: forced loadgames
-void G_DoLoadGame(void);
 void G_SaveGame(int slot, char *description); // Called by M_Responder.
 void G_RecordDemo(char *name);              // Only called by startup code.
 void G_BeginRecording(void);
 void G_PlayDemo(char *name);
-void G_TimeDemo(char *name);
 void G_ExitLevel(void);
 void G_SecretExitLevel(void);
 void G_WorldDone(void);
@@ -63,19 +61,12 @@ void G_SaveGameName(char *,int); // killough 3/22/98: sets savegame filename
 void G_SetFastParms(int);        // killough 4/10/98: sets -fast parameters
 void G_DoNewGame(void);
 void G_DoReborn(int playernum);
-void G_DoPlayDemo(void);
-void G_DoCompleted(void);
-void G_DoSaveGame(void);
-void G_ReadDemoTiccmd(ticcmd_t *cmd);
-void G_WriteDemoTiccmd(ticcmd_t *cmd);
-void G_DoWorldDone(void);
 byte *G_ReadOptions(byte *demo_p);         // killough 3/1/98
 byte *G_WriteOptions(byte *demo_p);        // killough 3/1/98
 void G_PlayerReborn(int player);
 void G_InitNew(skill_t skill, int episode, int map);
-void G_DoLoadLevel(void  );
-void G_DoLoadGame(void);
 void G_DoVictory(void);
+unsigned long long G_Signature(void);      // killough 12/98
 
 // killough 1/18/98: Doom-style printf;   killough 4/25/98: add gcc attributes
 void dprintf(const char *, ...) __attribute__((format(printf,1,2)));
@@ -149,17 +140,19 @@ extern int  key_map_mark;                                           //    ^
 extern int  key_map_clear;                                          //    |
 extern int  key_map_grid;                                           // phares
 extern int  key_screenshot;    // killough 2/22/98 -- add key for screenshot
+extern int  key_setup;         // killough 10/98: shortcut to setup menu
 extern int  autorun;           // always running?                   // phares
 
 extern int  defaultskill;      //jff 3/24/98 default skill
 extern boolean haswolflevels;  //jff 4/18/98 wolf levels present
+extern boolean demorecording;  // killough 12/98
 
-extern int  bodyquesize;       // killough 2/8/98: adustable corpse limit
+extern int  bodyquesize, default_bodyquesize; // killough 2/8/98, 10/98
 
 // killough 5/2/98: moved from d_deh.c:
 // Par times (new item with BOOM) - from g_game.c
-extern int pars[4][10];  // hardcoded array size
-extern int cpars[32];    // hardcoded array size
+extern int pars[][10];  // hardcoded array size
+extern int cpars[];     // hardcoded array size
 
 #endif
 

@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c,v 1.14 1998/09/07 20:11:36 jim Exp $
+// $Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Rendering main loop and setup functions,
 //       utility functions (BSP, geometry, trigonometry).
@@ -29,7 +29,7 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char rcsid[] = "$Id: r_main.c,v 1.14 1998/09/07 20:11:36 jim Exp $";
+static const char rcsid[] = "$Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $";
 
 #include "doomstat.h"
 #include "r_main.h"
@@ -40,7 +40,6 @@ static const char rcsid[] = "$Id: r_main.c,v 1.14 1998/09/07 20:11:36 jim Exp $"
 #include "m_bbox.h"
 #include "r_sky.h"
 #include "v_video.h"
-#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW 2048    
@@ -342,29 +341,30 @@ void R_ExecuteSetViewSize (void)
   if (setblocks == 11)
     {
       scaledviewwidth = SCREENWIDTH;
-      viewheight = SCREENHEIGHT;
+      scaledviewheight = SCREENHEIGHT;                    // killough 11/98
     }
   else
     {
       scaledviewwidth = setblocks*32;
-      viewheight = (setblocks*168/10) & ~7;
+      scaledviewheight = (setblocks*168/10) & ~7;        // killough 11/98
     }
-    
-  viewwidth = scaledviewwidth;
-        
+
+  viewwidth = scaledviewwidth << hires;                  // killough 11/98
+  viewheight = scaledviewheight << hires;                // killough 11/98
+
   centery = viewheight/2;
   centerx = viewwidth/2;
   centerxfrac = centerx<<FRACBITS;
   centeryfrac = centery<<FRACBITS;
   projection = centerxfrac;
 
-  R_InitBuffer (scaledviewwidth, viewheight);
+  R_InitBuffer(scaledviewwidth, scaledviewheight);       // killough 11/98
         
   R_InitTextureMapping();
     
   // psprite scales
-  pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-  pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+  pspritescale = FixedDiv(viewwidth, SCREENWIDTH);       // killough 11/98
+  pspriteiscale= FixedDiv(SCREENWIDTH, viewwidth);       // killough 11/98
     
   // thing clipping
   for (i=0 ; i<viewwidth ; i++)
@@ -389,8 +389,8 @@ void R_ExecuteSetViewSize (void)
     {
       int j, startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
       for (j=0 ; j<MAXLIGHTSCALE ; j++)
-        {
-          int t, level = startmap - j*SCREENWIDTH/viewwidth/DISTMAP;
+        {                                       // killough 11/98:
+          int t, level = startmap - j*SCREENWIDTH/scaledviewwidth/DISTMAP;
             
           if (level < 0)
             level = 0;
@@ -416,17 +416,16 @@ extern int screenblocks;
 void R_Init (void)
 {
   R_InitData();
-  //jff 8/3/98 use logical output routine
-  lprintf(LO_INFO,"\nR_InitData\n");
+  puts("\nR_InitData");
   R_SetViewSize(screenblocks);
   R_InitPlanes();
-  lprintf(LO_INFO,"R_InitPlanes\n");
+  puts("R_InitPlanes");
   R_InitLightTables();
-  lprintf(LO_INFO,"R_InitLightTables\n");
+  puts("R_InitLightTables");
   R_InitSkyMap();
-  lprintf(LO_INFO,"R_InitSkyMap\n");
+  puts("R_InitSkyMap");
   R_InitTranslationTables();
-  lprintf(LO_INFO,"R_InitTranslationsTables\n");
+  puts("R_InitTranslationsTables");
 }
 
 //
@@ -516,8 +515,8 @@ void R_RenderPlayerView (player_t* player)
     { // killough 2/10/98: add flashing red HOM indicators
       char c[47*47];
       extern int lastshottic;
-      int i,color=(gametic % 20) < 9 ? 0xb0 : 0;
-      memset(*screens+viewwindowy*SCREENWIDTH,color,viewheight*SCREENWIDTH);
+      int i , color = !flashing_hom || (gametic % 20) < 9 ? 0xb0 : 0;
+      memset(*screens+viewwindowy*linesize,color,viewheight*linesize);
       for (i=0;i<47*47;i++)
         {
           char t =
@@ -578,8 +577,8 @@ void R_RenderPlayerView (player_t* player)
           c[i] = t=='/' ? color : t;
         }
       if (gametic-lastshottic < TICRATE*2 && gametic-lastshottic > TICRATE/8)
-        V_DrawBlock(viewwindowx +  viewwidth/2 - 24,
-                    viewwindowy + viewheight/2 - 24, 0, 47, 47, c);
+        V_DrawBlock((viewwindowx +  viewwidth/2 - 24)>>hires,
+                    (viewwindowy + viewheight/2 - 24)>>hires, 0, 47, 47, c);
       R_DrawViewBorder();
     }
 
@@ -606,9 +605,6 @@ void R_RenderPlayerView (player_t* player)
 //----------------------------------------------------------------------------
 //
 // $Log: r_main.c,v $
-// Revision 1.14  1998/09/07  20:11:36  jim
-// Logical output routine added
-//
 // Revision 1.13  1998/05/07  00:47:52  killough
 // beautification
 //

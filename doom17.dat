@@ -1,8 +1,4 @@
-# Linetypes for Boom engine (TeamTNT)
-#
-# Contact killough@classicgaming.com for questions about this file
-# (but not DCK generally), as Ben Morris no longer maintains DCK,
-# and does not use Boom.
+# Linetypes for MBF engine
 #
 # Commented entries below (beginning with #) are supported in Boom,
 # but are commented out because DCK2.2-f does not allow more than a
@@ -146,7 +142,7 @@ W1 Stairs Build 16 Turbo (100); 100
 
 [Lines: Crushers, etc]
 W1 Ceiling Stutter Start FastDmg (141); 141
-WR Ceiling Stutter Start FastDmg (150); 150
+#WR Ceiling Stutter Start FastDmg (150); 150
 S1 Ceiling Stutter Start FastDmg (165); 165
 SR Ceiling Stutter Start FastDmg (185); 185
 W1 Ceiling Crush Start SlowDmg (6); 6
@@ -197,6 +193,8 @@ S1 Exit To 9 (Secret Level) (51); 51
 
 [Lines: Properties Transfer]
 Set Tagged Sector's Draw Heights (242); 242
+Set Tagged Skies' Texture (271); 271
+Set Tagged Skies' Texture, Flipped (272); 272
 Make Tagged Lines Translucent (260); 260
 Set Sector's Floor Light Level (213); 213
 Set Sector's Ceiling Light Level (261); 261
@@ -220,6 +218,12 @@ Carry Things On Tagged Floor (252); 252
 Scroll&Carry Things Sector Floor (253); 253
 Scroll First Side of Tagged Line (254); 254
 Effect Scrolling From XY Offsets (255); 255
+
+[Lines: Friction, Wind, Current]
+Friction, Ice>100, Sludge<100 (223); 223
+Wind Force/Direction (224); 224
+Current Force/Direction (225); 225
+Force of Point Push/Pull Field (226); 226
 
 [Lines: Floor Lowers]
 S1 Floor Change Donut (9); 9
@@ -269,15 +273,15 @@ WR Floor Raise 24 & Change (93); 93
 S1 Floor Raise 24 & Change (160); 160
 SR Floor Raise 24 & Change (179); 179
 W1 Floor Raise 24 & Change Tex (143); 143
-WR Floor Raise 24 & Change Tex (148); 148
+#WR Floor Raise 24 & Change Tex (148); 148
 S1 Floor Raise 24 & Change Tex (15); 15
 SR Floor Raise 24 & Change Tex (66); 66
 W1 Floor Raise 32 & Change Tex (144); 144
-WR Floor Raise 32 & Change Tex (149); 149
+#WR Floor Raise 32 & Change Tex (149); 149
 S1 Floor Raise 32 & Change Tex (14); 14
 SR Floor Raise 32 & Change Tex (67); 67
 W1 Floor Raise 512 (142); 142
-WR Floor Raise 512 (147); 147
+#WR Floor Raise 512 (147); 147
 S1 Floor Raise 512 (140); 140
 SR Floor Raise 512 (178); 178
 W1 Floor Raise Near & Change (22); 22
@@ -290,22 +294,6 @@ S1 Floor Raise To Short Tex (158); 158
 SR Floor Raise To Short Tex (176); 176
 G1 Floor Raise (24); 24
 G1 Floor Raise Near & Change (47); 47
-
-#[Lines: Floor Changers]		   
-#W1 Floor Change Trig (153); 153
-#WR Floor Change Trig (154); 154
-#S1 Floor Change Trig (189); 189
-#SR Floor Change Trig (190); 190
-#W1 Floor Change Numeric (215); 239
-#WR Floor Change Numeric (216); 240
-#S1 Floor Change Numeric (217); 241
-#SR Floor Change Numeric (218); 78
-
-[Lines: Friction, Wind, Current]
-Friction, Ice>100, Sludge<100 (223); 223
-Wind Force/Direction (224); 224
-Current Force/Direction (225); 225
-Force of Point Push/Pull Field (226); 226
 
 [Sectors]
 Normal; 0
@@ -324,6 +312,8 @@ Secret credit given; 9
 -10% / 20% health until 10% left, then ends level; 11
 30 seconds after level start, closes like a door; 10
 5 minutes after level start, opens and closes; 14
+Friction; 256
+Pusher; 512
 
 [Angles]
 North; 90
@@ -334,6 +324,13 @@ Northeast; 45
 Northwest; 135
 Southeast; 315
 Southwest; 225
+
+[Things: Miscellaneous]
+Color; Brown
+Push Controller; 5001;
+Pull Controller; 5002;
+Color; Green
+Dog; 888;
 
 [TInfo]
 # Thing information: Type; Radius; Height; DrawAngleData (0/1)
@@ -349,6 +346,7 @@ Southwest; 225
 11; 20; 56; 1
 
 # monsters
+888; 12; 28; 1
 3004; 20; 56; 1
 84; 20; 56; 1
 9; 20; 56; 1
@@ -413,12 +411,6 @@ Southwest; 225
 8; 19; 16; 0
 5001; 19; 16; 1
 5002; 19; 16; 1
-
-[Things: Miscellaneous]
-Color; Brown
-Push Controller; 5001; CANDA0
-Color; Brown
-Pull Controller; 5002; CANDA0
 
 [Lines_NoTag]
 # A list of all the line types that don't require tags.
@@ -485,4 +477,4 @@ Pull Controller; 5002; CANDA0
 # fix comments
 #
 #
-
+

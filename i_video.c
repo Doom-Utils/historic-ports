@@ -3,7 +3,6 @@
 //
 // $Id: i_video.c,v 1.12 1998/05/03 22:40:35 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,25 +21,35 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      DOOM graphics stuff
 //
 //-----------------------------------------------------------------------------
 
-#include "z_zone.h"  /* memory allocation wrappers -- killough */
-
 static const char
 rcsid[] = "$Id: i_video.c,v 1.12 1998/05/03 22:40:35 killough Exp $";
+
+#include "z_zone.h"  /* memory allocation wrappers -- killough */
 
 #include <stdio.h>
 #include <signal.h>
 #include <allegro.h>
 #include <dpmi.h>
 #include <sys/nearptr.h>
+#include <dos.h>
 
 #include "doomstat.h"
 #include "v_video.h"
 #include "d_main.h"
+#include "m_bbox.h"
+#include "st_stuff.h"
+#include "m_argv.h"
+#include "w_wad.h"
+#include "r_draw.h"
+#include "am_map.h"
+#include "m_menu.h"
+#include "wi_stuff.h"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -155,6 +164,7 @@ int I_DoomCode2ScanCode (int a)
 
 void I_GetEvent()
 {
+  extern int usemouse;   // killough 10/98
   event_t event;
   int tail;
 
@@ -167,7 +177,7 @@ void I_GetEvent()
       D_PostEvent(&event);
     }
 
-  if (mousepresent!=-1)     /* mouse movement */
+  if (mousepresent!=-1 && usemouse) // killough 10/98
     {
       static int lastbuttons;
       int xmickeys,ymickeys,buttons=mouse_b;
@@ -193,7 +203,6 @@ void I_StartTic()
   I_GetEvent();
 }
 
-
 //
 // I_UpdateNoBlit
 //
@@ -206,74 +215,203 @@ void I_UpdateNoBlit (void)
 extern void ppro_blit(void *, size_t);
 extern void pent_blit(void *, size_t);
 
-int use_vsync = 1;   // killough 2/8/98: controls whether vsync is called
+extern void blast(void *destin, void *src);  // blits to VGA planar memory
+extern void ppro_blast(void *destin, void *src);  // same but for PPro CPU
 
-static byte *dascreen;
+int use_vsync;     // killough 2/8/98: controls whether vsync is called
+int page_flip;     // killough 8/15/98: enables page flipping
+int hires;
+BITMAP *screens0_bitmap;
+boolean noblit;
+
+static int in_graphics_mode;
+static int in_page_flip, in_hires, linear;
+static int scroll_offset;
+static unsigned long screen_base_addr;
+static unsigned destscreen;
 
 void I_FinishUpdate(void)
 {
-  static int     lasttic;
-  int            tics;
-  int            i;
-  extern boolean noblit;        // killough 1/31/98
-
-  if (noblit)
+  if (noblit || !in_graphics_mode)
     return;
 
-    // draws little dots on the bottom of the screen
+  // draws little dots on the bottom of the screen
   if (devparm)
     {
-      i = I_GetTime();
-      tics = i - lasttic;
+      static int lasttic;
+      byte *s = screens[0];
+
+      int i = I_GetTime();
+      int tics = i - lasttic;
       lasttic = i;
       if (tics > 20)
         tics = 20;
-      for (i=0 ; i<tics*2 ; i+=2)
-        screens[0][ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0xff;
-      for ( ; i<20*2 ; i+=2)
-        screens[0][ (SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
+      if (in_hires)    // killough 11/98: hires support
+        {
+          for (i=0 ; i<tics*2 ; i+=2)
+            s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+1] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+SCREENWIDTH*2] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+SCREENWIDTH*2+1] =
+              0xff;
+          for ( ; i<20*2 ; i+=2)
+            s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+1] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+SCREENWIDTH*2] =
+              s[(SCREENHEIGHT-1)*SCREENWIDTH*4+i+SCREENWIDTH*2+1] =
+              0x0;
+        }
+      else
+        {
+          for (i=0 ; i<tics*2 ; i+=2)
+            s[(SCREENHEIGHT-1)*SCREENWIDTH + i] = 0xff;
+          for ( ; i<20*2 ; i+=2)
+            s[(SCREENHEIGHT-1)*SCREENWIDTH + i] = 0x0;
+        }
     }
 
-  //blast it to the screen
+  if (in_page_flip)
+    if (!in_hires)
+      {
+	//
+	// killough 8/15/98:
+	//
+	// 320x200 Wait-free page-flipping for flicker-free display
+	//
+	// blast it to the screen
 
-  // killough 2/7/98: unless -timedemo or -fastdemo is
-  // selected, or the user does not want to use vsync,
-  // use vsync() to prevent screen breaks.
+	destscreen += 0x4000;             // Move address up one page
+	destscreen &= 0xffff;             // Reduce address mod 4 pages
 
-  if (!timingdemo && use_vsync)
-    vsync();
+	// Pentium Pros and above need special consideration in the
+	// planar multiplexing code, to avoid partial stalls. killough
 
-  // 1/16/98 killough: optimization based on CPU type
+	if (cpu_family >= 6)
+	  ppro_blast((byte *) __djgpp_conventional_base
+		     + 0xa0000 + destscreen, *screens);
+	else
+	  blast((byte *) __djgpp_conventional_base  // Other CPUs, e.g. 486
+		+ 0xa0000 + destscreen, *screens);
 
-  if (cpu_family == 6)     // PPro, PII
-    ppro_blit(dascreen,SCREENWIDTH*SCREENHEIGHT);
+	// page flip 
+	outportw(0x3d4, destscreen | 0x0c); 
+
+        return;
+      }
+    else       // hires hardware page-flipping (VBE 2.0)
+      scroll_offset = scroll_offset ? 0 : 400;
+  else        // killough 8/15/98: no page flipping; use other methods
+    if (use_vsync && !timingdemo)
+      vsync(); // killough 2/7/98: use vsync() to prevent screen breaks.
+
+  if (!linear)  // Banked mode is slower. But just in case it's needed...
+    blit(screens0_bitmap, screen, 0, 0, 0, scroll_offset,
+         SCREENWIDTH << hires, SCREENHEIGHT << hires);
   else
-    if (cpu_family == 5)   // Pentium
-      pent_blit(dascreen,SCREENWIDTH*SCREENHEIGHT);
-    else                   // Others
-      memcpy(dascreen,screens[0],SCREENWIDTH*SCREENHEIGHT);
+    {   // 1/16/98 killough: optimization based on CPU type
+      int size =
+        in_hires ? SCREENWIDTH*SCREENHEIGHT*4 : SCREENWIDTH*SCREENHEIGHT;
+      byte *dascreen = screen_base_addr + screen->line[scroll_offset];
+      if (cpu_family >= 6)     // PPro, PII
+        ppro_blit(dascreen,size);
+      else
+        if (cpu_family >= 5)   // Pentium
+          pent_blit(dascreen,size);
+        else                   // Others
+          memcpy(dascreen,*screens,size);
+    }
+
+  if (in_page_flip)  // hires hardware page-flipping (VBE 2.0)
+    scroll_screen(0, scroll_offset);
 }
 
 //
 // I_ReadScreen
 //
 
-void I_ReadScreen (byte* scr)
+void I_ReadScreen(byte *scr)
 {
-  // 1/18/98 killough: optimized based on CPU type:
+  int size = hires ? SCREENWIDTH*SCREENHEIGHT*4 : SCREENWIDTH*SCREENHEIGHT;
 
-  if (cpu_family == 6)     // PPro or PII
-    ppro_blit(scr,SCREENWIDTH*SCREENHEIGHT);
+  // 1/18/98 killough: optimized based on CPU type:
+  if (cpu_family >= 6)     // PPro or PII
+    ppro_blit(scr,size);
   else
-    if (cpu_family == 5)   // Pentium
-      pent_blit(scr,SCREENWIDTH*SCREENHEIGHT);
+    if (cpu_family >= 5)   // Pentium
+      pent_blit(scr,size);
     else                     // Others
-      memcpy(scr,screens[0],SCREENWIDTH*SCREENHEIGHT);
+      memcpy(scr,*screens,size);
 }
 
-void I_SetPalette (byte *palette)
+//
+// killough 10/98: init disk icon
+//
+
+int disk_icon;
+
+static BITMAP *diskflash, *old_data;
+
+static void I_InitDiskFlash(void)
+{
+  byte temp[32*32];
+
+  if (diskflash)
+    {
+      destroy_bitmap(diskflash);
+      destroy_bitmap(old_data);
+    }
+
+  diskflash = create_bitmap_ex(8, 16<<hires, 16<<hires);
+  old_data = create_bitmap_ex(8, 16<<hires, 16<<hires);
+
+  V_GetBlock(0, 0, 0, 16, 16, temp);
+  V_DrawPatchDirect(0, 0, 0, W_CacheLumpName(M_CheckParm("-cdrom") ?
+                                             "STCDROM" : "STDISK", PU_CACHE));
+  V_GetBlock(0, 0, 0, 16, 16, diskflash->line[0]);
+  V_DrawBlock(0, 0, 0, 16, 16, temp);
+}
+
+//
+// killough 10/98: draw disk icon
+//
+
+void I_BeginRead(void)
+{
+  if (!disk_icon || !in_graphics_mode)
+    return;
+
+  blit(screen, old_data,
+       (SCREENWIDTH-16) << hires,
+       scroll_offset + ((SCREENHEIGHT-16)<<hires),
+       0, 0, 16 << hires, 16 << hires);
+
+  blit(diskflash, screen, 0, 0, (SCREENWIDTH-16) << hires,
+       scroll_offset + ((SCREENHEIGHT-16)<<hires), 16 << hires, 16 << hires);
+}
+
+//
+// killough 10/98: erase disk icon
+//
+
+void I_EndRead(void)
+{
+  if (!disk_icon || !in_graphics_mode)
+    return;
+
+  blit(old_data, screen, 0, 0, (SCREENWIDTH-16) << hires,
+       scroll_offset + ((SCREENHEIGHT-16)<<hires), 16 << hires, 16 << hires);
+}
+
+void I_SetPalette(byte *palette)
 {
   int i;
+
+  if (!in_graphics_mode)             // killough 8/11/98
+    return;
+
+  if (!timingdemo)
+    while (!(inportb(0x3da) & 8));
+
   outportb(0x3c8,0);
   for (i=0;i<256;i++)
     {
@@ -285,7 +423,149 @@ void I_SetPalette (byte *palette)
 
 void I_ShutdownGraphics(void)
 {
-  set_gfx_mode(GFX_TEXT, 0, 0, 0, 0);
+  if (in_graphics_mode)  // killough 10/98
+    {
+      clear(screen);
+
+      // Turn off graphics mode
+      set_gfx_mode(GFX_TEXT, 0, 0, 0, 0);
+
+      in_graphics_mode = 0;
+    }
+}
+
+extern boolean setsizeneeded;
+
+//
+// killough 11/98: New routine, for setting hires and page flipping
+//
+
+static void I_InitGraphicsMode(void)
+{
+  scroll_offset = 0;
+
+  if (hires || !page_flip)
+    {
+      set_color_depth(8);     // killough 2/7/98: use allegro set_gfx_mode
+
+      if (hires)
+        {
+          if (page_flip)
+            if (set_gfx_mode(GFX_AUTODETECT, 640, 400, 640, 800))
+              {
+                warn_about_changes(S_BADVID);      // Revert to no pageflipping
+                page_flip = 0;
+              }
+            else
+              set_clip(screen, 0, 0, 640, 800);    // Allow full access
+
+          if (!page_flip && set_gfx_mode(GFX_AUTODETECT, 640, 400, 0, 0))
+            {
+              hires = 0;                           // Revert to lowres
+              page_flip = in_page_flip;            // Restore orig pageflipping
+              warn_about_changes(S_BADVID);
+              I_InitGraphicsMode();                // Start all over
+              return;
+            }
+        }
+
+      if (!hires)
+        set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0);
+
+      linear = is_linear_bitmap(screen);
+
+      __dpmi_get_segment_base_address(screen->seg, &screen_base_addr);
+      screen_base_addr -= __djgpp_base_address;
+
+      V_Init();
+    }
+  else
+    {
+      // killough 8/15/98:
+      //
+      // Page flipping code for wait-free, flicker-free display.
+      //
+      // This is the method Doom originally used, and was removed in the
+      // Linux source. It only works for 320x200. The VGA hardware is
+      // switched to planar mode, which allows 256K of VGA RAM to be
+      // addressable, and allows page flipping, split screen, and hardware
+      // panning.
+
+      V_Init();
+
+      destscreen = 0;
+
+      //
+      // VGA mode 13h
+      //
+      
+      set_gfx_mode(GFX_AUTODETECT, 320, 200, 0, 0);
+
+      // 
+      // turn off chain 4 and odd/even 
+      // 
+      outportb(0x3c4, 4); 
+      outportb(0x3c5, (inportb(0x3c5) & ~8) | 4); 
+ 
+      // 
+      // turn off odd/even and set write mode 0 
+      // 
+      outportb(0x3ce, 5); 
+      outportb(0x3cf, inportb(0x3cf) & ~0x13);
+      
+      // 
+      // turn off chain 4 
+      // 
+      outportb(0x3ce, 6); 
+      outportb(0x3cf, inportb(0x3cf) & ~2); 
+      
+      // 
+      // clear the entire buffer space, because int 10h only did 16 k / plane 
+      // 
+      outportw(0x3c4, 0xf02);
+      blast(0xa0000 + (byte *) __djgpp_conventional_base, *screens);
+
+      // Now we do most of this stuff again for Allegro's benefit :)
+      // All that work above was just to clear the screen first.
+      set_gfx_mode(GFX_MODEX, 320, 200, 320, 800);
+    }
+
+  in_graphics_mode = 1;
+  in_page_flip = page_flip;
+  in_hires = hires;
+
+  setsizeneeded = true;
+
+  I_InitDiskFlash();        // Initialize disk icon
+
+  I_SetPalette(W_CacheLumpName("PLAYPAL",PU_CACHE));
+}
+
+void I_ResetScreen(void)
+{
+  if (!in_graphics_mode)
+    {
+      setsizeneeded = true;
+      V_Init();
+      return;
+    }
+
+  I_ShutdownGraphics();     // Switch out of old graphics mode
+
+  I_InitGraphicsMode();     // Switch to new graphics mode
+
+  if (automapactive)
+    AM_Start();             // Reset automap dimensions
+
+  ST_Start();               // Reset palette
+
+  if (gamestate == GS_INTERMISSION)
+    {
+      WI_DrawBackground();
+      V_CopyRect(0, 0, 1, SCREENWIDTH, SCREENHEIGHT, 0, 0, 0);
+    }
+
+  Z_CheckHeap();
 }
 
 void I_InitGraphics(void)
@@ -303,23 +583,24 @@ void I_InitGraphics(void)
   asm("fninit");  // 1/16/98 killough -- prevents FPU exceptions
 #endif
 
-  timer_simulate_retrace(0);  // turn retrace simulator off -- killough 2/7/98
+  timer_simulate_retrace(0);
 
-  //enter graphics mode
+  if (nodrawers) // killough 3/2/98: possibly avoid gfx mode
+    return;
 
-  // killough 2/7/98: use allegro set_gfx_mode
+  //
+  // enter graphics mode
+  //
 
-  if (!nodrawers) // killough 3/2/98: possibly avoid gfx mode
-    {
-      signal(SIGINT, SIG_IGN);  // ignore CTRL-C in graphics mode
-      set_color_depth(8);
-      set_gfx_mode(GFX_AUTODETECT, SCREENWIDTH, SCREENHEIGHT,
-                   SCREENWIDTH, SCREENHEIGHT);
-      atexit(I_ShutdownGraphics);
-    }
+  atexit(I_ShutdownGraphics);
 
-  dascreen=(byte *)(__djgpp_conventional_base+0xa0000);
-  screens[0]=(byte *)calloc(SCREENWIDTH,SCREENHEIGHT);  // killough
+  signal(SIGINT, SIG_IGN);  // ignore CTRL-C in graphics mode
+
+  in_page_flip = page_flip;
+
+  I_InitGraphicsMode();    // killough 10/98
+
+  Z_CheckHeap();
 }
 
 //----------------------------------------------------------------------------

@@ -3,7 +3,6 @@
 //
 // $Id: r_sky.h,v 1.4 1998/05/03 22:56:25 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -31,10 +30,6 @@
 #define __R_SKY__
 
 #include "m_fixed.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // SKY, store the number for name.
 #define SKYFLATNAME  "F_SKY1"

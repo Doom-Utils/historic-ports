@@ -3,7 +3,6 @@
 //
 // $Id: z_zone.h,v 1.7 1998/05/08 20:32:12 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Zone Memory Allocation, perhaps NeXT ObjectiveC inspired.
 //      Remark: this was the only stuff that, according
@@ -37,6 +37,7 @@
 
 #ifndef __GNUC__
 #define __attribute__(x)
+#define __inline__
 #endif
 
 // Remove all definitions before including system definitions
@@ -93,6 +94,11 @@ void Z_DumpHistory(char *);
 void dprintf(const char *, ...) __attribute__((format(printf,1,2)));
 
 void Z_ZoneHistory(char *);
+
+#ifdef INSTRUMENTED
+extern int printstats;        // killough 8/23/98
+void Z_PrintStats(void);      // killough 8/23/98
+#endif
 
 #endif
 

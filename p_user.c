@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c,v 1.15 1998/09/10 20:13:01 phares Exp $
+// $Id: p_user.c,v 1.14 1998/05/12 12:47:25 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Player related stuff.
 //      Bobbing POV/weapon, movement.
@@ -30,7 +30,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_user.c,v 1.15 1998/09/10 20:13:01 phares Exp $";
+rcsid[] = "$Id: p_user.c,v 1.14 1998/05/12 12:47:25 phares Exp $";
 
 #include "doomstat.h"
 #include "d_event.h"
@@ -59,12 +59,27 @@ boolean onground; // whether player is on ground or in air
 //
 
 void P_Thrust(player_t* player,angle_t angle,fixed_t move)
-  {
-  angle >>= ANGLETOFINESHIFT;
-  player->mo->momx += FixedMul(move,finecosine[angle]);
+{
+  player->mo->momx += FixedMul(move,finecosine[angle >>= ANGLETOFINESHIFT]);
   player->mo->momy += FixedMul(move,finesine[angle]);
-  }
+}
 
+//
+// P_Bob
+// Same as P_Thrust, but only affects bobbing.
+//
+// killough 10/98: We apply thrust separately between the real physical player
+// and the part which affects bobbing. This way, bobbing only comes from player
+// motion, nothing external, avoiding many problems, e.g. bobbing should not
+// occur on conveyors, unless the player walks on one, and bobbing should be
+// reduced at a regular rate, even on ice (where the player coasts).
+//
+
+void P_Bob(player_t *player, angle_t angle, fixed_t move)
+{
+  player->momx += FixedMul(move,finecosine[angle >>= ANGLETOFINESHIFT]);
+  player->momy += FixedMul(move,finesine[angle]);
+}
 
 //
 // P_CalcHeight
@@ -72,7 +87,7 @@ void P_Thrust(player_t* player,angle_t angle,fixed_t move)
 //
 
 void P_CalcHeight (player_t* player)
-  {
+{
   int     angle;
   fixed_t bob;
 
@@ -83,39 +98,33 @@ void P_CalcHeight (player_t* player)
   // Note: a LUT allows for effects
   //  like a ramp with low health.
 
-  if (!demo_compatibility && !player_bobbing)               // phares 2/26/98
-    player->bob = 0;                                        //   |
-  else                                                      //   V
+  // killough 10/98: Make bobbing depend only on player-applied motion.
+  //
+  // Note: don't reduce bobbing here if on ice: if you reduce bobbing here,
+  // it causes bobbing jerkiness when the player moves from ice to non-ice,
+  // and vice-versa.
+
+  player->bob = player_bobbing ? (FixedMul(player->momx,player->momx) + 
+				  FixedMul(player->momy,player->momy))>>2 : 0;
+
+  if (player->bob > MAXBOB)                             
+    player->bob = MAXBOB;
+
+  if (!onground || player->cheats & CF_NOMOMENTUM)
     {
-    player->bob = FixedMul(player->mo->momx,player->mo->momx)
-                + FixedMul(player->mo->momy,player->mo->momy);
-    player->bob >>= 2;
+      player->viewz = player->mo->z + VIEWHEIGHT;
 
-    // phares 9/9/98: If player is standing on ice, reduce his bobbing.
+      if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
+	player->viewz = player->mo->ceilingz-4*FRACUNIT;
 
-    if (player->mo->friction > ORIG_FRICTION) // ice?
-      {
-      if (player->bob > (MAXBOB>>2))
-        player->bob = MAXBOB>>2;
-      }
-    else                                                    //   ^
-      if (player->bob > MAXBOB)                             //   |
-        player->bob = MAXBOB;                               // phares 2/26/98
-    }
+      // phares 2/25/98:
+      // The following line was in the Id source and appears
+      // to be a bug. player->viewz is checked in a similar
+      // manner at a different exit below.
 
-  if ((player->cheats & CF_NOMOMENTUM) || !onground)
-    {
-    player->viewz = player->mo->z + VIEWHEIGHT;
+      // player->viewz = player->mo->z + player->viewheight;
 
-    if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-      player->viewz = player->mo->ceilingz-4*FRACUNIT;
-
-// The following line was in the Id source and appears      // phares 2/25/98
-// to be a bug. player->viewz is checked in a similar
-// manner at a different exit below.
-
-//  player->viewz = player->mo->z + player->viewheight;
-    return;
+      return;
     }
 
   angle = (FINEANGLES/20*leveltime)&FINEMASK;
@@ -125,68 +134,86 @@ void P_CalcHeight (player_t* player)
 
   if (player->playerstate == PST_LIVE)
     {
-    player->viewheight += player->deltaviewheight;
+      player->viewheight += player->deltaviewheight;
 
-    if (player->viewheight > VIEWHEIGHT)
-      {
-      player->viewheight = VIEWHEIGHT;
-      player->deltaviewheight = 0;
-      }
+      if (player->viewheight > VIEWHEIGHT)
+	{
+	  player->viewheight = VIEWHEIGHT;
+	  player->deltaviewheight = 0;
+	}
 
-    if (player->viewheight < VIEWHEIGHT/2)
-      {
-      player->viewheight = VIEWHEIGHT/2;
-      if (player->deltaviewheight <= 0)
-        player->deltaviewheight = 1;
-      }
+      if (player->viewheight < VIEWHEIGHT/2)
+	{
+	  player->viewheight = VIEWHEIGHT/2;
+	  if (player->deltaviewheight <= 0)
+	    player->deltaviewheight = 1;
+	}
 
-    if (player->deltaviewheight)
-      {
-      player->deltaviewheight += FRACUNIT/4;
-      if (!player->deltaviewheight)
-        player->deltaviewheight = 1;
-      }
+      if (player->deltaviewheight)
+	{
+	  player->deltaviewheight += FRACUNIT/4;
+	  if (!player->deltaviewheight)
+	    player->deltaviewheight = 1;
+	}
     }
 
   player->viewz = player->mo->z + player->viewheight + bob;
 
   if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
     player->viewz = player->mo->ceilingz-4*FRACUNIT;
-  }
-
+}
 
 //
 // P_MovePlayer
 //
 // Adds momentum if the player is not in the air
+//
+// killough 10/98: simplified
 
 void P_MovePlayer (player_t* player)
-  {
-  ticcmd_t* cmd;
-  int       movefactor;       // movement factor                    // phares
-  mobj_t*   thismo;           // local object                       // phares
-  boolean   onobject = false; // on top of an object?               // phares
+{
+  ticcmd_t *cmd = &player->cmd;
+  mobj_t *mo = player->mo;
 
-  cmd = &player->cmd;
+  mo->angle += cmd->angleturn << 16;
+  onground = mo->z <= mo->floorz;
 
-  thismo = player->mo;                                              // phares
-  thismo->angle += (cmd->angleturn<<16);                            //   |
-                                                                    //   V
-// Do not let the player control movement if not on ground.
+  // killough 10/98:
+  //
+  // We must apply thrust to the player and bobbing separately, to avoid
+  // anomalies. The thrust applied to bobbing is always the same strength on
+  // ice, because the player still "works just as hard" to move, while the
+  // thrust applied to the movement varies with 'movefactor'.
 
-  onground = (thismo->z <= thismo->floorz);
-  if (onground || onobject)
+  if (cmd->forwardmove | cmd->sidemove) // killough 10/98
     {
-    movefactor = P_GetMoveFactor(thismo);
-    if (cmd->forwardmove)
-      P_Thrust(player,thismo->angle,cmd->forwardmove*movefactor);
-    if (cmd->sidemove)
-      P_Thrust(player,thismo->angle-ANG90,cmd->sidemove*movefactor);
+      if (onground || mo->flags & MF_BOUNCES) // killough 8/9/98
+	{
+	  int friction, movefactor = P_GetMoveFactor(mo, &friction);
+
+	  // killough 11/98:
+	  // On sludge, make bobbing depend on efficiency.
+	  // On ice, make it depend on effort.
+
+	  int bobfactor =
+	    friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+
+	  if (cmd->forwardmove)
+	    {
+	      P_Bob(player,mo->angle,cmd->forwardmove*bobfactor);
+	      P_Thrust(player,mo->angle,cmd->forwardmove*movefactor);
+	    }
+
+	  if (cmd->sidemove)
+	    {
+	      P_Bob(player,mo->angle-ANG90,cmd->sidemove*bobfactor);
+	      P_Thrust(player,mo->angle-ANG90,cmd->sidemove*movefactor);
+	    }
+	}
+      if (mo->state == states+S_PLAY)
+	P_SetMobjState(mo,S_PLAY_RUN1);
     }
-  if ((cmd->forwardmove || cmd->sidemove) &&
-    (thismo->state == &states[S_PLAY]))                             //   ^
-    P_SetMobjState(thismo,S_PLAY_RUN1);                             //   |
-  }                                                                 // phares
+}
 
 #define ANG5 (ANG90/18)
 
@@ -197,7 +224,7 @@ void P_MovePlayer (player_t* player)
 //
 
 void P_DeathThink (player_t* player)
-  {
+{
   angle_t angle;
   angle_t delta;
 
@@ -217,46 +244,49 @@ void P_DeathThink (player_t* player)
 
   if (player->attacker && player->attacker != player->mo)
     {
-    angle = R_PointToAngle2 (player->mo->x,
-                             player->mo->y,
-                             player->attacker->x,
-                             player->attacker->y);
+      angle = R_PointToAngle2 (player->mo->x,
+			       player->mo->y,
+			       player->attacker->x,
+			       player->attacker->y);
 
-    delta = angle - player->mo->angle;
+      delta = angle - player->mo->angle;
 
-    if (delta < ANG5 || delta > (unsigned)-ANG5)
-      {
-      // Looking at killer,
-      //  so fade damage flash down.
+      if (delta < ANG5 || delta > (unsigned)-ANG5)
+	{
+	  // Looking at killer,
+	  //  so fade damage flash down.
 
-      player->mo->angle = angle;
+	  player->mo->angle = angle;
 
-      if (player->damagecount)
-        player->damagecount--;
-      }
-    else if (delta < ANG180)
-      player->mo->angle += ANG5;
-    else
-      player->mo->angle -= ANG5;
+	  if (player->damagecount)
+	    player->damagecount--;
+	}
+      else 
+	if (delta < ANG180)
+	  player->mo->angle += ANG5;
+	else
+	  player->mo->angle -= ANG5;
     }
-  else if (player->damagecount)
-    player->damagecount--;
+  else 
+    if (player->damagecount)
+      player->damagecount--;
 
   if (player->cmd.buttons & BT_USE)
     player->playerstate = PST_REBORN;
-  }
-
+}
 
 //
 // P_PlayerThink
 //
 
 void P_PlayerThink (player_t* player)
-  {
+{
   ticcmd_t*    cmd;
   weapontype_t newweapon;
 
   // killough 2/8/98, 3/21/98:
+  // (this code is necessary despite questions raised elsewhere in a comment)
+
   if (player->cheats & CF_NOCLIP)
     player->mo->flags |= MF_NOCLIP;
   else
@@ -267,16 +297,16 @@ void P_PlayerThink (player_t* player)
   cmd = &player->cmd;
   if (player->mo->flags & MF_JUSTATTACKED)
     {
-    cmd->angleturn = 0;
-    cmd->forwardmove = 0xc800/512;
-    cmd->sidemove = 0;
-    player->mo->flags &= ~MF_JUSTATTACKED;
+      cmd->angleturn = 0;
+      cmd->forwardmove = 0xc800/512;
+      cmd->sidemove = 0;
+      player->mo->flags &= ~MF_JUSTATTACKED;
     }
 
   if (player->playerstate == PST_DEAD)
     {
-    P_DeathThink (player);
-    return;
+      P_DeathThink (player);
+      return;
     }
 
   // Move around.
@@ -296,6 +326,20 @@ void P_PlayerThink (player_t* player)
   if (player->mo->subsector->sector->special)
     P_PlayerInSpecialSector (player);
 
+  // Sprite Height problem...                                         // phares
+  // Future code:                                                     //  |
+  // It's possible that at this point the player is standing on top   //  V
+  // of a Thing that could cause him some damage, like a torch or
+  // burning barrel. We need a way to generalize Thing damage by
+  // grabbing a bit in the Thing's options to indicate damage. Since
+  // this is competing with other attributes we may want to add,
+  // we'll put this off for future consideration when more is
+  // known.
+
+  // Future Code:                                                     //  ^
+  // Check to see if the object you've been standing on has moved     //  |
+  // out from underneath you.                                         // phares
+
   // Check for weapon change.
 
   // A special event has no other buttons.
@@ -305,50 +349,50 @@ void P_PlayerThink (player_t* player)
 
   if (cmd->buttons & BT_CHANGE)
     {
-    // The actual changing of the weapon is done
-    //  when the weapon psprite can do it
-    //  (read: not in the middle of an attack).
+      // The actual changing of the weapon is done
+      //  when the weapon psprite can do it
+      //  (read: not in the middle of an attack).
 
-    newweapon = (cmd->buttons & BT_WEAPONMASK)>>BT_WEAPONSHIFT;
+      newweapon = (cmd->buttons & BT_WEAPONMASK)>>BT_WEAPONSHIFT;
 
-    // killough 3/22/98: For demo compatibility we must perform the fist
-    // and SSG weapons switches here, rather than in G_BuildTiccmd(). For
-    // other games which rely on user preferences, we must use the latter.
+      // killough 3/22/98: For demo compatibility we must perform the fist
+      // and SSG weapons switches here, rather than in G_BuildTiccmd(). For
+      // other games which rely on user preferences, we must use the latter.
 
-    if (demo_compatibility)
-      { // compatibility mode -- required for old demos -- killough
-      if (newweapon == wp_fist && player->weaponowned[wp_chainsaw] &&
-        (player->readyweapon != wp_chainsaw ||
-         !player->powers[pw_strength]))
-        newweapon = wp_chainsaw;
-      if (gamemode == commercial &&
-        newweapon == wp_shotgun &&
-        player->weaponowned[wp_supershotgun] &&
-        player->readyweapon != wp_supershotgun)
-        newweapon = wp_supershotgun;
-      }
+      if (demo_compatibility)
+	{ // compatibility mode -- required for old demos -- killough
+	  if (newweapon == wp_fist && player->weaponowned[wp_chainsaw] &&
+	      (player->readyweapon != wp_chainsaw ||
+	       !player->powers[pw_strength]))
+	    newweapon = wp_chainsaw;
+	  if (gamemode == commercial &&
+	      newweapon == wp_shotgun &&
+	      player->weaponowned[wp_supershotgun] &&
+	      player->readyweapon != wp_supershotgun)
+	    newweapon = wp_supershotgun;
+	}
 
-    // killough 2/8/98, 3/22/98 -- end of weapon selection changes
+      // killough 2/8/98, 3/22/98 -- end of weapon selection changes
 
-    if (player->weaponowned[newweapon] && newweapon != player->readyweapon)
+      if (player->weaponowned[newweapon] && newweapon != player->readyweapon)
 
-      // Do not go to plasma or BFG in shareware,
-      //  even if cheated.
+	// Do not go to plasma or BFG in shareware,
+	//  even if cheated.
 
-      if ((newweapon != wp_plasma && newweapon != wp_bfg)
-          || (gamemode != shareware) )
-        player->pendingweapon = newweapon;
+	if ((newweapon != wp_plasma && newweapon != wp_bfg)
+	    || (gamemode != shareware) )
+	  player->pendingweapon = newweapon;
     }
 
   // check for use
 
   if (cmd->buttons & BT_USE)
     {
-    if (!player->usedown)
-      {
-      P_UseLines (player);
-      player->usedown = true;
-      }
+      if (!player->usedown)
+	{
+	  P_UseLines (player);
+	  player->usedown = true;
+	}
     }
   else
     player->usedown = false;
@@ -388,17 +432,31 @@ void P_PlayerThink (player_t* player)
   // Handling colormaps.
   // killough 3/20/98: reformat to terse C syntax
 
-  player->fixedcolormap = player->powers[pw_invulnerability] > 4*32 ||
+  // killough 7/11/98: beta version had invisibility, instead of
+  // invulernability, and the light amp visor used the last colormap.
+  // But white flashes occurred when invulnerability wore off.
+
+  player->fixedcolormap = 
+
+#ifdef BETA
+    beta_emulation ?    /* Beta Emulation */
+    player->powers[pw_infrared] > 4*32 ||
+    player->powers[pw_infrared] & 8 ? 32 :
+    player->powers[pw_invisibility] > 4*32 ||
+    player->powers[pw_invisibility] & 8 ||
+    (player->powers[pw_invulnerability] < 4*32 &&
+     player->powers[pw_invulnerability] > 0 &&
+     player->powers[pw_invulnerability] & 8) ? 33 : 0 :
+#endif
+
+    player->powers[pw_invulnerability] > 4*32 ||    /* Regular Doom */
     player->powers[pw_invulnerability] & 8 ? INVERSECOLORMAP :
     player->powers[pw_infrared] > 4*32 || player->powers[pw_infrared] & 8;
-  }
+}
 
 //----------------------------------------------------------------------------
 //
 // $Log: p_user.c,v $
-// Revision 1.15  1998/09/10  20:13:01  phares
-// Fix DM Stuck bug and refix ice-bobbing/momentum
-//
 // Revision 1.14  1998/05/12  12:47:25  phares
 // Removed OVER_UNDER code
 //

@@ -3,7 +3,6 @@
 //
 // $Id: st_lib.h,v 1.5 1998/05/11 10:44:46 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //

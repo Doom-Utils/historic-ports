@@ -3,7 +3,6 @@
 //
 // $Id: hu_stuff.h,v 1.6 1998/05/10 19:03:50 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -75,6 +74,12 @@ extern int hudcolor_chat;   // color range of chat lines
 extern int hudcolor_list;   // color of list of past messages
 extern int hud_list_bgon;   // solid window background for list of messages
 extern int hud_msg_lines;   // number of message lines in window up to 16
+extern int hud_msg_scrollup;// killough 11/98: whether message list scrolls up
+extern int hud_msg_timed;   // killough 11/98: whether message list is timed
+extern int message_list;    // killough 11/98: whether message list is active
+extern int hud_msg_timer;   // killough 11/98: timer used for review messages
+extern int message_timer;   // killough 11/98: timer used for normal messages
+extern int chat_msg_timer;  // killough 11/98: timer used for chat messages
 extern int hud_distributed; // whether hud is all in lower left or distributed
 //jff 2/23/98 hud is currently displayed
 extern int hud_displayed;   // hud is displayed

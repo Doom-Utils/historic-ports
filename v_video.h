@@ -3,7 +3,6 @@
 //
 // $Id: v_video.h,v 1.9 1998/05/06 11:12:54 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -87,7 +86,7 @@ typedef enum
 extern byte *screens[5];
 extern int  dirtybox[4];
 extern byte gammatable[5][256];
-extern int  usegamma;
+extern int  usegamma, hires;        // killough 11/98
 
 //jff 4/24/98 loads color translation lumps
 void V_InitColorTranslation(void);
@@ -96,9 +95,14 @@ void V_InitColorTranslation(void);
 void V_Init (void);
 
 void V_CopyRect(int srcx,  int srcy,  int srcscrn, int width, int height,
-                int destx, int desty, int destscrn);
+		int destx, int desty, int destscrn);
 
-void V_DrawPatch(int x, int y, int scrn, patch_t *patch);
+// killough 11/98: Consolidated V_DrawPatch and V_DrawPatchFlipped
+
+void V_DrawPatchGeneral(int x,int y,int scrn,patch_t *patch, boolean flipped);
+
+#define V_DrawPatch(x,y,s,p)        V_DrawPatchGeneral(x,y,s,p,false)
+#define V_DrawPatchFlipped(x,y,s,p) V_DrawPatchGeneral(x,y,s,p,true)
 
 #define V_DrawPatchDirect V_DrawPatch       /* killough 5/2/98 */
 
@@ -113,7 +117,7 @@ void V_DrawBlock(int x, int y, int scrn, int width, int height, byte *src);
 
 void V_GetBlock(int x, int y, int scrn, int width, int height, byte *dest);
 
-void V_MarkRect(int x, int y, int width,int height);
+#define V_MarkRect(x,y,width,height)  /* killough 11/98: unused */
 
 #endif
 

@@ -3,9 +3,9 @@
 //
 // $Id: p_plats.c,v 1.16 1998/05/08 17:44:18 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+//
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -21,6 +21,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //  Plats (i.e. elevator platforms) code, raising/lowering.
@@ -46,7 +47,7 @@ platlist_t *activeplats;       // killough 2/14/98: made global again
 // Action routine to move a plat up and down
 //
 // Passed a plat structure containing all pertinent information about the move
-// No return
+// No return value
 //
 // jff 02/08/98 all cases with labels beginning with gen added to support 
 // generalized line type behaviors.
@@ -134,7 +135,7 @@ void T_PlatRaise(plat_t* plat)
         //killough 1/31/98: relax compatibility to demo_compatibility
 
         // remove the plat if its a pure raise type
-        if (!demo_compatibility)
+        if (demo_version<203 ? !demo_compatibility : !comp[comp_floors])
         {
           switch(plat->type)
           {
@@ -223,7 +224,7 @@ int EV_DoPlat
     plat->type = type;
     plat->sector = sec;
     plat->sector->floordata = plat; //jff 2/23/98 multiple thinkers
-    plat->thinker.function.acp1 = (actionf_p1) T_PlatRaise;
+    plat->thinker.function = T_PlatRaise;
     plat->crush = false;
     plat->tag = line->tag;
 
@@ -349,7 +350,7 @@ void P_ActivateInStasis(int tag)
         plat->status = plat->oldstatus==up? down : up;
       else
         plat->status = plat->oldstatus;
-      plat->thinker.function.acp1 = (actionf_p1) T_PlatRaise;
+      plat->thinker.function = T_PlatRaise;
     }
   }
 }
@@ -374,7 +375,7 @@ int EV_StopPlat(line_t* line)
     {
       plat->oldstatus = plat->status;    // put it in stasis
       plat->status = in_stasis;
-      plat->thinker.function.acv = (actionf_v)NULL;
+      plat->thinker.function = NULL;
     }
   }
   return 1;

@@ -3,7 +3,6 @@
 //
 // $Id: r_plane.h,v 1.6 1998/04/27 01:48:34 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -32,9 +31,8 @@
 
 #include "r_data.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
+// killough 10/98: special mask indicates sky flat comes from sidedef
+#define PL_SKYFLAT (0x80000000)
 
 // Visplane related.
 extern  short *lastopening;

@@ -3,7 +3,6 @@
 //
 // $Id: m_random.h,v 1.9 1998/05/01 14:20:31 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //
@@ -107,6 +107,18 @@ typedef enum {
   pr_misc,                    // #49
   pr_all_in_one,              // #50
   // Start new entries -- add new entries below
+  pr_opendoor,                // #51
+  pr_targetsearch,            // #52
+  pr_friends,                 // #53
+  pr_threshold,               // #54
+  pr_skiptarget,              // #55
+  pr_enemystrafe,             // #56
+  pr_avoidcrush,              // #57
+  pr_stayonlift,              // #58
+  pr_helpfriend,              // #59
+  pr_dropoff,                 // #60
+  pr_randomjump,              // #61
+  pr_defect,                  // #62
 
   // End of new entries
   NUMPRCLASS               // MUST be last item in list

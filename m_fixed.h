@@ -3,7 +3,6 @@
 //
 // $Id: m_fixed.h,v 1.5 1998/05/10 23:42:22 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -30,10 +29,6 @@
 #ifndef __M_FIXED__
 #define __M_FIXED__
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 #ifndef __GNUC__
 #define __inline__
 #define __attribute__(x)
@@ -55,10 +50,10 @@ typedef int fixed_t;
 //
 
 // killough 5/10/98: In djgpp, use inlined assembly for performance
-// Use x86 cdq instruction to generate fast abs(), avoiding branches.
+// killough 9/05/98: better code seems to be gotten from using inlined C
 
 #ifdef DJGPP
-#define abs(x) ({int _s,_t=(x); asm(" cdq": "=d" (_s): "a" (_t)); (_t^_s)-_s;})
+#define abs(x) ({fixed_t _t = (x), _s = _t >> (8*sizeof _t-1); (_t^_s)-_s;})
 #endif // DJGPP
 
 //
@@ -100,32 +95,30 @@ __inline__ static fixed_t FixedMul(fixed_t a, fixed_t b)
 #ifdef DJGPP
 
 // killough 5/10/98: In djgpp, use inlined assembly for performance
+// killough 9/5/98: optimized to reduce the number of branches
 
 __inline__ static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
-  fixed_t result;
-
-  if (abs(a) >> 14 >= abs(b))
-    return (a^b)<0 ? MININT : MAXINT;
-
-  asm(" movl %0, %%edx ;"
-      " sall $16,%%eax ;"
-      " sarl $16,%%edx ;"
-      " idivl %2 ;"
-      : "=a,=a" (result)    // eax is always the result
-      : "0,0" (a),          // eax is also the first operand
-        "m,r" (b)           // second operand can be mem or reg (not imm)
-      : "%edx", "%cc"       // edx and condition codes are clobbered
-      );
-
-  return result;
+  if (abs(a) >> 14 < abs(b))
+    {
+      fixed_t result;
+      asm(" idivl %3 ;"
+	  : "=a,=a" (result)
+	  : "0,0" (a<<16),
+	  "d,d" (a>>16),
+	  "m,r" (b)
+	  : "%edx", "%cc"
+	  );
+      return result;
+    }
+  return ((a^b)>>31) ^ MAXINT;
 }
 
 #else // DJGPP
 
 __inline__ static fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
-  return (abs(a)>>14) >= abs(b) ? (a^b)<0 ? MININT : MAXINT :
+  return (abs(a)>>14) >= abs(b) ? ((a^b)>>31) ^ MAXINT :
     (fixed_t)(((long long) a << FRACBITS) / b);
 }
 

@@ -3,7 +3,6 @@
 //
 // $Id: r_things.h,v 1.4 1998/05/03 22:46:19 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -30,10 +29,6 @@
 #ifndef __R_THINGS__
 #define __R_THINGS__
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 // Constant arrays used for psprite clipping and initializing clipping.
 
 extern short negonearray[MAX_SCREENWIDTH];         // killough 2/8/98:
@@ -50,7 +45,7 @@ extern fixed_t pspriteiscale;
 
 void R_DrawMaskedColumn(column_t *column);
 void R_SortVisSprites(void);
-void R_AddSprites(sector_t *sec);
+void R_AddSprites(sector_t *sec,int); // killough 9/18/98
 void R_AddPSprites(void);
 void R_DrawSprites(void);
 void R_InitSprites(char **namelist);

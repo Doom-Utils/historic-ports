@@ -3,7 +3,6 @@
 //
 // $Id: p_setup.h,v 1.3 1998/05/03 23:03:31 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -31,10 +30,6 @@
 #define __P_SETUP__
 
 #include "p_mobj.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 void P_SetupLevel(int episode, int map, int playermask, skill_t skill);
 void P_Init(void);               // Called by startup code.

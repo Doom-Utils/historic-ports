@@ -3,7 +3,6 @@
 //
 // $Id: info.h,v 1.10 1998/05/12 12:47:31 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -178,10 +177,20 @@ typedef enum
   SPR_BRS1,
   SPR_TLMP,
   SPR_TLP2,
-  SPR_TNT1, // add invisible sprite             // phares 3/8/98 
+  SPR_TNT1,
+
+#ifdef DOGS
+  SPR_DOGS, // killough 7/19/98: Marine's best friend :)
+#endif
+
+#ifdef BETA
+  SPR_PLS1, // killough 7/19/98: first  of two plasma fireballs in the beta
+  SPR_PLS2, // killough 7/19/98: second of two plasma fireballs in the beta
+  SPR_BON3, // killough 7/11/98: evil sceptre in beta version
+  SPR_BON4, // killough 7/11/98: unholy bible in beta version
+#endif
 
   NUMSPRITES  // counter of how many there are
-
 } spritenum_t;
 
 // ********************************************************************
@@ -1158,8 +1167,87 @@ typedef enum
   S_TECH2LAMP4,
   S_TNT1, // add state for invisible sprite         // phares 3/8/98 
 
-  NUMSTATES  // Counter of how many there are
+  S_GRENADE,   // killough 8/9/98: grenade launcher
+  S_DETONATE,  // killough 8/9/98: detonation of objects
+  S_DETONATE2,
+  S_DETONATE3, 
 
+#ifdef DOGS
+  S_DOGS_STND,      // killough 7/19/98: Marine's best friend :)
+  S_DOGS_STND2,
+  S_DOGS_RUN1,
+  S_DOGS_RUN2,
+  S_DOGS_RUN3,
+  S_DOGS_RUN4,
+  S_DOGS_RUN5,
+  S_DOGS_RUN6,
+  S_DOGS_RUN7,
+  S_DOGS_RUN8,
+  S_DOGS_ATK1,
+  S_DOGS_ATK2,
+  S_DOGS_ATK3,
+  S_DOGS_PAIN,
+  S_DOGS_PAIN2,
+  S_DOGS_DIE1,
+  S_DOGS_DIE2,
+  S_DOGS_DIE3,
+  S_DOGS_DIE4,
+  S_DOGS_DIE5,
+  S_DOGS_DIE6,
+  S_DOGS_RAISE1,
+  S_DOGS_RAISE2,
+  S_DOGS_RAISE3,
+  S_DOGS_RAISE4,
+  S_DOGS_RAISE5,
+  S_DOGS_RAISE6,
+#endif
+
+#ifdef BETA
+  S_OLDBFG1,  // killough 7/11/98: the old BFG's 43 firing frames
+  S_OLDBFG42 = S_OLDBFG1+41,
+  S_OLDBFG43,
+
+  S_PLS1BALL,      // killough 7/19/98: first plasma fireball in the beta
+  S_PLS1BALL2,
+  S_PLS1EXP,
+  S_PLS1EXP2,
+  S_PLS1EXP3,
+  S_PLS1EXP4,
+  S_PLS1EXP5,
+
+  S_PLS2BALL,     // killough 7/19/98: second plasma fireball in the beta
+  S_PLS2BALL2,
+  S_PLS2BALLX1,
+  S_PLS2BALLX2,
+  S_PLS2BALLX3,
+  S_BON3, // killough 7/11/98: evil sceptre in beta version
+  S_BON4, // killough 7/11/98: unholy bible in beta version
+
+  // killough 10/98: beta lost souls were different from their modern cousins
+  S_BSKUL_STND,
+  S_BSKUL_RUN1,
+  S_BSKUL_RUN2,
+  S_BSKUL_RUN3,
+  S_BSKUL_RUN4,
+  S_BSKUL_ATK1,
+  S_BSKUL_ATK2,
+  S_BSKUL_ATK3,
+  S_BSKUL_PAIN1,
+  S_BSKUL_PAIN2,
+  S_BSKUL_PAIN3,
+  S_BSKUL_DIE1,
+  S_BSKUL_DIE2,
+  S_BSKUL_DIE3,
+  S_BSKUL_DIE4,
+  S_BSKUL_DIE5,
+  S_BSKUL_DIE6,
+  S_BSKUL_DIE7,
+  S_BSKUL_DIE8,
+#endif
+
+  S_MUSHROOM,  // killough 10/98: mushroom explosion effect
+
+  NUMSTATES  // Counter of how many there are
 } statenum_t;
 
 // ********************************************************************
@@ -1170,10 +1258,9 @@ typedef struct
   spritenum_t sprite;       // sprite number to show
   long        frame;        // which frame/subframe of the sprite is shown
   long        tics;         // number of gametics this frame should last
-  // void     (*action) (); // this is what an actionf_t really is
-  actionf_t   action;       // code pointer to function for action if any
+  void        (*action)();  // code pointer to function for action if any
   statenum_t  nextstate;    // linked list pointer to next state or zero
-  long        misc1, misc2; // apparently never used in DOOM
+  long        misc1, misc2; // used for psprite positioning
 } state_t;
 
 // these are in info.c
@@ -1326,6 +1413,17 @@ typedef enum {
   MT_PUSH,    // controls push source                     // phares
   MT_PULL,    // controls pull source                     // phares 3/20/98
 
+#ifdef DOGS
+  MT_DOGS,    // killough 7/19/98: Marine's best friend
+#endif
+
+#ifdef BETA
+  MT_PLASMA1, // killough 7/11/98: first  of alternating beta plasma fireballs
+  MT_PLASMA2, // killough 7/11/98: second of alternating beta plasma fireballs
+  MT_SCEPTRE, // killough 7/11/98: evil sceptre in beta version
+  MT_BIBLE,   // killough 7/11/98: unholy bible in beta version
+#endif
+
   NUMMOBJTYPES  // Counter of how many there are
 
 } mobjtype_t;
@@ -1387,7 +1485,6 @@ typedef struct
 // See p_mobj_h for addition more technical info
 extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 
-
 #endif
 
 //----------------------------------------------------------------------------
@@ -1422,6 +1519,5 @@ extern mobjinfo_t mobjinfo[NUMMOBJTYPES];
 //
 // Revision 1.1.1.1  1998/01/19  14:02:57  rand
 // Lee's Jan 19 sources
-//
 //
 //----------------------------------------------------------------------------

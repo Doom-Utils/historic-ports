@@ -1,11 +1,11 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h,v 1.14 1998/08/11 19:31:46 phares Exp $
+// $Id: doomstat.h,v 1.13 1998/05/12 12:47:28 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+//
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -43,10 +43,6 @@
 // We need the playr data structure as well.
 #include "d_player.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 // ------------------------
 // Command line parameters.
 //
@@ -55,6 +51,8 @@ extern  boolean nomonsters; // checkparm of -nomonsters
 extern  boolean respawnparm;  // checkparm of -respawn
 extern  boolean fastparm; // checkparm of -fast
 extern  boolean devparm;  // DEBUG: launched with -devparm
+
+extern  int screenblocks;     // killough 11/98
 
 // -----------------------------------------------------
 // Game Mode - identify IWAD as shareware, retail etc.
@@ -69,18 +67,52 @@ extern  boolean modifiedgame;
 // compatibility with old engines (monster behavior, metrics, etc.)
 extern int compatibility, default_compatibility;          // killough 1/31/98
 
+extern int demo_version;           // killough 7/19/98: Version of demo
+
 // Only true when playing back an old demo -- used only in "corner cases"
 // which break playback but are otherwise unnoticable or are just desirable:
 
-extern int demo_compatibility;     // killough 1/16/98
+#define demo_compatibility (demo_version < 200) /* killough 11/98: macroized */
+
+// killough 7/19/98: whether monsters should fight against each other
+extern int monster_infighting, default_monster_infighting;
+
+extern int monkeys, default_monkeys;
 
 // v1.1-like pitched sounds
-extern int pitched_sounds, default_pitched_sounds;        // killough
+extern int pitched_sounds;
 
-extern int     default_translucency; // config file says           // phares
-extern boolean general_translucency; // true if translucency is ok // phares
+extern int general_translucency;
 
 extern int demo_insurance, default_demo_insurance;      // killough 4/5/98
+
+// -------------------------------------------
+// killough 10/98: compatibility vector
+
+enum {
+  comp_telefrag,
+  comp_dropoff,
+  comp_vile,
+  comp_pain,
+  comp_skull,
+  comp_blazing,
+  comp_doorlight,
+  comp_model,
+  comp_god,
+  comp_falloff,
+  comp_floors,
+  comp_skymap,
+  comp_pursuit,
+  comp_doorstuck,
+  comp_staylift,
+  comp_zombie,
+  comp_stairs,
+  comp_infcheat,
+  comp_zerotags,
+  COMP_TOTAL=32  // Some extra room for additional variables
+};
+
+extern int comp[COMP_TOTAL], default_comp[COMP_TOTAL];
 
 // -------------------------------------------
 // Language.
@@ -158,6 +190,7 @@ extern  int     viewwindowy;
 extern  int     viewheight;
 extern  int     viewwidth;
 extern  int     scaledviewwidth;
+extern  int     scaledviewheight;         // killough 11/98
 
 // This one is related to the 3-screen display mode.
 // ANG90 = left side, ANG270 = right
@@ -177,8 +210,8 @@ extern  int totalsecret;
 
 // Timer, for scores.
 extern  int levelstarttic;  // gametic at level start
+extern  int basetic;    // killough 9/29/98: levelstarttic, adjusted
 extern  int leveltime;  // tics in game play for par
-
 // --------------------------------------
 // DEMO playback/recording related stuff.
 
@@ -248,8 +281,6 @@ extern  int             mouseSensitivity_vert;
 extern  boolean         singletics;
 
 extern  int             bodyqueslot;
-extern  int             bodyquesize;                        // phares 8/10/98
-extern  mobj_t          **bodyque;                          // phares 8/10/98
 
 // Needed to store the number of the dummy sky flat.
 // Used for rendering, as well as tracking projectiles etc.
@@ -291,14 +322,43 @@ extern int default_weapon_recoil;
 extern int player_bobbing;  // whether player bobs or not   // phares 2/25/98
 extern int default_player_bobbing;  // killough 3/1/98: make local to each game
 
+#ifdef BETA
+// killough 7/19/98: Classic Pre-Beta BFG
+extern int classic_bfg, default_classic_bfg;
+
+// killough 7/24/98: Emulation of Press Release version of Doom
+extern int beta_emulation;
+#endif
+
+#ifdef DOGS
+extern int dogs, default_dogs;     // killough 7/19/98: Marine's best friend :)
+extern int dog_jumping, default_dog_jumping;   // killough 10/98
+#endif
+
+// killough 8/8/98: distance friendly monsters tend to stay from player
+extern int distfriend, default_distfriend;
+
+// killough 9/8/98: whether monsters are allowed to strafe or retreat
+extern int monster_backing, default_monster_backing;
+
+// killough 9/9/98: whether monsters intelligently avoid hazards
+extern int monster_avoid_hazards, default_monster_avoid_hazards;
+
+// killough 10/98: whether monsters are affected by friction
+extern int monster_friction, default_monster_friction;
+
+// killough 9/9/98: whether monsters help friends
+extern int help_friends, default_help_friends;
+
+extern int flashing_hom; // killough 10/98
+
+extern int doom_weapon_toggles;   // killough 10/98
+
 #endif
 
 //----------------------------------------------------------------------------
 //
 // $Log: doomstat.h,v $
-// Revision 1.14  1998/08/11  19:31:46  phares
-// DM Weapon bug fix
-//
 // Revision 1.13  1998/05/12  12:47:28  phares
 // Removed OVER_UNDER code
 //

@@ -3,7 +3,6 @@
 //
 // $Id: p_tick.h,v 1.5 1998/05/15 00:36:22 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -29,10 +28,6 @@
 
 #include "d_think.h"
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 // Called by C_Ticker, can call G_PlayerExited.
 // Carries out all thinking of monsters and players.
 
@@ -44,6 +39,20 @@ void P_InitThinkers(void);
 void P_AddThinker(thinker_t *thinker);
 void P_RemoveThinker(thinker_t *thinker);
 void P_RemoveThinkerDelayed(thinker_t *thinker);    // killough 4/25/98
+
+void P_UpdateThinker(thinker_t *thinker);   // killough 8/29/98
+
+void P_SetTarget(mobj_t **mo, mobj_t *target);   // killough 11/98
+
+// killough 8/29/98: threads of thinkers, for more efficient searches
+typedef enum {
+  th_misc,
+  th_friends,
+  th_enemies,
+  NUMTHCLASS
+} th_class;
+
+extern thinker_t thinkerclasscap[];
 
 #endif
 

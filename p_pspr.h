@@ -3,7 +3,6 @@
 //
 // $Id: p_pspr.h,v 1.5 1998/05/03 22:54:44 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -43,10 +42,6 @@
 // i.e. the Thing Atrributes table and the Frame Sequence table.
 
 #include "info.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 //
 // Frame flags:

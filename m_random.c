@@ -3,7 +3,6 @@
 //
 // $Id: m_random.c,v 1.6 1998/05/03 23:13:18 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //      Random number LUT.
@@ -109,9 +109,10 @@ int P_Random(pr_class_t pr_class)
   // killough 3/30/98: use gametic-levelstarttic to shuffle RNG
   // killough 3/31/98: but only if demo insurance requested,
   // since it's unnecessary for random shuffling otherwise
+  // killough 9/29/98: but use basetic now instead of levelstarttic
 
   if (demo_insurance)
-    boom += (gametic-levelstarttic)*7;
+    boom += (gametic-basetic)*7;
 
   return boom & 255;
 }

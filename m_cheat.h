@@ -3,7 +3,6 @@
 //
 // $Id: m_cheat.h,v 1.5 1998/05/03 22:10:56 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //      Cheat code checking.
@@ -41,12 +41,14 @@ extern struct cheat_s {
     not_coop = 2,
     not_demo = 4, 
     not_menu = 8,
-    not_deh = 16,
+    not_deh  = 16,
+    beta_only = 32,                  // killough 7/24/98
     not_net = not_dm | not_coop
   } const when;
   void (*const func)();
   const int arg;
   unsigned long long code, mask;
+  boolean deh_modified;                // killough 9/12/98
 } cheat[];
 
 boolean M_FindCheats(int key);

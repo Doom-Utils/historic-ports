@@ -3,7 +3,6 @@
 //
 // $Id: i_net.h,v 1.3 1998/05/16 09:52:27 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,20 +26,13 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __I_NET__
 #define __I_NET__
-
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Called by D_DoomMain.
 
 void I_InitNetwork (void);
 void I_NetCmd (void);
-
 
 #endif
 

@@ -3,7 +3,6 @@
 //
 // $Id: d_ticcmd.h,v 1.2 1998/01/26 19:26:36 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,15 +26,10 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __D_TICCMD__
 #define __D_TICCMD__
 
 #include "doomtype.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // The data sampled per tick (single player)
 // and transmitted to other peers (multiplayer).
@@ -50,8 +44,6 @@ typedef struct
     byte	chatchar;
     byte	buttons;
 } ticcmd_t;
-
-
 
 #endif
 

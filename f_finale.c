@@ -1,11 +1,12 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c,v 1.17 1998/08/29 23:00:55 thldrmn Exp $
+// $Id: f_finale.c,v 1.16 1998/05/10 23:39:25 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
+//
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+//
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -22,6 +23,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Game completion, final screen animation.
 //
@@ -29,7 +31,7 @@
 
 
 static const char
-rcsid[] = "$Id: f_finale.c,v 1.17 1998/08/29 23:00:55 thldrmn Exp $";
+rcsid[] = "$Id: f_finale.c,v 1.16 1998/05/10 23:39:25 killough Exp $";
 
 #include "doomstat.h"
 #include "d_event.h"
@@ -38,6 +40,7 @@ rcsid[] = "$Id: f_finale.c,v 1.17 1998/08/29 23:00:55 thldrmn Exp $";
 #include "s_sound.h"
 #include "sounds.h"
 #include "dstrings.h"
+#include "m_menu.h"
 #include "d_deh.h"  // Ty 03/22/98 - externalizations
 
 // Stage of animation:
@@ -51,47 +54,6 @@ int finalecount;
 #define TEXTWAIT     250   // original value                    // phares
 #define NEWTEXTSPEED 0.01  // new value                         // phares
 #define NEWTEXTWAIT  1000  // new value                         // phares
-
-// char*  e1text = s_E1TEXT; // Ty 03/22/98 - beg externalized
-// char*  e2text = s_E2TEXT; // These have been commented out, and the
-// char*  e3text = s_E3TEXT; // new s_WHATEVER extern variables are used
-// char*  e4text = s_E4TEXT; // in the code below instead.
-
-// char*  c1text = s_C1TEXT;
-// char*  c2text = s_C2TEXT;
-// char*  c3text = s_C3TEXT;
-// char*  c4text = s_C4TEXT;
-// char*  c5text = s_C5TEXT;
-// char*  c6text = s_C6TEXT;
-
-// char*  p1text = s_P1TEXT;  // Ty - note these don't seem to be used here
-// char*  p2text = s_P2TEXT;  // Does the Linux version not have support for
-// char*  p3text = s_P3TEXT;  // intermission screens for Plutonia and TNT????
-// char*  p4text = s_P4TEXT;  // Ty 08/27/98 - incorporated gamemission variable
-// char*  p5text = s_P5TEXT;  // to use the right intermission texts
-// char*  p6text = s_P6TEXT;
-
-// char*  t1text = s_T1TEXT;
-// char*  t2text = s_T2TEXT;
-// char*  t3text = s_T3TEXT;
-// char*  t4text = s_T4TEXT;
-// char*  t5text = s_T5TEXT;
-// char*  t6text = s_T6TEXT;
-
-// Ty 03/30/98 - new substitutions for background textures during int screens
-// char*  bgflatE1 = "FLOOR4_8";
-// char*  bgflatE2 = "SFLR6_1";
-// char*  bgflatE3 = "MFLR8_4";
-// char*  bgflatE4 = "MFLR8_3";
-
-// char*  bgflat06 = "SLIME16";
-// char*  bgflat11 = "RROCK14";
-// char*  bgflat20 = "RROCK07";
-// char*  bgflat30 = "RROCK17";
-// char*  bgflat15 = "RROCK13";
-// char*  bgflat31 = "RROCK19";
-
-// char*  bgcastcall = "BOSSBACK"; // panel behind cast call
 
 char*   finaletext;
 char*   finaleflat;
@@ -161,44 +123,46 @@ void F_StartFinale (void)
       S_ChangeMusic(mus_read_m, true);
 
       // Ty 08/27/98 - added the gamemission logic
-      switch (gamemap)
+
+      switch (gamemap)      /* This is regular Doom II */
       {
         case 6:
              finaleflat = bgflat06;
-             finaletext = (gamemission==pack_tnt)  ? s_T1TEXT :
-                          (gamemission==pack_plut) ? s_P1TEXT : s_C1TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T1TEXT :
+	                  gamemission == pack_plut ? s_P1TEXT : s_C1TEXT;
              break;
         case 11:
              finaleflat = bgflat11;
-             finaletext = (gamemission==pack_tnt)  ? s_T2TEXT :
-                          (gamemission==pack_plut) ? s_P2TEXT : s_C2TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T2TEXT :
+	                  gamemission == pack_plut ? s_P2TEXT : s_C2TEXT;
              break;
         case 20:
              finaleflat = bgflat20;
-             finaletext = (gamemission==pack_tnt)  ? s_T3TEXT :
-                          (gamemission==pack_plut) ? s_P3TEXT : s_C3TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T3TEXT :
+	                  gamemission == pack_plut ? s_P3TEXT : s_C3TEXT;
              break;
         case 30:
              finaleflat = bgflat30;
-             finaletext = (gamemission==pack_tnt)  ? s_T4TEXT :
-                          (gamemission==pack_plut) ? s_P4TEXT : s_C4TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T4TEXT :
+	                  gamemission == pack_plut ? s_P4TEXT : s_C4TEXT;
              break;
         case 15:
              finaleflat = bgflat15;
-             finaletext = (gamemission==pack_tnt)  ? s_T5TEXT :
-                          (gamemission==pack_plut) ? s_P5TEXT : s_C5TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T5TEXT :
+	                  gamemission == pack_plut ? s_P5TEXT : s_C5TEXT;
              break;
         case 31:
              finaleflat = bgflat31;
-             finaletext = (gamemission==pack_tnt)  ? s_T6TEXT :
-                          (gamemission==pack_plut) ? s_P6TEXT : s_C6TEXT;
+             finaletext = gamemission == pack_tnt  ? s_T6TEXT :
+	                  gamemission == pack_plut ? s_P6TEXT : s_C6TEXT;
              break;
         default:
              // Ouch.
              break;
       }
-      break;
       // Ty 08/27/98 - end gamemission logic
+
+      break;
     } 
 
     // Indeterminate.
@@ -306,10 +270,7 @@ extern  patch_t *hu_font[HU_FONTSIZE];
 
 void F_TextWrite (void)
 {
-  byte*       src;
-  byte*       dest;
-  
-  int         x,y,w;
+  int         w;         // killough 8/9/98: move variables below
   int         count;
   char*       ch;
   int         c;
@@ -318,29 +279,9 @@ void F_TextWrite (void)
   
   // erase the entire screen to a tiled background
 
-  // killough 4/17/98: 
-  src = W_CacheLumpNum(firstflat + 
-    R_FlatNumForName(finaleflat), PU_CACHE);
+  // killough 11/98: the background-filling code was already in m_menu.c
+  M_DrawBackground(finaleflat, screens[0]);
 
-  dest = screens[0];
-      
-  for (y=0 ; y<SCREENHEIGHT ; y++)
-  {
-    for (x=0 ; x<SCREENWIDTH/64 ; x++)
-    {
-      memcpy (dest, src+((y&63)<<6), 64);
-      dest += 64;
-    }
-
-    if (SCREENWIDTH&63)
-    {
-      memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-      dest += (SCREENWIDTH&63);
-    }
-  }
-
-  V_MarkRect (0, 0, SCREENWIDTH, SCREENHEIGHT);
-  
   // draw some of the text onto the screen
   cx = 10;
   cy = 10;
@@ -624,7 +565,6 @@ void F_CastPrint (char* text)
 //
 // F_CastDrawer
 //
-void V_DrawPatchFlipped (int x, int y, int scrn, patch_t *patch);
 
 void F_CastDrawer (void)
 {
@@ -656,35 +596,37 @@ void F_CastDrawer (void)
 //
 // F_DrawPatchCol
 //
-void
-F_DrawPatchCol
-( int           x,
-  patch_t*      patch,
-  int           col )
+// killough 11/98: reformatted and added hires support
+
+static void F_DrawPatchCol(int x, patch_t *patch, int col)
 {
-  column_t*   column;
-  byte*       source;
-  byte*       dest;
-  byte*       desttop;
-  int         count;
-        
-  column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
-  desttop = screens[0]+x;
+  const column_t *column = 
+    (const column_t *)((byte *) patch + LONG(patch->columnofs[col]));
 
   // step through the posts in a column
-  while (column->topdelta != 0xff )
-  {
-    source = (byte *)column + 3;
-    dest = desttop + column->topdelta*SCREENWIDTH;
-    count = column->length;
-                
-    while (count--)
-    {
-      *dest = *source++;
-      dest += SCREENWIDTH;
-    }
-    column = (column_t *)(  (byte *)column + column->length + 4 );
-  }
+  if (hires)
+    while (column->topdelta != 0xff)
+      {
+	byte *desttop = screens[0] + x*2;
+	const byte *source = (byte *) column + 3;
+	byte *dest = desttop + column->topdelta*SCREENWIDTH*4;
+	int count = column->length;
+	for (;count--; dest += SCREENWIDTH*4)
+	  dest[0] = dest[SCREENWIDTH*2] = dest[1] = dest[SCREENWIDTH*2+1] = 
+	    *source++;
+	column = (column_t *)(source+1);
+      }
+  else
+    while (column->topdelta != 0xff)
+      {
+	byte *desttop = screens[0] + x;
+	const byte *source = (byte *) column + 3;
+	byte *dest = desttop + column->topdelta*SCREENWIDTH;
+	int count = column->length;
+	for (;count--; dest += SCREENWIDTH)
+	  *dest = *source++;
+	column = (column_t *)(source+1);
+      }
 }
 
 
@@ -787,15 +729,9 @@ void F_Drawer (void)
   }
 }
 
-
-
-
 //----------------------------------------------------------------------------
 //
 // $Log: f_finale.c,v $
-// Revision 1.17  1998/08/29  23:00:55  thldrmn
-// Gamemission fixes for TNT and Plutonia
-//
 // Revision 1.16  1998/05/10  23:39:25  killough
 // Restore v1.9 demo sync on text intermission screens
 //

@@ -3,7 +3,6 @@
 //
 // $Id: doomstat.c,v 1.5 1998/05/12 12:46:12 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Put all global state variables here.
 //
@@ -30,9 +30,6 @@
 static const char
 rcsid[] = "$Id: doomstat.c,v 1.5 1998/05/12 12:46:12 phares Exp $";
 
-#ifdef __GNUG__
-#pragma implementation "doomstat.h"
-#endif
 #include "doomstat.h"
 
 // Game Mode - identify IWAD as shareware, retail etc.
@@ -50,16 +47,14 @@ boolean modifiedgame;
 // compatibility with old engines (monster behavior, metrics, etc.)
 int compatibility, default_compatibility;          // killough 1/31/98
 
-// Only true when playing back an old demo -- used only in "corner cases"
-// which break playback but are otherwise unnoticable or are just desirable:
+int comp[COMP_TOTAL], default_comp[COMP_TOTAL];    // killough 10/98
 
-int demo_compatibility, default_compatibility;     // killough 1/16/98
+int demo_version;           // killough 7/19/98: Boom version of demo
 
 // v1.1-like pitched sounds
-int pitched_sounds, default_pitched_sounds;        // killough
+int pitched_sounds;  // killough 10/98
 
-int     default_translucency; // config file says           // phares
-boolean general_translucency; // true if translucency is ok // phares
+int general_translucency;    // killough 10/98
 
 int demo_insurance, default_demo_insurance;        // killough 1/16/98
 
@@ -73,10 +68,47 @@ int  weapon_recoil;              // weapon recoil                   // phares
 int  default_weapon_recoil;      // killough 3/1/98: make local to each game
 
 int player_bobbing;  // whether player bobs or not          // phares 2/25/98
-int default_player_bobbing;  // killough 3/1/98: make local to each game
+int default_player_bobbing;      // killough 3/1/98: make local to each game
 
-int monsters_remember;          // killough 3/1/98
-int default_monsters_remember;
+int monsters_remember=1;        // killough 3/1/98
+int default_monsters_remember=1;
+
+int monster_infighting=1;       // killough 7/19/98: monster<=>monster attacks
+int default_monster_infighting=1;
+
+int monster_friction=1;       // killough 10/98: monsters affected by friction 
+int default_monster_friction=1;
+
+#ifdef BETA
+// killough 7/19/98: classic Doom BFG
+int classic_bfg, default_classic_bfg;
+
+// killough 7/24/98: Emulation of Press Release version of Doom
+int beta_emulation;
+#endif
+
+#ifdef DOGS
+int dogs, default_dogs;         // killough 7/19/98: Marine's best friend :)
+int dog_jumping, default_dog_jumping;   // killough 10/98
+#endif
+
+// killough 8/8/98: distance friends tend to move towards players
+int distfriend = 128, default_distfriend = 128;
+
+// killough 9/8/98: whether monsters are allowed to strafe or retreat
+int monster_backing, default_monster_backing;
+
+// killough 9/9/98: whether monsters are able to avoid hazards (e.g. crushers)
+int monster_avoid_hazards, default_monster_avoid_hazards;
+
+// killough 9/9/98: whether monsters help friends
+int help_friends, default_help_friends;
+
+int flashing_hom;     // killough 10/98
+
+int doom_weapon_toggles; // killough 10/98
+
+int monkeys, default_monkeys;
 
 //----------------------------------------------------------------------------
 //

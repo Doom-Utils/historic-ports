@@ -3,7 +3,6 @@
 //
 // $Id: i_system.h,v 1.7 1998/05/03 22:33:43 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -31,10 +30,6 @@
 #define __I_SYSTEM__
 
 #include "d_ticcmd.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Called by DoomMain.
 void I_Init(void);
@@ -92,6 +87,10 @@ void I_Quit (void);
 void I_Error(const char *error, ...) __attribute__((format(printf,1,2)));
 
 extern int mousepresent;                // killough
+
+extern int leds_always_off;   // killough 10/98
+
+void I_ResetLEDs(void);       // killough 10/98
 
 void I_EndDoom(void);         // killough 2/22/98: endgame screen
 

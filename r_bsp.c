@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c,v 1.20 1998/10/05 21:46:36 phares Exp $
+// $Id: r_bsp.c,v 1.17 1998/05/03 22:47:33 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,13 +21,14 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      BSP traversal, handling of LineSegs for rendering.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: r_bsp.c,v 1.20 1998/10/05 21:46:36 phares Exp $";
+rcsid[] = "$Id: r_bsp.c,v 1.17 1998/05/03 22:47:33 killough Exp $";
 
 #include "doomstat.h"
 #include "m_bbox.h"
@@ -295,9 +295,9 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
       tempsec->floorheight   = s->floorheight;
       tempsec->ceilingheight = s->ceilingheight;
 
-      if ((underwater && (tempsec->  floorheight = sec->floorheight,
-                          tempsec->ceilingheight = s->floorheight-1,
-                          !back)) || viewz <= s->floorheight)
+      // killough 11/98: prevent sudden light changes from non-water sectors:
+      if (underwater && (tempsec->  floorheight = sec->floorheight,
+			 tempsec->ceilingheight = s->floorheight-1, !back))
         {                   // head-below-floor hack
           tempsec->floorpic    = s->floorpic;
           tempsec->floor_xoffs = s->floor_xoffs;
@@ -392,7 +392,6 @@ static void R_AddLine (seg_t *line)
 
   // Global angle needed by segcalc.
   rw_angle1 = angle1;
-
   angle1 -= viewangle;
   angle2 -= viewangle;
 
@@ -450,21 +449,21 @@ static void R_AddLine (seg_t *line)
       || backsector->floorheight >= frontsector->ceilingheight)
     goto clipsolid;
 
-    // This fixes the automap floor height bug -- killough 1/18/98:
-    // killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
+  // This fixes the automap floor height bug -- killough 1/18/98:
+  // killough 4/7/98: optimize: save result in doorclosed for use in r_segs.c
   if ((doorclosed = R_DoorClosed()))
     goto clipsolid;
 
-    // Window.
+  // Window.
   if (backsector->ceilingheight != frontsector->ceilingheight
       || backsector->floorheight != frontsector->floorheight)
     goto clippass;
 
-    // Reject empty lines used for triggers
-    //  and special events.
-    // Identical floor and ceiling on both sides,
-    // identical light levels on both sides,
-    // and no middle texture.
+  // Reject empty lines used for triggers
+  //  and special events.
+  // Identical floor and ceiling on both sides,
+  // identical light levels on both sides,
+  // and no middle texture.
   if (backsector->ceilingpic == frontsector->ceilingpic
       && backsector->floorpic == frontsector->floorpic
       && backsector->lightlevel == frontsector->lightlevel
@@ -617,39 +616,57 @@ static void R_Subsector(int num)
   frontsector = sub->sector;
   count = sub->numlines;
   line = &segs[sub->firstline];
+
   // killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
   frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
                            &ceilinglightlevel, false);   // killough 4/11/98
 
   // killough 3/7/98: Add (x,y) offsets to flats, add deep water check
   // killough 3/16/98: add floorlightlevel
+  // killough 10/98: add support for skies transferred from sidedefs
 
   floorplane = frontsector->floorheight < viewz || // killough 3/7/98
     (frontsector->heightsec != -1 &&
      sectors[frontsector->heightsec].ceilingpic == skyflatnum) ?
     R_FindPlane(frontsector->floorheight,
+		frontsector->floorpic == skyflatnum &&  // kilough 10/98
+		frontsector->sky & PL_SKYFLAT ? frontsector->sky :
                 frontsector->floorpic,
                 floorlightlevel,                // killough 3/16/98
                 frontsector->floor_xoffs,       // killough 3/7/98
                 frontsector->floor_yoffs
                 ) : NULL;
+
   ceilingplane = frontsector->ceilingheight > viewz ||
     frontsector->ceilingpic == skyflatnum ||
     (frontsector->heightsec != -1 &&
      sectors[frontsector->heightsec].floorpic == skyflatnum) ?
     R_FindPlane(frontsector->ceilingheight,     // killough 3/8/98
+		frontsector->ceilingpic == skyflatnum &&  // kilough 10/98
+		frontsector->sky & PL_SKYFLAT ? frontsector->sky :
                 frontsector->ceilingpic,
                 ceilinglightlevel,              // killough 4/11/98
                 frontsector->ceiling_xoffs,     // killough 3/7/98
                 frontsector->ceiling_yoffs
                 ) : NULL;
-  R_AddSprites (sub->sector); //jff 9/11/98 passing frontsector here was
-                              //causing the underwater fireball medusa problem
-                              //when R_FakeFlat substituted a fake sector
+
+  // killough 9/18/98: Fix underwater slowdown, by passing real sector 
+  // instead of fake one. Improve sprite lighting by basing sprite
+  // lightlevels on floor & ceiling lightlevels in the surrounding area.
+  //
+  // 10/98 killough:
+  //
+  // NOTE: TeamTNT fixed this bug incorrectly, messing up sprite lighting!!!
+  // That is part of the 242 effect!!!  If you simply pass sub->sector to
+  // the old code you will not get correct lighting for underwater sprites!!!
+  // Either you must pass the fake sector and handle validcount here, on the
+  // real sector, or you must account for the lighting in some other way, 
+  // like passing it as an argument.
+
+  R_AddSprites(sub->sector, (floorlightlevel+ceilinglightlevel)/2);
 
   while (count--)
     R_AddLine (line++);
-
 }
 
 //
@@ -674,10 +691,10 @@ void R_RenderBSPNode(int bspnum)
 
       // Possibly divide back space.
 
-      if (!R_CheckBBox(bsp->bbox[side^1]))
+      if (!R_CheckBBox(bsp->bbox[side^=1]))
         return;
 
-      bspnum = bsp->children[side^1];
+      bspnum = bsp->children[side];
     }
   R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
@@ -685,15 +702,6 @@ void R_RenderBSPNode(int bspnum)
 //----------------------------------------------------------------------------
 //
 // $Log: r_bsp.c,v $
-// Revision 1.20  1998/10/05  21:46:36  phares
-// Cleanup fireline checkin
-//
-// Revision 1.19  1998/10/05  21:29:27  phares
-// Fixed firelines
-//
-// Revision 1.18  1998/09/12  01:06:34  jim
-// Fixed underwater fireball slowdown
-//
 // Revision 1.17  1998/05/03  22:47:33  killough
 // beautification
 //

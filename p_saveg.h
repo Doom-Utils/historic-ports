@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.h,v 1.6 1998/09/16 06:59:45 phares Exp $
+// $Id: p_saveg.h,v 1.5 1998/05/03 23:10:40 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //      Savegame I/O, archiving, persistence.
 //
@@ -29,10 +29,6 @@
 
 #ifndef __P_SAVEG__
 #define __P_SAVEG__
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Persistent storage/archiving.
 // These are the load / save game routines.
@@ -44,8 +40,6 @@ void P_ArchiveThinkers(void);
 void P_UnArchiveThinkers(void);
 void P_ArchiveSpecials(void);
 void P_UnArchiveSpecials(void);
-void P_ThinkerToIndex(void); // phares 9/13/98: save soundtarget in savegame
-void P_IndexToThinker(void); // phares 9/13/98: save soundtarget in savegame
 
 // 1/18/98 killough: add RNG info to savegame
 void P_ArchiveRNG(void);
@@ -63,9 +57,6 @@ void CheckSaveGame(size_t);              // killough
 //----------------------------------------------------------------------------
 //
 // $Log: p_saveg.h,v $
-// Revision 1.6  1998/09/16  06:59:45  phares
-// Save soundtarget across savegames
-//
 // Revision 1.5  1998/05/03  23:10:40  killough
 // beautification
 //

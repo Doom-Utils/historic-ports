@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c,v 1.22 1998/09/07 20:10:30 jim Exp $
+// $Id: w_wad.c,v 1.20 1998/05/06 11:32:00 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -28,17 +27,13 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: w_wad.c,v 1.22 1998/09/07 20:10:30 jim Exp $";
+rcsid[] = "$Id: w_wad.c,v 1.20 1998/05/06 11:32:00 jim Exp $";
 
 #include "doomstat.h"
-#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#ifdef __GNUG__
-#pragma implementation "w_wad.h"
-#endif
 #include "w_wad.h"
 
 //
@@ -52,13 +47,13 @@ void       **lumpcache;      // killough
 
 static int filelength(int handle)
 {
-  struct stat   fileinfo;
+  struct stat fileinfo;
   if (fstat(handle,&fileinfo) == -1)
     I_Error("Error fstating");
   return fileinfo.st_size;
 }
 
-void ExtractFileBase (const char *path, char *dest)
+void ExtractFileBase(const char *path, char *dest)
 {
   const char *src = path + strlen(path) - 1;
   int length;
@@ -97,6 +92,33 @@ char *AddDefaultExtension(char *path, const char *ext)
   return strcat(path,ext);
 }
 
+// NormalizeSlashes
+//
+// Remove trailing slashes, translate backslashes to slashes
+// The string to normalize is passed and returned in str
+//
+// killough 11/98: rewritten
+
+void NormalizeSlashes(char *str)
+{
+  char *p;
+
+  // Convert backslashes to slashes
+  for (p = str; *p; p++)
+    if (*p == '\\')
+      *p = '/';
+
+  // Remove trailing slashes
+  while (p > str && *--p == '/')
+    *p = 0;
+
+  // Collapse multiple slashes
+  for (p = str; (*str++ = *p);)
+    if (*p++ == '/')
+      while (*p == '/')
+	p++;
+}
+
 //
 // LUMP BASED ROUTINES.
 //
@@ -112,9 +134,8 @@ char *AddDefaultExtension(char *path, const char *ext)
 //
 // Reload hack removed by Lee Killough
 //
-// Ty 08/29/98 - added source parm to indicate iwad, pwad or lmp loaded file
 
-static void W_AddFile(const char *filename,int source) // killough 1/31/98: static, const
+static void W_AddFile(const char *name) // killough 1/31/98: static, const
 {
   wadinfo_t   header;
   lumpinfo_t* lump_p;
@@ -124,19 +145,26 @@ static void W_AddFile(const char *filename,int source) // killough 1/31/98: stat
   int         startlump;
   filelump_t  *fileinfo, *fileinfo2free=NULL; //killough
   filelump_t  singleinfo;
+  char        *filename = strcpy(malloc(strlen(name)+5), name);
+
+  NormalizeSlashes(AddDefaultExtension(filename, ".wad"));  // killough 11/98
 
   // open the file and add to directory
 
   if ((handle = open(filename,O_RDONLY | O_BINARY)) == -1)
     {
-      if (strlen(filename)<=4 ||      // add error check -- killough
-          strcasecmp(filename+strlen(filename)-4 , ".lmp" ) )
-        I_Error("Error: couldn't open %s\n",filename);  // killough
-      return;
+      if (strlen(name) > 4 && !strcasecmp(name+strlen(name)-4 , ".lmp" ))
+	{
+	  free(filename);
+	  return;
+	}
+      // killough 11/98: allow .lmp extension if none existed before
+      NormalizeSlashes(AddDefaultExtension(strcpy(filename, name), ".lmp"));
+      if ((handle = open(filename,O_RDONLY | O_BINARY)) == -1)
+	I_Error("Error: couldn't open %s\n",name);  // killough
     }
 
-  //jff 8/3/98 use logical output routine
-  lprintf (LO_INFO," adding %s\n",filename);
+  printf(" adding %s\n",filename);   // killough 8/8/98
   startlump = numlumps;
 
   // killough:
@@ -155,7 +183,7 @@ static void W_AddFile(const char *filename,int source) // killough 1/31/98: stat
       read(handle, &header, sizeof(header));
       if (strncmp(header.identification,"IWAD",4) &&
           strncmp(header.identification,"PWAD",4))
-        I_Error ("Wad file %s doesn't have IWAD or PWAD id\n", filename);
+        I_Error("Wad file %s doesn't have IWAD or PWAD id\n", filename);
       header.numlumps = LONG(header.numlumps);
       header.infotableofs = LONG(header.infotableofs);
       length = header.numlumps*sizeof(filelump_t);
@@ -164,6 +192,8 @@ static void W_AddFile(const char *filename,int source) // killough 1/31/98: stat
       read(handle, fileinfo, length);
       numlumps += header.numlumps;
     }
+
+    free(filename);           // killough 11/98
 
     // Fill in lumpinfo
     lumpinfo = realloc(lumpinfo, numlumps*sizeof(lumpinfo_t));
@@ -177,7 +207,6 @@ static void W_AddFile(const char *filename,int source) // killough 1/31/98: stat
         lump_p->size = LONG(fileinfo->size);
         lump_p->data = NULL;                        // killough 1/31/98
         lump_p->namespace = ns_global;              // killough 4/17/98
-        lump_p->source = source;                    // Ty 08/29/98
         strncpy (lump_p->name, fileinfo->name, 8);
       }
 
@@ -362,10 +391,8 @@ int W_GetNumForName (const char* name)     // killough -- const added
 //  does override all earlier ones.
 //
 
-void W_InitMultipleFiles(char *const *filenames, int *const pfilesource)
+void W_InitMultipleFiles(char *const *filenames)
 {
-  int *filesource = pfilesource;  // to iterate with
-
   // killough 1/31/98: add predefined lumps first
 
   numlumps = num_predefined_lumps;
@@ -374,16 +401,10 @@ void W_InitMultipleFiles(char *const *filenames, int *const pfilesource)
   lumpinfo = malloc(numlumps*sizeof(*lumpinfo));
 
   memcpy(lumpinfo, predefined_lumps, numlumps*sizeof(*lumpinfo));
-  // Ty 08/29/98 - add source flag to the predefined lumps
-  {
-    int i;
-    for (i=0;i<numlumps;i++)
-      lumpinfo[i].source = source_pre;
-  }
 
   // open all the files, load headers, and count lumps
   while (*filenames)
-    W_AddFile(*filenames++,*filesource++);
+    W_AddFile(*filenames++);
 
   if (!numlumps)
     I_Error ("W_InitFiles: no files found");
@@ -442,11 +463,14 @@ void W_ReadLump(int lump, void *dest)
       int c;
 
       // killough 1/31/98: Reload hack (-wart) removed
+      // killough 10/98: Add flashing disk indicator
 
+      I_BeginRead();
       lseek(l->handle, l->position, SEEK_SET);
       c = read(l->handle, dest, l->size);
       if (c < l->size)
         I_Error("W_ReadLump: only read %i of %i on lump %i", c, l->size, lump);
+      I_EndRead();
     }
 }
 
@@ -455,7 +479,7 @@ void W_ReadLump(int lump, void *dest)
 //
 // killough 4/25/98: simplified
 
-void *W_CacheLumpNum (int lump, int tag)
+void *W_CacheLumpNum(int lump, int tag)
 {
 #ifdef RANGECHECK
   if ((unsigned)lump >= numlumps)
@@ -529,12 +553,6 @@ void WritePredefinedLumpWad(const char *filename)
 //----------------------------------------------------------------------------
 //
 // $Log: w_wad.c,v $
-// Revision 1.22  1998/09/07  20:10:30  jim
-// Logical output routine added
-//
-// Revision 1.21  1998/08/29  22:59:55  thldrmn
-// Lump source field logic etc.
-//
 // Revision 1.20  1998/05/06  11:32:00  jim
 // Moved predefined lump writer info->w_wad
 //

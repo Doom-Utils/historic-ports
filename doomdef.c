@@ -3,9 +3,9 @@
 //
 // $Id: doomdef.c,v 1.3 1998/05/03 22:40:02 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+//
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -22,6 +22,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //  DoomDef - basic defines for DOOM, e.g. Version, game mode
 //   and skill level, and display parameters.
@@ -30,10 +31,6 @@
 
 static const char
 rcsid[] = "$Id: doomdef.c,v 1.3 1998/05/03 22:40:02 killough Exp $";
-
-#ifdef __GNUG__
-#pragma implementation "doomdef.h"
-#endif
 
 #include "doomdef.h"
 

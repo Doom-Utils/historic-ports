@@ -3,7 +3,6 @@
 //
 // $Id: p_switch.c,v 1.25 1998/06/01 14:48:19 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -102,7 +101,7 @@ void P_InitSwitchList(void)
 // Passed the linedef the button is on, which texture on the sidedef contains
 // the button, the texture number of the button, and the time the button is
 // to remain active in gametics.
-// No return.
+// No return value.
 //
 void P_StartButton
 ( line_t*       line,
@@ -139,7 +138,7 @@ void P_StartButton
 // Passed the line which the switch is on, and whether its retriggerable.
 // If not retriggerable, this function clears the line special to insure that
 //
-// No return
+// No return value
 //
 void P_ChangeSwitchTexture
 ( line_t*       line,
@@ -393,6 +392,14 @@ P_UseSpecialLine
         
     case 11:
       // Exit level
+
+      // killough 10/98: prevent zombies from exiting levels
+      if (thing->player && thing->player->health <= 0 && !comp[comp_zombie])
+	{
+	  S_StartSound(thing, sfx_noway);
+	  return false;
+	}
+ 
       P_ChangeSwitchTexture(line,0);
       G_ExitLevel ();
       break;
@@ -465,6 +472,14 @@ P_UseSpecialLine
         
     case 51:
       // Secret EXIT
+
+      // killough 10/98: prevent zombies from exiting levels
+      if (thing->player && thing->player->health <= 0 && !comp[comp_zombie])
+	{
+	  S_StartSound(thing, sfx_noway);
+	  return false;
+	}
+ 
       P_ChangeSwitchTexture(line,0);
       G_SecretExitLevel ();
       break;

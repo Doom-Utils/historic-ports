@@ -3,7 +3,6 @@
 //
 // $Id: m_misc.h,v 1.4 1998/05/05 19:56:06 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,47 +26,53 @@
 //    
 //-----------------------------------------------------------------------------
 
-
 #ifndef __M_MISC__
 #define __M_MISC__
 
-
 #include "doomtype.h"
+
 //
 // MISC
 //
 
+boolean M_WriteFile(const char *name, void *source, int length);
+int M_ReadFile(const char *name, byte **buffer);
+void M_ScreenShot(void);
+void M_LoadDefaults(void);
+void M_SaveDefaults(void);
+int M_DrawText(int x,int y,boolean direct, char *string);
+struct default_s *M_LookupDefault(const char *name);     // killough 11/98
+boolean M_ParseOption(const char *name, boolean wad);    // killough 11/98
+void M_LoadOptions(void);                                // killough 11/98
 
-
-boolean M_WriteFile (char const* name,void* source,int length);
-
-int M_ReadFile (char const* name,byte** buffer);
-
-void M_ScreenShot (void);
-
-void M_LoadDefaults (void);
-
-void M_SaveDefaults (void);
-
-
-int M_DrawText (int x,int y,boolean direct,char* string);
+extern int screenshot_pcx;                               // killough 10/98
 
 // phares 4/21/98:
 // Moved from m_misc.c so m_menu.c could see it.
+//
+// killough 11/98: totally restructured
 
-typedef struct
+typedef struct default_s
 {
-  char* name;
-  int*  location;
-  int   defaultvalue;
-  int   minvalue;         // jff 3/3/98 minimum allowed value
-  int   maxvalue;         // jff 3/3/98 maximum allowed value
-  int   isstr;            // jff 4/10/98 whether defaultvalue is int or str
-  int   setupscreen;      // phares 4/19/98: setup screen where this appears
-  char* help;             // jff 3/3/98 description of parameter
-  int   scantranslate;    // PC scan code hack
-  int   untranslated;     // lousy hack
+  const char *const name;                   // name
+  int  *const location;                     // default variable
+  int  *const current;                      // possible nondefault variable
+  int   const defaultvalue;                 // built-in default value
+  struct {int min, max;} const limit;       // numerical limits
+  enum {number, string} const isstr;        // number or string
+  ss_types const setupscreen;               // setup screen this appears on
+  enum {wad_no, wad_yes} const wad_allowed; // whether it's allowed in wads
+  const char *const help;                   // description of parameter
+
+  // internal fields (initialized implicitly to 0) follow
+
+  struct default_s *first, *next;           // hash table pointers
+  int modified;                             // Whether it's been modified
+  int orig_default;                         // Original default, if modified
+  struct setup_menu_s *setup_menu;          // Xref to setup menu item, if any
 } default_t;
+
+#define UL (-123456789) /* magic number for no min or max for parameter */
 
 #endif
 

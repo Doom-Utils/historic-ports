@@ -3,7 +3,6 @@
 //
 // $Id: d_event.h,v 1.4 1998/05/05 19:55:53 phares Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -87,7 +86,7 @@ typedef enum
 
   // Flag: game events, not really buttons.
   BT_SPECIAL      = 128,
-  BT_SPECIALMASK  = 3,
+  //  BT_SPECIALMASK  = 3,   killough 9/29/98: unused now
     
   // Flag, weapon change pending.
   // If true, the next 4 bits hold weapon num.

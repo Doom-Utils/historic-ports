@@ -3,7 +3,6 @@
 //
 // $Id: r_main.h,v 1.7 1998/05/03 23:00:42 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -32,10 +31,6 @@
 
 #include "d_player.h"
 #include "r_data.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 //
 // POV related.
@@ -111,6 +106,11 @@ subsector_t *R_PointInSubsector(fixed_t x, fixed_t y);
 void R_RenderPlayerView(player_t *player);   // Called by G_Drawer.
 void R_Init(void);                           // Called by startup code.
 void R_SetViewSize(int blocks);              // Called by M_Responder.
+
+void R_InitLightTables(void);                // killough 8/9/98
+
+extern boolean setsizeneeded;
+void R_ExecuteSetViewSize(void);
 
 #endif
 

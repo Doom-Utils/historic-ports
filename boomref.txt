@@ -1,6 +1,6 @@
 >>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<
 >                                          <
->       BOOM reference v1.3 6/19/98        <
+>       BOOM reference v1.3 4/12/98        <
 >                                          <
 >>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<
 
@@ -12,7 +12,7 @@
 Section 0. Terminology
 #######################
 
-In BOOM actions are caused to happen thru linedef types.
+In BOOM actions are caused to happen in the game thru linedef types.
 BOOM has three kinds of linedef types:
 
 Regular     - the linedef types that were already in DOOM II v1.9
@@ -902,24 +902,24 @@ heights.
 The rule for stair building is as follows:
 
 1) The first step to rise or fall is the tagged sector. It rises or
-falls by the stair stepsize, at the stair speed, in the stair
-direction..
+falls by the stair stepsize, at the stair speed.
 
-2) To find the next step (sector) affected examine each two-sided
-linedef with first sidedef facing into the previous step in numerical
-order. For each such linedef if the sector on the other side is
-already active, or has already risen from this stair, the linedef is
-skipped. If textures are not ignored then any linedef with a
-different floor texture on its second side is also skipped. The next step
-to rise is the sector on the other side of the first linedef not
-skipped. If none exists, stair building ceases.
+2) To find the next step (sector) affected examine all two-sided
+linedefs with first sidedef facing into the previous step for the one
+with lowest linedef number. The sector on the other side of this
+linedef is the next step. If no such linedef exists, stair building
+ceases.
 
-The next step moves to the height of the previous step plus or minus 
-the stepsize depending on the direction the stairs build, up or down. 
-If the motion is in the same direction as the stairs build, it occurs
-at stair build speed, otherwise it is instant.
+3) If the next step is already moving, or has already risen as part
+of the stair, stair building ceases. Optionally if the floor texture
+of the next step is different from the previous step's the stair
+building stops. Otherwise the next step moves to the height of the
+previous step plus or minus the stepsize depending on the direction
+the stairs build, up or down. If the motion is in the same direction
+as the stairs build, it occurs at stair build speed, otherwise it is
+instant.
 
-3) Repeat step 2 until stair building ceases.
+4) Repeat from step 2 until stair building ceases.
 
 ----------------------------------------
 Section 6.1 Varieties of Stair Builders
@@ -1446,6 +1446,53 @@ sector when its friction enable bit (bit 8) in the sector type is set.
 This allows the flat to be changed in conjunction with turning the effect
 on or off thru texture/type changes.
 
+271   Ext --   Transfer sky texture to tagged sectors 
+271   Ext --   Transfer sky texture to tagged sectors, flipped
+
+These linedefs transfer wall textures to skies. F_SKY1 must still be used as
+the floor or ceiling texture in the sectors for which sky is desired, but the
+presence of a 271 or 272 property-transfer linedef can change the sky texture
+to something other than a level-based default.
+
+Every sector with F_SKY1 floor or ceiling which shares the same sector tag
+as the 271 or 272 linedef will use a sky texture based on the upper texture
+of the first sidedef in the 271 or 272 linedef. Sectors with F_SKY1 floors or
+ceilings which are not tagged with 271 or 272 linedefs, behave just like Doom.
+
+Horizontal offsets or scrolling in the transferred texture, is converted into
+rotation of the sky texture. Vertical offsets or scrolling is transferred as
+well, allowing for precise adjustments of sky position. Unpegging in the sky
+transfer linedef does not affect the sky texture.
+
+Horizontal scrolling of the transferred upper wall texture is converted into
+rotation of the sky texture, but it occurs at a very slow speed relative to
+the moving texture, allowing for long-period rotations (such as one complete
+revolution per Doom real-time hour).
+
+Effects other than sky-transfer effects are not excluded from the affected
+sector(s), and tags can be shared so long as the effects are unambiguous. 
+For example, a wall-scrolling linedef can share a sector tag with both its
+affectee linedef (the one being scrolled), and with the sector that the
+latter controls. There is no ambiguity because one effect (scrolling) applies
+to a linedef, while the other effect (sky transfer) applies to a sector.
+
+If a sector underneath a special sky needs to be set up to have a different
+purpose (for example, if it is a lift or a stairbuilder), then two tags will
+need to be created, and the transfer linedef and any scrolling linedefs will
+need to be duplicated as well, so that the same effect as far as the sky goes,
+is duplicated in two separate sector tags. This will not affect sky appearance,
+but it will allow a special sector which needs a unique tag, to sit under such
+a sky.
+
+Animated textures may be transferred to skies as well.
+
+In Doom, skies were flipped horizontally. To maintain compatibility with this
+practice, the 272 linedef flips the wall image horizontally. The 271 linedef
+does not flip the wall image, and it is intended to make it easier to take
+existing non-flipped wall textures and transfer them to skies.
+
+Sky textures which are different must be separated by non-sky textures, or
+else the results are undefined.
 
 Constant pushers
 ----------------
@@ -1938,12 +1985,12 @@ field   description                       NBits    Mask     Shift
 trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
 speed   slow/normal/fast/turbo             2      0x0018      3
 kind    odc/o                              1      0x0020      5
-lock    any/rc/bc/yc/rs/bs/ys/all          3      0x01c0      6
+lock    any/rc/yc/bc/rs/bs/ys/all          3      0x01c0      6
 sk=ck   n/y                                1      0x0200      9
 
 DETH Nomenclature:
 
-W1[m] OpnDCls           S Any
+W1[m] OpnD{1|4|9|30}Cls S Any
 WR[m] Opn               N R{C|S|K}
 S1[m]                   F B{C|S|K}
 SR[m]                   T Y{C|S|K}
@@ -1993,8 +2040,8 @@ Notes:
    exist the lift does not move when triggered. NnF is Next Lowest
    Neighbor Floor.
 4) Starting a perpetual lift between lowest and highest neighboring floors
-   locks out all other floor actions on the sector, even if it is stopped
-   with the non-extended stop perpetual floor function.
+   locks out all other actions on the sector, even if it is stopped with
+   the non-extended stop perpetual floor function.
 
 -------------------------------------------------------------------
 generalized stairs (1024 types)
@@ -2169,7 +2216,7 @@ allows a push or switch linedef trigger to pass the push action thru
 it to ones within range behind it. In this way BOOM is capable of
 setting off many actions with a single push. Note that the limitation
 of one floor action, one ceiling action, and one lighting action per
-sector affected still applies however.
+sector affect still applies however.
 
 The new linedef flag is bit 9, value 512, in the linedef flags word.
 
@@ -2305,7 +2352,7 @@ Lumps missing in v1.1
 STTMINUS       minus sign for neg frags in status bar
 WIMINUS        minus sign for neg frags on end screen
 M_NMARE        nightmare skill menu string
-STBAR          status bar background
+STBAR        status bar background
 DSGETPOW       sound for obtaining power-up
 
 Text end screen
@@ -2328,12 +2375,12 @@ game known to the engine. It consists of a list of records each 20
 bytes long, terminated by an entry (not used) whose last 2 bytes are 0.
 
 9 bytes        Null terminated string naming "off" state texture for switch
-9 bytes        Null terminated string naming "on" state texture for switch
+9 bytes        Null terminated string naming "off" state texture for switch
 2 bytes        Short integer for the IWADs switch will work in
                 1=shareware
-                2=registered/retail DOOM or shareware
-                3=DOOM II, registered/retail DOOM, or shareware
-                0=terminates list of known switches
+    2=registered/retail DOOM or shareware
+    3=DOOM II, registered/retail DOOM, or shareware
+    0=terminates list of known switches
 
 ANIMATED format:
 
@@ -2367,12 +2414,12 @@ premade colormaps, and an add-on wad containing them.
 Color translation tables
 ------------------------
 CRBRICK        Translates red range to brick red
-CRTAN          Translates red range to tan
+CRTAN        Translates red range to tan
 CRGRAY         Translates red range to gray
 CRGREEN        Translates red range to green
 CRBROWN        Translates red range to brown
 CRGOLD         Translates red range to dark yellow
-CRRED          Translates red range to red range (no change)
+CRRED        Translates red range to red range (no change)
 CRBLUE         Translates red range to light blue
 CRBLUE2        Translates red range to dark blue (status bar numerals)
 CRORANGE       Translates red range to orange

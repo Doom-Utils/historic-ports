@@ -3,7 +3,6 @@
 //
 // $Id: r_state.h,v 1.6 1998/05/01 14:49:12 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,18 +26,12 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __R_STATE__
 #define __R_STATE__
 
 // Need data structure definitions.
 #include "d_player.h"
 #include "r_data.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 
 //
 // Refresh internal data structures,
@@ -60,6 +53,7 @@ extern lighttable_t *fullcolormap;        // killough 3/20/98
 extern int viewwidth;
 extern int scaledviewwidth;
 extern int viewheight;
+extern int scaledviewheight;              // killough 11/98
 
 extern int firstflat;
 

@@ -1,9 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c,v 1.25 1998/09/07 20:05:44 jim Exp $
+// $Id: am_map.c,v 1.24 1998/05/10 12:05:24 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -28,7 +27,7 @@
 //-----------------------------------------------------------------------------
 
 static const char rcsid[] =
-  "$Id: am_map.c,v 1.25 1998/09/07 20:05:44 jim Exp $";
+  "$Id: am_map.c,v 1.24 1998/05/10 12:05:24 jim Exp $";
 
 #include "doomstat.h"
 #include "st_stuff.h"
@@ -41,7 +40,6 @@ static const char rcsid[] =
 #include "am_map.h"
 #include "dstrings.h"
 #include "d_deh.h"    // Ty 03/27/98 - externalizations
-#include "lprintf.h"  // jff 08/03/98 - declaration of lprintf
 
 //jff 1/7/98 default automap colors added
 int mapcolor_back;    // map background
@@ -65,6 +63,7 @@ int mapcolor_sprt;    // general sprite color
 int mapcolor_hair;    // crosshair color
 int mapcolor_sngl;    // single player arrow color
 int mapcolor_plyr[4]; // colors for player arrows in multiplayer
+int mapcolor_frnd;    // colors for friends of player
 
 //jff 3/9/98 add option to not show secret sectors until entered
 int map_secret_after;
@@ -202,8 +201,6 @@ mline_t thintriangle_guy[] =
 int ddt_cheating = 0;         // killough 2/7/98: make global, rename to ddt_*
 
 int automap_grid = 0;
-
-static int leveljuststarted = 1;       // kluge until AM_LevelInit() is called
 
 boolean automapactive = false;
 
@@ -575,11 +572,15 @@ void AM_clearMarks(void)
 //
 void AM_LevelInit(void)
 {
-  leveljuststarted = 0;
-
   f_x = f_y = 0;
-  f_w = SCREENWIDTH;           // killough 2/7/98: get rid of finit_ vars
-  f_h = SCREENHEIGHT-32;       // to allow runtime setting of width/height
+
+  // killough 2/7/98: get rid of finit_ vars
+  // to allow runtime setting of width/height
+  //
+  // killough 11/98: ... finally add hires support :)
+
+  f_w = (SCREENWIDTH) << hires;
+  f_h = (SCREENHEIGHT-ST_HEIGHT) << hires;
 
   AM_findMinMaxBoundaries();
   scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
@@ -617,13 +618,14 @@ void AM_Stop (void)
 //
 void AM_Start()
 {
-  static int lastlevel = -1, lastepisode = -1;
+  static int lastlevel = -1, lastepisode = -1, last_hires = -1;
 
   if (!stopped)
     AM_Stop();
   stopped = false;
-  if (lastlevel != gamemap || lastepisode != gameepisode)
+  if (lastlevel != gamemap || lastepisode != gameepisode || hires!=last_hires)
   {
+    last_hires = hires;          // killough 11/98
     AM_LevelInit();
     lastlevel = gamemap;
     lastepisode = gameepisode;
@@ -844,6 +846,19 @@ void AM_doFollowPlayer(void)
 }
 
 //
+// killough 10/98: return coordinates, to allow use of a non-follow-mode
+// pointer. Allows map inspection without moving player to the location.
+//
+
+int map_point_coordinates;
+
+void AM_Coordinates(const mobj_t *mo, fixed_t *x, fixed_t *y, fixed_t *z)
+{
+  *z = followplayer || !map_point_coordinates ? *x = mo->x, *y = mo->y, mo->z :
+    R_PointInSubsector(*x = m_x+m_w/2, *y = m_y+m_h/2)->sector->floorheight;
+}
+
+//
 // AM_Ticker()
 //
 // Updates on gametic - enter follow mode, zoom, or change map location
@@ -1052,8 +1067,7 @@ void AM_drawFline
     || fl->b.y < 0 || fl->b.y >= f_h
   )
   {
-    //jff 8/3/98 use logical output routine
-    lprintf(LO_DEBUG, "fuck %d \r", fuck++);
+    fprintf(stderr, "fuck %d \r", fuck++);
     return;
   }
 #endif
@@ -1559,7 +1573,8 @@ void AM_drawPlayers(void)
     their_color++;
     p = &players[i];
 
-    if ( (deathmatch && !singledemo) && p != plr)
+    // killough 9/29/98: use !demoplayback so internal demos are no different
+    if ( (deathmatch && !demoplayback) && p != plr)
       continue;
 
     if (!playeringame[i])
@@ -1661,7 +1676,8 @@ void AM_drawThings
         NUMTHINTRIANGLEGUYLINES,
         16<<FRACBITS,
         t->angle,
-        mapcolor_sprt,
+	// killough 8/8/98: mark friends specially
+	t->flags & MF_FRIEND && !t->player ? mapcolor_frnd : mapcolor_sprt,
         t->x,
         t->y
       );
@@ -1680,31 +1696,36 @@ void AM_drawThings
 // killough 2/22/98:
 // Rewrote AM_drawMarks(). Removed limit on marks.
 //
+// killough 11/98: added hires support
+
 void AM_drawMarks(void)
 {
   int i;
   for (i=0;i<markpointnum;i++) // killough 2/22/98: remove automap mark limit
     if (markpoints[i].x != -1)
-    {
-      int w = 5;
-      int h = 6;
-      int fx = CXMTOF(markpoints[i].x);
-      int fy = CYMTOF(markpoints[i].y);
-      int j = i;
-
-      do
       {
-        int d = j % 10;
-        if (d==1)           // killough 2/22/98: less spacing for '1'
-          fx++;
+	int w = 5 << hires;
+	int h = 6 << hires;
+	int fx = CXMTOF(markpoints[i].x);
+	int fy = CYMTOF(markpoints[i].y);
+	int j = i;
 
-        if (fx >= f_x && fx < f_w - w && fy >= f_y && fy < f_h - h)
-          V_DrawPatch(fx, fy, FB, marknums[d]);
-        fx -= w-1;          // killough 2/22/98: 1 space backwards
-        j /= 10;
+	do
+	  {
+	    int d = j % 10;
+
+	    if (d==1)           // killough 2/22/98: less spacing for '1'
+	      fx += 1<<hires;
+
+	    if (fx >= f_x && fx < f_w - w && fy >= f_y && fy < f_h - h)
+	      V_DrawPatch(fx >> hires, fy >> hires, FB, marknums[d]);
+
+	    fx -= w - (1<<hires);     // killough 2/22/98: 1 space backwards
+
+	    j /= 10;
+	  }
+	while (j>0);
       }
-      while (j>0);
-    }
 }
 
 //
@@ -1748,9 +1769,6 @@ void AM_Drawer (void)
 //----------------------------------------------------------------------------
 //
 // $Log: am_map.c,v $
-// Revision 1.25  1998/09/07  20:05:44  jim
-// Added logical output routine
-//
 // Revision 1.24  1998/05/10  12:05:24  jim
 // formatted/documented am_map
 //

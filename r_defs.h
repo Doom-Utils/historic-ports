@@ -3,7 +3,6 @@
 //
 // $Id: r_defs.h,v 1.18 1998/04/27 02:12:59 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -46,10 +45,6 @@
 
 // SECTORS do store MObjs anyway.
 #include "p_mobj.h"
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
@@ -105,6 +100,11 @@ typedef struct
   int validcount;        // if == validcount, already checked
   mobj_t *thinglist;     // list of mobjs in sector
 
+  // killough 8/28/98: friction is a sector property, not an mobj property.
+  // these fields used to be in mobj_t, but presented performance problems
+  // when processed as mobj properties. Fix is to make them sector properties.
+  int friction,movefactor;
+
   // thinker_t for reversable actions
   void *floordata;    // jff 2/22/98 make thinkers on
   void *ceilingdata;  // floors, ceilings, lighting,
@@ -126,6 +126,15 @@ typedef struct
   int floorlightsec, ceilinglightsec;
 
   int bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
+
+  // killough 10/98: support skies coming from sidedefs. Allows scrolling
+  // skies and other effects. No "level info" kind of lump is needed, 
+  // because you can use an arbitrary number of skies per level with this
+  // method. This field only applies when skyflatnum is used for floorpic
+  // or ceilingpic, because the rest of Doom needs to know which is sky
+  // and which isn't, etc.
+
+ int sky;
 
   // list of mobjs that are at least partially in the sector
   // thinglist is a subset of touching_thinglist

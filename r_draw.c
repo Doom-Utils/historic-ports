@@ -3,7 +3,6 @@
 //
 // $Id: r_draw.c,v 1.16 1998/05/03 22:41:46 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -36,6 +35,7 @@ rcsid[] = "$Id: r_draw.c,v 1.16 1998/05/03 22:41:46 killough Exp $";
 #include "w_wad.h"
 #include "r_main.h"
 #include "v_video.h"
+#include "m_menu.h"
 
 #define MAXWIDTH  MAX_SCREENWIDTH          /* kilough 2/8/98 */
 #define MAXHEIGHT MAX_SCREENHEIGHT
@@ -54,11 +54,13 @@ rcsid[] = "$Id: r_draw.c,v 1.16 1998/05/03 22:41:46 killough Exp $";
 byte *viewimage; 
 int  viewwidth;
 int  scaledviewwidth;
+int  scaledviewheight;        // killough 11/98
 int  viewheight;
 int  viewwindowx;
 int  viewwindowy; 
 byte *ylookup[MAXHEIGHT]; 
 int  columnofs[MAXWIDTH]; 
+int  linesize = SCREENWIDTH;  // killough 11/98
 
 // Color tables for different players,
 //  translate a limited part to another
@@ -107,9 +109,9 @@ void R_DrawColumn (void)
     return; 
                                  
 #ifdef RANGECHECK 
-  if ((unsigned)dc_x >= SCREENWIDTH
+  if ((unsigned)dc_x >= MAX_SCREENWIDTH
       || dc_yl < 0
-      || dc_yh >= SCREENHEIGHT) 
+      || dc_yh >= MAX_SCREENHEIGHT) 
     I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
 #endif 
 
@@ -153,7 +155,7 @@ void R_DrawColumn (void)
             // heightmask is the Tutti-Frutti fix -- killough
             
             *dest = colormap[source[frac>>FRACBITS]];
-            dest += SCREENWIDTH; 
+            dest += linesize;                     // killough 11/98
             if ((frac += fracstep) >= heightmask)
               frac -= heightmask;
           } 
@@ -164,10 +166,10 @@ void R_DrawColumn (void)
         while ((count-=2)>=0)   // texture height is a power of 2 -- killough
           {
             *dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-            dest += SCREENWIDTH; 
+            dest += linesize;   // killough 11/98
             frac += fracstep;
             *dest = colormap[source[(frac>>FRACBITS) & heightmask]];
-            dest += SCREENWIDTH; 
+            dest += linesize;   // killough 11/98
             frac += fracstep;
           }
         if (count & 1)
@@ -206,9 +208,9 @@ void R_DrawTLColumn (void)
     return; 
                                  
 #ifdef RANGECHECK 
-  if ((unsigned)dc_x >= SCREENWIDTH
+  if ((unsigned)dc_x >= MAX_SCREENWIDTH
       || dc_yl < 0
-      || dc_yh >= SCREENHEIGHT) 
+      || dc_yh >= MAX_SCREENHEIGHT) 
     I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
 #endif 
 
@@ -253,7 +255,7 @@ void R_DrawTLColumn (void)
             // heightmask is the Tutti-Frutti fix -- killough
               
             *dest = tranmap[(*dest<<8)+colormap[source[frac>>FRACBITS]]]; // phares
-            dest += SCREENWIDTH; 
+            dest += linesize;          // killough 11/98
             if ((frac += fracstep) >= heightmask)
               frac -= heightmask;
           } 
@@ -264,10 +266,10 @@ void R_DrawTLColumn (void)
         while ((count-=2)>=0)   // texture height is a power of 2 -- killough
           {
             *dest = tranmap[(*dest<<8)+colormap[source[(frac>>FRACBITS) & heightmask]]]; // phares
-            dest += SCREENWIDTH; 
+            dest += linesize;   // killough 11/98
             frac += fracstep;
             *dest = tranmap[(*dest<<8)+colormap[source[(frac>>FRACBITS) & heightmask]]]; // phares
-            dest += SCREENWIDTH; 
+            dest += linesize;   // killough 11/98
             frac += fracstep;
           }
         if (count & 1)
@@ -283,16 +285,16 @@ void R_DrawTLColumn (void)
 //
 
 #define FUZZTABLE 50 
-#define FUZZOFF (SCREENWIDTH)
 
+// killough 11/98: convert fuzzoffset to be screenwidth-independent
 static const int fuzzoffset[FUZZTABLE] = {
-  FUZZOFF,-FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-  FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-  FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,
-  FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-  FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,
-  FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,
-  FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF 
+  0,-1,0,-1,0,0,-1,
+  0,0,-1,0,0,0,-1,
+  0,0,0,-1,-1,-1,-1,
+  0,-1,-1,0,0,0,0,-1,
+  0,-1,0,0,-1,-1,0,
+  0,-1,-1,-1,-1,0,0,
+  0,0,-1,0,0,-1,0 
 }; 
 
 static int fuzzpos = 0; 
@@ -310,8 +312,6 @@ void R_DrawFuzzColumn(void)
 { 
   int      count; 
   byte     *dest; 
-  fixed_t  frac;
-  fixed_t  fracstep;     
 
   // Adjust borders. Low... 
   if (!dc_yl) 
@@ -328,9 +328,9 @@ void R_DrawFuzzColumn(void)
     return; 
     
 #ifdef RANGECHECK 
-  if ((unsigned) dc_x >= SCREENWIDTH
+  if ((unsigned) dc_x >= MAX_SCREENWIDTH
       || dc_yl < 0 
-      || dc_yh >= SCREENHEIGHT)
+      || dc_yh >= MAX_SCREENHEIGHT)
     I_Error ("R_DrawFuzzColumn: %i to %i at %i",
              dc_yl, dc_yh, dc_x);
 #endif
@@ -341,36 +341,28 @@ void R_DrawFuzzColumn(void)
   // Does not work with blocky mode.
   dest = ylookup[dc_yl] + columnofs[dc_x];
   
-  // Looks familiar.
-  fracstep = dc_iscale; 
-  frac = dc_texturemid + (dc_yl-centery)*fracstep; 
-
   // Looks like an attempt at dithering,
   // using the colormap #6 (of 0-31, a bit brighter than average).
+
+  count++;        // killough 1/99: minor tuning
 
   do 
     {
       // Lookup framebuffer, and retrieve
-      //  a pixel that is either one column
-      //  left or right of the current one.
+      // a pixel that is either one row
+      // above or below the current one.
       // Add index from colormap to index.
       // killough 3/20/98: use fullcolormap instead of colormaps
+      // killough 11/98: use linesize
 
-      *dest = fullcolormap[6*256+dest[fuzzoffset[fuzzpos]]]; 
+      *dest = fullcolormap[6*256+dest[fuzzoffset[fuzzpos] ^ linesize]]; 
 
-// Some varying invisibility effects can be gotten by playing // phares
-// with this logic. For example, try                          // phares
-//                                                            // phares
-//    *dest = fullcolormap[0*256+dest[FUZZOFF]];              // phares
+      dest += linesize;             // killough 11/98
 
       // Clamp table lookup index.
-      if (++fuzzpos == FUZZTABLE) 
-        fuzzpos = 0;
-        
-      dest += SCREENWIDTH;
-
-      frac += fracstep; 
-    } while (count--); 
+      fuzzpos &= (fuzzpos - FUZZTABLE) >> (8*sizeof fuzzpos-1); //killough 1/99
+    } 
+  while (--count);
 }
 
 //
@@ -397,9 +389,9 @@ void R_DrawTranslatedColumn (void)
     return; 
                                  
 #ifdef RANGECHECK 
-  if ((unsigned)dc_x >= SCREENWIDTH
+  if ((unsigned)dc_x >= MAX_SCREENWIDTH
       || dc_yl < 0
-      || dc_yh >= SCREENHEIGHT)
+      || dc_yh >= MAX_SCREENHEIGHT)
     I_Error ( "R_DrawColumn: %i to %i at %i",
               dc_yl, dc_yh, dc_x);
 #endif 
@@ -410,7 +402,9 @@ void R_DrawTranslatedColumn (void)
   // Looks familiar.
   fracstep = dc_iscale; 
   frac = dc_texturemid + (dc_yl-centery)*fracstep; 
-  
+
+  count++;        // killough 1/99: minor tuning
+
   // Here we do an additional index re-mapping.
   do 
     {
@@ -421,11 +415,11 @@ void R_DrawTranslatedColumn (void)
       //  is mapped to gray, red, black/indigo. 
       
       *dest = dc_colormap[dc_translation[dc_source[frac>>FRACBITS]]];
-      dest += SCREENWIDTH;
+      dest += linesize;      // killough 11/98
         
       frac += fracstep; 
     }
-  while (count--); 
+  while (--count); 
 } 
 
 //
@@ -567,26 +561,30 @@ void R_DrawSpan (void)
 void R_InitBuffer(int width, int height)
 { 
   int i; 
-    
+
+  linesize = SCREENWIDTH << hires;    // killough 11/98
+
   // Handle resize,
   //  e.g. smaller view windows
   //  with border and/or status bar.
 
-  viewwindowx = (SCREENWIDTH-width) >> 1; 
+  viewwindowx = (SCREENWIDTH-width) >> !hires;  // killough 11/98
 
   // Column offset. For windows.
 
-  for (i=0 ; i<width ; i++) 
+  for (i = width << hires ; i--; )   // killough 11/98
     columnofs[i] = viewwindowx + i;
     
   // Same with base row offset.
 
   viewwindowy = width==SCREENWIDTH ? 0 : (SCREENHEIGHT-SBARHEIGHT-height)>>1; 
 
+  viewwindowy <<= hires;   // killough 11/98
+
   // Preclaculate all row offsets.
 
-  for (i=0 ; i<height ; i++) 
-    ylookup[i] = screens[0] + (i+viewwindowy)*SCREENWIDTH; 
+  for (i = height << hires; i--; )
+    ylookup[i] = screens[0] + (i+viewwindowy)*linesize; // killough 11/98
 } 
 
 //
@@ -598,34 +596,16 @@ void R_InitBuffer(int width, int height)
 
 void R_FillBackScreen (void) 
 { 
-  byte    *dest, *src;
-  int     x,y; 
+  // killough 11/98: trick to shadow variables
+  int x = viewwindowx, y = viewwindowy; 
+  int viewwindowx = x >> hires, viewwindowy = y >> hires;  // killough 11/98
   patch_t *patch;
 
   if (scaledviewwidth == 320)
     return;
 
-  // killough 4/17/98: 
-  src = W_CacheLumpNum(firstflat +
-          R_FlatNumForName(gamemode == commercial ? "GRNROCK" : "FLOOR7_2"),
-            PU_CACHE);
-
-  dest = screens[1]; 
-         
-  for (y=0 ; y<SCREENHEIGHT-SBARHEIGHT ; y++) 
-    { 
-      int x;
-      for (x=0 ; x<SCREENWIDTH/64 ; x++) 
-        { 
-          memcpy(dest, src+((y&63)<<6), 64); 
-          dest += 64; 
-        } 
-      if (SCREENWIDTH&63) 
-        { 
-          memcpy(dest, src+((y&63)<<6), SCREENWIDTH&63); 
-          dest += (SCREENWIDTH&63); 
-        } 
-    } 
+  // killough 11/98: use the function in m_menu.c
+  M_DrawBackground(gamemode==commercial ? "GRNROCK" : "FLOOR7_2", screens[1]);
         
   patch = W_CacheLumpName("brdr_t", PU_CACHE);
 
@@ -634,16 +614,16 @@ void R_FillBackScreen (void)
 
   patch = W_CacheLumpName("brdr_b",PU_CACHE);
 
-  for (x=0; x<scaledviewwidth; x+=8)
-    V_DrawPatch (viewwindowx+x,viewwindowy+viewheight,1,patch);
+  for (x=0; x<scaledviewwidth; x+=8)   // killough 11/98:
+    V_DrawPatch (viewwindowx+x,viewwindowy+scaledviewheight,1,patch);
 
   patch = W_CacheLumpName("brdr_l",PU_CACHE);
 
-  for (y=0; y<viewheight; y+=8)
+  for (y=0; y<scaledviewheight; y+=8)             // killough 11/98
     V_DrawPatch (viewwindowx-8,viewwindowy+y,1,patch);
   patch = W_CacheLumpName("brdr_r",PU_CACHE);
 
-  for (y=0; y<viewheight; y+=8)
+  for (y=0; y<scaledviewheight; y+=8)             // killough 11/98
     V_DrawPatch(viewwindowx+scaledviewwidth,viewwindowy+y,1,patch);
 
   // Draw beveled edge. 
@@ -658,12 +638,12 @@ void R_FillBackScreen (void)
               W_CacheLumpName("brdr_tr",PU_CACHE));
     
   V_DrawPatch(viewwindowx-8,
-              viewwindowy+viewheight,
+              viewwindowy+scaledviewheight,             // killough 11/98
               1,
               W_CacheLumpName("brdr_bl",PU_CACHE));
     
   V_DrawPatch(viewwindowx+scaledviewwidth,
-              viewwindowy+viewheight,
+              viewwindowy+scaledviewheight,             // killough 11/98
               1,
               W_CacheLumpName("brdr_br",PU_CACHE));
 } 
@@ -674,6 +654,12 @@ void R_FillBackScreen (void)
 
 void R_VideoErase(unsigned ofs, int count)
 { 
+  if (hires)     // killough 11/98: hires support
+    {
+      ofs = ofs*4 - (ofs % SCREENWIDTH)*2;   // recompose offset
+      memcpy(screens[0]+ofs, screens[1]+ofs, count*=2);   // LFB copy.
+      ofs += SCREENWIDTH*2;
+    }
   memcpy(screens[0]+ofs, screens[1]+ofs, count);   // LFB copy.
 } 
 
@@ -682,36 +668,34 @@ void R_VideoErase(unsigned ofs, int count)
 // Draws the border around the view
 //  for different size windows?
 //
+// killough 11/98: 
+// Rewritten to avoid relying on screen wraparound, so that it
+// can scale to hires automatically in R_VideoErase().
+//
 
-void V_MarkRect(int x, int y, int width, int height); 
- 
 void R_DrawViewBorder(void) 
 { 
-  int top, side, ofs, i;
+  int side, ofs, i;
  
   if (scaledviewwidth == SCREENWIDTH) 
-    return; 
-  
-  top = ((SCREENHEIGHT-SBARHEIGHT)-viewheight)/2; 
-  side = (SCREENWIDTH-scaledviewwidth)/2; 
- 
-  // copy top and one line of left side 
-  R_VideoErase (0, top*SCREENWIDTH+side); 
- 
-  // copy one line of right side and bottom 
-  ofs = (viewheight+top)*SCREENWIDTH-side; 
-  R_VideoErase (ofs, top*SCREENWIDTH+side); 
-  
-  // copy sides using wraparound 
-  ofs = top*SCREENWIDTH + SCREENWIDTH-side; 
-  side <<= 1;
-    
-  for (i=1 ; i<viewheight ; i++) 
+    return;
+
+  // copy top
+  for (ofs = 0, i = viewwindowy >> hires; i--; ofs += SCREENWIDTH)
+    R_VideoErase(ofs, SCREENWIDTH); 
+
+  // copy sides
+  for (side = viewwindowx >> hires, i = scaledviewheight; i--;)
     { 
-      R_VideoErase (ofs, side); 
-      ofs += SCREENWIDTH; 
+      R_VideoErase(ofs, side); 
+      ofs += SCREENWIDTH;
+      R_VideoErase(ofs - side, side); 
     } 
 
+  // copy bottom 
+  for (i = viewwindowy >> hires; i--; ofs += SCREENWIDTH)
+    R_VideoErase(ofs, SCREENWIDTH); 
+ 
   V_MarkRect (0,0,SCREENWIDTH, SCREENHEIGHT-SBARHEIGHT); 
 } 
 

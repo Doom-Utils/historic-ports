@@ -1,10 +1,10 @@
 =====================================================================
-                    BOOM.TXT    10/18/98
+                    README.TXT    05/25/98
 =====================================================================
 
-BOOM v2.02 --- a modified port of the released DOOM source
+BOOM v2.01 --- a modified port of the released DOOM source
 
-Final Phase 1 Release
+Phase 1 Release
 
 By TeamTNT
 
@@ -452,7 +452,7 @@ Section 3. Playing BOOM in Single Player mode
 BOOM play features
 -------------------
 
-*No Static Limits*
+*No Limits*
 
 While wad authors are the ones most interested in BOOM's lack of limits,
 players will also benefit by never getting a "Visplane Overflow" or "Too
@@ -730,21 +730,6 @@ Command line parameters
 
 *Loading Options
 
- *New: You may specify .wad, .deh, .bex and .lmp files without using
-       the -file, -deh and -playdemo switches, and they will be understood
-       and treated as if their respective switches had been specified.
-       This only works if those files appear on the command line before
-       any switches.  For example,
-          boom fred wilma flint.bex pebbles.lmp
-       is the equivalent of
-          boom -file fred.wad wilma.wad -deh flint.bex -playdemo pebbles.lmp
-       Remember that this won't work:
-          boom -nomonsters fred wilma
-       but this will:
-          boom fred wilma -nomonsters
-       The first -switch on the command line ends the auto-identification
-       functionality.
-
 -file <pwadname> <pwadname>...
 
  The -file parameter is followed by the names of the PWADs (DOOM levels
@@ -758,14 +743,11 @@ Command line parameters
 
 -warp <e m>
 -warp <m>
--warp
 
  The -warp option allows you to "warp" directly to a level rather than going
  thru the startup menus. In DOOM, two numbers are required, first the
  episode number 1-4, then the mission number 1-9.  In DOOM2 only a single
  number is required, the Map or level number 1-32.
- *New: if no level number is specified with -warp, BOOM will automatically 
-       warp to the first level present in any pwads that have been loaded.
 
 -episode <n>
 
@@ -1144,7 +1126,8 @@ IPXBOOM.EXE.......IPXSETUP for BOOM
 CSDPMI4B.ZIP......DJGPP v2 runtime support including docs and config util
 CWSDPMI.EXE.......DJGPP v2 runtime support executable
 GO32-V2.EXE.......DJGPP tool to provide info on DPMI setup
-COPYING...........DJGPP copyright, DOOM source and binary copyright
+COPYING...........DJGPP copyright and distribution license
+DOOMLIC.TXT.......Software license for DOOM sources and BOOM
 
 DETH for BOOM (optional) DETH415b.ZIP
 
@@ -1203,16 +1186,6 @@ BOOMEDIT.ZIP......BOOM editor's tutorial wad by Jim Flynn
 --------------------------------------
 Section 8. How to report bugs in BOOM
 --------------------------------------
-
-If an error message during loading is involved in the problem, you'll
-want to report it precisely, as that will help us identify the
-problem. In order to capture the initialization screen completely use
-the following command line:
-
-REDIR -eo BOOM (normal boom command line parameters here) > errlog.txt
-
-After exiting BOOM, the errlog.txt file will contain the full
-initialization script so you can report the error exactly.
 
 If you find a bug in BOOM you should visit
 

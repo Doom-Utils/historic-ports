@@ -3,7 +3,6 @@
 //
 // $Id: i_sound.h,v 1.4 1998/05/03 22:31:58 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //      System interface, sound.
@@ -105,8 +105,8 @@ void I_StopSong(int handle);
 void I_UnRegisterSong(int handle);
 
 // Allegro card support jff 1/18/98
-extern  int snd_card;
-extern  int mus_card;
+extern  int snd_card, default_snd_card;  // killough 10/98: add default_*
+extern  int mus_card, default_mus_card;
 extern  int detect_voices; // jff 3/4/98 option to disable voice detection
 
 #endif

@@ -3,7 +3,6 @@
 //
 // $Id: am_map.h,v 1.7 1998/05/10 12:05:18 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -96,8 +95,11 @@ extern int mapcolor_sprt;     // general sprite color
 extern int mapcolor_hair;     // crosshair color
 extern int mapcolor_sngl;     // single player arrow color
 extern int mapcolor_plyr[4];  // colors for player arrows in multiplayer
+extern int mapcolor_frnd;     // killough 8/8/98: colors for friends
 //jff 3/9/98
 extern int map_secret_after;  // secrets do not appear til after bagged
+
+extern int map_point_coordinates;  // killough 10/98
 
 #endif
 

@@ -2,7 +2,8 @@
 //
 // $Id: mmus2mid.h,v 1.6 1998/05/10 23:00:48 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
+//-----------------------------------------------------------------------------
+//
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -20,8 +21,6 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
-//
-//-----------------------------------------------------------------------------
 //
 #if !defined( MMUS2MID_H )
 #define MMUS2MID_H

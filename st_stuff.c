@@ -3,7 +3,6 @@
 //
 // $Id: st_stuff.c,v 1.46 1998/05/06 16:05:40 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -642,6 +641,11 @@ void ST_doPaletteStuff(void)
   byte*       pal;
   int cnt = plyr->damagecount;
 
+#ifdef BETA
+  // killough 7/14/98: beta version did not cause red berserk palette
+  if (!beta_emulation)
+#endif
+
   if (plyr->powers[pw_strength])
     {
       // slowly fade the berzerk out
@@ -666,6 +670,12 @@ void ST_doPaletteStuff(void)
         palette += STARTBONUSPALS;
       }
     else
+#ifdef BETA
+      // killough 7/14/98: beta version did not cause green palette
+      if (beta_emulation)
+        palette = 0;
+      else
+#endif
       if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
         palette = RADIATIONPAL;
       else
@@ -1105,7 +1115,8 @@ void ST_Init(void)
 {
   veryfirsttime = 0;
   ST_loadData();
-  screens[4] = Z_Malloc(ST_WIDTH*ST_HEIGHT, PU_STATIC, 0);
+  // killough 11/98: allocate enough for hires
+  screens[4] = Z_Malloc(ST_WIDTH*ST_HEIGHT*4, PU_STATIC, 0);
 }
 
 //----------------------------------------------------------------------------

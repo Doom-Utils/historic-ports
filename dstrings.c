@@ -3,7 +3,6 @@
 //
 // $Id: dstrings.c,v 1.5 1998/05/04 21:34:24 thldrmn Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -22,6 +21,7 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
 //
+//
 // DESCRIPTION:
 //   Globally defined strings.
 // 
@@ -30,18 +30,14 @@
 static const char
 rcsid[] = "$Id: dstrings.c,v 1.5 1998/05/04 21:34:24 thldrmn Exp $";
 
-
-#ifdef __GNUG__
-#pragma implementation "dstrings.h"
-#endif
 #include "dstrings.h"
-
 
 // killough 1/18/98: remove hardcoded limit, add const:
 const char *const endmsg[]=
 {
   // DOOM1
   QUITMSG,
+
   "please don't leave, there's more\ndemons to toast!",
   "let's beat it -- this is turning\ninto a bloodbath!",
   "i wouldn't leave if i were you.\ndos is much worse.",

@@ -3,7 +3,6 @@
 //
 // $Id: i_video.h,v 1.4 1998/05/03 22:40:58 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -30,11 +29,9 @@
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
 
-#include "doomtype.h"
+#include <allegro.h>
 
-#ifdef __GNUG__
-#pragma interface
-#endif
+#include "doomtype.h"
 
 // Called by D_DoomMain,
 // determines the hardware configuration
@@ -57,7 +54,13 @@ void I_ReadScreen (byte* scr);
 int I_DoomCode2ScanCode(int);   // killough
 int I_ScanCode2DoomCode(int);   // killough
 
+void I_ResetScreen(void);   // killough 10/98
+
 extern int use_vsync;  // killough 2/8/98: controls whether vsync is called
+extern int page_flip;  // killough 8/15/98: enables page flipping (320x200)
+extern int disk_icon;  // killough 10/98
+extern int hires;      // killough 11/98
+extern BITMAP *screens0_bitmap;   // killough 12/98
 
 #endif
 

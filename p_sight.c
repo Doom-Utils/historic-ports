@@ -3,7 +3,6 @@
 //
 // $Id: p_sight.c,v 1.7 1998/05/07 00:55:55 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -53,8 +52,9 @@ typedef struct {
 // Returns side 0 (front), 1 (back), or 2 (on).
 //
 // killough 4/19/98: made static, cleaned up
+// killough 12/98: made external
 
-static int P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
+int P_DivlineSide(fixed_t x, fixed_t y, const divline_t *node)
 {
   fixed_t left, right;
   return
@@ -231,7 +231,6 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
     return false;
 
   // killough 4/19/98: make fake floors and ceilings block monster view
-
   if ((s1->heightsec != -1 &&
        ((t1->z + t1->height <= sectors[s1->heightsec].floorheight &&
          t2->z >= sectors[s1->heightsec].floorheight) ||
@@ -244,6 +243,10 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
         (t2->z >= sectors[s2->heightsec].ceilingheight &&
          t1->z + t2->height <= sectors[s2->heightsec].ceilingheight))))
     return false;
+
+  // killough 11/98: shortcut for melee situations
+  if (t1->subsector == t2->subsector)     // same subsector? obviously visible
+    return true;
 
   // An unobstructed LOS is possible.
   // Now look from eyes of t1 to any part of t2.

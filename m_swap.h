@@ -3,7 +3,6 @@
 //
 // $Id: m_swap.h,v 1.3 1998/05/03 23:14:03 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -27,13 +26,8 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __M_SWAP__
 #define __M_SWAP__
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 // Endianess handling.
 // WAD files are stored little endian.

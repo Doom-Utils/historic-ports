@@ -1,11 +1,48 @@
 Log of changes to Boom Engine
 
 Lee Killough
-killough@rsn.hp.com
-http://classicgaming.com/doom/
-http://www.trailerpark.com/tequila/killough/
 
 ---------------------------------------------------------------------------
+
+7/26/98 (post-Phase I)
+
+Enhanced movement clipping to allow things to move out of closed doors if
+partially stuck inside them.
+
+Fixed Doom sky hack bug, in which invulnerability colormap was ignored when
+drawing skies.
+
+7/24/98 (post-Phase I)
+
+Fixed monsters stuck over ledges, and things stuck after silent l2l 
+teleporters, by relaxing movement clipping to allow monsters to move back
+towards ledge if already hanging at its height, and by allowing objects to
+move away from 1s walls if stuck partially inside them. Both optioned off
+in pre-v2.02 demos, to preserve demo sync.
+
+7/21/98 (post-Phase I)
+
+Fixed dogs to count towards kills, but made friendly monsters not count
+towards kills. Made TNTEM cheat kill all non-friendly monsters first,
+and then all of the friendly ones if it's used again. Fixed friendly PE
+spawning.
+
+7/19/98 (post-Phase I)
+
+Added classic BFG weapon support. Old BFG threw many fireballs instead of
+one big green flash. The two classic fireballs are represented by PLS1 and
+PLS2 sprites. For more details, see my web page.
+
+Added MF_FRIEND flag, which indicates friendly monsters. Friendly monsters
+help the player by attacking other monsters. Friendly Arch-Viles and Boss
+Brains (re)spawn monsters with the same friendliness as the spawner. Initial
+implementation allows up to 3 co-op players to be replaced by dogs in
+single-player games. The dogs are represented by DOGS sprites. Any monsters
+can be made friendly, at the start or during the middle of the game.
+
+Made monster infighting optional, but preserving old demos. If infighting
+is disabled, monsters will not attack each other to death if provoked,
+making it harder for player to trick monsters into fighting each other.
 
 6/3/98  (post-source-code release):
 

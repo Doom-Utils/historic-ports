@@ -3,7 +3,6 @@
 //
 // $Id: i_net.c,v 1.4 1998/05/16 09:41:03 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -21,6 +20,7 @@
 //  along with this program; if not, write to the Free Software
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 
 //  02111-1307, USA.
+//
 //
 // DESCRIPTION:
 //
@@ -40,9 +40,6 @@ rcsid[] = "$Id: i_net.c,v 1.4 1998/05/16 09:41:03 jim Exp $";
 #include <dpmi.h>
 #include <sys/nearptr.h>
 
-#ifdef __GNUG__
-#pragma implementation "i_net.h"
-#endif
 #include "i_net.h"
 
 void    NetSend (void);

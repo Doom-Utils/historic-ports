@@ -1,8 +1,7 @@
 //-----------------------------------------------------------------------------
 //
-// $Id: version.h,v 1.4 1998/06/21 09:11:05 jim Exp $
+// $Id: version.h,v 1.3 1998/04/20 13:29:58 jim Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -30,7 +29,7 @@
 #include "z_zone.h"  /* memory allocation wrappers -- killough */
 
 // DOOM version
-enum { VERSION =  202 };
+enum { VERSION =  203 };
 
 extern const char version_date[];
 
@@ -39,9 +38,6 @@ extern const char version_date[];
 //----------------------------------------------------------------------------
 //
 // $Log: version.h,v $
-// Revision 1.4  1998/06/21  09:11:05  jim
-// updating version number
-//
 // Revision 1.3  1998/04/20  13:29:58  jim
 // Update BOOM version, BOOM.TXT
 //

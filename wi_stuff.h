@@ -3,7 +3,6 @@
 //
 // $Id: wi_stuff.h,v 1.3 1998/05/04 21:36:12 thldrmn Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -41,7 +40,6 @@ typedef enum
   NoState = -1,
   StatCount,
   ShowNextLoc
-
 } stateenum_t;
 
 // Called by main loop, animate the intermission.
@@ -53,6 +51,10 @@ void WI_Drawer (void);
 
 // Setup for an intermission screen.
 void WI_Start(wbstartstruct_t*   wbstartstruct);
+
+void WI_checkForAccelerate(void);      // killough 11/98
+
+void WI_DrawBackground(void);          // killough 11/98
 
 #endif
 

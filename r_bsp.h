@@ -3,7 +3,6 @@
 //
 // $Id: r_bsp.h,v 1.5 1998/05/03 22:48:03 killough Exp $
 //
-//  BOOM, a modified and improved DOOM engine
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
@@ -29,10 +28,6 @@
 
 #ifndef __R_BSP__
 #define __R_BSP__
-
-#ifdef __GNUG__
-#pragma interface
-#endif
 
 extern seg_t    *curline;
 extern side_t   *sidedef;
