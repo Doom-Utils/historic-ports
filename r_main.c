@@ -28,7 +28,6 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 
 
-#include <stdlib.h>
 #include <math.h>
 
 
@@ -42,6 +41,7 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 #include "r_sky.h"
 #include "st_stuff.h"
 
+#include "i_system.h"
 
 
 
@@ -691,7 +691,9 @@ void R_ExecuteSetViewSize (void)
     else
     {
 	scaledviewwidth = (setblocks*SCREENWIDTH/10)&~7;
-	viewheight = (setblocks*(SCREENHEIGHT-ST_HEIGHT)/10)&~7;
+	// Fixes 400x300 etc.
+	viewheight=(setblocks<10)?(setblocks*(SCREENHEIGHT-ST_HEIGHT)/10)&~7:
+                                  SCREENHEIGHT-ST_HEIGHT;
     }
     
 //    detailshift = setdetail;
@@ -783,22 +785,22 @@ extern int	screenblocks;
 void R_Init (void)
 {
     R_InitData ();
-    printf ("\nR_InitData");
+    I_Printf(".");
     R_InitPointToAngle ();
-    printf ("\nR_InitPointToAngle");
+    I_Printf(".");
     R_InitTables ();
     // viewwidth / viewheight / detailLevel are set by the defaults
-    printf ("\nR_InitTables");
+    I_Printf(".");
 
     R_SetViewSize (screenblocks, detailLevel);
     R_InitPlanes ();
-    printf ("\nR_InitPlanes");
+    I_Printf(".");
     R_InitLightTables ();
-    printf ("\nR_InitLightTables");
+    I_Printf(".");
     R_InitSkyMap ();
-    printf ("\nR_InitSkyMap");
+    I_Printf(".");
     R_InitTranslationTables ();
-    printf ("\nR_InitTranslationsTables");
+    I_Printf(".");
 	
     framecount = 0;
 }

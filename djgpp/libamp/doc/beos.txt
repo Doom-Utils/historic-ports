@@ -1,0 +1,33 @@
+These options should be put in the makefile manually , since configure 
+will probably not work for BeOS. This is a temporary workaround.
+ -- tomislav 
+
+CC = mwcc
+DEFINES = -DOS_BeOS -DARCH_PPC
+CFLAGS = -dialect cplus -O7 -prefix BeHeaders ${DEFINES} ${DEBUG}
+LDFLAGS =
+
+README.BeOS
+
+This is a quick port of AMP 0.7.4 pre9. The BeOS port will
+probably make it in the official 0.7.4 release. All command line
+options should work now. The DualPlayer zclass should be
+available once we get CW R3 full. Note that the play thread
+is currently not B_REAL_TIME, so will hear gaps if the load
+on your machine is heavy. Changeable with TManager..
+
+New in the AA DR9 version:
+volume control (try the -volume switch)
+better buffering code, should "stabilize" CPU usage.
+possibly works on Dual 66Mhz BeBoxes now. Let me know!!!
+
+Comments about the BeOS version should be send to me at:
+arloafoe@cs.vu.nl
+http://www.cs.vu.nl/~arloafoe/
+
+Have fun!!!
+
+Adnans
+
+Greetz to: Tao, Felix, Tinic, Vacu, Ramig, Polyfemos, Hoern, Tisi, Yossy,
+Belou, Cebix, Earthy, Kender and everyone I forgot.. ;-)

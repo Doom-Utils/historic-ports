@@ -32,13 +32,13 @@ rcsid[] = "$Id: f_finale.c,v 1.5 1997/02/03 21:26:34 b1 Exp $";
 #include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
-#include "multires.h"
+#include "v_res.h"
 #include "w_wad.h"
 #include "s_sound.h"
 
 // Data.
 #include "dstrings.h"
-#include "sounds.h"
+#include "lu_sound.h"
 
 #include "doomstat.h"
 #include "r_state.h"
@@ -105,13 +105,11 @@ void F_StartFinale (void)
     // Okay - IWAD dependend stuff.
     // This has been changed severly, and
     //  some stuff might have changed in the process.
-    switch ( gamemode )
+    switch ( gamemission )
     {
 
       // DOOM 1 - E1, E3 or E4, but each nine missions
-      case shareware:
-      case registered:
-      case retail:
+      case doom:
       {
 	S_ChangeMusic(mus_victor, true);
 	
@@ -141,7 +139,9 @@ void F_StartFinale (void)
       }
       
       // DOOM II and missions packs with E1, M34
-      case commercial:
+      case doom2:
+      case pack_plut:
+      case pack_tnt:
       {
 	  S_ChangeMusic(mus_read_m, true);
 
@@ -235,7 +235,7 @@ void F_Ticker (void)
     int		i;
     
     // check for skipping
-    if ( (gamemode == commercial)
+    if ( (gamemission != doom)
       && ( finalecount > 50) )
     {
       // go on to the next level
@@ -261,7 +261,7 @@ void F_Ticker (void)
 	return;
     }
 	
-    if ( gamemode == commercial)
+    if ( gamemission != doom)
 	return;
 		
     if (!finalestage && finalecount>strlen (finaletext)*TEXTSPEED + TEXTWAIT)
@@ -773,7 +773,7 @@ void F_Drawer (void)
 	switch (gameepisode)
 	{
 	  case 1:
-	    if ( gamemode == retail )
+             if (W_CheckNumForName("HELP2") < 0)
 	      V_DrawPatchInDirect (0,0,0,
 			 W_CacheLumpName("CREDIT",PU_CACHE));
 	    else

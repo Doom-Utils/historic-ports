@@ -737,19 +737,21 @@
 	    "                                Shareware!\n"\
 	    "===========================================================================\n"
 #define TRKUDOOMSTART\
- "                         The Ultimate DOOM Startup v%i.%i                        "
+ "The Ultimate DOOM"
 #define TRKSHAREDOOMSTART\
- "                            DOOM Shareware Startup v%i.%i                        "
+ "DOOM (Shareware)"
 #define TRKREGDOOMSTART\
- "                            DOOM Registered Startup v%i.%i                       "
+ "DOOM (Registered)"
 #define TRKDOOM2START\
- "                         DOOM 2: Hell on Earth v%i.%i                            "
+ "DOOM 2: Hell on Earth"
 #define TRKPLUTSTART\
- "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+ "DOOM 2: The Plutonia Experiment"
 #define TRKTNTSTART\
- "                     DOOM 2: TNT - Evilution v%i.%i                              "
+ "DOOM 2: TNT - Evilution"
 #define TRKPUBDOOMSTART\
- "                     Public DOOM - v%i.%i                                        "
+ "DOOM"
+#define TRKDOSDOOMSTART\
+ "DOSDoom"
 
 
 

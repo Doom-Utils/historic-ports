@@ -557,19 +557,21 @@
 	    "                                Shareware!\n"\
 	    "===========================================================================\n"
 #define FRNUDOOMSTART\
- "                         The Ultimate DOOM Startup v%i.%i                        "
+ "The Ultimate DOOM"
 #define FRNSHAREDOOMSTART\
- "                            DOOM Shareware Startup v%i.%i                        "
+ "DOOM (Shareware)"
 #define FRNREGDOOMSTART\
- "                            DOOM Registered Startup v%i.%i                       "
+ "DOOM (Registered)"
 #define FRNDOOM2START\
- "                         DOOM 2: Hell on Earth v%i.%i                            "
+ "DOOM 2: Hell on Earth"
 #define FRNPLUTSTART\
- "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+ "DOOM 2: The Plutonia Experiment"
 #define FRNTNTSTART\
- "                     DOOM 2: TNT - Evilution v%i.%i                              "
+ "DOOM 2: TNT - Evilution"
 #define FRNPUBDOOMSTART\
- "                     Public DOOM - v%i.%i                                        "
+ "DOOM"
+#define FRNDOSDOOMSTART\
+ "DOSDoom"
 
 
 

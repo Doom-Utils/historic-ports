@@ -43,10 +43,10 @@ rcsid[] = "$Id: wi_stuff.c,v 1.7 1997/02/03 22:45:13 b1 Exp $";
 #include "doomstat.h"
 
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
 // Needs access to LFB.
-#include "multires.h"
+#include "v_res.h"
 
 #include "wi_stuff.h"
 
@@ -494,7 +494,7 @@ WI_drawOnLnode
     else
     {
 	// DEBUG
-	printf("Could not place patch on level %d", n+1); 
+	I_Printf("Could not place patch on level %d", n+1); 
     }
 }
 
@@ -505,7 +505,7 @@ void WI_initAnimatedBack(void)
     int		i;
     anim_t*	a;
 
-    if (gamemode == commercial)
+    if (gamemission != doom)
 	return;
 
     if (wbs->epsd > 2)
@@ -534,7 +534,7 @@ void WI_updateAnimatedBack(void)
     int		i;
     anim_t*	a;
 
-    if (gamemode == commercial)
+    if (gamemission != doom)
 	return;
 
     if (wbs->epsd > 2)
@@ -779,7 +779,7 @@ void WI_drawShowNextLoc(void)
     // draw animated background
     WI_drawAnimatedBack(); 
 
-    if ( gamemode != commercial)
+    if ( gamemission == doom)
     {
   	if (wbs->epsd > 2)
 	{
@@ -803,7 +803,7 @@ void WI_drawShowNextLoc(void)
     }
 
     // draws which level you are entering..
-    if ( (gamemode != commercial)
+    if ( (gamemission == doom)
 	 || wbs->next != 30)
 	WI_drawEL();  
 
@@ -960,7 +960,7 @@ void WI_updateDeathmatchStats(void)
 	{
 	    S_StartSound(0, sfx_slop);
 
-	    if ( gamemode == commercial)
+	    if ( gamemission != doom)
 		WI_initNoState();
 	    else
 		WI_initShowNextLoc();
@@ -1242,7 +1242,7 @@ void WI_updateNetgameStats(void)
 	if (acceleratestage)
 	{
 	    S_StartSound(0, sfx_sgcock);
-	    if ( gamemode == commercial )
+	    if ( gamemission != doom )
 		WI_initNoState();
 	    else
 		WI_initShowNextLoc();
@@ -1419,7 +1419,7 @@ void WI_updateStats(void)
 	{
 	    S_StartSound(0, sfx_sgcock);
 
-	    if (gamemode == commercial)
+            if (gamemission != doom)
 		WI_initNoState();
 	    else
 		WI_initShowNextLoc();
@@ -1511,7 +1511,7 @@ void WI_Ticker(void)
     if (bcnt == 1)
     {
 	// intermission music
-  	if ( gamemode == commercial )
+        if (gamemission != doom)
 	  S_ChangeMusic(mus_dm2int, true);
 	else
 	  S_ChangeMusic(mus_inter, true); 
@@ -1545,16 +1545,9 @@ void WI_loadData(void)
     char	name[9];
     anim_t*	a;
 
-    if (gamemode == commercial)
+    sprintf(name, "WIMAP%d", wbs->epsd);
+    if ((gamemission != doom) || (W_CheckNumForName(name) < 0))
 	strcpy(name, "INTERPIC");
-    else 
-	sprintf(name, "WIMAP%d", wbs->epsd);
-    
-    if ( gamemode == retail )
-    {
-      if (wbs->epsd == 3)
-	strcpy(name,"INTERPIC");
-    }
 
     // background
     bg = W_CacheLumpName(name, PU_CACHE);    
@@ -1572,7 +1565,7 @@ void WI_loadData(void)
     // }
     //}
 
-    if (gamemode == commercial)
+    if (gamemission != doom)
     {
 	NUMCMAPS = 32;								
 	lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
@@ -1721,7 +1714,7 @@ void WI_unloadData(void)
     for (i=0 ; i<10 ; i++)
 	Z_ChangeTag(num[i], PU_CACHE);
     
-    if (gamemode == commercial)
+    if (gamemission != doom)
     {
   	for (i=0 ; i<NUMCMAPS ; i++)
 	    Z_ChangeTag(lnames[i], PU_CACHE);
@@ -1806,18 +1799,6 @@ void WI_initVariables(wbstartstruct_t* wbstartstruct)
     wbs = wbstartstruct;
 
 #ifdef RANGECHECKING
-    if (gamemode != commercial)
-    {
-      if ( gamemode == retail )
-	RNGCHECK(wbs->epsd, 0, 3);
-      else
-	RNGCHECK(wbs->epsd, 0, 2);
-    }
-    else
-    {
-	RNGCHECK(wbs->last, 0, 8);
-	RNGCHECK(wbs->next, 0, 8);
-    }
     RNGCHECK(wbs->pnum, 0, MAXPLAYERS);
     RNGCHECK(wbs->pnum, 0, MAXPLAYERS);
 #endif
@@ -1837,9 +1818,6 @@ void WI_initVariables(wbstartstruct_t* wbstartstruct)
     if (!wbs->maxsecret)
 	wbs->maxsecret = 1;
 
-    if ( gamemode != retail )
-      if (wbs->epsd > 2)
-	wbs->epsd -= 3;
 }
 
 void WI_Start(wbstartstruct_t* wbstartstruct)

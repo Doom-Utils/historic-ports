@@ -29,10 +29,8 @@
 
 // All important printed strings.
 // Language selection (message strings).
-#include "strings.h"
-void initstrings();
-int searchstring(char *origtext, char *newtext);
-void applystrings();
+#include "lu_str.h"
+void LU_InitLanguage();
 
 // Misc. other strings.
 #define SAVEGAMENAME	"doomsav"

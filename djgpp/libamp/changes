@@ -1,0 +1,99 @@
+###---> in 0.7.1
+- indicate that we don't know how to decode MPEG2.5. sorry.
+- a dummy crc check (we can play crc protected files now)
+- an altogether better huffman decoding - a complete rewrite
+- skip first, or first few, frames if main_data_begin is non zero/too big
+- fixed mono playing - a bug in transform.c
+- fixed /dev/dsp initialization 
+- included Karl's IRIX port
+- fixed a bug in fras_l and fras_s
+- added a part of huffman table 13 that was missing
+- included Karl's optimization patch - a huge speedup
+- included Lutz' HP/UX port
+
+###---> in 0.7.2
+- added clipping code
+- fixed a bug in huffman decoding
+- included Dan Nelson's FreeBSD port
+- Edouard's xmpeg3 gui is a part of the distribution now
+
+###---> in 0.7.3
+Andrew Richards:
+- Reorganised audio.c (alot!)
+- Moved the audio device specific stuff to separate architecture files
+- Added a pipe based audio buffer
+- Added an args.c for argument processing with getopt_long()
+- Added preliminary volume control
+- Added the ability to play more than one file
+- Added stdin and stdout support
+- Added configure support
+- Added some debugging features
+Karl Oygard:
+- optimised the Huffman decoder 
+- more optimisations in transform.c, misc2.c, getbits.c, ...
+Tomislav Uzelac:
+- new imdct algorithm (thanks to Jeff Tsay, Mikko Tommila)
+- minor bugfixes 
+
+###---> in 0.7.4
+- moved the initial memcpy() from audio.c into fillbfr() itself
+- enhanced synchronization code 
+- indicate that we don't know how to decode layer 1 or 2 (yet)
+- indicate that we don't know how to decode free format bitstreams
+- more optimisations (by Karl, of course), but no assembly yet 
+- IRIX support fixed (Karl)
+- AIX code included (George Colouris)
+- -fomit-frame-pointer option reinstated
+- ffwd/rew capabilities added
+- buffer implementation improved (Karl)
+- sajber jukebox support in place (Edouard)
+- layer2 is supported (not finished though)
+- PAUSE bug fixed (Lutz)
+- BeOS port integrated into the main source tree (Andy Lo A Foe)
+- Linux realtime sound driver support (Thomas Sailer)
+- most of poly() re-written in assembly for i586 (Karl)
+- speedups in requantize_ms
+- a new configure script
+/* 0.7.4 never actually got released ... */
+
+###---> in 0.7.5-0
+- fixed the core dump when using rt with -buffer option
+- removed buffer status display
+- show_header rewritten
+
+###---> in 0.7.5-1
+- fixed intensity stereo bug
+- moved gui control stuff to guicontrol.c
+- removed a call to AudioBufferFlush() when gui is paused
+
+###---> in 0.7.5-99
+- fixed Kyrandia_Forrest bug (in imdct)
+- downmix stereo->mono
+- fixed mono playing (Justin Frankel)
+- changes to configure
+
+###---> in 0.7.6
+- added initialise_decoder(); t_43[] is now initialised on startup
+- make amp just die in case euid!=0 when rt is enabled (temporary)
+- disabled -convert with rt since it doesn't work (tmp)
+- removed ld()
+- added a generic get_input() to switch between prefetch/plain reads
+- created initialize_globals()
+- added a call to initialize_globals() to decoder_process()
+- fixed premature end of playing in rt
+- fixed exit condition in prefetch_get_input(); short files are now OK
+- removed snd_eof from globals (not needed)
+- commented out perror()s in rt_play (unneeded error messages sometimes)
+- fixed IRIX premature end of playing (Karl)
+- fixed a bug in gethdr() which affected recognition of MPEG2.5 files
+- added xxx_fancy_audio() functions to encapsulate direct-to-DMA stuff
+- reorganized audio.c to enable merging
+- re-fixed a problem with some very old mp3 files (huffman tables 4 & 14)
+- /dev/dsp is now opened in setup_fancy_audio
+- commented out cinfo.ptr=0 from start_fancy_audio()
+- more new functions: prefetch_initial_fill(), set_realtime_priority()
+- realtime patches for HPUX (Lutz) - NOT FINISHED YET!!!
+- merged realtime and non-realtime decoder loop (yeah!!!)
+- resetting s and res to 0 in initialise globals. (Leif, let me know
+  if this helps)
+- configure changes, mainly for SunOS and HPUX

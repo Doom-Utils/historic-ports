@@ -37,7 +37,7 @@ rcsid[] = "$Id: p_pspr.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 #include "doomstat.h"
 
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
 #include "p_pspr.h"
 
@@ -46,10 +46,6 @@ rcsid[] = "$Id: p_pspr.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 #define WEAPONBOTTOM	128*FRACUNIT
 #define WEAPONTOP		32*FRACUNIT
-
-
-// plasma cells for a bfg attack
-#define BFGCELLS		(deh_bfgcells)
 
 
 //
@@ -190,7 +186,7 @@ boolean P_CheckAmmo (player_t* player)
 	}
 	else if (player->weaponowned[wp_supershotgun] 
 		 && player->ammo[am_shell]>2
-		 && (gamemode == commercial) )
+		 && (gamemission != doom) )
 	{
 	    player->pendingweapon = wp_supershotgun;
 	}

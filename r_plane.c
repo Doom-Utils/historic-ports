@@ -255,7 +255,7 @@ R_FindPlane
 	
     if (picnum == skyflatnum)
     {
-	height = 0;			// all skys map together
+//	height = 0;			// all skys map together
 	lightlevel = 0;
     }
 	

@@ -1,0 +1,54 @@
+# Generated automatically from Makefile.in by configure.
+# Makefile  - amp  audio mpeg player v0.7
+# tomislav uzelac  1996,1997
+
+
+#DEBUG = -DDEBUG
+
+# ---- MS-DOS/pc ----
+
+CC = gcc
+DEFINES = -DNO_BYTE_SWAPPING -DOS_MSDOS #-DARCH_i586
+CFLAGS = -O6 -ffast-math -fomit-frame-pointer -m486 \
+	 ${DEFINES} ${DEBUG}
+LDFLAGS =
+
+#
+# uncomment both of these if you want profiling support
+#
+#PG = -pg
+#LDFLAGS+= -pg
+
+#
+# you should probably leave these untouched ####################################
+#
+
+OBJ = dump.o formats.o getbits.o huffman.o layer3.o getdata.o misc2.o transform.o audio.o \
+      args.o audioIO.o position.o layer2.o rtbuf.o guicontrol.o util.o getopt.o getopt1.o
+
+LIBS = -lalleg -lm
+
+all: amp.exe
+
+.PHONY: clean cleandist dep 
+clean:
+	rm -f *.o amp core
+
+cleandist: clean
+	rm -f *~ config.status config.cache config.log config.h Makefile .depend
+
+distclean: cleandist
+
+amp.exe: $(OBJ)
+	$(CC) -o amp.exe $(OBJ) $(LDFLAGS) $(LIBS)
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(GGDB) $(PG) $< 
+
+.c.s:
+	$(CC) -S $(CFLAGS) $(GGDB) $(PG) $< 
+
+dep:
+	gcc -MM ${DEFINES} ${DEBUG} *.c > .depend
+
+#-include .depend

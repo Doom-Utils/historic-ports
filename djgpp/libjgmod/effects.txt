@@ -1,0 +1,60 @@
+MOD, S3M, XM, and IT uses different numbers to represent different commands.
+JGMOD convert these different commands in to protracker like commands.
+Command 0-15 are protracker effects. Others are S3M extended effects.
+
+Below are the list of JGMOD commands supported. As more effects supported
+by JGMOD, I will update the list. This is good for my own reference.
+
+Command
+-------
+
+0       Arpeggio. Use by MOD. Unsupported yet.
+1       Pitch slide up. Use only by MOD.
+2       Pitch slide down. Use only by MOD.
+3       Slide to note. MOD and S3M.
+4       Vibrato. MOD and S3M.
+5       Slide to note + Volume slide. MOD only
+6       Vibrato + volume slide. MOD only
+7       Tremolo. Unsupported yet.
+8       Set panning.  MOD and S3M
+9       Set sample offset. MOD and S3M
+10      Volume slide. MOD only
+11      Position Jump. MOD and S3M
+12      Set Volume. MOD only
+13      Pattern Break. MOD and S3M
+14      Extended command. See below
+15      Set tempo and bpm. MOD only.
+
+16      Set tempo. S3M only
+17      Volume slide. S3M only
+18      Porta Down. S3M only
+19      Porta Up. S3M only
+20      Tremor. S3M only
+21      Vibrato + Volume Slide. S3M only.
+22      Portemento to note + volume slide. S3M only.
+23      Retrig + volume slide. Not supported yet.
+
+25      Set bpm. S3M only
+26      Fine vibrato. S3M only
+27      Set Global volume. S3M only
+
+Extended command
+----------------
+1       Fine slide up. MOD only
+2       Fine slide down. MOD only
+3       Set glissando. Not supported yet
+4       Set vibrato waveform. MOD and S3M
+5       Set finetune. MOD and S3M 
+6       Loop pattern. MOD and S3M
+7       Set tremolo waveform. Not supported yet.
+8       Set 16 positon panning. MOD and S3M
+9       Retrigger sample. MOD only
+10      Fine volume slide up. MOD only
+11      Fine volume slide down. MOD only
+12      Cut sample. MOD and S3M
+13      Delay Sample. MOD and S3M
+14      Delay pattern. MOD and S3M
+
+16      Stereo Control (S3M only)
+
+

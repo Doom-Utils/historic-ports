@@ -1,0 +1,83 @@
+.TH AMP 1 "May  1 1997"
+.SH NAME
+amp \- decompress and play MPEG audio files
+.SH SYNOPSIS
+.B amp 
+[
+.I options
+]
+[
+.I MPEG audio streams
+]
+.LP
+.B amp
+-convert
+[
+.I MPEG audio stream  
+]
+[
+.I output file
+]
+.SH DESCRIPTION
+.LP
+.B amp
+plays named MPEG audio files, or (if invoked with -convert option) decompresses a file to wave format.  
+.B amp 
+is capable of decoding both MPEG-1 and MPEG-2 audio bitstreams, but only layer3.
+.SH OPTIONS
+The options are:
+.TP
+.BI \-h, -help
+display this usage information and exit
+.TP
+.BI \-v, -version
+display the version information and exit
+.TP
+.BI \-c, -convert
+convert the MPEG audio stream to output file format
+.TP
+.BI \-p, -play 
+play the specified MPEG audio streams (default action)
+.TP
+.BI \-q, -quiet
+supress printing of messages to STDERR
+.TP
+.BI \-d, -dump
+dump (print) raw mpeg data to stdout
+.TP
+.BI \-s, -frame
+show a frame counter
+.TP
+.BI \-g, -gui
+output messages to stdout instead of stderr (for use with xmpeg3 or similar GUIs)
+.TP
+.BI \-w
+wav output
+.TP
+.I \-nobuffer
+do not use an audio buffer
+.TP
+.I \-volume <vol>
+set the volume to <vol> (0-100)
+.TP
+.I \-debug <opts..>
+When compiled in debug <opt, opt2,...> code sections. Options: audio, args, buffer, buffer2, misc, misc2 
+.SH ENVIRONMENT
+.TP
+No special environment variables.
+.SH AUTHOR
+Tomislav Uzelac <tuzelac@rasip.fer.hr>, with help from 
+Karl Anders Oygard,
+Ilkka Karvinen,
+Lutz Vieweg,
+Dan Nelson,
+Edouard Lafargue,
+Andrew Richards,
+George Colouris,
+Dmitry Boldyrev,
+Andy Lo A Foe,
+Thomas Sailer,
+Justin Frankel
+.SH BUGS
+Still too many to document :-)
+.PP

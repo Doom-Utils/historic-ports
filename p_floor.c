@@ -35,7 +35,7 @@ rcsid[] = "$Id: p_floor.c,v 1.4 1997/02/03 16:47:54 b1 Exp $";
 #include "doomstat.h"
 #include "r_state.h"
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
 
 //
@@ -467,8 +467,8 @@ EV_BuildStairs
 
     floormove_t*	floor;
     
-    fixed_t		stairsize;
-    fixed_t		speed;
+    fixed_t		stairsize = 16*FRACUNIT;
+    fixed_t		speed = FLOORSPEED;
 
     secnum = -1;
     rtn = 0;

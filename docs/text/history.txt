@@ -1,0 +1,180 @@
+Whats new (in v0.64)
+  -New music and sound code 
+        Support for MUS, MOD and MP3 music files (see music.htm).
+  -Radius Scripting 
+        Scripting for new levels or existing ones (see radius.htm).
+  -Options menu reorganised and graphical titles used
+  -new deadly former humans setting (spider demon is also a nightmare here)
+  -new startup sequence
+  -monster respawn setting in the menu
+  -monster infighting setting in the menu
+  -graphical titles for menu
+  -cd audio volume in the menu
+  -code clean up (rationalising etc)
+  -updated german support (Thanks to TwoFace)
+  -new cheat codes:
+        'idgive1'   - gives chainsaw.
+        'idgive2'   - gives shotgun               + full ammo.
+        'idgive3'   - gives double-barrel shotgun + full ammo.
+        'idgive4'   - gives chaingun              + full ammo.
+        'idgive5'   - gives missile launcher      + full ammo.
+        'idgive6'   - gives plasma rifle          + full ammo.
+        'idgive7'   - gives BFG                   + full ammo.
+
+        'idunlock'  - gives all the keys.
+        'idloaded'  - gives all the ammo.
+
+        'idsuicide' - suicide.
+        'idtakeall' - takes all stuff away.
+
+        'idinfo'    - replaces 'showinfo'.
+        'idkillall' - replaces 'hotaru'.
+
+  -'idinfo' gives numerical x,y coordinates for scripting
+  -menu uses coloured text (configurable)
+  -Spectres can be setup as Visible/Partly Visible/Translucent/Stealth
+  -Lost Soul can be setup as Visible/Partly Visible/Translucent/Stealth
+
+  (The not so good things....)
+  -dehacked support REMOVED temporarily       }
+  -new ENEMY AI REMOVED temporarily           } reworking demands these :(
+  -human madness and human explodings REMOVED }
+
+Whats new (in v0.61)
+  -linux support
+  -did a lot of much-needed bug-fixing
+  -added -gwaddir parameter to set location of doom wad(thanks to Martin Howe)
+
+Whats new (in v0.60)
+  -New Options menu (rewritten from scratch)
+  -everything in the options menu now gets saved in default.cfg
+  -keys for 180deg turns, jumping
+  -user-definable gravity
+  -shoot up/down (z-checking thanks to Kilbert)
+  -new cheat code 'showinfo', which will show fps/time/position/kills/etc
+   in single player and fps/time in multiplayer
+  -'showinfo', 'cdnext', 'cdprev', and 'idmus??' are allowed in deathmatch
+  -added 25%, 50%, and 75% translucency.
+  -added total war, random infighting, human madness, human explosions,
+   and new enemy ai (Thanks to Andy Baker)
+  -added -nosound to turn off sound
+  -added -stretchsky to vertically stretch the sky for mlooking
+  -Removed -ilovebill parameter from list (it is obsolete now)
+  -shift-printscreen for a screenshot at any time is back
+  -dutch support curtesy of Arno Slagboom (arnos@freemail.nl)
+  -spanish support curtesy of Abel Hernandez Zanatta (azanatta@hotmail.com)
+  -updated swedish support (thanks to Fredrik Ehnbom)
+  -updated german2 translation (Thanks to Omega9)
+  -Translucent fireballs, etc are now turned off by default.  Use -fulltrans
+   to enable
+  -Explosions are translucent with -fulltrans (thanks to Kilbert)
+  -Translucency table calculation is sped up (thanks to Erik Sandberg)
+  -idfa and idkfa now give the backpack
+  -fixed WIBP5 not found problem
+  -put sprites-in-a-pwad fix back in (see readme.sprites for more details)
+   (Thanks to Martin Howe)
+  -keypress crash is fixed
+  -added port numbers to linux tcp/ip network play (ie: 127.0.0.1:20000)
+  -changed directory structure of source to allow for >1 platform support
+
+Whats new (in v0.51)
+  -8 player support (curtesy of John Cole (jcole@eisa.net.au)
+   (player 5-8 starts are things 4001-4004)
+   You need a new ipxsetup.exe for 8 players
+  -improved DeHackEd support
+  -enhanced german support, now with 2 translations! (-german1 and -german2)
+   (Thanks to TwoFace and Omega9)
+  -swedish support (thanks to Fredrik Ehnbom)
+  -in autorun mode, you can press shift to temporarily walk again
+  -crash with -devparm should be fixed
+  -use -itemrespawn for, well, item respawning (thanks to Andy Baker)
+  -press home to center view (thanks to Dave Pearson)
+  -stubediting cc1.exe should no longer be necessary
+  -sprites-in-pwad temporarily removed
+
+Whats new (in v0.50)
+  -DeHackEd support (including most text messages!)
+  -Translucency support (with switches -notrans and -lesstrans to go with it)
+  -Heretic-style look up/down (with swithces -mlook -vspeed and -invertmouse
+   to go with it)  You can also use PgDn and PgUp to look up or down.
+  -To add translucency to a thing, add 0x40000000 to Bits line of the Thing
+   in a DeHackEd file
+  -command-line language selection (try -french or -german or -turkish)
+  -use -newnmrespawn to make monsters in Nightmare respawn in place (this
+   looks a lot cooler than the old way) Thanks to Andy Baker
+  -use -lessaccurate to stop monsters from being 100% accurate. (Thanks to
+   Andy Baker)
+  -use -rotatemap to make the map view rotate (Thanks to Scott Warner)
+  -Midi support in wads (just store a .mid file directory into wad)
+   (Thanks to Kester Maddock)
+  -sprites-in-a-pwad bugfix is back (Thanks to Martin Howe)
+  -Turkish translation by Sukru
+  -the exit screen is back
+  -final doom exit messages are now correctly displayed
+  -It'll automatically load the response file dosdoom.cmd if it exists
+  -A RHIDE project file is now included
+  -Before trying to compile this version, read the new programming note
+  -support for sound freq!=11025hz
+  -other misc bugfixes and code cleanup
+
+Whats new (in v0.47)
+  -fixed problem with new mapmode - Thanks to John Cole
+  -printscreen to take a screenshot was temporarily removed, cuz it was
+   causing some problems.  Just start dosdoom with -devparm and use F1 for
+   screenshots.
+  -the sprites-in-a-pwad bug fix was temporarily removed due to problems
+   Anyone who wants to try to fix the bugfix, look at w_wadfix.c
+  -use -censored to censor quit messages
+  -Due to confusion, -newhud parameter was renamed to -newmap
+  -Yet another tweak to the weapon height
+  -iddt cheat is fixed
+  -fixed an allegro problem
+  -fixed the pause key crashing the game problem
+  -demo recording now stops correctly when to exit the game
+  -Preliminary German support.  Thanks to omega9@letterbox.com for the
+   translation.  Note that right now, you need to edit the makefile and
+   recompile to turn on the German support
+
+Whats new (in v0.46)
+  -New music code (pitch bends and controllers fixed) Thanks to Kester Maddock
+  -Networking works again! Thanks to John Cole for pointing out the really
+   stupid mistake that i made :)
+  -correct recognition of final doom (thanks to Scott Campbell)
+  -New automap-overlay mode.  Use -newhud to enable.  Press tab to switch to
+   it.  (Thanks to Dave Pearson)
+  -sprites-in-a-pwad bug is fixed (Thanks to Martin Howe)
+  -weapon height fixed (Thanks to Bruce Lewis)
+  -The win95 msdos-mode dialog box is back, since getting rid of it seems to
+   slow down some computers significantly.  Use -ilovebill to get rid of it,
+   but you'd be better off making a .pif
+  -pitch changes are drastically reduced
+  -sky textures are now correct in ultimate doom
+  -lost souls are now killed correctly with cheat
+  -cd is now paused when game is paused
+  -bunny scrollers shouldn't crash anymore
+  -use -readmus to read music card from default.cfg instead of autodetecting
+  -use -readsfx to read sfx card from default.cfg instead of autodetecting
+  -shift-printscreen to take a screenshot at any time (normal-printscreen
+   is usually captured by windozes, so i didn't use it) 
+
+Whats new (in v0.45):
+  -endgame crash is fixed (curtesy of Scott Campbell)
+  -all new music code (no more temp files) - (curtesy of Kester Maddock)
+  -pumped up MAXVISSPRITES (idea by Stephan Ferraro)
+  -simple CD-Audio support
+  -all new sound code (chainsaw bug is fixed!)
+  -menuscreen, endscreens, menus, etc are now stretched to full screen
+  -now lets you specify which wad on the command line
+  -autodetection of ultimate doom, renaming wad is no longer necessary
+  -320x100 mode is now availiable :)
+  -use -novert to turn off vertical mouse sensitivity, its for people used to +mlook
+  -swapstereo is now the default, use -swapstereo to make it the way it was before
+  -fixed the red damage screen in hicolor
+  -some remaining sky problems have been fixed
+  -If the DOSDOOM environ var exists, dosdoom will look in that directory
+   for default.cfg
+  -new cheatcode: type hotaru to kill all monsters
+  -stupid win95 warning message was removed (the one that suggests msdos mode)
+  -software wavetable has been added (see user notes)
+  -some more miscellaneous bug fixes and optimizations
+  

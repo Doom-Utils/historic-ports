@@ -63,6 +63,13 @@ M_WriteText
   int		y,
   char*		string);
 
+void
+M_WriteTextTrans
+( int		x,
+  int		y,
+  int		index,
+  char*		string);
+
 
 
 

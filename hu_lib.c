@@ -28,7 +28,7 @@ rcsid[] = "$Id: hu_lib.c,v 1.3 1997/01/26 07:44:58 b1 Exp $";
 #include "doomdef.h"
 #include "doomstat.h"
 
-#include "multires.h"
+#include "v_res.h"
 #include "m_swap.h"
 
 #include "hu_lib.h"
@@ -96,8 +96,7 @@ boolean HUlib_delCharFromTextLine(hu_textline_t* t)
 
 }
 
-void
-HUlib_drawTextLine
+void HUlib_drawTextLine
 ( hu_textline_t*	l,
   boolean		drawcursor )
 {
@@ -106,6 +105,7 @@ HUlib_drawTextLine
     int			w;
     int			x;
     unsigned char	c;
+
 
     // draw the new stuff
     x = l->x;
@@ -117,7 +117,7 @@ HUlib_drawTextLine
 	    && c <= '_')
 	{
 	    w = SHORT(l->f[c - l->sc]->width);
-	    if (x+w > SCREENWIDTH)
+	    if (x+w > 320)
 		break;
 	    V_DrawPatchDirect(x, l->y, FG, l->f[c - l->sc]);
 	    x += w;
@@ -132,7 +132,7 @@ HUlib_drawTextLine
 
     // draw the cursor if requested
     if (drawcursor
-	&& x + SHORT(l->f['_' - l->sc]->width) <= SCREENWIDTH)
+	&& x + SHORT(l->f['_' - l->sc]->width) <= 320)
     {
 	V_DrawPatchDirect(x, l->y, FG, l->f['_' - l->sc]);
     }

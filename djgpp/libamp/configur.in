@@ -1,0 +1,118 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(audio.c)
+AC_CONFIG_HEADER(config.h)
+
+dnl Features
+AC_ARG_ENABLE(realtime,[  --enable-realtime       play sounds using Linux realtime features],AC_DEFINE(LINUX_REALTIME))
+
+dnl I am really not sure if this should be done this way
+dnl looking for a better compiler on non-linux systems
+AC_CHECK_PROG(CC,cc,/opt/SUNWspro/bin/cc,,/opt/SUNWspro/bin)
+AC_CHECK_PROG(CC,cc,/opt/ansic/bin/cc,,/opt/ansic/bin)
+
+dnl Checks for programs.
+AC_PROG_CC
+
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(fcntl.h sys/ioctl.h sys/time.h unistd.h linux/soundcard.h machine/soundcard.h dmedia/audio.h sys/audioio.h sys/select.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_HEADER_TIME
+
+dnl Checks for library functions.
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(select mlock mlockall sched_setscheduler)
+
+AC_MSG_CHECKING(Checking OS type)
+AC_SUBST(OS_TYPE)
+OS_TYPE=`uname -s`
+AC_MSG_RESULT($OS_TYPE)
+
+AC_MSG_CHECKING(Checking machine architecture)
+AC_SUBST(ARCH_TYPE)
+ARCH_TYPE=`uname -m`
+AC_MSG_RESULT($ARCH_TYPE)
+
+CFLAGS=
+LDFLAGS=
+CFLAGS_ARCH=
+DEFINES=
+
+AC_SUBST(CC)
+AC_SUBST(CFLAGS)
+AC_SUBST(CFLAGS_ARCH)
+AC_SUBST(LDFLAGS)
+AC_SUBST(DEFINES)
+
+case "$OS_TYPE" in
+  AIX)
+    CC="gcc"
+    CFLAGS="-O3 -ffast-math -funroll-loops"
+    DEFINES="-DOS_$OS_TYPE -DARCH_$ARCH_TYPE"
+    ;;
+
+  Linux|FreeBSD)
+    CC="gcc"
+    if test "$ARCH_TYPE" = "i486" ; then
+      CFLAGS_ARCH="-m486"
+    fi
+    if test "$ARCH_TYPE" = "i586" ; then
+      CFLAGS_ARCH="-i586 -pipe"
+    fi
+    if test "$OS_TYPE" = "FreeBSD" ; then
+      OS_TYPE="BSD"
+    fi
+    CFLAGS="-O6 -ffast-math -fomit-frame-pointer ${CFLAGS_ARCH}"
+    DEFINES="-DNO_BYTE_SWAPPING -DOS_$OS_TYPE -DARCH_$ARCH_TYPE" 
+    ;;
+
+  SunOS)
+    if test "$CC" = "gcc"; then
+    	CFLAGS="-O6 -Dinline= "
+    fi
+    if test "$CC" = "/opt/SUNWspro/bin/cc"; then
+    	CFLAGS="-xO5 -fns -dalign -ftrap=%none -xtarget=native -xlibmil -xsafe=mem -Dinline= "
+	AC_MSG_RESULT([Using Sun compiler instead of gcc])
+    fi
+    LDFLAGS="-lsocket -lnsl"
+    DEFINES="-DOS_$OS_TYPE -DARCH_$ARCH_TYPE"
+    ;;
+
+  IRIX)
+    if test "$CC" = "gcc" ; then 
+      CFLAGS="-O6"
+      LDFLAGS="-laudio"
+    else 
+      CFLAGS="-Ofast=ip22_4k"
+      LDFLAGS="-Ofast=ip22_4k -laudio"
+    fi
+    DEFINES="-DOS_$OS_TYPE -DARCH_$ARCH_TYPE"
+    ;;
+
+  HPUX)
+    if test "$CC" = "gcc"; then
+      CFLAGS="-O3 -ffast-math -funroll-loops -fomit-frame-pointer -mpa-risc-1-1 -mschedule=7100" 
+      DEFINES="-DOS_HPUX -DARCH_9000 -DHAS_AUTOINCREMENT -D_XOPEN_SOURCE=1 -D_XOPEN_SOURCE_EXTENDED=1"
+      LDFLAGS="-O -L/lib/pa1.1 -lxnet"
+    fi
+    if test "$CC" = "/opt/ansic/bin/cc"; then
+      DEFINES="-DOS_HPUX -DARCH_9000 -DHAS_AUTOINCREMENT -DSMALL_L1_CACHE -D_XOPEN_SOURCE=1 -D_XOPEN_SOURCE_EXTENDED=1"
+      CFLAGS="-Dinline=  -Ae +DA1.1 +O3 +Oall"
+      LDFLAGS="-O -L/lib/pa1.1 -lxnet"
+    fi
+    ;;
+
+  *)
+    AC_MSG_RESULT([Unknown hardware. You will probably have problems compiling amp.])
+    ;;
+
+esac
+
+AC_OUTPUT(Makefile)

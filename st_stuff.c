@@ -28,7 +28,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 
 #include <stdio.h>
 #ifdef DJGPP
-#include <bcd.h>
+#include <i_music.h>
 #endif
 
 #include "i_system.h"
@@ -55,15 +55,15 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #include "s_sound.h"
 
 // Needs access to LFB.
-#include "multires.h"
+#include "v_res.h"
 
 // State.
 #include "doomstat.h"
 
 // Data.
 #include "dstrings.h"
-#include "sounds.h"
-#include "allegvid.h"
+#include "lu_sound.h"
+#include "i_allegv.h"
 
 //
 // STATUS BAR DATA
@@ -403,47 +403,39 @@ static int	st_randomnumber;
 // Yeah, right...
 unsigned char	cheat_mus_seq[] =
 {
-//    0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff
 'i','d','m','u','s',1,0,0,0xff
 };
 
 unsigned char	cheat_choppers_seq[] =
 {
-//    0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
 'i','d','c','h','o','p','p','e','r','s',0xff
 };
 
 unsigned char	cheat_god_seq[] =
 {
-//    0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff  // iddqd
 'i','d','d','q','d',0xff
 };
 
 unsigned char	cheat_ammo_seq[] =
 {
-//    0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
 'i','d','k','f','a',0xff
 };
 
 unsigned char	cheat_ammonokey_seq[] =
 {
-//    0xb2, 0x26, 0x66, 0xa2, 0xff	// idfa
 'i','d','f','a',0xff
 };
 
 
-// Smashing Pumpkins Into Samml Piles Of Putried Debris. 
+// Smashing Pumpkins Into Small Piles Of Putried Debris.
 unsigned char	cheat_noclip_seq[] =
 {
-//    0xb2, 0x26, 0xea, 0x2a, 0xb2,	// idspispopd
-//    0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
 'i','d','s','p','i','s','p','o','p','d',0xff
 };
 
 //
 unsigned char	cheat_commercial_noclip_seq[] =
 {
-//    0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
 'i','d','c','l','i','p',0xff
 }; 
 
@@ -451,13 +443,6 @@ unsigned char	cheat_commercial_noclip_seq[] =
 
 unsigned char	cheat_powerup_seq[7][10] =
 {
-/*    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, 	// beholdi
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, 	// beholdr
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, 	// beholda
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, 	// beholdl
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }		// behold*/
     {'i','d','b','e','h','o','l','d','v',0xff},
     {'i','d','b','e','h','o','l','d','s',0xff},
     {'i','d','b','e','h','o','l','d','i',0xff},
@@ -470,7 +455,6 @@ unsigned char	cheat_powerup_seq[7][10] =
 
 unsigned char	cheat_clev_seq[] =
 {
-//    0xb2, 0x26,  0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
 'i','d','c','l','e','v',1,0,0,0xff
 };
 
@@ -478,28 +462,73 @@ unsigned char	cheat_clev_seq[] =
 // my position cheat
 unsigned char	cheat_mypos_seq[] =
 {
-//    0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff	// idmypos
 'i','d','m','y','p','o','s',0xff
 }; 
 
-//new cheats!
+//
+// DOSDoom Cheats
+//
+
+// CD Next Track
 unsigned char	cheat_cdnext_seq[] =
 {
 'c','d','n','e','x','t',0xff
-}; 
+};
+
+// CD Previous Track
 unsigned char	cheat_cdprev_seq[] =
 {
 'c','d','p','r','e','v',0xff
-}; 
+};
+
+// Kill all monsters
 unsigned char	cheat_killall_seq[] =
 {
-'h','o','t','a','r','u',0xff
-}; 
+'i','d','k','i','l','l','a','l','l',0xff
+};
+
+// Suicide
+unsigned char	cheat_suicide_seq[] =
+{
+'i','d','s','u','i','c','i','d','e',0xff
+};
+
+// show player pos and level info
 unsigned char	cheat_showstats_seq[] =
 {
-'s','h','o','w','i','n','f','o',0xff
+'i','d','i','n','f','o',0xff
 }; 
 
+// give all the keys to me!
+unsigned char	cheat_keys_seq[] =
+{
+'i','d','u','n','l','o','c','k',0xff
+}; 
+
+// show me the ammo!
+unsigned char	cheat_loaded_seq[] =
+{
+'i','d','l','o','a','d','e','d',0xff
+}; 
+
+// removes weapons, ammos and keys
+unsigned char	cheat_takeall_seq[] =
+{
+'i','d','t','a','k','e','a','l','l',0xff
+}; 
+
+// give weapons
+unsigned char	cheat_giveweapon_seq[8][8] =
+{
+        {'i','d','g','i','v','e',0xff},     // not used
+        {'i','d','g','i','v','e','1',0xff}, // chainsaw
+        {'i','d','g','i','v','e','2',0xff}, // shotgun
+        {'i','d','g','i','v','e','3',0xff}, // double-barrel shotgun
+        {'i','d','g','i','v','e','4',0xff}, // chaingun
+        {'i','d','g','i','v','e','5',0xff}, // missile launcher
+        {'i','d','g','i','v','e','6',0xff}, // plasma rifle
+        {'i','d','g','i','v','e','7',0xff}, // BFG9000
+}; 
 
 // Now what?
 cheatseq_t	cheat_mus = { cheat_mus_seq, 0 };
@@ -529,6 +558,22 @@ cheatseq_t	cheat_cdnext = { cheat_cdnext_seq, 0 };
 cheatseq_t	cheat_cdprev = { cheat_cdprev_seq, 0 };
 cheatseq_t	cheat_killall = { cheat_killall_seq, 0 };
 cheatseq_t	cheat_showstats = { cheat_showstats_seq, 0 };
+cheatseq_t	cheat_suicide = { cheat_suicide_seq, 0 };
+cheatseq_t	cheat_keys = { cheat_keys_seq, 0 };
+cheatseq_t	cheat_loaded = { cheat_loaded_seq, 0 };
+cheatseq_t	cheat_takeall = { cheat_takeall_seq, 0 };
+
+cheatseq_t	cheat_giveweapon[8] =
+{
+    { cheat_giveweapon_seq[0], 0 },
+    { cheat_giveweapon_seq[1], 0 },
+    { cheat_giveweapon_seq[2], 0 },
+    { cheat_giveweapon_seq[3], 0 },
+    { cheat_giveweapon_seq[4], 0 },
+    { cheat_giveweapon_seq[5], 0 },
+    { cheat_giveweapon_seq[6], 0 },
+    { cheat_giveweapon_seq[7], 0 },
+};
 
 
 // 
@@ -568,8 +613,7 @@ void ST_refreshBackground(void)
 
 // Respond to keyboard input events,
 //  intercept cheats.
-boolean
-ST_Responder (event_t* ev)
+boolean ST_Responder (event_t* ev)
 {
   int		i;
     
@@ -606,9 +650,9 @@ ST_Responder (event_t* ev)
 	if (plyr->cheats & CF_GODMODE)
 	{
 	  if (plyr->mo)
-	    plyr->mo->health = deh_godhealth;
+	    plyr->mo->health = NORMHEALTH;
 	  
-	  plyr->health = deh_godhealth;
+	  plyr->health = NORMHEALTH;
 	  plyr->message = STSTR_DQDON;
 	}
 	else 
@@ -623,8 +667,8 @@ ST_Responder (event_t* ev)
 		plyr->maxammo[i] *= 2;
 	    plyr->backpack = true;
 	}
-	plyr->armorpoints = deh_idfaarmor;
-	plyr->armortype = deh_idfaac;
+	plyr->armorpoints = CHEATARMOUR;
+	plyr->armortype = CHEATARMOURT;
 	
 	for (i=0;i<NUMWEAPONS;i++)
 	  plyr->weaponowned[i] = true;
@@ -637,28 +681,84 @@ ST_Responder (event_t* ev)
       // 'kfa' cheat for key full ammo
       else if (cht_CheckCheat(&cheat_ammo, ev->data1))
       {
-	if (!plyr->backpack)
+        if (!plyr->backpack)
 	{
 	    for (i=0 ; i<NUMAMMO ; i++)
 		plyr->maxammo[i] *= 2;
 	    plyr->backpack = true;
 	}
-	plyr->armorpoints = deh_idkfaarmor;
-	plyr->armortype = deh_idkfaac;
+        plyr->armorpoints = CHEATARMOUR;
+	plyr->armortype = CHEATARMOURT;
 	
-	for (i=0;i<NUMWEAPONS;i++)
+        for (i=0;i<NUMWEAPONS;i++)
 	  plyr->weaponowned[i] = true;
 	
-	for (i=0;i<NUMAMMO;i++)
+        for (i=0;i<NUMAMMO;i++)
 	  plyr->ammo[i] = plyr->maxammo[i];
 	
 	for (i=0;i<NUMCARDS;i++)
 	  plyr->cards[i] = true;
-	
+
+        // refresh to add all stuff to status bar
+        st_firsttime = true;
+
 	plyr->message = STSTR_KFAADDED;
       }
+      else if (cht_CheckCheat(&cheat_keys, ev->data1))
+      {
+        for (i=0;i<NUMCARDS;i++)
+	  plyr->cards[i] = true;
+
+        // refresh to remove all stuff from status bar
+        st_firsttime = true;
+
+        plyr->message = "Unlock any door!";
+      }
+      else if (cht_CheckCheat(&cheat_loaded, ev->data1))
+      {
+        for (i=0;i<NUMAMMO;i++)
+	  plyr->ammo[i] = plyr->maxammo[i];
+
+        plyr->message = "Loaded!";
+      }
+      else if (cht_CheckCheat(&cheat_takeall, ev->data1))
+      {
+        for (i=0;i<NUMAMMO;i++)
+	  plyr->ammo[i] = 0;
+
+        for (i=0;i<NUMCARDS;i++)
+	  plyr->cards[i] = false;
+
+        for (i=0;i<NUMWEAPONS;i++)
+	  plyr->weaponowned[i] = false;
+
+        plyr->weaponowned[wp_pistol] = true;
+        plyr->ammo[am_clip] = 50;
+
+	plyr->armorpoints = 0;
+	plyr->armortype   = 0;
+
+        if (plyr->backpack)
+	{
+	    for (i=0 ; i<NUMAMMO ; i++)
+		plyr->maxammo[i] /= 2;
+	    plyr->backpack = false;
+	}
+
+        plyr->pendingweapon = wp_pistol;
+
+        // refresh to remove all stuff from status bar
+        st_firsttime = true;
+
+        plyr->message = "All Stuff Removed!";
+      }
+      else if (cht_CheckCheat(&cheat_suicide, ev->data1))
+      {
+        P_DamageMobj(plyr->mo,NULL,plyr->mo,10000);
+        plyr->message = "Loser!";
+      }
       else if (cht_CheckCheat(&cheat_killall, ev->data1))
-        {
+      {
         int killcount=0;
         thinker_t* currentthinker;
 
@@ -689,6 +789,7 @@ ST_Responder (event_t* ev)
 	else
 	  plyr->message = STSTR_NCOFF;
       }
+
       // 'behold?' power-up cheats
       for (i=0;i<6;i++)
       {
@@ -710,13 +811,70 @@ ST_Responder (event_t* ev)
       {
 	plyr->message = STSTR_BEHOLD;
       }
+
+      // 'give?' power-up cheats
+      for (i=1;i<8;i++)
+      {
+	if (cht_CheckCheat(&cheat_giveweapon[i], ev->data1))
+	{
+         switch (i)
+         {
+          case 1: // chainsaw
+            plyr->weaponowned[wp_chainsaw] = true;
+            plyr->message = GOTCHAINSAW;
+            break;
+
+          case 2: // shotgun
+            plyr->weaponowned[wp_shotgun] = true;
+            plyr->ammo[am_shell] = maxammo[am_shell];
+            plyr->message = GOTSHOTGUN;
+            break;
+
+          case 3: // supershotgun
+            plyr->weaponowned[wp_supershotgun] = true;
+            plyr->ammo[am_shell] = maxammo[am_shell];
+            plyr->message = GOTSHOTGUN2;
+            break;
+
+          case 4: // chaingun
+            plyr->weaponowned[wp_chaingun] = true;
+            plyr->ammo[am_clip] = maxammo[am_clip];
+            plyr->message = GOTCHAINGUN;
+            break;
+
+          case 5: // missile
+            plyr->weaponowned[wp_missile] = true;
+            plyr->ammo[am_misl] = maxammo[am_misl];
+            plyr->message = GOTLAUNCHER;
+            break;
+
+          case 6: // plasma rifle
+            plyr->weaponowned[wp_plasma] = true;
+            plyr->ammo[am_cell] = maxammo[am_cell];
+            plyr->message = GOTPLASMA;
+            break;
+
+          case 7: // BFG9000
+            plyr->weaponowned[wp_bfg] = true;
+            plyr->ammo[am_cell] = maxammo[am_cell];
+            plyr->message = GOTBFG9000;
+            break;
+
+          
+          default: // this should not happen
+            break;
+         }
+	}
+      }
+
       // 'choppers' invulnerability & chainsaw
-      else if (cht_CheckCheat(&cheat_choppers, ev->data1))
+      if (cht_CheckCheat(&cheat_choppers, ev->data1))
       {
 	plyr->weaponowned[wp_chainsaw] = true;
 	plyr->powers[pw_invulnerability] = true;
 	plyr->message = STSTR_CHOPPERS;
       }
+
       // 'mypos' for player position
       else if (cht_CheckCheat(&cheat_mypos, ev->data1))
       {
@@ -732,48 +890,28 @@ ST_Responder (event_t* ev)
     // 'clev' change-level cheat
     if (cht_CheckCheat(&cheat_clev, ev->data1))
     {
-      char		buf[3];
+      char		buf[9];
       int		epsd;
       int		map;
       cht_GetParam(&cheat_clev, buf);
 
-      if (gamemode == commercial)
-       {
-       epsd = 1;
-       map = (buf[0] - '0')*10 + buf[1] - '0';
-       }
-      else
-      {
-	epsd = buf[0] - '0';
-	map = buf[1] - '0';
-      }
+        if (gamemission != doom) // - Kester
+        {
+          epsd = 1;
+          map = strtol(buf, NULL, 10);
+          sprintf(buf, "MAP%02d", map);
+        } else {
+          epsd = strtol(buf, NULL, 16);
+          map = epsd & 15;
+          epsd >>= 4;
+	  sprintf(buf, "E%xM%d", epsd, map);
+        }
 
-      // Catch invalid maps.
-      if (epsd < 1)
-	return false;
-
-      if (map < 1)
-	return false;
-      // Ohmygod - this is not going to work.
-      if ((gamemode == retail)
-	  && ((epsd > 4) || (map > 9)))
-	return false;
-
-      if ((gamemode == registered)
-	  && ((epsd > 3) || (map > 9)))
-	return false;
-
-      if ((gamemode == shareware)
-	  && ((epsd > 1) || (map > 9)))
-	return false;
-
-      if ((gamemode == commercial)
-	&& (( epsd > 1) || (map > 34)))
-	return false;
-
-      // So be it.
-      plyr->message = STSTR_CLEV;
-      G_DeferedInitNew(gameskill, epsd, map);
+        if (W_CheckNumForName(buf) < 0) return false; // - Kester
+      
+        // So be it.
+        plyr->message = STSTR_CLEV;
+        G_DeferedInitNew(gamemission, gameskill, epsd, map);
     }    
   else if (cht_CheckCheat(&cheat_showstats, ev->data1))
       {
@@ -782,34 +920,22 @@ ST_Responder (event_t* ev)
       // 'mus' cheat for changing music
   else if (cht_CheckCheat(&cheat_mus, ev->data1))
       {
+
 #ifdef DJGPP
-      if (cdaudio==1)
+      if (cdaudio)
         {
         char buf[3];
         int temptrack;
 
         cht_GetParam(&cheat_mus, buf);
         temptrack=(buf[0]-'0')*10 + buf[1]-'0';
-        if (bcd_track_is_audio(temptrack))
-          {
-          if (bcd_audio_busy())
-            {
-            bcd_stop();
-            I_WaitVBL(70);
-            }
-          cdtrack=temptrack;
-          bcd_play_track(cdtrack);
-          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-          plyr->message = tmpmsgstring;
-          }
-        else
-          {
-          strcpy(tmpmsgstring,"CD Error: Invalid Track");
-          plyr->message = tmpmsgstring;
-          }
+        CD_Play(temptrack, true);
+        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+        plyr->message = tmpmsgstring;
         }
       else
 #endif
+
         {
         char	buf[3];
         int		musnum;
@@ -837,41 +963,30 @@ ST_Responder (event_t* ev)
           }
         }
       }
-      //the new cheat codes
+
+//the new cheat codes
 #ifdef DJGPP
   else if (cht_CheckCheat(&cheat_cdnext, ev->data1))
         {
-        int temptrack;
-        if (bcd_audio_busy())
-          {
-          bcd_stop();
-          I_WaitVBL(70);
-          }
-        temptrack=cdtrack+1;
-        if (temptrack>(numtracks+starttrack-1))
-          temptrack=starttrack;
-        cdtrack=temptrack;
-        bcd_play_track(cdtrack);
-        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-        plyr->message = tmpmsgstring;
-        cdcounter=0;
+         if (!cdaudio)
+          plyr->message = "CD Audio disabled";
+         else
+         {
+          CD_Next();
+          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+          plyr->message = tmpmsgstring;
+         }
         }
   else if (cht_CheckCheat(&cheat_cdprev, ev->data1))
         {
-        int temptrack;
-        if (bcd_audio_busy())
-          {
-          bcd_stop();
-          I_WaitVBL(70);
-          }
-        temptrack=cdtrack-1;
-        if (temptrack<starttrack)
-          temptrack=numtracks+starttrack-1;
-        cdtrack=temptrack;
-        bcd_play_track(cdtrack);
-        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-        plyr->message = tmpmsgstring;
-        cdcounter=0;
+         if (!cdaudio)
+          plyr->message = "CD Audio disabled";
+         else
+         {
+          CD_Prev();
+          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+          plyr->message = tmpmsgstring;
+         }
         }
 #endif
 
@@ -895,6 +1010,41 @@ int ST_calcPainOffset(void)
 	oldhealth = health;
     }
     return lastcalc;
+}
+
+void ST_drawWidgets(boolean refresh)
+{
+    int		i;
+
+    // used by w_arms[] widgets
+    st_armson = st_statusbaron && !deathmatch;
+
+    // used by w_frags widget
+    st_fragson = deathmatch && st_statusbaron; 
+
+    STlib_updateNum(&w_ready, refresh);
+
+    for (i=0;i<4;i++)
+    {
+	STlib_updateNum(&w_ammo[i], refresh);
+	STlib_updateNum(&w_maxammo[i], refresh);
+    }
+
+    STlib_updatePercent(&w_health, refresh);
+    STlib_updatePercent(&w_armor, refresh);
+
+    STlib_updateBinIcon(&w_armsbg, refresh);
+
+    for (i=0;i<6;i++)
+	STlib_updateMultIcon(&w_arms[i], refresh);
+
+    STlib_updateMultIcon(&w_faces, refresh);
+
+    for (i=0;i<3;i++)
+	STlib_updateMultIcon(&w_keyboxes[i], refresh);
+
+    STlib_updateNum(&w_frags, refresh);
+
 }
 
 
@@ -1210,40 +1360,6 @@ void ST_doPaletteStuff(void)
 
 }
 
-void ST_drawWidgets(boolean refresh)
-{
-    int		i;
-
-    // used by w_arms[] widgets
-    st_armson = st_statusbaron && !deathmatch;
-
-    // used by w_frags widget
-    st_fragson = deathmatch && st_statusbaron; 
-
-    STlib_updateNum(&w_ready, refresh);
-
-    for (i=0;i<4;i++)
-    {
-	STlib_updateNum(&w_ammo[i], refresh);
-	STlib_updateNum(&w_maxammo[i], refresh);
-    }
-
-    STlib_updatePercent(&w_health, refresh);
-    STlib_updatePercent(&w_armor, refresh);
-
-    STlib_updateBinIcon(&w_armsbg, refresh);
-
-    for (i=0;i<6;i++)
-	STlib_updateMultIcon(&w_arms[i], refresh);
-
-    STlib_updateMultIcon(&w_faces, refresh);
-
-    for (i=0;i<3;i++)
-	STlib_updateMultIcon(&w_keyboxes[i], refresh);
-
-    STlib_updateNum(&w_frags, refresh);
-
-}
 
 void ST_doRefresh(void)
 {

@@ -304,7 +304,6 @@ void P_LoadThings (int lump)
     int			i;
     mapthing_t*		mt;
     int			numthings;
-    boolean		spawn;
 	
     data = W_CacheLumpNum (lump,PU_STATIC);
     numthings = W_LumpLength (lump) / sizeof(mapthing_t);
@@ -312,30 +311,6 @@ void P_LoadThings (int lump)
     mt = (mapthing_t *)data;
     for (i=0 ; i<numthings ; i++, mt++)
     {
-	spawn = true;
-
-	// Do not spawn cool, new monsters if !commercial
-	if ( gamemode != commercial)
-	{
-	    switch(mt->type)
-	    {
-	      case 68:	// Arachnotron
-	      case 64:	// Archvile
-	      case 88:	// Boss Brain
-	      case 89:	// Boss Shooter
-	      case 69:	// Hell Knight
-	      case 67:	// Mancubus
-	      case 71:	// Pain Elemental
-	      case 65:	// Former Human Commando
-	      case 66:	// Revenant
-	      case 84:	// Wolf SS
-		spawn = false;
-		break;
-	    }
-	}
-	if (spawn == false)
-	    break;
-
 	// Do spawn all other stuff. 
 	mt->x = SHORT(mt->x);
 	mt->y = SHORT(mt->y);
@@ -625,20 +600,13 @@ P_SetupLevel
     W_Reload ();			
 	   
     // find map name
-    if ( gamemode == commercial)
+    if ( gamemission != doom)
     {
-	if (map<10)
-	    sprintf (lumpname,"map0%i", map);
-	else
-	    sprintf (lumpname,"map%i", map);
+	sprintf (lumpname,"MAP%02i", map);
     }
     else
     {
-	lumpname[0] = 'E';
-	lumpname[1] = '0' + episode;
-	lumpname[2] = 'M';
-	lumpname[3] = '0' + map;
-	lumpname[4] = 0;
+        sprintf (lumpname,"E%iM%i", episode, map);
     }
 
     lumpnum = W_GetNumForName (lumpname);

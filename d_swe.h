@@ -759,19 +759,21 @@
 	    "                                Shareware!\n"\
 	    "===========================================================================\n"
 #define SWEUDOOMSTART\
- "                         The Ultimate DOOM Startup v%i.%i                        "
+ "The Ultimate DOOM"
 #define SWESHAREDOOMSTART\
- "                            DOOM Shareware Startup v%i.%i                        "
+ "DOOM (Shareware)"
 #define SWEREGDOOMSTART\
- "                            DOOM Registered Startup v%i.%i                       "
+ "DOOM (Registered)"
 #define SWEDOOM2START\
- "                         DOOM 2: Hell on Earth v%i.%i                            "
+ "DOOM 2: Hell on Earth"
 #define SWEPLUTSTART\
- "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+ "DOOM 2: The Plutonia Experiment"
 #define SWETNTSTART\
- "                     DOOM 2: TNT - Evilution v%i.%i                              "
+ "DOOM 2: TNT - Evilution"
 #define SWEPUBDOOMSTART\
- "                     Public DOOM - v%i.%i                                        "
+ "DOOM"
+#define SWEDOSDOOMSTART\
+ "DOSDoom"
 
 //these are unused.  They're just here for Deh compatibility
 #define SWEI_SDPMI   "I_StartupDPMI\n"

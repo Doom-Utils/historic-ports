@@ -39,7 +39,6 @@ static const char
 rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 
 
-#ifdef NORMALUNIX
 #include <ctype.h>
 #include <sys/types.h>
 #include <string.h>
@@ -47,8 +46,6 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #include <malloc.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-//#include <alloca.h>
-#endif
 
 #ifdef LINUX
 #define O_BINARY              0
@@ -638,7 +635,7 @@ void W_GroupList(int (*startfunc)(char *name),
       }
       lump_s++;
     }
-    printf("Grouped %s: old numlumps=%d, new numlumps=%d\n",
+    I_Printf("Grouped %s: old numlumps=%d, new numlumps=%d\n",
             listtype,numlumps,newnumlumps);
 //  getchar();
     numlumps=newnumlumps;
@@ -747,11 +744,11 @@ void W_AddFile (char *filename)
 		
     if ( (handle = open (filename,O_RDONLY | O_BINARY)) == -1)
     {
-	printf (" couldn't open %s\n",filename);
+	I_Printf (" couldn't open %s\n",filename);
 	return;
     }
 
-    printf (" adding %s\n",filename);
+    I_Printf (" adding %s\n",filename);
     startlump = numlumps;
 	
     if (strcmpi (filename+strlen(filename)-3 , "wad" ) )
@@ -943,7 +940,7 @@ void W_InitMultipleFiles (char** filenames)
     if ((patch_lists >2)  && group_patches)
        W_GroupList(&W_IsP_START,&W_IsP_END,&W_IsBadPatchFlag,"patches");
     if (lax_sprite_rot)
-       printf("Disengaging sprite rotation/limit checks\n");
+       I_Printf("Disengaging sprite rotation/limit checks\n");
 
     // set up caching
     size = numlumps * sizeof(*lumpcache);
@@ -989,7 +986,7 @@ int W_NumLumps (void)
 // Returns -1 if name not found.
 //
 
-int W_CheckNumForName (char* name)
+int W_CheckNumForName (const char* name)
 {
     union {
 	char	s[9];
@@ -1037,7 +1034,7 @@ int W_CheckNumForName (char* name)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (char* name)
+int W_GetNumForName (const char* name)
 {
     int	i;
 
@@ -1120,20 +1117,19 @@ W_CacheLumpNum
 {
     byte*	ptr;
 
+#ifdef DEVELOPERS
     if ((unsigned)lump >= numlumps)
 	I_Error ("W_CacheLumpNum: %i >= numlumps",lump);
+#endif
 		
-    if (!lumpcache[lump])
+    if (!lumpcache[lump])  // Cache Miss :-(
     {
 	// read the lump in
-	
-	//printf ("cache miss on lump %i\n",lump);
 	ptr = Z_Malloc (W_LumpLength (lump), tag, &lumpcache[lump]);
 	W_ReadLump (lump, lumpcache[lump]);
     }
-    else
+    else // Cache Hit :-)
     {
-	//printf ("cache hit on lump %i\n",lump);
 	Z_ChangeTag (lumpcache[lump],tag);
     }
 	
@@ -1147,7 +1143,7 @@ W_CacheLumpNum
 //
 void*
 W_CacheLumpName
-( char*		name,
+( const char*		name,
   int		tag )
 {
     return W_CacheLumpNum (W_GetNumForName(name), tag);
@@ -1196,16 +1192,7 @@ void W_Profile (void)
 
     for (i=0 ; i<numlumps ; i++)
     {
-	memcpy (name,lumpinfo[i].name,8);
-
-	for (j=0 ; j<8 ; j++)
-	    if (!name[j])
-		break;
-
-	for ( ; j<8 ; j++)
-	    name[j] = ' ';
-
-	fprintf (f,"%s ",name);
+	fprintf (f,"%.8s ",lumpinfo[i].name);
 
 	for (j=0 ; j<profilecount ; j++)
 	    fprintf (f,"    %c",info[i][j]);

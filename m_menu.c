@@ -21,6 +21,8 @@
 //	Sliders and icons. Kinda widget stuff.
 //
 //-----------------------------------------------------------------------------
+// 09-Apr-98  Eduardo Casino <eduardo@medusa.es)
+//       Added darken_screen
 
 static const char
 rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
@@ -41,7 +43,7 @@ rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
 #include "i_system.h"
 #include "i_video.h"
 #include "z_zone.h"
-#include "multires.h"
+#include "v_res.h"
 #include "w_wad.h"
 
 #include "r_local.h"
@@ -59,9 +61,9 @@ rcsid[] = "$Id: m_menu.c,v 1.7 1997/02/03 22:45:10 b1 Exp $";
 #include "doomstat.h"
 
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
-#include "optmenu.h"
+#include "m_option.h"
 #include "m_menu.h"
 
 
@@ -83,6 +85,8 @@ int			showMessages;
 // Blocky mode, has default, 0 = high, 1 = normal
 int			detailLevel;		
 int			screenblocks;		// has default
+
+int			darken_screen;
 
 // temp for screenblocks (0-9)
 int			screenSize;		
@@ -217,6 +221,7 @@ void M_DrawThermo(int x,int y,int thermWidth,int thermDot);
 void M_DrawEmptyCell(menu_t *menu,int item);
 void M_DrawSelCell(menu_t *menu,int item);
 void M_WriteText(int x, int y, char *string);
+void M_WriteTextTrans( int x, int y, int index, char* string);
 int  M_StringWidth(char *string);
 int  M_StringHeight(char *string);
 void M_StartControlPanel(void);
@@ -272,6 +277,7 @@ enum
     ep2,
     ep3,
     ep4,
+    ep5,
     ep_end
 } episodes_e;
 
@@ -280,7 +286,8 @@ menuitem_t EpisodeMenu[]=
     {1,"M_EPI1", M_Episode,'k'},
     {1,"M_EPI2", M_Episode,'t'},
     {1,"M_EPI3", M_Episode,'i'},
-    {1,"M_EPI4", M_Episode,'t'}
+    {1,"M_EPI4", M_Episode,'t'},
+    {1,"M_EPI5", M_Episode,'h'}
 };
 
 menu_t  EpiDef =
@@ -746,19 +753,10 @@ void M_QuickLoad(void)
 void M_DrawReadThis1(void)
 {
     inhelpscreens = true;
-    switch ( gamemode )
-    {
-      case commercial:
-	V_DrawPatchInDirect (0,0,0,W_CacheLumpName("HELP",PU_CACHE));
-	break;
-      case shareware:
-      case registered:
-      case retail:
-	V_DrawPatchInDirect (0,0,0,W_CacheLumpName("HELP1",PU_CACHE));
-	break;
-      default:
-	break;
-    }
+    if (W_CheckNumForName("HELP") < 0)
+      V_DrawPatchInDirect (0,0,0,W_CacheLumpName("HELP1",PU_CACHE));
+    else
+      V_DrawPatchInDirect (0,0,0,W_CacheLumpName("HELP", PU_CACHE));
     return;
 }
 
@@ -770,20 +768,10 @@ void M_DrawReadThis1(void)
 void M_DrawReadThis2(void)
 {
     inhelpscreens = true;
-    switch ( gamemode )
-    {
-      case retail:
-      case commercial:
-	// This hack keeps us from having to change menus.
+    if (W_CheckNumForName("HELP2") < 0)
 	V_DrawPatchInDirect (0,0,0,W_CacheLumpName("CREDIT",PU_CACHE));
-	break;
-      case shareware:
-      case registered:
+    else
 	V_DrawPatchInDirect (0,0,0,W_CacheLumpName("HELP2",PU_CACHE));
-	break;
-      default:
-	break;
-    }
     return;
 }
 
@@ -872,10 +860,8 @@ void M_NewGame(int choice)
 	return;
     }
 	
-    if ( gamemode == commercial )
-	M_SetupNextMenu(&NewDef);
-    else
-	M_SetupNextMenu(&EpiDef);
+    if (gamemode == commercial) M_SetupNextMenu(&NewDef);
+    else M_SetupNextMenu(&EpiDef);
 }
 
 
@@ -894,7 +880,7 @@ void M_VerifyNightmare(int ch)
     if (ch != 'y')
 	return;
 		
-    G_DeferedInitNew(nightmare,epi+1,1);
+    G_DeferedInitNew((epi < 4) ? doom : epi - 3, nightmare,epi+1,1);
     M_ClearMenus ();
 }
 
@@ -906,7 +892,7 @@ void M_ChooseSkill(int choice)
 	return;
     }
 	
-    G_DeferedInitNew(choice,epi+1,1);
+    G_DeferedInitNew((epi < 4) ? doom : epi - 3, choice,epi+1,1);
     M_ClearMenus ();
 }
 
@@ -920,15 +906,6 @@ void M_Episode(int choice)
 	return;
     }
 
-    // Yet another hack...
-    if ( (gamemode == registered)
-	 && (choice > 2))
-    {
-      fprintf( stderr,
-	       "M_Episode: 4th episode requires UltimateDOOM\n");
-      choice = 0;
-    }
-	 
     epi = choice;
     M_SetupNextMenu(&NewDef);
 }
@@ -1078,7 +1055,7 @@ void M_QuitResponse(int ch)
 	return;
     if (!netgame)
     {
-	if (gamemode == commercial)
+	if ((gamemode == commercial) || (gamemode == dosdoom))
 	    S_StartSound(NULL,quitsounds2[(gametic>>2)&7]);
 	else
 	    S_StartSound(NULL,quitsounds[(gametic>>2)&7]);
@@ -1333,6 +1310,55 @@ M_WriteText
 	cx+=w;
     }
 }
+
+//
+//   Write a string using the hu_font and index translator.
+//
+void
+M_WriteTextTrans
+( int		x,
+  int		y,
+  int		index,
+  char*		string)
+{
+    int		w;
+    char*	ch;
+    int		c;
+    int		cx;
+    int		cy;
+		
+
+    ch = string;
+    cx = x;
+    cy = y;
+	
+    while(1)
+    {
+	c = *ch++;
+	if (!c)
+	    break;
+	if (c == '\n')
+	{
+	    cx = x;
+	    cy += 12;
+	    continue;
+	}
+		
+	c = toupper(c) - HU_FONTSTART;
+	if (c < 0 || c>= HU_FONTSIZE)
+	{
+	    cx += 4;
+	    continue;
+	}
+		
+	w = SHORT (hu_font[c]->width);
+	if (cx+w > SCREENWIDTH)
+	    break;
+	V_DrawPatchInDirectTrans(cx, cy, index, 0, hu_font[c]);
+	cx+=w;
+    }
+}
+
 
 
 
@@ -1784,7 +1810,7 @@ void M_Drawer (void)
 
     if (!menuactive)
 	return;
-    V_DarkenScreen(0);
+    if (darken_screen) V_DarkenScreen(0);
     if (optionsmenuon)
       {
       Opt_Drawer();
@@ -1873,12 +1899,12 @@ void M_Init (void)
     // Here we could catch other version dependencies,
     //  like HELP1/2, and four episodes.
 
-  
-    switch ( gamemode )
+    if (W_CheckNumForName("M_EPI4") < 0) EpiDef.numitems -= 2;
+    else if (W_CheckNumForName("M_EPI5") < 0) EpiDef.numitems--;
+    if (W_CheckNumForName("HELP2") < 0)
     {
-      case commercial:
 	// This is used because DOOM 2 had only one HELP
-        //  page. I use CREDIT as second page now, but
+	//  page. I use CREDIT as second page now, but
 	//  kept this hack for educational purposes.
 	MainMenu[readthis] = MainMenu[quitdoom];
 	MainDef.numitems--;
@@ -1888,18 +1914,6 @@ void M_Init (void)
 	ReadDef1.x = 330;
 	ReadDef1.y = 165;
 	ReadMenu1[0].routine = M_FinishReadThis;
-	break;
-      case shareware:
-	// Episode 2 and 3 are handled,
-	//  branching to an ad screen.
-      case registered:
-	// We need to remove the fourth episode.
-	EpiDef.numitems--;
-	break;
-      case retail:
-	// We are fine.
-      default:
-	break;
     }
   InitOptmenu();
     

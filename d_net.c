@@ -28,12 +28,15 @@ static const char rcsid[] = "$Id: d_net.c,v 1.3 1997/02/03 22:01:47 b1 Exp $";
 
 #include "m_menu.h"
 #include "i_system.h"
+#ifdef DJGPP
+#include "i_music.h"
+#endif
 #include "i_video.h"
 #include "i_net.h"
 #include "g_game.h"
 #include "doomdef.h"
 #include "doomstat.h"
-#include "strings.h"
+#include "lu_str.h"
 
 #define	NCMD_EXIT		0x80000000
 #define	NCMD_RETRANSMIT		0x40000000
@@ -287,8 +290,10 @@ void GetPackets (void)
 		continue;
 	    nodeingame[netnode] = false;
 	    playeringame[netconsole] = false;
-	    strcpy (exitmsg, "Player 1 left the game");
+/*	    strcpy (exitmsg, "Player 1 left the game");
 	    exitmsg[7] += netconsole;
+          */
+            sprintf(exitmsg, "Player %d left the game", netconsole);
 	    players[consoleplayer].message = exitmsg;
 	    if (demorecording)
 		G_CheckDemoStatus ();
@@ -478,6 +483,7 @@ void D_ArbitrateNetStart (void)
 {
     int		i;
     boolean	gotinfo[MAXNETNODES];
+    extern int oldsetup; //-jc-
 	
     autostart = true;
     memset (gotinfo,0,sizeof(gotinfo));
@@ -485,7 +491,7 @@ void D_ArbitrateNetStart (void)
     if (doomcom->consoleplayer)
     {
 	// listen for setup info from key player
-	printf (NETLISTEN);
+	I_Printf (NETLISTEN);
 	while (1)
 	{
 	    CheckAbort ();
@@ -501,19 +507,62 @@ void D_ArbitrateNetStart (void)
 		respawnparm = (netbuffer->retransmitfrom & 0x10) > 0;
 		startmap = netbuffer->starttic & 0x3f;
 		startepisode = netbuffer->starttic >> 6;
+
+                if (!oldsetup) {
+                   shootupdown    =(netbuffer->cmds->chatchar&1);
+                   newnmrespawn   =(netbuffer->cmds->chatchar&2)>>1;
+                   itemrespawn    =(netbuffer->cmds->chatchar&4)>>2;
+                   infight        =(netbuffer->cmds->chatchar&8)>>3;
+                   lessaccuratemon=(netbuffer->cmds->chatchar&16)>>4;
+                   missileteleport=(netbuffer->cmds->buttons&14)>>1;
+                   teleportdelay  =(netbuffer->cmds->buttons&112)>>3;
+                   grav           =(netbuffer->cmds->angleturn);
+
+                   I_Printf("%d, %d, %d\n", netbuffer->cmds->chatchar,
+                                          netbuffer->cmds->buttons,
+                                          netbuffer->cmds->angleturn);
+                   I_Printf("shootupdown      = %d\n",shootupdown );
+                   I_Printf("newnmrespawn     = %d\n",newnmrespawn);
+                   I_Printf("itemRespawn      = %d\n",itemrespawn );
+                   I_Printf("infight          = %d\n",infight );
+                   I_Printf("lessaccuratemon  = %d\n",lessaccuratemon );
+                   I_Printf("missileteleport  = %d\n",missileteleport );
+                   I_Printf("teleportdelay    = %d\n",teleportdelay );
+                   I_Printf("grav             = %d\n",grav );
+                }
+
 		return;
 	    }
 	}
     }
     else
     {
+        byte tmp=0; //-jc-
+
 	// key player, send the setup info
-	printf (NETSEND);
+	I_Printf (NETSEND);
 	do
 	{
 	    CheckAbort ();
 	    for (i=0 ; i<doomcom->numnodes ; i++)
 	    {
+                if (!oldsetup) {
+                   tmp=0;
+                   tmp=tmp|(shootupdown    <<0);
+                   tmp=tmp|(newnmrespawn   <<1);
+                   tmp=tmp|(itemrespawn    <<2);
+                   tmp=tmp|(infight        <<3);
+                   tmp=tmp|(lessaccuratemon<<4);
+                   netbuffer->cmds->chatchar=tmp; 
+
+                   tmp=0;
+                   tmp=tmp|(missileteleport<<1);
+                   tmp=tmp|(teleportdelay  <<3);
+                   netbuffer->cmds->buttons=tmp;
+
+                   netbuffer->cmds->angleturn=grav;
+                }
+
 		netbuffer->retransmitfrom = startskill;
 		if (deathmatch)
 		    netbuffer->retransmitfrom |= (deathmatch<<6);
@@ -523,7 +572,11 @@ void D_ArbitrateNetStart (void)
 		    netbuffer->retransmitfrom |= 0x10;
 		netbuffer->starttic = startepisode * 64 + startmap;
 		netbuffer->player = 109;
-		netbuffer->numtics = 0;
+
+                // Fake 1 tic if not using "-oldset" this will hold the
+                // extended startup information.
+		netbuffer->numtics = (!oldsetup)?1:0; //-JC- WAS 0
+
 		HSendPacket (i, NCMD_SETUP);
 	    }
 
@@ -575,7 +628,7 @@ void D_CheckNetGame (void)
     if (netgame)
 	D_ArbitrateNetStart ();
 
-    printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
+    I_Printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
 	    startskill, deathmatch, startmap, startepisode);
 	
     // read values out of doomcom
@@ -589,7 +642,7 @@ void D_CheckNetGame (void)
     for (i=0 ; i<doomcom->numnodes ; i++)
 	nodeingame[i] = true;
 	
-    printf ("player %i of %i (%i nodes)\n",
+    I_Printf ("player %i of %i (%i nodes)\n",
 	    consoleplayer+1, doomcom->numplayers, doomcom->numnodes);
 
 }
@@ -698,11 +751,10 @@ void TryRunTics (void)
 	{
             if (nettics[0] <= nettics[nodeforplayer[i]])
                 gametime--;
-            frameskip[frameon&7] = (oldnettics > nettics[nodeforplayer[i]]);
+                        frameskip[frameon&3] = (oldnettics > nettics[nodeforplayer[i]]);
             oldnettics = nettics[0];
-            if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3] &&
-                frameskip[4] && frameskip[5] && frameskip[6] && frameskip[7])
-                skiptics = 1;
+            if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3])
+               skiptics = 1;
 	}
     }// demoplayback
 	
@@ -724,7 +776,10 @@ void TryRunTics (void)
 	{
 	    M_Ticker ();
 	    return;
-	} 
+	}
+#ifdef DJGPP
+        I_MusicTicker2();
+#endif
     }
     
     // run the count * ticdup dics
@@ -758,5 +813,8 @@ void TryRunTics (void)
 	    }
 	}
 	NetUpdate ();	// check for new console commands
+#ifdef DJGPP
+        I_MusicTicker2();
+#endif
     }
 }

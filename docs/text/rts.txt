@@ -1,0 +1,1008 @@
+--------------------------------------------------------
+DOSDoom 0.66+ Radius Trigger Scripting (RTS) version 0.2
+--------------------------------------------------------
+Contact : jcole@eisa.net.au (John Cole)
+
+Contents
+--------
+
+...Quick start.
+...What is it? And How does it work? (Small Example)
+...Block Definitions
+...Trigger Tags
+...Functions
+...Parser Rules (Overview)
+...Tips
+...Error Codes
+...Thing & Sound Id's.
+...Examples
+
+
+Quick Start
+-----------
+
+To launch a script just use the parameter "-script <scriptname.ext>".
+
+
+
+What is RTS?
+------------
+
+Radius trigger scripts are a new way of defining events in DOSDoom,
+they are similar to your standard lindef triggers but will have the ability
+to do many other things, which are not available to lindef triggers.
+
+You must realise though, they are meant to compliment the current
+trigger types available, so they're here to hopefully enhance rather than
+eradicate.
+
+The limit on the number of triggers and events that can be created is
+determined by the amount of free memory you have.
+
+How do they work?
+-----------------
+
+It's really quite simple, an event handler monitors the players movements
+relative to the radius triggers, when a player goes within the radius of one
+the defined actions for that trigger take place.
+
+MAP 1 - SubSection
+
+| Sector 2        | Sector 3       |
+0----------------------------------256
+| Sector 1                         |               Sorry about the drawing :)
+|                                  |
+|                         _        |
+|                        / \       |
+|   k   ____            | . |      |
+|      /RT1 \            \_/       | RT1 = Radius Trigger 1 (x=64,y=128,r=40)
+|     /      \            RT2      | RT2 = Radius Trigger 2 (x=32,y=32 ,r=16)
+|    |    .   |                    |
+|    |        |                    | k   = blue skull key
+|     \      /                     |
+|      \____/                      |
+|                      *Player     |
+|                                  |
+|                                  |
+|                                  |
+256---------------------------------
+
+A radius trigger needs an x,y coordinate (this is it's centerpoint) and a 
+radius value (this determines the distance a player must be within that point
+to trigger it).
+
+The coordinates can be gathered easily either by using the "showinfo" cheat,
+or by loading up a map editor and just moving the cursor around the map and
+checking out the x,y coordinates that it outputs.
+
+So now I want to make these triggers do something for me, lets say for RT1 we
+want to make it difficult for the player to get at the skull key, we can
+spawn in a monster there and have RT2 give me 5% health at a 2 second interval
+just to make things different.
+
+(Very simple & ficticious Example based on diagram, 
+ NOTE! Line numbers are in only as an example!                                )
+
+File : test.scr
+
+1         #define CYBERDEMON   21
+2         #define DEFAULT_TIME 2
+3         #define DEFAULT_HEAL 5
+4
+5         start_map 1
+6
+7               ;Triggers once only.
+8               radius_trigger 64 128 40
+9                     tip "you're in trouble now" DEFAULT_TIME TRUE
+10                    spawnThing CYBERDEMON 0           ;Spawns a cyberdemon
+11              end_radiustrigger
+12
+13             ;Can be triggered many times.
+14             radius_trigger 32 32 16
+15                   tagged_repeatable 0 DEFAULT_TIME 35;Infinite, 2 sec delay
+16                   healplayer DEFAULT_HEAL 150        ;Give 5% health
+17             end_radiustrigger
+18
+19       end_map
+
+
+Okay so your probabably saying to yourself "Huh? What does all that mean?", 
+well then time to go through it line by line.
+
+Line 1 through 3- Basically sets up meaninful identifiers, any occurrence of
+                  CYBERDEMON will be substituted with the value 21 and so on.
+Line 5          - This tells the parser that this is the beginning of a block
+                  of triggers for map 1. This must be included otherwise an
+                  error would occur.
+
+REMEMBER: A map block can contain many triggers.
+
+Line 7          - Comment
+Line 8          - This is the begining of the first radius trigger. Defined
+                  is it's x,y cordinates plus it's radius.
+Line 9          - Basically displays a quake like tip to the screen. The true
+                  value just means make a noise to alert the player, false and
+                  no sound would be made.
+Line 10         - spawns the object, by using the radius triggers x,y
+                  coordinates (you can do more with spawnthing but you'll
+                  see that later on).
+Line 11         - Tells the parser that this is the end of this trigger
+                  definition.
+Line 14         - Definition of RT2 this is the same as the definition for
+                  RT1 (different coordinates and radius though).
+Line 15         - When a radiustrigger is flagged as tagged_repeatable it
+                  means that it can occur "n" times, where n is a number
+                  greater than or equal to 0, and it's frequency which is
+                  in tics(35 tics=1 second). So in this case it is 0 (which
+                  is infinite) at a 2 second interval (2 * 35).
+Line 16         - Gives the player(s) within the radius trigger 5% health, at
+                  the tagged_repeatable rate, and cannot go over 150%.
+Line 17         - Same as line 11, but for the 2nd trigger on map 1.
+Line 19         - Defines the end of the map block.
+
+To launch this script you would use the "-script <filename.extenstion>"
+parameter.
+
+Just remember that every map block must be started and terminated with a
+"start_map <n>" and an "end_map". And all triggers for that map are located
+within the map block, which they must be defined as 
+"radius_trigger <n> <n> <n>" and terminated with "end_radiustrigger".
+
+Note : You cannot put multiples of the same command into a trigger block, with 
+       exception of the following functions:
+
+            SpawnThing
+            PlaySound
+            SectorV
+            SectorL
+
+       Which are allowed.
+
+       eg.
+             ; WRONG!!!!!!!!!!!!!!!
+             radius_trigger -65 1289 200
+                  damage 25
+                  damage 28
+             end_radiustrigger
+
+
+        ; CORRECT!!!!!!!!!!!!!
+        radius_trigger -65 1289 200
+               damage 53             ; You're Dead
+        end_radiustrigger
+
+Also if you wanted to use the same command over and over again (eg. spawn 25%
+health at the same map position) you can just tag the trigger as being
+tagged_repeatable.
+
+eg.
+             ; 100% Health made up of Medikits
+             radius_trigger 416 678 150
+                  tagged_repeatable 4 0 1       ; 4 Times, Instantaneously
+                  spawnthing HEALTH25 0         ; HEALTH25 would be #defined
+             end_radiustrigger
+
+Hopefully you should now have an understanding of how they are set up, if you
+don't then "Don't worry" look at the example again, check out the working
+examples included.
+
+------------------------------------------------------------------------------
+Note about the following:
+These are Subject to change, expect many more functions to be added, and some
+of the current ones may be tweaked.
+------------------------------------------------------------------------------
+(The parser is NOT case sensitive)
+
+Block Definitions
+-----------------
+
+A block definition either defines the start & end of a map block or the
+start and end block for a radius trigger, radius trigger blocks must be
+contained within a map block.
+
+
+start_map <episode #> <map #>        ;Doom
+start_map <map #>                    ;Doom 2
+
+<map #>     - INT > 0
+<episode #> - INT > 0
+
+Specifies this is the begining of this maps/episodes triggers, everything
+after this will be allocated to that map/episode.
+---
+
+
+end_map
+
+This is used to terminate a map block. Once again both of the above are
+needed to successfully define a map block.
+---
+
+
+radius_trigger <x> <y> <radius>
+
+<x>      - INT converted to fixed point.
+<y>      - INT converted to fixed point.
+<radius> - INT > 0
+
+This is the start of the block definition for the radius trigger it sets up
+the x-coordinate/y-coordinate and radius out from center. This x,y
+coordinates can be overridden. (See spawnthing, playsound)
+
+Without the "tagged_repeatable" attribute a trigger will only occur once.
+---
+
+
+end_radiustrigger
+
+Terminates the current radius trigger, must be used in conjunction with
+"radius_trigger" to successfully define a trigger otherwise a parser error
+will occur.
+---
+
+
+
+Trigger Tags
+------------
+
+Trigger Tags allow triggers to inherit different types attributes. All these
+are defined within the "radius_trigger" block.
+
+
+tagged_repeatable <# times> <multiplier> <rate>
+
+<# times>    - INT >= 0 where 0 is infinite
+<multiplier> - INT >= 0 where 0 is instantaneous
+<rate>       - INT >  0
+
+This allows the trigger to become a repeatable one. A trigger without
+"tagged_repeatable" will only hapen once.
+
+To determine a triggers speed you use the formula:
+
+      multiplier * rate = (leveltime + result) is the next occurance.
+
+In Doom 35 game tics = 1 second.
+
+eg.
+               <multiplier>  <rate>                <multiplier>  <rate>
+No delay       0             0
+1/16 Second    1             2
+1/8  Second    1             4
+1/4  Second    1             9
+1/2  Second    1             18
+3/4  Second    1             26
+1    Second    1             35
+2    Seconds   2             35          or        1             70
+3    Seconds   3             35          or        1             105
+.
+.
+5.5  Seconds   11            18
+
+and so on....
+---
+
+
+tagged_immedate
+
+Makes the trigger become active immediately. (No player interaction required)
+---
+
+
+tagged_independant
+
+Once the trigger is activated it will continue running until all required
+functions have been completed.
+---
+
+
+tagged_use
+
+For the trigger to become active the player must be within it's radius and
+then press the use key to set it off.
+---
+
+
+
+Functions & Definitions
+-----------------------
+
+#define <identifier> <value>
+
+<identifier> - CHAR[80]
+<value>      - INT
+
+Used for creating aliases to make code easier to read, by substituting the
+<identifier> for it's <value> at compile time.
+---
+
+
+spawnthing <thingid> <angle>
+spawnthing <thingid> <x> <y> <angle>
+
+<thingid> - INT >= 0
+
+Optional:
+<x>       - INT converted to fixed point.
+<y>       - INT converted to fixed point.
+<angle>   - INT 
+
+Spawns a map object at either the radius triggers location or an alternate
+map location specified by the optional x,y coordinates and it angle. Note that monsters
+use angles where a 0 value will be good enough for bonus items/weapons etc.
+
+Tip:
+
+Place these defines at the top of you code to make angle setting easier.
+
+#define ANG0   0       ; N
+#define ANG45  -8192   ; NE
+#define ANG90  -16384  ; E
+#define ANG135 -24576  ; SE
+#define ANG180 32768   ; S
+#define ANG225 24576   ; SW
+#define ANG270 16384   ; W
+#define ANG315 8192    ; NW
+---
+
+
+healplayer <value> <limit>
+
+<value> - INT > 0
+<limit> - INT > 0 and < MAXHEALTH
+
+Give the player <value> health, this function will not go above the players
+MAXHEALTH which is 200.
+
+If no <limit> value is specified a parse error will not occur but it will
+have the value of 0, so therefore it won't effect the players health.
+---
+
+
+givearmor <value> <limit>
+
+<value> - INT > 0
+<limit> - INT > 0 and < MAXARMOR
+
+Essentially the same as "healplayer" but it increments the armour of the
+player. (Will not got above MAXARMOR 200)
+
+If no <limit> value is specified a parse error will not occur but it will
+have the value of 0, so therefore it won't effect the players armor.
+---
+
+
+damageplayer <value>
+
+<value> - INT > 0
+
+Damages player health/armour, higher skill levels do more damages, so make
+sure you don't use too high a number (50 with skill 5) otherwise the poor
+marine will be clobbered by the radius trigger. :)
+---
+
+
+gotomap <map>                              ; Doom 2
+
+<map>      - INT > 0
+<episode>  - INT > 0
+
+Warps to any map/episode specified. Can be used in a way similar to quakes
+start map, several triggers on map 1 point to various maps. Can go backwards
+as well, but at the moment all the monsters come back.
+
+[Note]
+This still will work with Doom 1 but it will only transport you between maps
+for the current episode. I originally had the gotomap function using an
+optional <episode> parameter to transport you between episodes, but with the 
+intermission screens showing invalid locations made it not worthwhile. So
+therefore it was removed.
+---
+
+
+playsound <sound #> {<x> <y>}
+
+<sound #> - INT >= 0
+
+Optional:
+<x>       - INT converted to fixed point.
+<y>       - INT converted to fixed point.
+
+Spawns a sound at either the location of the radius trigger, or at an
+optional x,y coordinate located somewhere else on the map. Can be used for
+making ambient sounds when used with "tagged_repeatable" and 
+"tagged_immediate".
+---
+
+
+tip "<text>" <displaytime> <sound>
+
+<text>        - CHAR
+<displaytime> - INT > 0
+<sound>       - Boolean (True/False)
+
+Displays a tip on the screen. A tip which uses sound to alert a player(True)
+has a higher priority over one which doesn't. This type of tip only is
+displayed to the player that has triggered it.
+---
+
+
+skill <num> <respawnmonsters> <fastmonsters>
+
+<num>             - INT (0 - 4)
+<respawnmonsters> - Boolean {false/true/0/1}
+<fastmonsters>    - Boolean {false/true/0/1}
+
+Changes the skill level while actually playing, to select nightmare the
+skill level must be set to 4 and <respawnmonsters> & <fastmonsters> should
+be set to "true".
+---
+
+
+sectorv <sector num> <height> <type>
+
+<sector num> - INT
+<height>     - INT converted to fixed point.
+<type>       - Boolean (True/1 = Floor, False/0 = Ceiling)
+
+Allows the raising or lowering of sectors ceilings and floors. To find a
+sector number I suggest you use a map editor for this. The height value
+determines how far a sector moves, for example a ceiling with a positive
+number will move down, but when the number is made negative it obviously
+reverses it, the same applies to the floor except the technique is reversed.
+
+eg. (for MAP01 of Doom 2 Entryway)
+.
+.
+	RadiusTrigger 416 672 300
+                Tagged_Repeatable 30 1 1
+                SectorV 20 2 CEILING
+        End_RadiusTrigger
+
+	RadiusTrigger 416 672 300
+                Tagged_Repeatable 30 1 1
+                SectorV 20 1 FLOOR
+        End_RadiusTrigger
+.
+.
+
+Will change the height of the ceiling and the floor of the first box in the
+main room (the one with the window, see demo script for this example).
+---
+
+
+sectorl <sector num> <light change>
+
+<sector num>   - INT
+<light change> - SHORT.
+
+Changes the light intensity in the specified sector.
+
+Positive number : Brighter
+Negative number : Darker
+---
+
+
+
+Parser Rules (Overview)
+-----------------------
+
+1. Must contain one command per line and can be either upper/lowercase or a
+   mixture as the parser is not case sensitive.
+   (Everything is converted to uppercase before parsing the line.)
+2. Anything following a ";" is regarded as a comment and is therefore ignored.
+3. Must begin a map trigger block with "start_map" and terminate with 
+   "end_map".
+4. Radius trigger definitions only occur within a map block and nowhere else.
+5. A radius trigger definition must begin with "radiustrigger" and end with 
+   "end_radiustrigger".
+6. Within the radius trigger block this is where the events are assigned.
+7. A map block may contain many radius triggers.
+8. Radius triggers can be separated / overlapped or stacked onto on another.
+10.Tagged Repeatable is a radius trigger function an not a map block function.
+11.It is possible (but not recommended) to create two map blocks of the same
+   map number throughout the scripting code.
+12."#define" can be used anywhere, but you have to remember if you define
+   something below where it is referenced then the parser will return an
+   error as it has not been added to the parsers namespace yet.
+   This is why I would recommend that all your "#defines" are set at the
+   top before anything else.
+
+
+
+Tips
+----
+
+* Use #define as much as you can!
+  1. Your scripts will be easier to read.
+  2. You can make more sense of the boolean variables.
+
+     #define CEILING 0    ;sectorv function
+     #define FLOOR   1
+
+     #define NOSOUND 0    ;tip function
+     #define SOUND   1
+
+  At least make these 4 mandatory, you won't regret it.
+
+* Set it out nicely, the nicer it's set out the easier it is to understand:).
+
+eg.
+
+;defines here
+
+start_map n
+
+     radiustrigger n n n
+     ;Tags
+         Tagged_Use
+         ;etc.
+
+     ;Code
+         sectorl n n
+         ;etc.
+
+     end_radiustrigger
+
+end_map
+
+
+start_map n
+.
+.
+.
+
+
+* Playsound, SectorV/SectorL & SpawnThing functions can be set many times
+  within one radius trigger all others cannot and will produce a parse error.
+
+
+Error Codes
+-----------
+
+The parser will produce message like this when an error occurs in the script:
+
+[WIN[1].d:\dds\exe]DOSDOOM.EXE -script DOOM2.SCR -warp 1 -nomonsters
+
+(DosDoom v0.66)          DOOM 2: Hell on Earth v1.10
+
+Radius Trigger Script Parser v0.1
+Script Found, Parsing......
+Error: START_MAP, block not terminated, at line 82.
+START_MAP 2
+
+-= or =-
+
+[WIN[1].d:\dds\exe]DOSDOOM.exe -script DOOM2.SCR -warp 1 -nomonsters
+(DosDoom v0.66)          DOOM 2: Hell on Earth v1.10
+
+Radius Trigger Script Parser v0.1
+Script Found, Parsing.....
+Error: Unknown Function, at line 71.
+        RADIUSTRIGGERED -688 704 300
+
+
+Here it will wait for the user to press return, the script will not be
+enabled if an error occurs.
+
+----------
+Error List
+----------
+
+Unknown Error 
+    
+    - Will never happen, so don't worry about ever seeing this one.
+      (Just here for the record)
+
+START_MAP, block not terminated
+
+    - Parser was unable to find the "end_map" command to terminate the
+      current map block.
+
+END_MAP with no START_MAP
+
+    - Pretty obvious, the parser came accross a "end_map" but there was no
+      "start_map" previously defined.
+
+RADIUS_TRIGGER, block not terminated
+
+    - Parser found "radius_trigger" or "end_map" instead of 
+      "end_radiustrigger".
+
+END_RADIUSTRIGGER with no RADIUS_TRIGGER
+
+    - Parser came accross an "end_radiustrigger" but there was no
+      "radius_trigger" to mark the beginning of the trigger block.
+
+Unknown Function
+
+    - Cannot locate the function name.
+
+Parameter is not of integer type
+
+    - The input is not an integer.
+
+Wrong number of parameters
+
+    - Either too little or too many parameters were passed through to
+      the function.
+
+Invalid number of quotes
+
+    - Either no starting or closing quotes (or neither). "tip" function.
+
+Variable Unknown
+
+    - Has tried to look up a #define declared in one the functions in the
+      defines namespace but was unsuccessful. Will only occur when redefining
+      boolean types.
+
+Function cannot be redefined
+
+    - An attempt has been made to reuse a function which is allowed only one
+      in a trigger block.
+
+Integer not within range specified
+
+    - A number was passed to a function which was out of the parameters
+      given range.
+
+
+
+Thing & Sound Id's
+------------------
+
+See : sound.txt
+      thing.txt
+
+
+
+
+Exmaples
+--------
+
+Example 1
+
+; ----------------------------------------------------------------------------
+;RadiusTrigger Test Script
+;
+;Author : John Cole
+;Email  : jcole@eisa.net.au
+;
+; ----------------------------------------------------------------------------
+; This is a Doom2 Script
+
+; Thing Angles
+#define ANG0   0
+#define ANG45  -8192
+#define ANG90  -16384
+#define ANG135 -24576
+#define ANG180 32768
+#define ANG225 24576
+#define ANG270 16384
+#define ANG315 8192
+
+; Ceiling/Floor Booleans
+#define CEILING 0
+#define FLOOR   1
+
+; Sound Booleans (TIP)
+#define NOSOUND 0
+#define SOUND   1
+
+; Skill Booleans
+#define M_RESPAWN_OFF 0
+#define M_RESPAWN_ON  1
+#define M_FAST_OFF 0
+#define M_FAST_ON  1
+
+; Misc.
+#define DEFAULT_RADIUS   180
+#define TIP_DISPLAY_TIME 2                            ; 2 Seconds
+
+#define NORM_HEAL    5                                ; This is 5%
+
+#define CYBERDEMON   21
+#define BONUS_HEALTH 45
+#define MEGASPHERE   62
+#define SUPERSHOTGUN 78
+#define BFG          72
+
+#define SARG_DIE     60                               ; Sound
+
+start_map 1                                           ; This is Doom2 Only
+
+        ; This is really a dummy trigger. It's Immediate so the player
+        ; has no control over it. Triggered at the very start of the level, it
+        ; places a bonus health down in front of player 1.
+
+        RadiusTrigger 0 0 0
+           ; Tags
+           Tagged_Immediate                           ; Go NOW! (Level Start)
+
+           ; Code
+                SpawnThing BONUS_HEALTH -56 1300 ANG0 ; Spawns a 1% Health
+                SpawnThing BONUS_HEALTH -56 1250 ANG0
+                SpawnThing BONUS_HEALTH -56 1200 ANG0
+                SpawnThing BONUS_HEALTH -56 1150 ANG0
+                SpawnThing BONUS_HEALTH -56 1100 ANG0
+                SpawnThing BONUS_HEALTH -56 1050 ANG0
+        End_RadiusTrigger
+
+
+        ; Displays the tip for 3 Seconds with a beep, and spawns a
+        ; Megasphere. On the box in the main room coming from the
+        ; corridor.
+
+        ; These are stacked Radius_Triggers
+        ; And Demonstrates Tagged repeatable.
+
+        RadiusTrigger 416 672 DEFAULT_RADIUS
+           ; Tags
+           Tagged_Repeatable 4 3 17   ; Loop 4 Times with a 1.5 sec gap
+
+           ; Code
+                DamagePlayer 25           ; Will end up dying (Skill 5)
+        End_RadiusTrigger                 ; if you had 100% health
+
+	RadiusTrigger 416 672 300
+           ; Code
+                Tip "THIS MIGHT MAKE YOU FEEL BETTER!" TIP_DISPLAY_TIME NOSOUND
+                SpawnThing MEGASPHERE ANG0      ; Spawns a MegaSphere
+		PlaySound 18
+		PlaySound 19 -56 1296
+        End_RadiusTrigger
+
+	RadiusTrigger 416 672 300
+           ; Tags
+           Tagged_Repeatable 34 0 1
+           Tagged_Independant          ; Once triggered continue automatically
+
+           ; Code
+                SectorV 20 2 CEILING            ; Lower the ceiling
+                SectorV 20 1 FLOOR              ; Raise the floor
+		SectorL 1  -1                   ; Lower the lighting
+		SectorL 52 -3                   ; Lower the lighting
+        End_RadiusTrigger
+
+
+        ; Spawns a supershotgun on the other box near the exit. Notice there
+        ; is no tip displayed for this one!
+
+        RadiusTrigger 920 736 DEFAULT_RADIUS
+           ; Code
+                SpawnThing SUPERSHOTGUN ANG0  ; Spawns a SuperShotgun
+        End_RadiusTrigger
+
+
+        ; Displays a tip near the pillars, that there may be a secret
+        ; nearby, this one does not spawn a map thing.
+        ; Then display "SECRET FOUND" when they go into the secret area.
+
+        RadiusTrigger 1048 544 150
+           ; Code
+                Tip "THERE IS A SECRET NEARBY" TIP_DISPLAY_TIME SOUND
+        End_RadiusTrigger
+
+        RadiusTrigger 1229 607 60
+           ; Code
+                Tip "SECRET FOUND" TIP_DISPLAY_TIME SOUND
+        End_RadiusTrigger
+
+
+        ; Spawn a cyberdemon at the start of map 1
+
+	RadiusTrigger -688 704 300
+           ; Code
+                Tip "YOU CAN'T GO OUT HERE, THERE ARE MAP ERRORS" 3 NOSOUND
+                SpawnThing CYBERDEMON ANG0    ; Cyberdemon
+        End_RadiusTrigger
+
+end_map
+
+
+; ----------------------------------------------------------------------------
+
+start_map 2
+
+        ; Triggered near the steps at the start of the level.
+
+	RadiusTrigger 1062 1781 50
+           ; Tags
+           Tagged_Repeatable 0 0 1
+
+           ; Code
+                GotoMap 1
+                Skill 4 M_RESPAWN_ON M_FAST_ON
+;		Tip "-= This May help =-" TIP_DISPLAY_TIME SOUND
+;		SpawnThing BFG                      ; Spawns a BFG!
+        End_RadiusTrigger
+
+end_map
+
+; ----------------------------------------------------------------------------
+; BTW You don't have to place the maps in any particular order.
+;
+start_map 1
+
+        ; Another example of stacked triggers.
+
+	RadiusTrigger 600 1592 140
+           ; Code
+                Tip "You found the well of lost souls" TIP_DISPLAY_TIME SOUND
+        End_RadiusTrigger
+
+
+	RadiusTrigger 600 1592 140
+           ; Tags
+           Tagged_Repeatable 0 1 35   ; Infinite Loop with a 1 second gap
+
+           ; Code
+                HealPlayer NORM_HEAL 200
+                GiveArmor  NORM_HEAL 100
+        End_RadiusTrigger
+
+
+	RadiusTrigger 600 1592 140
+           ; Tags
+           Tagged_Repeatable 0 3 35    ; Infinite Loop with a 3 second gap
+
+           ; Code
+                PlaySound SARG_DIE
+        End_RadiusTrigger
+
+end_map
+
+; ----------------------------------------------------------------------------
+
+
+
+Example 2
+
+
+; ----------------------------------------------------------------------------
+; Another RadiusTrigger Test Script
+;
+;Author : John Cole
+;Email  : jcole@eisa.net.au
+;
+; For use with testme.wad.
+; 
+; ----------------------------------------------------------------------------
+
+#define ANG0   0
+#define ANG45  -8192
+#define ANG90  -16384
+#define ANG135 -24576
+#define ANG180 32768
+#define ANG225 24576
+#define ANG270 16384
+#define ANG315 8192
+
+#define CEILING 0
+#define FLOOR   1
+
+#define NOSOUND 0
+#define SOUND   1
+
+#define DEFAULT_RADIUS   180
+#define TIP_DISPLAY_TIME 2                            ; 2 Seconds
+
+#define CYBERDEMON   21
+#define MEGASPHERE   62
+#define BFG          72
+
+start_map 1
+
+	RadiusTrigger 0 0 0
+	; Tags
+	   Tagged_Repeatable 2 0 1
+           Tagged_Immediate
+
+	; Code
+                Tip "Go in get the megasphere and get out!" TIP_DISPLAY_TIME SOUND
+        End_RadiusTrigger
+
+        ; Door simulation (Open)
+        ; Opens from the middle.
+	RadiusTrigger -8 80 60
+	; Tags
+	   Tagged_Repeatable 40 0 1
+           Tagged_Independant
+
+	; Code
+                SectorV 1 -2 CEILING            ; Raise the ceiling
+                SectorV 1 -1 FLOOR              ; Lower the floor
+        End_RadiusTrigger
+
+        ; Door simulation (Close)
+	RadiusTrigger -8 200 60
+	; Tags
+	   Tagged_Repeatable 40 0 1
+	   Tagged_Use
+
+	; Code
+                SectorV 1 2 CEILING             ; Lower the ceiling
+                SectorV 1 1 FLOOR               ; Raise the floor
+        End_RadiusTrigger
+
+	RadiusTrigger -8 200 60
+	; Code
+		Tip "Press USE to close" TIP_DISPLAY_TIME SOUND
+        End_RadiusTrigger
+
+        ; Spawn a BFG when the door opens.
+        ; and make a platform noise.
+	RadiusTrigger -8 80 60
+	; Code
+		PlaySound 18
+                SpawnThing BFG -8 200 ANG0
+        End_RadiusTrigger
+
+        ; Make a noise when the door is closed
+	RadiusTrigger -8 200 80
+	; Tags
+	   Tagged_Use
+
+	; Code
+		PlaySound 18
+        End_RadiusTrigger
+
+        ; 
+	RadiusTrigger 216 640 200
+	; Tags
+           Tagged_Repeatable 56 0 1
+           Tagged_Independant
+
+	; Code
+                SectorV 2 -2 CEILING            ; Lower the ceiling
+                SectorV 2 -1 FLOOR              ; Raise the floor
+                SectorL 3 -2                    ; Dim the room
+        End_RadiusTrigger
+
+	RadiusTrigger 216 640 200
+	; Code
+                SpawnThing MEGASPHERE 400 848 ANG0
+                SpawnThing CYBERDEMON -240 208 ANG0
+        End_RadiusTrigger
+
+
+end_map
+
+
+
+Example 3
+
+
+Here's a small Doom 1 script just for the record, to show the difference
+with "start_map" and "goto_map":
+
+; ----------------------------------------------------------------------------
+; Doesn't do much just allows you to go between maps 1 & 4 of episode 1
+start_map 1 1
+
+      radiustrigger 1055 -3291 140
+      ;tags
+          TAGGED_REPEATABLE 0 0 1
+
+      ;code
+		gotomap 4
+      end_radiustrigger
+
+end_map
+
+start_map 1 4
+
+      radiustrigger 1926 932 75
+      ;tags
+	  TAGGED_REPEATABLE 0 0 1
+
+      ;code
+		gotomap 1
+      end_radiustrigger
+
+end_map
+; ----------------------------------------------------------------------------
+
+---
+DOCUMENT END

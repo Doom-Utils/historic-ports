@@ -1,0 +1,60 @@
+		    LINUX REALTIME AUDIO PLAYBACK
+
+			   Thomas M. Sailer
+			sailer@ife.ee.ethz.ch
+
+Typical Unix schedulers go to great lengths to allow batch processing jobs
+to run on a machine while still providing interactivity. They do it by
+enhancing the priority of short bursty tasks. While this works well for
+many important tasks (such as X, xterm and compiling new kernel releases :-)),
+it does not fit the behaviour of a MPEG player. The tasks of a MPEG player
+have a "soft" deadline; if it is not met, no nuclear power plant blows up,
+but still it can be heard as an annoying artifact. That's what the POSIX.1b
+realtime scheduling extensions promise to remedy.
+
+rtbuf.c is an implementation of a buffering scheme using the POSIX realtime
+features. Its aim is to provide smooth playback of MPEG audio streams
+even on a very heavily loaded machine. It uses many advanced features
+of the operating system:
+- System V shared memory
+- POSIX.1b realtime scheduling extensions
+- POSIX.1b memory locking
+- Sound Driver DMA buffer mapping into the user proces space
+Make sure that you have enabled these features! The downside
+of these features is that they can only be used if the process has
+root permissions. Using realtime features is somewhat dangerous, since
+a realtime process can eat all the CPU time, rendering the machine
+unresponsive. So don't try this on your server!
+
+This implementation creates three processes:
+- The command line parse/control process. It runs continuously as root.
+- The MPEG decode/playback process. It revokes root rights as soon as it
+  has enabled the realtime features, to minimize the risk for a security
+  hole
+- The prefetch process. Its only purpose is to load the input file into
+  a memory region shared with the decode process. It also revokes root
+  rights.
+
+The MPEG decode process writes its output data directly into the soundcard
+DMA buffer, which is mmap'ed into process memory. This minimizes operating
+system overhead.
+
+
+To use this:
+Type 
+./configure --enable-realtime
+make
+chown root.root amp
+chmod u+s amp
+
+This buffering only works on Linux (maybe also on FreeBSD, but I don't
+know...) Other operating systems do not (yet) support the required
+features.
+
+A warning: The buffering might not work on an SMP system. This could
+be solved by making the macros atomic_set and atomic_read SMP safe.
+
+Have fun
+
+Tom
+

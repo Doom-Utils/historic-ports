@@ -775,19 +775,21 @@
 	    "                                Shareware!\n"\
 	    "===========================================================================\n"
 #define GR2UDOOMSTART\
- "                         The Ultimate DOOM Startup v%i.%i                        "
+ "The Ultimate DOOM"
 #define GR2SHAREDOOMSTART\
- "                            DOOM Shareware Startup v%i.%i                        "
+ "DOOM (Shareware)"
 #define GR2REGDOOMSTART\
- "                            DOOM Registered Startup v%i.%i                       "
+ "DOOM (Registered)"
 #define GR2DOOM2START\
- "                         DOOM 2: Hell on Earth v%i.%i                            "
+ "DOOM 2: Hell on Earth"
 #define GR2PLUTSTART\
- "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+ "DOOM 2: The Plutonia Experiment"
 #define GR2TNTSTART\
- "                     DOOM 2: TNT - Evilution v%i.%i                              "
+ "DOOM 2: TNT - Evilution"
 #define GR2PUBDOOMSTART\
- "                     Public DOOM - v%i.%i                                        "
+ "DOOM"
+#define GR2DOSDOOMSTART\
+ "DOSDoom"
 
 
 //these are unused.  They're just here for Deh compatibility

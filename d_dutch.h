@@ -124,12 +124,12 @@
 //
 // P_Doors.C
 //
-#define DUTPD_BLUEO	"Je hebt een blauwe sleutel nodig om dit object te activeren"
-#define DUTPD_REDO	"Je hebt een rode sleutel nodig om dit object te activeren"
-#define DUTPD_YELLOWO	"Je hebt een gele sleutel nodig om dit object te activeren"
-#define DUTPD_BLUEK	"Je hebt een blauwe sleutel nodig om deze deur te openen"
-#define DUTPD_REDK	"Je hebt een rode sleutel nodig om deze deur te openen"
-#define DUTPD_YELLOWK	"Je hebt een gele sleutel nodig om deze deur te openen"
+#define DUTPD_BLUEO	"Je hebt een blauwe sleutel nodig."
+#define DUTPD_REDO	"Je hebt een rode sleutel nodig."
+#define DUTPD_YELLOWO	"Je hebt een gele sleutel nodig."
+#define DUTPD_BLUEK	"Je hebt een blauwe sleutel nodig."
+#define DUTPD_REDK	"Je hebt een rode sleutel nodig."
+#define DUTPD_YELLOWK	"Je hebt een gele sleutel nodig."
 
 //
 //	G_game.C
@@ -404,9 +404,8 @@
 "De walgelijke spiderdemon die de\n"\
 "invasie van de maanbases geleid had\n"\
 "en zoveel dood en verderf zaaide\n"\
-"zal voor eeuwig die trap onder zijn.\n"\
+"zal voor eeuwig die trap onder zijn\n"\
 "kont blijven voelen.\n"\
-"\n"\
 "Een verborgen deur opent zich en\n"\
 "jij gaat naar binnen. Je bent te\n"\
 "taai voor de hel gebleken en nu is\n"\
@@ -414,7 +413,6 @@
 "de deur zul je de groene velden van\n"\
 "de aarde weer kunnen zien\n"\
 "Eindelijk thuis.\n" \
-"\n"\
 "Je vraagt je af wat er is gebeurd\n"\
 "op aarde terwijl jij het kwaad aan\n"\
 "het bestrijden was. Het is maar goed\n"\
@@ -453,7 +451,7 @@
 "AANWEZIGHEID.\n" \
 "\n"\
 "VOOR JE ZIE JE EEN VOORPOST VAN DE HEL,\n" \
-"EEN ZWAAR BELEGERDE ZONE. ALS JE ER LANGS,\n" \
+"EEN ZWAAR BELEGERDE ZONE. ALS JE ER LANGS\n" \
 "KAN KOMEN KUN JE DOORDRINGEN TOT HET\n" \
 "BEHEKSTE HART VAN DE RUIMTEBASIS EN KUN\n" \
 "JE DE SCHAKELAAR VINDEN DIE DE BEVOLKING\n" \
@@ -466,7 +464,7 @@
 "ERVOOR DAT DE MENSHEID KAN EVACUEREN VAN\n"\
 "DE AARDE OM DE NACHTMERRIE TE ONTVLUCHTEN.\n"\
 "NU BEN JE DE ENIGE OVERGEBLEVEN MENS OP DE\n"\
-"PLANEET. MENSETENDE MUTATIES, VLEESETENDE,\n"\
+"PLANEET. MENSETENDE MUTATIES, VLEESETENDE\n"\
 "WEZENS EN BOZE GEESTEN ZIJN JE ENIGE BUREN.\n"\
 "JE LEUNT ACHTEROVER EN WACHT OP DE DOOD,\n"\
 "BLIJ ZIJNDE DAT JE JE SOORTGENOTEN HEBT\n"\
@@ -474,9 +472,9 @@
 "\n"\
 "MAAR DAN ZENDT DE LEIDING VAN DE MENSHEID\n"\
 "JE EEN BOODSCHAP VANUIT DE RUIMTE.\n"\
-"SENSOREN HEBBEN DE BRON VAN EEN BUITENAARDSE\n"\
-"INVASIE ONTDEKT. ALS JE DAAR NAAR TOE GAAT\n"\
-"KUN JE HEN MISSCHIEN TEGENHOUDEN.\n"\
+"SENSOREN HEBBEN DE BRON VAN EEN BUITEN-\n"\
+"AARDSE INVASIE ONTDEKT. ALS JE DAAR NAAR\n"\
+"TOE GAAT KUN JE HEN MISSCHIEN TEGENHOUDEN.\n"\
 "HUN BASIS IS IN HET HART VAN JE EIGEN\n"\
 "WOONPLAATS, NIET VER VAN DE RUIMTEBASIS.\n"\
 "LANGZAAM EN MET PIJN STA JE OP EN KEERT\n"\
@@ -487,7 +485,7 @@
 
 #define DUTC3TEXT \
 "JE BENT IN HET CORRUPTE HART VAN DE STAD,\n"\
-"OMRINGT DOOR DE LIJKEN VAN JE VIJANDEN.\n"\
+"OMRINGD DOOR DE LIJKEN VAN JE VIJANDEN.\n"\
 "JE WEET GEEN MANIER OM DE INGANG VAN DE\n"\
 "WEZENS AAN DEZE KANT TE VERNIETIGEN, DUS\n"\
 "JE BALT JE VUISTEN EN STORMT NAAR BINNEN.\n"\
@@ -516,7 +514,7 @@
 "HET ZWEET VAN JE VOORHOOFD WISSEND BEGIN\n"\
 "JE AAN DE LANGE REIS NAAR HUIS. HET\n"\
 "WEER OPBOUWEN VAN DE AARDE MOET VEEL\n"\
-"LEUKER ZIJN DAN HET AFBREKEN WAS"
+"LEUKER ZIJN DAN HET AFBREKEN WAS."
 
 
 // Before level 31, put this:
@@ -540,18 +538,18 @@
 // after map 06	
 
 #define DUTP1TEXT  \
-"Met plezier kijk je naar het nastomende lijk\n"\
-"van de poortwachter.  Met zijn dood, heb je\n"\
-"de kwantumversneller uit de stinkende klauwen\n"\
-"van de hel gered.  Je ontspant je en kijkt de\n"\
-"kamer eens rond.  Verdorie!  Er zou toch\n"\
-"minstens een werkend prototype moeten zijn,\n"\
-"maar je ziet hem niet. De demonen zullen\n"\
-"hem meegenomen hebben.\n"\
-"\n"\
+"Met plezier kijk je naar het nastomende\n"\
+"lijk van de poortwachter. Met zijn dood\n"\
+"heb je de kwantumversneller uit de\n"\
+"stinkende klauwen van de hel gered. Je\n"\
+"ontspant je en kijkt de kamer eens rond.\n"\
+"Verdorie, er zou toch minstens een werkend\n"\
+"prototype moeten zijn, maar je ziet hem\n"\
+"niet. De demonen zullen hem meegenomen\n"\
+"hebben.\n"\
 "Je moet het prototype vinden, anders\n"\
-"zullen al je worstelingen voor niets geweest\n"\
-"zijn. Je moet doorgaan, blijven vechten,\n"\
+"zullen al je worstelingen voor niets zijn\n"\
+"geweest. Je moet doorgaan, blijven vechten,\n"\
 "blijven doden. Oh ja, en blijven leven."
 
 
@@ -577,25 +575,26 @@
 "de aarde verspreidt.  O wat is hij slecht.\n"\
 "Maar jij weet wie er erger is!\n"\
 "\n"\
-"Kwaadaardig grijnzend controleer je je wapens\n"\
-"en je maakt je op om die rotzak een beetje hel\n"\
-"van jezelf toe te dienen!"
+"Kwaadaardig grijnzend controleer je je\n"\
+"wapens en maakt je op om die rotzak een\n"\
+"beetje hel van jezelf toe te dienen!"
 
 // after map 30
 
 #define DUTP4TEXT \
 "Het boosaardige gezicht van de portier is\n"\
-"over de hele kamer uiteengespat. Wanneer zijn\n"\
-"aan flarden gescheurde lichaam uiteenvalt,\n"\
-"vormt zich een omgekeerde poort, welke het\n"\
-"laatste prototype versneller, en niet te\n"\
-"vergeten de laatste overgebleven demonen\n"\
-"opslokt. Je bent klaar. De hel is verdergegaan\n"\
-"met het martelen van slechte dode in plaats van\n"\
-"goede levende mensen. Vergeet niet tegen je\n"\
-"kleinkinderen te zeggen dat ze een rakettenwerper\n"\
-"in je grafkist moeten leggen als je doodgaat, je\n"\
-"zult het nodig hebben voor een laatste schoonmaak."
+"over de hele kamer uiteengespat. Wanneer\n"\
+"zijn aan flarden gescheurde lichaam\n"\
+"uiteenvalt, vormt zich een omgekeerde\n"\
+"poort, welke het laatste prototype en niet\n"\
+"te vergeten de laatste overgebleven demonen\n"\
+"opslokt. Je bent klaar. De hel is verder-\n"\
+"gegaan met het martelen van slechte dode\n"\
+"in plaats van goede levende mensen. Vergeet\n"\
+"niet tegen je kleinkinderen te zeggen dat\n"\
+"ze een rakettenwerper in je grafkist moeten\n"\
+"leggen als je doodgaat. Je zult het nodig\n"\
+"hebben voor een laatste grote schoonmaak."
 
 // before map 31
 
@@ -619,8 +618,8 @@
 "Je hebt je een weg gebaand uit de belegerde\n"\
 "experimentele laboratoria. Het lijkt wel\n"\
 "of de UAC weer eens gestikt is. Met hun hoge\n"\
-"omzet, moet het moeilijk zijn voor de oude UAC\n"\
-"om een bedrijfslevensverzekering te kopen\n"\
+"omzet moet het moeilijk zijn voor de oude\n"\
+"UAC een bedrijfslevensverzekering te kopen.\n"\
 "\n"\
 "Voor je ligt het militaire complex, vol\n"\
 "met ziekelijke gruwelen die niet kunnen\n"\
@@ -636,7 +635,8 @@
 "hele horde uit te roeien als het moet.\n"\
 "Misschien bereiden ze wel een bloedbad voor,\n"\
 "maar jij voelt je zo sterk als tweeduizend\n"\
-"maniakken verpakt in een woeste moordenaar.\n"\
+"maniakken, verpakt in een woeste moorde-\n"\
+"naar.\n"\
 "\n"\
 "Je bent niet van plan om snel neer te gaan."
 
@@ -644,23 +644,24 @@
 #define DUTT3TEXT \
 "De grote opening voor je ziet er verdraaid\n"\
 "bekend uit. Het ruikt ook bekend, als\n"\
-"gefrituurde uitwerpselen. Je hebt deze plek\n"\
-"nooit fijn gevonden en je weet zeker dat je\n"\
-"het nu ook niet fijn vindt. Hoe langer je er\n"\
-"over na denkt, des te bozer je wordt.\n"\
-"Terwijl je je geweer optilt, verschijnt er een\n"\
-"boosaardige grijns op je gezicht. Het\n"\
-"wordt tijd dat men bang voor je wordt!"
-
+"gefrituurde uitwerpselen. Je hebt deze\n"\
+"plek nooit fijn gevonden en je weet zeker\n"\
+"dat je het nu ook niet fijn vindt.\n"\
+"Hoe langer je er over nadenkt, des te\n"\
+"bozer je wordt. Terwijl je je geweer optilt,\n"\
+"verschijnt er een boosaardige grijns op je\n"\
+"gezicht. Het wordt tijd dat men bang voor\n"\
+"je wordt."
+                                            
 #define DUTT4TEXT \
 "Plotseling is alles stil, van de ene horizon\n"\
 "tot de andere. De kwellende echo van de hel\n"\
 "ebt weg, de lucht uit de nachtmerrie wordt\n"\
-"blauw, de stapels monsterlijken beginnen te\n"\
-"verdampen, samen met de kwaadaardige stank\n"\
-"die in de lucht hing. Jeetje, misschien is\n"\
-"het je gelukt. Zou je echt gewonnen hebben?\n"\
-"\n"\
+"blauw, de stapels monsterlijken beginnen\n"\
+"te verdampen, samen met de kwaadaardige\n"\
+"stank die in de lucht hing. Jeetje, het is\n"\
+"je misschien gelukt. Zou je echt gewonnen\n"\
+"hebben?\n"\
 "Er rommelt iets in de verte.\n"\
 "Er begint een blauw licht te gloeien\n"\
 "in de verbouwde kop van de monsteruitspuger."
@@ -678,9 +679,9 @@
 "Tijd voor vakantie. Je hebt de ingewanden\n"\
 "van de hel eruit laten komen en nu ben je\n"\
 "wel toe aan een pauze. Je mompelt in jezelf,\n"\
-"misschien kan iemand anders de volgende keer\n"\
-"de hel eens op zijn kloten geven. Voor je\n"\
-"ligt een rustig stadje, met vreedzaam\n"\
+"misschien kan iemand anders de volgende\n"\
+"keer de hel eens op zijn kloten geven. Voor\n"\
+"je ligt een rustig stadje, met vreedzaam\n"\
 "stromend water, ouderwetse gebouwtjes en\n"\
 "waarschijnlijk geen hellegebroed.\n"\
 "\n"\
@@ -751,19 +752,21 @@
 	    "                                Shareware!\n"\
 	    "===========================================================================\n"
 #define DUTUDOOMSTART\
- "                         The Ultimate DOOM Startup v%i.%i                        "
+ "The Ultimate DOOM"
 #define DUTSHAREDOOMSTART\
- "                            DOOM Shareware Startup v%i.%i                        "
+ "DOOM (Shareware)"
 #define DUTREGDOOMSTART\
- "                            DOOM Geregistreerd Startup v%i.%i                       "
+ "DOOM (Geregistered)"
 #define DUTDOOM2START\
- "                         DOOM 2: Hell on Earth v%i.%i                            "
+ "DOOM 2: Hell on Earth"
 #define DUTPLUTSTART\
- "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+ "DOOM 2: The Plutonia Experiment"
 #define DUTTNTSTART\
- "                     DOOM 2: TNT - Evilution v%i.%i                              "
+ "DOOM 2: TNT - Evilution"
 #define DUTPUBDOOMSTART\
- "                     Public DOOM - v%i.%i                                        "
+ "DOOM"
+#define DUTDOSDOOMSTART\
+ "DOSDoom"
 
 //these are unused.  They're just here for Deh compatibility
 #define DUTI_SDPMI   "I_StartupDPMI\n"

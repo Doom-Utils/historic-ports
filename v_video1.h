@@ -83,6 +83,23 @@ V_DrawPatchInDirectFlipped8
   patch_t*	patch );
 
 void
+V_DrawPatchTrans8
+( int		x,
+  int		y,
+  int           index,
+  int		scrn,
+  patch_t*	patch	);
+
+void
+V_DrawPatchInDirectTrans8
+( int		x,
+  int		y,
+  int           index,
+  int		scrn,
+  patch_t*	patch	);
+
+
+void
 V_DrawPatchShrink8
 ( int		x,
   int		y,

@@ -28,9 +28,8 @@
 #pragma interface
 #endif
 
+#include "p_mobj.h"
 
-
-extern int nosound;
 //
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -55,24 +54,27 @@ void S_Start(void);
 //
 // Start sound for thing at <origin>
 //  using <sound_id> from sounds.h
-//
-void
+//  Returns channel playing on, for stopping
+// Sounds in the finale
+int
 S_StartSound
-( void*		origin,
+( mobj_t*		origin,
   int		sound_id );
 
-
+#ifdef DJGPP
+void S_DoSound(void);
+#endif
 
 // Will start a sound at a given volume.
-void
+int
 S_StartSoundAtVolume
-( void*		origin,
+( mobj_t*		origin,
   int		sound_id,
   int		volume );
 
 
 // Stop sound for thing at <origin>
-void S_StopSound(void* origin);
+void S_StopSound(mobj_t* origin);
 
 
 // Start music using <music_id> from sounds.h
@@ -84,6 +86,10 @@ void
 S_ChangeMusic
 ( int		music_id,
   int		looping );
+void
+S_ChangeMusicbyName
+( char                 *name,
+  int                   looping );
 
 // Stops the music fer sure.
 void S_StopMusic(void);
@@ -96,11 +102,14 @@ void S_ResumeSound(void);
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void* listener);
+void S_UpdateSounds(mobj_t* listener);
 
 void S_SetMusicVolume(int volume);
+void S_SetCDMusicVolume(int volume);
 void S_SetSfxVolume(int volume);
 
+
+extern int numChannels;
 
 #endif
 //-----------------------------------------------------------------------------

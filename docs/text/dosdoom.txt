@@ -1,0 +1,234 @@
+v0.64 of DOSDoom (a port of the Linux Version of DOOM)
+
+----------------------------------------------------------------------------
+-This port is now developed by the DOSDoom Team (acbaker@lineone.net)
+-This port was originally written by Chi Hoang (cyhoang@acs.ucalgary.ca)
+-The official DosDoom homepage now at http://www.frag.com/dosdoom
+-DOSDoom has been developed with help from various authors (see credits.htm)
+-DOOM is copyright ID software (www.idsoftware.com)
+-This port is not endorsed by id software, so don't bug them about it
+-No responsibility is taken for any damage that may be done by this program
+----------------------------------------------------------------------------
+
+Make sure you unzipped with directories!!!
+You can get the original linux-doom source at ftp://ftp.idsoftware.com/source/doomsrc.zip
+
+What files you need to now about:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Program Files (needed for DOSDoom):
+-/dosdoom.exe - The Program itself
+-/dosdoom.wad - WAD file containing additional info needed by DOSDoom
+-/dosdoom.cfg - DOSDoom Config for Software Wavetable
+-/default.cfg - DOSDoom Main Config File
+-/cwsdpmi.exe - DPMI Provider, need if you don't have DPMI normally
+
+Documentation:
+-/docs/text/dosdoom.txt - Text Version of this File
+-/docs/text/rts.txt - Text Description of Radius Triggers
+-/docs/text/things.txt - Text List of Radius Triggers Thing IDs
+-/docs/text/sounds.txt - Text List of Radius Triggers Sound IDs
+-/docs/text/doomlic.txt - ID's License regarding the source code
+-/docs/text/history.txt - History description
+-/docs/text/sprites.txt - Text Sprites-in-a-Bugfix description
+-/docs/text/linux.txt - Text Linux Notes
+
+-/docs/html/dosdoom.htm - This File
+-/docs/html/music.htm - Details of how to config DOSDoom for various music types
+-/docs/html/sprites.htm - HTML Sprites-in-a-Bugfix description
+-/docs/html/radius.htm - HTML Radius Triggers Information
+-/docs/html/credits.htm - Credits 
+
+-/docs/orig/ - directory of all original doom source docs files
+
+-/logs/changes.log - Log of all code changes from V0.61 onwards
+
+Whats new (in v0.64):
+^^^^^^^^^^^^^^^^^^^^^
+-added needed wads to source dist
+-added some troubleshooting notes to the end of the user notes
+-sky fixed in all resolutions. Thanks to Matthew J Legowski <legowski+@andrew.cmu.edu>
+-Updated Dutch support. Thanks to Arno Slagboom (arnos@freemail.nl)
+-Many linux improvements contributed by Eduardo Casino-Almao (eduardo@medusa.es) 
+-New music and sound code 
+Support for MUS, MOD and MP3 music files (see music.htm).
+- CD Atmosphere support
+- MOD and S3M support based on JGMOD.
+http://www.geocities.com/siliconvalley/vista/8890/
+- MP3 support based on dosamp based on amp-0.7.5 by Tomislav Uzelac
+dosamp is by Ove Kaaven 
+amp-0.7.5 is by Tomislav Uzelac
+- Missile Teleportation off/on/silent
+- Player Teleportation Speed normal/quick/quickest
+- Fixed the crosshair so it re-adjusts when full screen.
+- Pulsating crosshair. 
+- Extended network setup packet, sends all the information from the
+gameplay menu to all other machines so there are no consistency errors.
+- Fixed the demo's so they play properly again, (AdvancedAI was using
+P_Random, so the demo's were getting the wrong numbers) There is now a
+J_Random :) function which should be used for random numbers for addons to
+stop this from re-occuring.
+- disabled the gameplay menu also while in a netgame (you can undo
+that if you wish, but I personally think it's better to reduce consistency
+errors).
+-Radius Scripting (player goes within a radius causes an event - check this out!)
+Scripting for new levels or existing ones (see radius.htm).
+-Options menu reorganised and graphical titles used
+-new deadly former humans setting (spider demon is also a nightmare here)
+-new startup sequence
+-monster respawn setting in the menu
+-monster infighting setting in the menu
+-graphical titles for menu
+-cd audio volume in the menu
+-code clean up (rationalising etc)
+-updated german support (Thanks to TwoFace)
+-new cheat codes:
+'idgive1' - gives chainsaw.
+'idgive2' - gives shotgun + full ammo.
+'idgive3' - gives double-barrel shotgun + full ammo.
+'idgive4' - gives chaingun + full ammo.
+'idgive5' - gives missile launcher + full ammo.
+'idgive6' - gives plasma rifle + full ammo.
+'idgive7' - gives BFG + full ammo.
+'idunlock' - gives all the keys.
+'idloaded' - gives all the ammo.
+'idsuicide' - suicide.
+'idtakeall' - takes all stuff away.
+'idinfo' - replaces 'showinfo'.
+'idkillall' - replaces 'hotaru'.
+-'idinfo' gives numerical x,y coordinates for scripting
+-menu uses coloured text (configurable)
+-Spectres can be setup as Visible/Partly Visible/Translucent/Stealth
+-Lost Soul can be setup as Visible/Partly Visible/Translucent/Stealth
+
+(The not so good things....)
+-dehacked support REMOVED temporarily 
+-new ENEMY AI REMOVED temporarily 
+-human madness and human explodings REMOVED
+
+Whats New over the Original Doom:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hi-Colour Mode
+Higher Resolutions (up to 1280x1024, compared to 320x200 in the original)
+3 Levels of Translucency
+Jumping
+180-degree turn
+user-definable gravity
+Controls Configurable in the Game
+8-Player Support
+New gameplay options
+Mouse-look
+Radius Scripting for existing and new levels
+Music support for MP3, MOD and loads more
+CD Audio
+Overlap Map Function
+Rotate Map Function
+LOADS MORE!  
+
+User Notes
+^^^^^^^^^^
+  -use wads from doom v1.9!!!!!!!!
+  -networking should only be compatible with doom v1.9 if you don't use extra features
+   (ie: everything in gameplay options must be turned off, gravity should be at default)
+  -Everything in gameplay options MUST be the same for all computers in
+   a network game.
+  -played demos should be from doom v1.9
+  -if you have an order video card without vesa2 linear frame buffer, you
+   might be able to speed up doom by getting SDD at http://www.scitechsoft.com
+  -On a slower machine, dosdoom is slower than the original doom.exe, while
+   on a newer machine, dosdoom is faster than the original doom.exe
+  -using double-buffering may improve speed significantly, but it also could
+   slow things down.
+  -to do networking, rename dosdoom.exe to doom2.exe and run dm.exe
+   (dm.exe is DeathManager which comes with doom v1.9)
+  -You could use CapLock to always run - when its on, use shift to walk
+  -i pumped up maxvisplanes, maxopenings, maxdrawsegs, maxvissprites, and
+   max savegame size for u level designers out there :)
+  -If the DOSDOOM environ var exists, dosdoom will look in that directory
+   for default.cfg
+  -320x100 mode is availiable :)
+  -new cheatcode: type 'idkillall' to kill all monsters
+  -new cheat code 'idinfo', which will show fps/time/position/kills/etc
+   in single player and fps/time in multiplayer
+  -'idinfo', 'cdnext', 'cdprev', and 'idmus??' are allowed in deathmatch
+  -MIDI support is now in DosDoom - just use the midi file in place of the
+   mus file
+  -You can press PrintScreen to take a screenshot at any time
+  -player 5-8 starts are things 4001-4004 (for you level designers out there)
+  -you need a new ipxsetup for 8 player support
+  -If the mouse hangs, you could try adding mouse=ms to dosdoom.cfg
+
+   NOTE TO PROGRAMMERS: Please see coders.txt if you wish compile DOSDoom.
+
+New Command Line Parameters:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  -gwaddir dir  Sets the location of the doom wad
+  -width ???    Sets x resolution to ??? (default 320)
+  -height ???   sets y resolution to ??? (default 200)
+  -hicolor      Enables hicolor mode
+  -forcevga     Use standard vga for 320x200 even if a vesa mode is availiable
+  -dblbuffer    Use hardware double buffering.  Might be faster, especially at
+                hi-res and hi-color modes.  You could use timedemo to check.
+                This may not work on all computers. (Note: on most video cards,
+                this will be slower if you use lotsa translucency)
+  -heapsize ??? Sets heapsize to ??? megabytes.  (default 6)  Increase if you
+                get out of memory errors at very-high resolutions or big maps
+  -censored     Use this to censor quit messages
+  -cdaudio      Turns on cd-audio support.  Use the new cheat codes CDNEXT
+                and CDPREV to go forward or back a track.  Use IDMUS?? to
+                change to a specific track.
+  -digmid       Enables software wavetable.  You will have to edit the
+                included dosdoom.cfg, so that the patches= line points
+                to either a default.cfg file (from a set of GUS patches)
+                or a .dat file (which can be created from a SoundFont (.sf2)
+                file with the pat2dat utility availiable on my webpage). You
+                can get SoundFont files and GUS patches by following the links
+                at http://www.talula.demon.co.uk/allegro/digmid.html
+  -readmus      Read music card from default.cfg instead of trying to autodetect
+  -readsfx      Read sfx card from default.cfg instead of trying to autodetect
+  -nosound      Turns off all sound
+  -gfixspr    \
+  -gfixflt    |
+  -gfixpat    |- Sprites-in-a-pwad bugfix (Thanks to Martin Howe)
+  -gfixsfp    |  See readme.sprites for more details.
+  -gignrot    |
+  -gfixall    /
+  -dutch      \
+  -french     |
+  -german1    |
+  -german2    |-These will replace the text in doom with
+  -turkish    | a translated version where possible.
+  -swedish    | 
+  -spanish    /
+  -doom2f     \
+  -doom2      |
+  -plutonia   | These let you specify which wad to load.  This allows you to 
+  -tnt        +-keep all the doom wads in one directory. (-doom2f is the
+  -udoom      | french version of doom2)
+  -doom       |
+  -shareware  /
+
+These Command-line Parameters can be Configured in the Options Menu:
+  -mlook        Enables mlook, so when you move the mouse up or down, it'll
+                tilt your view up or down
+  -invertmouse  Makes it so when you move the mouse up, your view tilts down
+                and vice-versa.  Only useful with -mlook
+  -vspeed       Sets the vertical speed for both -mlook and the keyboard
+                look up/down keys.  (default 1000)
+  -novert       Turns off vertical mouse movement.  Useful if you are used
+                to +mlook.
+  -newnmrespawn Makes monsters in Nightmare respawn in place
+  -lessaccurate Stop monsters from being 100% accurate
+  -itemrespawn  Item Respawning
+  -stretchsky   Stretches Sky for Better mlooking
+  -rotatemap    Makes the map view rotate, instead of having the player rotate
+  -newmap       New automap-overlay mode.  Press tab to switch to it.
+                (Thanks to Dave Pearson)
+  -swapstereo   Swaps the stereo channels
+
+Known Bugs:  (don't email us about them)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  -status bar shows before wipes when using double-buffering
+  -very large heapsizes don't work
+  -some demos get out of sync in dosdoom
+  -Shoot up/down doesn't work in net play.  I'm still thinking of the best
+   way to solve it without breaking network compatibility

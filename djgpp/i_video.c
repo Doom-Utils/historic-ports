@@ -25,51 +25,34 @@ static const char
 rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <conio.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <sys/time.h>
-#include <sys/types.h>
 
-#include <netinet/in.h>
-#include <signal.h>
-
-
-#include <go32.h>
-#include <pc.h>
-#include <dpmi.h>
-#include <dos.h>
-#include <sys/nearptr.h>
 #include <allegro.h>
 
 #include "doomstat.h"
 #include "i_system.h"
-#include "multires.h"
+#include "i_allegv.h"
+#include "v_res.h"
 #include "m_argv.h"
-#include "d_main.h"
 #include "w_wad.h"
 #include "z_zone.h"
 
 #include "doomdef.h"
-#include "allegvid.h"
 
 //dosstuff -newly added
+extern int timingdemo;
+
+int DX,DXI,DY,DYI,DY2,DYI2;
+int retrace;                // Wait for vsync, stops shearing w/out dblbuf.
 int SCREENWIDTH;
 int SCREENHEIGHT;
 int SCREENPITCH;
 int BPP;
-int weirdaspect;
-
-char oldkeystate[128];
-volatile int mselapsed=0;
-int mousepresent;
+fixed_t weirdaspect;
+boolean graphicsmode;
 
 byte *hicolortable;
 short hicolortransmask1,hicolortransmask2;
 
-extern int usejoystick;
-extern int usemouse;
 
 void calctranslucencytable();
 char *translucencytable25;
@@ -79,20 +62,39 @@ char *translucencytable75;
 
 void I_AutodetectBPP()
   {
+  BPP = get_config_int("system", "bpp", 1);
   if (M_CheckParm("-hicolor"))
     BPP=2;
-  else
-    BPP=1;
   }
 
+void I_GetResolution(void)
+{
+
+ int p;
+
+  SCREENWIDTH =  get_config_int("system", "screenwidth", 320);
+  SCREENHEIGHT = get_config_int("system", "screenheight", 200);
+
+  p=M_CheckParm("-width");
+  if (p && p < myargc-1)
+    SCREENWIDTH=atoi(myargv[p+1]);
+  p=M_CheckParm("-height");
+  if (p && p < myargc-1)
+    SCREENHEIGHT=atoi(myargv[p+1]);
+
+  DX  =(SCREENWIDTH<<16)  / 320;
+  DXI =(320<<16)          / SCREENWIDTH;
+  DY  =(SCREENHEIGHT<<16) / 200;
+  DYI =(200<<16)          / SCREENHEIGHT;
+  DY2 =DY                 / 2;
+  DYI2=DYI                * 2;
+}
 
 //
 // I_StartFrame
 //
 void I_StartFrame (void)
   {
-  if (usejoystick)
-    poll_joystick();
   }
 
 int I_ScanCode2DoomCode (int a)
@@ -147,162 +149,8 @@ int I_DoomCode2ScanCode (int a)
     }
   }
 
-void I_GetEvent()
-  {
-  event_t event;
-  int i,j;
-
-  char keystate[128];
-  int xmickeys,ymickeys,buttons;
-  static int lastbuttons=0;
-
-  //key presses
-  for (i=0;i<128;i++)
-    keystate[i]=key[i];
-  for (i=0;i<128;i++)
-    {
-    char normkey,extkey,oldnormkey,oldextkey;
-
-    normkey=keystate[i]&KB_NORMAL; extkey=keystate[i]&KB_EXTENDED;
-    oldnormkey=oldkeystate[i]&KB_NORMAL; oldextkey=oldkeystate[i]&KB_EXTENDED;
-
-    if ((normkey!=0)&&(oldnormkey==0))
-      {
-      event.type=ev_keydown;
-      event.data1=I_ScanCode2DoomCode(i);
-      D_PostEvent(&event);
-      }
-    if ((normkey==0)&&(oldnormkey!=0))
-      {
-      event.type=ev_keyup;
-      event.data1=I_ScanCode2DoomCode(i);
-      D_PostEvent(&event);
-      }
-    if ((extkey!=0)&&(oldextkey==0))
-      {
-      if ((i==0x48)||(i==0x4d)||(i==0x50)||(i==0x4b)||(i==KEY_ALTGR)||(i==KEY_RCONTROL)||(i==KEY_PGDN)||(i==KEY_PGUP)||(i==KEY_HOME)||(i==KEY_PRTSCR))
-        {
-        event.type=ev_keydown;
-        event.data1=I_ScanCode2DoomCode(i);
-        D_PostEvent(&event);
-        }
-      else if (i==0x7b)
-        {
-        event.type=ev_keydown;
-        event.data1=KEYD_PAUSE;
-        D_PostEvent(&event);
-        key[0x7b]=0;break;
-        event.type=ev_keyup;
-        event.data1=KEYD_PAUSE;
-        D_PostEvent(&event);
-        }
-      }
-    if ((extkey==0)&&(oldextkey!=0))
-      {
-      if ((i==0x48)||(i==0x4d)||(i==0x50)||(i==0x4b)||(i==KEY_ALTGR)||(i==KEY_RCONTROL)||(i==KEY_PGDN)||(i==KEY_PGUP)||(i==KEY_HOME)||(i==KEY_PRTSCR))
-        {
-        event.type=ev_keyup;
-        event.data1=I_ScanCode2DoomCode(i);
-        D_PostEvent(&event);
-        }
-      }
-    }
-  memcpy(oldkeystate,keystate,128);
-
-  //mouse movement
-  if ((mousepresent!=-1)&&(usemouse))
-    {
-    get_mouse_mickeys(&xmickeys,&ymickeys);
-
-    event.type=ev_mouse;
-    event.data1=0;
-    event.data2=xmickeys;
-    if (novert==0)
-      event.data3=-ymickeys;
-    else
-      event.data3=0;
-    if ((xmickeys!=0)||(ymickeys!=0))
-      D_PostEvent(&event);
-
-    //now, do buttons
-    buttons=mouse_b;
-    if (buttons!=lastbuttons)
-      {
-      j=1;
-      for (i=0;i<3;i++)
-        {
-        if (((buttons&j)==j)&&((lastbuttons&j)==0))
-          {
-          event.type=ev_keydown;
-          event.data1=KEYD_MOUSE1+i;
-          D_PostEvent(&event);
-          }
-        if (((buttons&j)==0)&&((lastbuttons&j)==j))
-          {
-          event.type=ev_keyup;
-          event.data1=KEYD_MOUSE1+i;
-          D_PostEvent(&event);
-          }
-        j*=2;
-        }
-      }
-    lastbuttons=buttons;
-    }
-
-  //joystick
-  if (usejoystick)
-    {
-    static int oldb=0;
-    int currb;
-
-    event.type=ev_joystick;
-    event.data1=0;
-    event.data2=joy_x;
-    event.data3=joy_y;
-    event.data2=(abs(event.data2)<4)?0:event.data2;
-    event.data3=(abs(event.data3)<4)?0:event.data3;
-    D_PostEvent(&event);
-
-    //now, do buttons
-    currb=0;
-    if (joy_b1) currb|=1;
-    if (joy_b2) currb|=2;
-    if (joy_b3) currb|=4;
-    if (joy_b4) currb|=8;
-    if (currb!=oldb)
-      {
-      j=1;
-      for (i=0;i<4;i++)
-        {
-        if (((currb&j)==j)&&((oldb&j)==0))
-          {
-          event.type=ev_keydown;
-          event.data1=KEYD_JOY1+i;
-          D_PostEvent(&event);
-          }
-        if (((currb&j)==0)&&((oldb&j)==j))
-          {
-          event.type=ev_keyup;
-          event.data1=KEYD_JOY1+i;
-          D_PostEvent(&event);
-          }
-        j*=2;
-        }
-      }
-    oldb=currb;
-    }
-  }
 
 
-//
-// I_StartTic
-//
-void I_StartTic()
-  {
-  I_GetEvent();
-  //i dont think i have to do anything else here
-
-  }
 
 
 //
@@ -330,26 +178,21 @@ void I_FinishUpdate(void)
 	if (tics > 20) tics = 20;
 
 	for (i=0 ; i<tics*2 ; i+=2)
-          {
-          if (BPP==1)
-	    screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)] = 0xff;
-          else
-            {
-	    screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2] = 0xff;
-            screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2+1] = 0xff;
-            }
-          }
-	for ( ; i<20*2 ; i+=2)
-          {
-          if (BPP==1)
-	    screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)] = 0x0;
-          else
-            {
-            screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2] = 0x0;
-            screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2+1] = 0x0;
-            }
-          }    
+       {
+	    screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH*BPP + i*BPP)] = 0xff;
+       if (BPP==2)
+	      screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH*BPP + i*BPP)+1] = 0xff;
+       }
+	for ( ; i<35*2 ; i+=2)
+       {
+	    screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH*BPP + i*BPP)] = 0x0;
+       if (BPP==2)
+	      screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH*BPP + i*BPP)+1] = 0x0;
+       }
     }
+
+  //Give the option of using vsync.
+  if (retrace && !timingdemo) vsync();
 
   //blast it to the screen
   flipscreens();
@@ -433,12 +276,6 @@ void I_SetPalette (byte* palette, int redness)
     }
   }
 
-void I_timer(void)
-{
-  mselapsed+=5;
-  cdcounter+=5;
-}
-END_OF_FUNCTION(I_timer);
 
 void I_InitGraphics(void)
   {
@@ -449,30 +286,20 @@ void I_InitGraphics(void)
     return;
   firsttime=0;
 
-  //init the joystick
-  if (usejoystick)
-    {
-    joy_type = JOY_TYPE_4BUTTON;
-    printf("CENTER the joystick and press a key:"); getch(); printf("\n");
-    initialise_joystick();
-    printf("Push the joystick to the UPPER LEFT corner and press a key:"); getch(); printf("\n");
-    calibrate_joystick_tl();
-    printf("Push the joystick to the LOWER RIGHT corner and press a key:"); getch(); printf("\n");
-    calibrate_joystick_br();
-    }
 
   //calc translucencytable if needed
   if ((BPP==1)&&(!M_CheckParm("-notrans")))
     calctranslucencytable();
   //enter graphics mode
   enter_graphics_mode();
+  graphicsmode = true;
 
   //do the hicolorpal table if necessary
   if (BPP==2)
     {
     byte *tempptr,*tempptr2;
 
-    tempptr=hicolortable=(byte *)malloc(256*32*9);
+    tempptr=hicolortable=(byte *)Z_Malloc(256*32*9, PU_STATIC, NULL);
     for (i=0;i<32;i++)
       {
       for (j=0;j<256;j++)
@@ -494,36 +321,14 @@ void I_InitGraphics(void)
     hicolortransmask2=makecol(63,63,63);
     }
 
-  //init timer
-  LOCK_VARIABLE(mselapsed);
-  LOCK_FUNCTION(I_timer);
-  install_timer();
-  install_int(I_timer,5);
-
-  //init the mouse
-  if (usemouse)
-    {
-    mousepresent=install_mouse();
-    if (mousepresent!=-1)
-      show_mouse(NULL);
-    if (M_CheckParm("-novert"))
-      novert=1;
-    }
-
-  //init keyboard
-  memset(oldkeystate,0,128);
-  install_keyboard();
   }
 
 void I_ShutdownGraphics(void)
 {
 //  if (KB_CAPSLOCK_FLAG)
 //    set_leds(KB_CAPSLOCK_FLAG);
-  remove_keyboard();
-  if (mousepresent!=-1)
-    remove_mouse();
-  remove_timer();
   set_gfx_mode(GFX_TEXT,80,25,0,0);
+  graphicsmode = false;
 }
 
 /* progress indicator for the translucency table calculations */
@@ -532,7 +337,7 @@ void callback_func()
   static int i = 0;
 
   if (!(15&i++))
-    fprintf(stderr, ".");
+    I_Printf(".");
   }
 
 void calctranslucencytable()
@@ -545,7 +350,7 @@ void calctranslucencytable()
   int i;
 
   thepalette = W_CacheLumpNum (W_GetNumForName("PLAYPAL"), PU_CACHE);
-  translucencytable25=(char *)malloc(65536*3);
+  translucencytable25=(char *)Z_Malloc(65536*3, PU_STATIC, NULL);
   translucencytable50=translucencytable25+65536;
   translucencytable75=translucencytable25+65536*2;
 
@@ -555,7 +360,7 @@ void calctranslucencytable()
     pal[i].g = thepalette[i*3+1] >> 2;
     pal[i].b = thepalette[i*3+2] >> 2;
     }
-  printf("Calculating translucency table\n");
+  I_Printf("Calculating translucency table\n");
 
   /* this isn't needed, but it speeds up the color table calculations */
    create_rgb_table(&rgb_table, pal, callback_func);
@@ -588,7 +393,7 @@ void calctranslucencytable()
      }
 
    rgb_map = NULL;
-   printf("\n");
+   I_Printf("\n");
 }
 
 

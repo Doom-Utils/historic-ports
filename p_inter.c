@@ -29,7 +29,7 @@ rcsid[] = "$Id: p_inter.c,v 1.4 1997/02/03 22:45:11 b1 Exp $";
 // Data.
 #include "doomdef.h"
 #include "dstrings.h"
-#include "sounds.h"
+#include "lu_sound.h"
 
 #include "doomstat.h"
 
@@ -92,8 +92,8 @@ P_GiveAmmo
     else
 	num = clipammo[ammo]/2;
     
-    if (gameskill == sk_baby
-	|| gameskill == sk_nightmare)
+    if ((gameskill == sk_baby)
+	|| (gameskill == sk_nightmare))
     {
 	// give double ammo in trainer mode,
 	// you'll need in nightmare
@@ -230,12 +230,12 @@ P_GiveBody
 ( player_t*	player,
   int		num )
 {
-    if (player->health >= MAXHEALTH)
+    if (player->health >= NORMHEALTH)
 	return false;
 		
     player->health += num;
-    if (player->health > MAXHEALTH)
-	player->health = MAXHEALTH;
+    if (player->health > NORMHEALTH)
+	player->health = NORMHEALTH;
     player->mo->health = player->health;
 	
     return true;
@@ -318,7 +318,7 @@ P_GivePower
     
     if (power == pw_strength)
     {
-	P_GiveBody (player, 100);
+	P_GiveBody (player, NORMHEALTH);
 	player->powers[power] = 1;
 	return true;
     }
@@ -368,13 +368,13 @@ P_TouchSpecialThing
     {
 	// armor
       case SPR_ARM1:
-	if (!P_GiveArmor (player, deh_greenac))
+	if (!P_GiveArmor (player, GREENARMOUR))
 	    return;
 	player->message = GOTARMOR;
 	break;
 		
       case SPR_ARM2:
-	if (!P_GiveArmor (player, deh_blueac))
+	if (!P_GiveArmor (player, BLUEARMOUR))
 	    return;
 	player->message = GOTMEGA;
 	break;
@@ -382,36 +382,34 @@ P_TouchSpecialThing
 	// bonus items
       case SPR_BON1:
 	player->health++;		// can go over 100%
-	if (player->health > deh_maxhealth)
-	    player->health = deh_maxhealth;
+	if (player->health > MAXHEALTH)
+	    player->health = MAXHEALTH;
 	player->mo->health = player->health;
 	player->message = GOTHTHBONUS;
 	break;
 	
       case SPR_BON2:
 	player->armorpoints++;		// can go over 100%
-	if (player->armorpoints > deh_maxarmor)
-	    player->armorpoints = deh_maxarmor;
+	if (player->armorpoints > MAXARMOUR)
+	    player->armorpoints = MAXARMOUR;
 	if (!player->armortype)
-	    player->armortype = deh_greenac;
+	    player->armortype = GREENARMOUR;
 	player->message = GOTARMBONUS;
 	break;
 	
       case SPR_SOUL:
-	player->health += deh_soulhealth;
-	if (player->health > deh_maxsoulhealth)
-	    player->health = deh_maxsoulhealth;
+	player->health += SOULHEALTH;
+	if (player->health > MAXSOULHEALTH)
+	    player->health = MAXSOULHEALTH;
 	player->mo->health = player->health;
 	player->message = GOTSUPER;
 	sound = sfx_getpow;
 	break;
 	
       case SPR_MEGA:
-	if (gamemode != commercial)
-	    return;
-	player->health = deh_megahealth;
+	player->health = MEGAHEALTH;
 	player->mo->health = player->health;
-	P_GiveArmor (player,deh_blueac);
+	P_GiveArmor (player, BLUEARMOUR);
 	player->message = GOTMSPHERE;
 	sound = sfx_getpow;
 	break;
@@ -474,13 +472,13 @@ P_TouchSpecialThing
 	break;
 	
       case SPR_MEDI:
-	if (!P_GiveBody (player, 25))
-	    return;
-
 	if (player->health < 25)
 	    player->message = GOTMEDINEED;
 	else
 	    player->message = GOTMEDIKIT;
+	if (!P_GiveBody (player, 25))
+	    return;
+
 	break;
 
 	
@@ -783,10 +781,15 @@ P_DamageMobj
     player_t*	player;
     fixed_t	thrust;
     int		temp;
-	
+
+#ifdef DEVELOPERS
     if ( !(target->flags & MF_SHOOTABLE) )
 	return;	// shouldn't happen...
-		
+#endif
+
+    if ( (target->flags & MF_STEALTH) && (target->invisibility > 0) )
+    	target->invisibility--;
+
     if (target->health <= 0)
 	return;
 
@@ -853,7 +856,7 @@ P_DamageMobj
 	
 	if (player->armortype)
 	{
-	    if (player->armortype == deh_greenac)
+	    if (player->armortype == GREENARMOUR)
 		saved = damage/3;
 	    else
 		saved = damage/2;

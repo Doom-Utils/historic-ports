@@ -31,7 +31,7 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 #include "doomstat.h"
 
 #include "z_zone.h"
-#include "multires.h"
+#include "v_res.h"
 
 #include "m_swap.h"
 
@@ -42,7 +42,7 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
-#include "allegvid.h"
+#include "i_allegv.h"
 
 
 // in AM_map.c

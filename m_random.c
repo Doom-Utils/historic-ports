@@ -53,12 +53,24 @@ unsigned char rndtable[256] = {
 int	rndindex = 0;
 int	prndindex = 0;
 
+
 // Which one is deterministic?
 int P_Random (void)
 {
     prndindex = (prndindex+1)&0xff;
     return rndtable[prndindex];
 }
+
+//--jc------------------------------------------------------------------------
+// Use this to keep the demo's working.
+int	jrndindex = 0; //-jc-
+
+int J_Random (void)
+{
+    jrndindex = (jrndindex+1)&0xff;
+    return rndtable[jrndindex];
+}
+//----------------------------------------------------------------------------
 
 int M_Random (void)
 {

@@ -24,7 +24,7 @@
 #define __P_MOBJ__
 
 // Basics.
-#include "tables.h"
+#include "lu_math.h"
 #include "m_fixed.h"
 
 // We need the thinker_t stuff.
@@ -37,7 +37,7 @@
 // States are tied to finite states are
 //  tied to animation frames.
 // Needs precompiled tables/data structures.
-#include "info.h"
+#include "lu_info.h"
 
 
 
@@ -199,13 +199,12 @@ typedef enum
     MF_TRANSLATION  	= 0xc000000,
     // Hmm ???.
     MF_TRANSSHIFT	= 26,
-    MF_TRANSLUC         = 0x60000000,
-    MF_TRANSLUC25       = 0x20000000,
-    MF_TRANSLUC50       = 0x40000000,
-    MF_TRANSLUC75       = 0x60000000
+
+    MF_TRANSLUC         = 0x20000000,
+
+    MF_STEALTH          = 0x40000000
 
 } mobjflag_t;
-
 
 // Map Object definition.
 typedef struct mobj_s
@@ -287,10 +286,21 @@ typedef struct mobj_s
     // Thing being chased/attacked for tracers.
     struct mobj_s*	tracer;	
     
-    byte   playxtra; //-jc- Colours for players 5-8
+    byte    playxtra;    //-jc- Colours for players 5-8
+    fixed_t origheight;  //-jc-
 
+    //Location of the last sighting of current target
     fixed_t lastknownx;
     fixed_t lastknowny;
+
+    //
+    // extended thing info
+    //
+
+    char invisibility; // 0 = visible, 5 = invisible
+
+    char extendedflags; // DOSDoom Specific flags (not used yet)
+
 } mobj_t;
 
 

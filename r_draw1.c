@@ -37,7 +37,7 @@ rcsid[] = "$Id: r_draw.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
 #include "r_local.h"
 
 // Needs access to LFB (guess what).
-#include "multires.h"
+#include "v_res.h"
 
 // State.
 #include "doomstat.h"
@@ -292,7 +292,7 @@ done8:
    popl %%ebp
   ":::"%eax","%ebx","%ecx","%edx","%esi","%edi");
   }
-*/
+#endif */
 //
 // Spectre/Invisibility.
 //
@@ -669,7 +669,7 @@ void R_FillBackScreen8 (void)
     if ((scaledviewwidth == SCREENWIDTH)&&(viewheight==SCREENHEIGHT))
 	return;
 	
-    if ( gamemode == commercial)
+    if ( gamemission != doom)
 	name = name2;
     else
 	name = name1;

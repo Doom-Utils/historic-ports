@@ -405,7 +405,9 @@ typedef struct vissprite_s
     lighttable_t*	colormap;
    
     int			mobjflags;
-    byte                playxtra; //-jc- Colours for players 5-8
+    byte                playxtra;
+
+    int                 invisibility;
     
 } vissprite_t;
 

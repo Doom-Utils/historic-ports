@@ -35,7 +35,7 @@ rcsid[] = "$Id: p_user.c,v 1.3 1997/01/28 22:08:29 b1 Exp $";
 
 #include "doomstat.h"
 
-
+#include "rad_trig.h"
 
 // Index of the special effects (INVUL inverse) map.
 #define INVERSECOLORMAP		32
@@ -273,7 +273,9 @@ void P_PlayerThink (player_t* player)
 
     if (player->mo->subsector->sector->special)
 	P_PlayerInSpecialSector (player);
-    
+
+    DoRadiTrigger(player);
+
     // Check for weapon change.
 
     // A special event has no other buttons.
@@ -295,8 +297,7 @@ void P_PlayerThink (player_t* player)
 	    newweapon = wp_chainsaw;
 	}
 	
-	if ( (gamemode == commercial)
-	    && newweapon == wp_shotgun 
+	if ( newweapon == wp_shotgun
 	    && player->weaponowned[wp_supershotgun]
 	    && player->readyweapon != wp_supershotgun)
 	{

@@ -30,7 +30,6 @@
 #define FLOATSPEED		(FRACUNIT*4)
 
 
-#define MAXHEALTH		100
 #define VIEWHEIGHT		(41*FRACUNIT)
 
 // mapblocks are used to check movement
@@ -102,7 +101,8 @@ extern mapthing_t	itemrespawnque[ITEMQUESIZE];
 extern int		itemrespawntime[ITEMQUESIZE];
 extern int		iquehead;
 extern int		iquetail;
-
+extern boolean		updatelostsoulflags;
+extern boolean		updatespectreflags;
 
 void P_RespawnSpecials (void);
 
@@ -126,6 +126,8 @@ void	P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type);
 //
 // P_ENEMY
 //
+#define FOUNDTARGET 127
+char P_CreateAggression (mobj_t *actor);
 void P_NoiseAlert (mobj_t* target, mobj_t* emmiter);
 
 

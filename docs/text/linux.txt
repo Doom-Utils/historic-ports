@@ -1,0 +1,71 @@
+v0.60 of a Linux port of a DOS port of a Linux port of DOOM
+
+-This port was mostly written by Chi Hoang (cyhoang@acs.ucalgary.ca)
+-A great deal of the linux improvements were contributed by
+ Eduardo Casino-Almao (eduardo@medusa.es)
+-Other code snippets and bug fixes were contributed by various authors
+-The official DosDoom homepage now at http://www.frag.com/dosdoom
+-DOOM is copyright ID software (www.idsoftware.com)
+-This port is not endorsed by id software, so don't bug them about it
+-I am not responsible for any damage that may be done by this program
+-------------------------------------------------------------------------
+
+You can get the original linux-doom source at ftp://ftp.idsoftware.com/source/doomsrc.zip
+
+Please read the readme.dos file for command-line parameters and other
+notes.  
+
+NOTE: use -vid x or -vid svga to pick whether you want the svgalib renderer
+      or the x renderer.  For svgalib, dosdoom needs root privledges.
+
+Differences from the dos port
+-----------------------------
+-the pause key is substituted by the Insert key
+-music and cdaudio don't work yet
+-You need to use -grabmouse for the mouse to work
+-Configuration is now saved in ~/.doomrc   This file is NOT compatibile
+ with default.cfg (well, i don't think so)
+-PrintScreen for a screenshot doesn't work (i dunno how to capture the
+ key in x) Just use -devparm and press f1
+-Bit-depth is autodetected in x, so if you're on a 16BPP x-server, it'll
+ automatically use 16BPP mode, etc
+-You can use -disp displayname to change your display
+-Use -geom to change window geometry (in x)
+
+New .doomrc options:
+
+video         -  defaults to "x". Overriden by -vid.
+vid_path      -  defaults to "/usr/lib/games/doom". Directory which holds
+                 the video modules.
+darken_screen -  defaults to 1. If not set, screen is not darken when the
+                 menu is on the screen (it looks better for me :-). This
+                 applies to DJGPP DosDoom as well.
+
+Linux Network play
+------------------
+Networking is totally different from the dos port and uses tcp/ip
+To start a net game you use the '-net' parameter followed by the player
+number of your machine (from 1 to 8) followed by the hostnames or IP's of
+the other players.  If you use an IP, you MUST precede it by a period.
+You can specify the port numbers of the other machines by appending a
+colon followed by the port number to the hostname/IP
+
+ie: to start a 2-player game, plyr 1 at 192.168.1.1 and plyr 2 at 192.168.1.2
+  player 1: xdosdoom -net 1 .192,168.1.2 -deathmatch 
+  player 2: xdosdoom -net 1 .192.168.1.1 -deathmatch
+
+ie: to start a 2-player game on one computer without a network (like me),
+    type (at an xterm):
+
+  xdosdoom -net 1 localhost:20001 -port 20000 -nosound >& /dev/null &
+  xdosdoom -net 2 localhost:20000 -port 20001 -nosound >& /dev/null &
+  
+
+The follow command line switches from the dos port are obsolete in linux:
+  -hicolor	(this is autodetected)
+  -forcevga	(unnecessary because we're in x)
+  -readmus	(autodetected in linux)
+  -readsfx	(ditto)
+  -dblbuffer	(can't do that in a window)
+  -cdaudio	(doesn't work)
+  -digmid	(Requires allegro.  Music doesn't work anyway)

@@ -24,7 +24,7 @@
 #define __R_LOCAL__
 
 // Binary Angles, sine/cosine/atan lookups.
-#include "tables.h"
+#include "lu_math.h"
 
 // Screen size related parameters.
 #include "doomdef.h"
@@ -43,7 +43,7 @@
 #include "r_plane.h"
 #include "r_data.h"
 #include "r_things.h"
-#include "multires.h"
+#include "v_res.h"
 
 #endif		// __R_LOCAL__
 //-----------------------------------------------------------------------------

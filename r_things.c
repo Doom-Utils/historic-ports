@@ -45,7 +45,7 @@ rcsid[] = "$Id: r_things.c,v 1.5 1997/02/03 16:47:56 b1 Exp $";
 
 
 #define MINZ				(FRACUNIT*4)
-#define BASEYCENTER ((weirdaspect==1)?100:75)
+#define BASEYCENTER (FixedMul(weirdaspect, -200<<FRACBITS)+(225<<FRACBITS))
 
 //void R_DrawColumn (void);
 //void R_DrawFuzzColumn (void);
@@ -456,43 +456,48 @@ R_DrawVisSprite
     patch = W_CacheLumpNum (vis->patch+firstspritelump, PU_CACHE);
 
     dc_colormap = vis->colormap;
-    
+
     if (vis->mobjflags & MF_TRANSLUC)
-      {
-      if (transluc==0)
-        colfunc=R_DrawColumn;
-      else
-        {
-        switch (vis->mobjflags&MF_TRANSLUC)
-          {
-          case MF_TRANSLUC25:
-            colfunc=R_DrawTranslucentColumn25;
-            break;
-          case MF_TRANSLUC50:
+    {
+     if (transluc)
             colfunc=R_DrawTranslucentColumn50;
+    }
+    else if (vis->mobjflags & MF_STEALTH) // minor hack until DDF
+    {
+        switch (vis->invisibility)
+          {
+          case 0:
             break;
-          case MF_TRANSLUC75:
+          case 1: // 75% visible
             colfunc=R_DrawTranslucentColumn75;
             break;
+          case 2: // 50% visible
+            colfunc=R_DrawTranslucentColumn50;
+            break;
+          case 3: // 25% visible
+            colfunc=R_DrawTranslucentColumn25;
+            break;
+          case 4: // not visible
+            break;
           default:
-            I_Error("Translucency Error!");
+            I_Error("Transluc Error, Value %d",vis->invisibility);
+            break;
           }
-        }
-      }
+    }
     else if (!dc_colormap)
     {
 	// NULL colormap = shadow draw
 	colfunc = fuzzcolfunc;
     }
+    else if (vis->playxtra)
+    {
+      colfunc = R_DrawTranslatedColumn;
+      dc_translation = translationtables - 256 + (vis->playxtra<<8);
+    }
     else if (vis->mobjflags & MF_TRANSLATION)
     {
         colfunc = R_DrawTranslatedColumn;
-        if (vis->playxtra<4)
-           dc_translation = translationtables - 256 +
-               ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
-        else
-           dc_translation = translationtables - 256 + (vis->playxtra * 256);
-
+        dc_translation = translationtables - 256 + (vis->playxtra * 256);
     }
 	
     dc_iscale = abs(vis->xiscale)>>detailshift;
@@ -552,7 +557,10 @@ void R_ProjectSprite (mobj_t* thing)
     
     angle_t		ang;
     fixed_t		iscale;
-    
+
+    if (thing->invisibility == 4)
+      return; // not visible
+
     // transform the origin point
     tr_x = thing->x - viewx;
     tr_y = thing->y - viewy;
@@ -623,7 +631,8 @@ void R_ProjectSprite (mobj_t* thing)
     // store information in a vissprite
     vis = R_NewVisSprite ();
     vis->mobjflags = thing->flags;
-    vis->playxtra  = thing->playxtra; //-jc-
+    vis->playxtra  = thing->playxtra;
+    vis->invisibility = thing->invisibility;
     vis->scale = xscale<<detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
@@ -768,7 +777,7 @@ void R_DrawPSprite (pspdef_t* psp)
     vis = &avis;
     vis->mobjflags = 0;
     vis->playxtra  = 0; //-jc-
-    vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
+    vis->texturemid = (BASEYCENTER)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;	
     vis->scale = pspritescale<<detailshift;
@@ -869,7 +878,7 @@ void R_SortVisSprites (void)
     int			i;
     int			count;
     vissprite_t*	ds;
-    vissprite_t*	best;
+    vissprite_t*	best = NULL;
     vissprite_t		unsorted;
     fixed_t		bestscale;
 

@@ -1,0 +1,113 @@
+Well. Here is the progress of JGMOD library since March.
+
+
+March 98
+--------
+1   Change next_pattern() and prev_pattern() to next_mod_track() and
+    prev_mod_track() respectively. Fixed a bug in is_mod_playing() and
+    resume_mod(). Added goto_mod_track() and finished destroy_mod().
+    Change readme.txt and my jgmod homepage contents.
+
+2   Library uploaded. Fixed a pattern break bug. I was not reading the
+    documentation properly. Corrected the set pan effect.
+
+3   Redo the s3m loader because I forgot most of the s3m loader codes I did
+    2 months ago. 
+
+4   Continue the s3m loader. Able to load 8 bit and 16 bit samples. Only
+    tested with 8bit unsigned samples. Fixed a sample offset bug. Tested the
+    library with cpp program again. This time it works. This is puzzling.
+
+5   Fixed the 16bit samples loader. Instrument lenght given in S3M is in
+    samples. I thought it is in bytes. Change the way notes are stored.
+    Previously notes are stored in a single huge array. Now, store notes
+    in arrays according to their pattern. I change it because it would be
+    easier this way when dealing with XM.
+
+6   Continue the s3m loader. Able to detect the no of channels accurately
+    but slow.
+
+9   Busying downloading gcc280, gpp280 and lgp280. Fixed some compile
+    problems with gcc280.
+
+10  Added restart position support (only in loop mode). Did a faster channels
+    detection for s3m but less accurate. One of partitions compressed with
+    drivespace 3 in my hard disk had gone bad. Fixed the problem with
+    Scandisk. I store most of my mod musics in that partition. I had
+    100-110Mb of mod. After fixing, I have 13Mb left !!!! Now I have very
+    less mod for testing. I have do redownload those musics again. *sigh*
+    Never ever use drivespace even if you are short of space. 
+    
+11  Added the option to disable or enable protracker with 15 instruments.   
+    Continue the s3m loader. Able to set panning.
+
+13  Just got myself a modem. Busying downloading some of the musics which
+    lost earlier. 
+
+15  Able to load all of the S3M patterns. Just need to convert it to a common
+    format (format used by protracker).
+
+16  Converted the S3M linear frequency to herz. Now JGMOD can play S3M
+    basically. Yahoo !!! S3M command A (set tempo), B (pattern jump),
+    and C (pattern break) supported.
+
+17  S3M volume channel done. Command O (set sample offset), T (set bpm).
+    Command D (volume slide) partially supported.
+    
+18  Continue coding command D. Fixed a restart position bug. S8 (set 16
+    position panning) command supported.
+
+19  SD (delay sample), X (set pan), G (slide to note), note off supported.
+    Finished coding the command D.
+
+20  S2 (finetune), SC (cut sample) supported. Delay sample had been wrongly
+    converted. Fixed. Library uploaded.
+
+21  Fixed a problem with s3m fine volume slide up. V (global volume)
+    supported.
+
+    Found the cause of the problem when playing the last track of 'Existing
+    by Rick Rippon'. The header reported that there are total of 41 patterns
+    but actually 42 patterns. Stupid S3M. Fixed. 
+
+    Now this is the stupidest mistake I ever had. I left some of the SAMPLE
+    structure pointing to a null sample data in the s3m loader. When Allegro
+    plays this sample with volume greater than 0, it will exit will SIGSEV
+    error. This cause Catch that goblin!" to exit with SIGSEV error at track
+    18-03 (or pattern 14). This song requested to play instrument 17 which is
+    empty. It took me to 4 hours to find this bug. 
+    
+22  Added set_mod_volume() and get_mod_volume(). Pattern delay(14-14)
+    supported. Command E(portamento down) and F(portamento up) implemented
+    except the extra fine slide part. I don't know how. My sliding is
+    somewhat different from what I heard from other players. Don't know
+    why. Library uploaded.
+
+26  Downloaded wip (25 March). A stereo variable is added to the sample
+    structure which causes only MOD to play incorrectly. Fixed.
+
+29  Lock the appropriate function and variables and JGMOD structure. Fixed a
+    bug in destroy_mod. Calling play_mod after calling destroy_mod will not
+    play the song correctly.
+
+30  Implemented extra fine slide for E(portamento down) and F(portamento up).
+
+31  Improved the vibrato effect and command H(vibrato) is supported. Fixed
+    a pattern break bug. Now it can play backward.s3m, a player trashing
+    tune. Fixed finetune for s3m. SA (stereo control) and Set Vibrato
+    waveform (mod and s3m) supported.
+
+April 98
+--------
+1   XM and IT supported !!!! You have been fooled... haha.
+
+3   Pattern loop is now supported for MOD and S3M. 
+
+4   Command I(Tremor), K(vibrato+volume slide) and L(porta to note+volume
+    slide) are now supported. Now I found why my pitch sliding is different
+    from other players. When converting herz to period, I should have take
+    c2spd into account but I didn't. Fixed by changing quite a number of
+    lines except set finetune. I will do it another day because it is
+    3.50AM now. I hope no new bug occured from this modification.
+
+5   Finished finetune. Implemented command U (fine vibrato). Library uploaded

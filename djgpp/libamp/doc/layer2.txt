@@ -1,0 +1,7 @@
+Layer2 support
+--------------
+
+It works, but the code isn't optimised whatsoever, so it
+uses about as much CPU as layer3. Bummer, huh?
+
+ffwd/rew WON'T WORK with layer2!!!!!

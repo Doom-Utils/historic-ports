@@ -30,9 +30,10 @@
 // Global parameters/defines.
 //
 // DOOM version
-enum { VERSION =  110 };
-#define DOSDOOMVER 61
-
+enum { VERSION =  200 };
+#define VERSIONFIX 100
+#define DOSDOOMVER 64
+#define DOSDOOMVERFIX 100
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
 typedef enum
@@ -42,6 +43,7 @@ typedef enum
   commercial,	// DOOM 2 retail, E1 M34
   // DOOM 2 german edition not handled
   retail,	// DOOM 1 retail, E4, M36
+  dosdoom,      // Combination of DOOM 1 + 2 E5 M68 :-)
   indetermined	// Well, no IWAD found.
   
 } GameMode_t;
@@ -290,6 +292,9 @@ typedef enum
 #define KEYD_PGDN (0x80+81)
 #define KEYD_HOME (0x80+71)
 #define KEYD_END (0x80+79)
+#define KEYD_INSERT (0x80+82)
+#define KEYD_DELETE (0x80+83)
+
 
 #define KEYD_MOUSE1 0x100
 #define KEYD_MOUSE2 0x101

@@ -83,6 +83,22 @@ V_DrawPatchInDirectFlipped16
   patch_t*	patch );
 
 void
+V_DrawPatchTrans16
+( int		x,
+  int		y,
+  int           index,
+  int		scrn,
+  patch_t*	patch	);
+
+void	//stretches bitmap to fill screen
+V_DrawPatchInDirectTrans16
+( int		x,
+  int		y,
+  int           index,
+  int		scrn,
+  patch_t*	patch	);
+
+void
 V_DrawPatchShrink16
 ( int		x,
   int		y,

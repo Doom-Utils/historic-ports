@@ -30,7 +30,7 @@ rcsid[] = "$Id: p_mobj.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 #include "doomdef.h"
 #include "p_local.h"
-#include "sounds.h"
+#include "lu_sound.h"
 
 #include "st_stuff.h"
 #include "hu_stuff.h"
@@ -43,6 +43,12 @@ rcsid[] = "$Id: p_mobj.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 void G_PlayerReborn (int player);
 void P_SpawnMapThing (mapthing_t*	mthing);
 
+// Holds the players real Z location, so the missile when teleported to
+// a different height sector stay relative to it.
+fixed_t realplayerz=0; //-jc-
+
+boolean	updatelostsoulflags=true;
+boolean	updatespectreflags=true;
 
 //
 // P_SetMobjState
@@ -102,8 +108,8 @@ void P_ExplodeMissile (mobj_t* mo)
 
     if (mo->info->deathsound)
 	S_StartSound (mo, mo->info->deathsound);
-    if (transluc==2)
-      mo->flags|=MF_TRANSLUC50;
+    if (transluc)
+      mo->flags|=MF_TRANSLUC;
 }
 
 
@@ -460,7 +466,46 @@ void P_MobjThinker (mobj_t* mobj)
 	    return;		// mobj was removed
     }
 
-    
+    //
+    // Spectre Ability Change
+    //
+    if ( (mobj->type == MT_SHADOWS) && (updatespectreflags) && (mobj->health > 0) )
+    {
+     if (mobj->health <= 0)
+       	return;
+
+     if (mobj->info->flags == mobj->flags)
+       updatespectreflags = false;
+
+     mobj->invisibility = 0; // make visible for change
+
+     mobj->flags &= ~MF_SHADOW;   //
+     mobj->flags &= ~MF_STEALTH;  // start from scratch
+     mobj->flags &= ~MF_TRANSLUC; //
+
+     mobj->flags |= mobj->info->flags;
+
+    }
+
+    //
+    // Lost Soul Ability Change
+    //
+    if ( (mobj->type == MT_SKULL) && (updatelostsoulflags) && (mobj->health > 0) )
+    {
+
+     if (mobj->info->flags == mobj->flags)
+       updatelostsoulflags = false;
+
+     mobj->invisibility = 0; // make visible for change
+
+     mobj->flags &= ~MF_SHADOW;   //
+     mobj->flags &= ~MF_STEALTH;  // start from scratch
+     mobj->flags &= ~MF_TRANSLUC; //
+
+     mobj->flags |= mobj->info->flags;
+
+    }
+
     // cycle through states,
     // calling action functions at transitions
     if (mobj->tics != -1)
@@ -468,9 +513,9 @@ void P_MobjThinker (mobj_t* mobj)
 	mobj->tics--;
 		
 	// you can cycle through multiple states in a tic
-	if (!mobj->tics)
+        if (!mobj->tics)
 	    if (!P_SetMobjState (mobj, mobj->state->nextstate) )
-		return;		// freed itself
+                return;         // freed itself 
     }
     else
     {
@@ -556,6 +601,9 @@ P_SpawnMobj
     else 
 	mobj->z = z;
 
+    // Find the real players height (TELEPORT WEAPONS).
+    mobj->origheight=z-realplayerz; //-jc-
+
     mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
 	
     P_AddThinker (&mobj->thinker);
@@ -618,7 +666,7 @@ void P_RespawnSpecials (void)
     int			i;
 
     // only respawn items in deathmatch
-    if ((deathmatch != 2)&&(ItemRespawn!=1))
+    if ((deathmatch != 2)&&(!itemrespawn))
 	return;	// 
 
     // nothing left to respawn?
@@ -679,7 +727,7 @@ void P_SpawnPlayer (mapthing_t* mthing)
     mobj_t*             mobj;
 
     int                 i;
-    int                 consolep; //-jc-
+    int                 consolep; 
 
     // not playing?
     //-jc-
@@ -689,10 +737,9 @@ void P_SpawnPlayer (mapthing_t* mthing)
     else
        if (!playeringame[mthing->type-1]) return;
 
-    if (mthing->type>4000 && mthing->type<4005)
-       p = &players[(mthing->type-4001)+4];
-    else
-       p = &players[mthing->type-1];
+    p = (mthing->type>4000 && mthing->type<4005) ?
+                                          &players[(mthing->type-4001)+4] :
+                                          &players[mthing->type-1];
 
     if (p->playerstate == PST_REBORN)
       {
@@ -714,17 +761,12 @@ void P_SpawnPlayer (mapthing_t* mthing)
     // set color translations for player sprites
     if (mthing->type > 1)
       {
-       if (mthing->type>4000 && mthing->type<4005) {
-          mobj->flags |= (mthing->type-4001)<<MF_TRANSSHIFT;
-          mobj->playxtra = mthing->type-4001+4;
-       }
-       else {
-          mobj->flags |= (mthing->type-1)<<MF_TRANSSHIFT;
-          mobj->playxtra=0;
-       }
+         mobj->playxtra = (mthing->type>4000 && mthing->type<4005) ?
+                                                     mthing->type-4001+4 :
+                                                     mthing->type-1;
       }
 
-    // --end jc--
+
 
     mobj->angle = ANG45 * (mthing->angle/45);
     mobj->player = p;
@@ -748,11 +790,9 @@ void P_SpawnPlayer (mapthing_t* mthing)
         for (i=0 ; i<NUMCARDS ; i++)
             p->cards[i] = true;
 
-    //-jc-
-    if (mthing->type>4000 && mthing->type<4005)
-       consolep=(mthing->type-4001)+4;
-    else
-       consolep=mthing->type-1;
+    consolep=(mthing->type>4000 && mthing->type<4005) ?
+                                                   (mthing->type-4001)+4 :
+                                                   mthing->type-1;
 
     if (consolep == consoleplayer)
     {
@@ -978,7 +1018,7 @@ P_SpawnMissile
     // fuzzy player
     if (dest->flags & MF_SHADOW)
 	an += (P_Random()-P_Random())<<20;
-    else if (LessAccurateMon)
+    else if (lessaccuratemon)
 	an += (P_Random()-P_Random())<<19;
 
     th->angle = an;
@@ -1048,6 +1088,8 @@ P_SpawnPlayerMissile
     x = source->x;
     y = source->y;
     z = source->z + 4*8*FRACUNIT;
+
+    realplayerz=source->floorz; //-JC-
 	
     th = P_SpawnMobj (x,y,z, type);
 

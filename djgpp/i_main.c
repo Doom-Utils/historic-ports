@@ -25,28 +25,38 @@ static const char
 rcsid[] = "$Id: i_main.c,v 1.4 1997/02/03 22:45:10 b1 Exp $";
 
 
-#include <stdio.h>
-#include <sys/nearptr.h>
-#include <allegro.h>
-
-#include "doomdef.h"
-
 #include "m_argv.h"
 #include "d_main.h"
+#include "doomdef.h"
+
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <signal.h>
+
+void break_handler(int a)
+{
+ exit(a);
+}
 
 int
 main
 ( int		argc,
   char**	argv ) 
 { 
+    // Init Arguments
     myargc = argc; 
     myargv = argv; 
- 
-    allegro_init();
-    if (__djgpp_nearptr_enable())  //handle nearptr now
-      D_DoomMain ();
-    else
-      printf ("Failed trying to allocate DOS near pointers.\n");
+
+    signal(SIGINT, break_handler);
+    printf("DOSDoom v%d.%d compiled on "__DATE__" at "__TIME__"\n", DOSDOOMVER / DOSDOOMVERFIX, DOSDOOMVER % DOSDOOMVERFIX);
+    printf("DOSDoom homepage is at http://www.frag.com/dosdoom/\n");
+    printf("DOOM is by id Software http://www.idsoftware.com/\n");
+    printf("This version is neither distributed nor supported by id Software,\n so don't bug them about it!\n");
+    sleep(2);
+
+    // Run DOOM! -- Never returns...
+    D_DoomMain ();
 
     return 0;
 } 

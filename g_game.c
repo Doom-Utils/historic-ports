@@ -52,7 +52,7 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "am_map.h"
 
 // Needs access to LFB.
-#include "multires.h"
+#include "v_res.h"
 
 #include "w_wad.h"
 
@@ -62,18 +62,18 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 // Data.
 #include "dstrings.h"
-#include "sounds.h"
+#include "lu_sound.h"
 
 // SKY handling - still the wrong place.
 #include "r_data.h"
 #include "r_sky.h"
 
-
-
 #include "g_game.h"
 
+#include "rad_trig.h"
 
-//#define SAVEGAMESIZE	0x2c000
+int lastmap;
+
 #define SAVEGAMESIZE	0x50000
 #define SAVESTRINGSIZE	24
 
@@ -305,7 +305,7 @@ void G_BuildTiccmd (ticcmd_t* cmd)
     //do keylook
     if (CheckKey(key_lookup))
       {
-      updownangle+=keylookspeed*64*viewheight;
+       updownangle+=keylookspeed*64*viewheight;
       if ((updownangle>>16)>=(viewheight/2))
         updownangle=(viewheight/2)<<16;
       }
@@ -512,6 +512,8 @@ void G_DoLoadLevel (void)
 { 
     int             i; 
 
+    lastmap=gamemap;
+
     // Set the sky map.
     // First thing, we have a dummy sky texture name,
     //  a flat. The data is in the WAD only because
@@ -521,14 +523,30 @@ void G_DoLoadLevel (void)
 
     // DOOM determines the sky texture to be used
     // depending on the current episode, and the game version.
-    if  (gamemode == commercial)
+    if  (gamemission != doom)
     {
-	skytexture = R_TextureNumForName ("SKY3");
-	if (gamemap < 12)
-	    skytexture = R_TextureNumForName ("SKY1");
-	else
-	    if (gamemap < 21)
+        switch (gamemap)
+          {
+           case 1 ... 11:
+            skytexture = R_CheckTextureNumForName ("D2SKY1");
+            if (skytexture < 0)
+  	      skytexture = R_TextureNumForName ("SKY1");
+            break;
+           case 12 ... 21:
+            skytexture = R_CheckTextureNumForName ("D2SKY2");
+            if (skytexture < 0)
 		skytexture = R_TextureNumForName ("SKY2");
+           default:
+            skytexture = R_CheckTextureNumForName ("D2SKY3");
+            if (skytexture < 0)
+  	         skytexture = R_TextureNumForName ("SKY3");
+          }
+    } else {
+      char buffer[9];
+      sprintf(buffer, "SKY%d", gameepisode);
+      skytexture = R_CheckTextureNumForName(buffer);
+      if (skytexture < 0) sprintf(buffer, "SKY%d", (gameepisode % 3) + 1);
+      skytexture = R_TextureNumForName (buffer);
     }
 
     levelstarttic = gametic;        // for time calculation
@@ -686,9 +704,11 @@ void G_Ticker (void)
 	    G_DoLoadLevel (); 
 	    break; 
 	  case ga_newgame: 
+	    ResetRadiTriggers();
 	    G_DoNewGame (); 
 	    break; 
 	  case ga_loadgame: 
+	    ResetRadiTriggers();
 	    G_DoLoadGame (); 
 	    break; 
 	  case ga_savegame: 
@@ -704,6 +724,7 @@ void G_Ticker (void)
 	    F_StartFinale (); 
 	    break; 
 	  case ga_worlddone: 
+	    ClearRadiTriggersTimers();
 	    G_DoWorldDone (); 
 	    break; 
 	  case ga_screenshot: 
@@ -757,7 +778,6 @@ void G_Ticker (void)
 	    } 
 	}
     }
-    
     // check for special buttons
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
@@ -885,11 +905,11 @@ void G_PlayerReborn (int player)
  
     p->usedown = p->attackdown = true;	// don't do anything immediately 
     p->playerstate = PST_LIVE;       
-    p->health = deh_inithealth;
+    p->health = NORMHEALTH;
     p->readyweapon = p->pendingweapon = wp_pistol; 
     p->weaponowned[wp_fist] = true; 
     p->weaponowned[wp_pistol] = true; 
-    p->ammo[am_clip] = deh_initbullets;
+    p->ammo[am_clip] = NORMAMMO;
 	 
     for (i=0 ; i<NUMAMMO ; i++) 
 	p->maxammo[i] = maxammo[i]; 
@@ -1000,6 +1020,7 @@ void G_DoReborn (int playernum)
     if (!netgame)
     {
 	// reload the level from scratch
+	ResetRadiTriggers();
 	gameaction = ga_loadlevel;  
     }
     else 
@@ -1107,7 +1128,7 @@ void G_DoCompleted (void)
     if (automapactive) 
 	AM_Stop (); 
 	
-    if ( gamemode != commercial)
+    if ( gamemission == doom)
 	switch(gamemap)
 	{
 	  case 8:
@@ -1119,31 +1140,13 @@ void G_DoCompleted (void)
 	    break;
 	}
 		
-//#if 0  Hmmm - why?
-    if ( (gamemap == 8)
-	 && (gamemode != commercial) ) 
-    {
-	// victory 
-	gameaction = ga_victory; 
-	return; 
-    } 
-	 
-    if ( (gamemap == 9)
-	 && (gamemode != commercial) ) 
-    {
-	// exit secret level 
-	for (i=0 ; i<MAXPLAYERS ; i++) 
-	    players[i].didsecret = true; 
-    } 
-//#endif
-    
-	 
     wminfo.didsecret = players[consoleplayer].didsecret; 
-    wminfo.epsd = gameepisode -1; 
-    wminfo.last = gamemap -1;
-    
+    wminfo.epsd = gameepisode - 1;
+    wminfo.last = lastmap - 1;
+
+
     // wminfo.next is 0 biased, unlike gamemap
-    if ( gamemode == commercial)
+    if ( gamemission != doom)
     {
 	if (secretexit)
 	    switch(gamemap)
@@ -1190,7 +1193,7 @@ void G_DoCompleted (void)
     wminfo.maxitems = totalitems; 
     wminfo.maxsecret = totalsecret; 
     wminfo.maxfrags = 0; 
-    if ( gamemode == commercial )
+    if ( gamemission != doom )
 	wminfo.partime = 35*cpars[gamemap-1]; 
     else
 	wminfo.partime = 35*pars[gameepisode][gamemap]; 
@@ -1228,7 +1231,7 @@ void G_WorldDone (void)
     if (secretexit) 
 	players[consoleplayer].didsecret = true; 
 
-    if ( gamemode == commercial )
+    if ( gamemission != doom )
     {
 	switch (gamemap)
 	{
@@ -1296,7 +1299,8 @@ void G_DoLoadGame (void)
 			 
     gameskill = *save_p++; 
     gameepisode = *save_p++; 
-    gamemap = *save_p++; 
+    gamemap = *save_p++;
+    gamemission = *save_p++;
     for (i=0 ; i<MAXPLAYERS ; i++) 
 	playeringame[i] = *save_p++; 
 
@@ -1369,7 +1373,8 @@ void G_DoSaveGame (void)
 	 
     *save_p++ = gameskill; 
     *save_p++ = gameepisode; 
-    *save_p++ = gamemap; 
+    *save_p++ = gamemap;
+    *save_p++ = gamemission;
     for (i=0 ; i<MAXPLAYERS ; i++) 
 	*save_p++ = playeringame[i]; 
     *save_p++ = leveltime>>16; 
@@ -1402,38 +1407,45 @@ void G_DoSaveGame (void)
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, playeringame[] should be set. 
 //
+GameMission_t d_miss;
 skill_t	d_skill; 
 int     d_episode; 
 int     d_map; 
  
 void
 G_DeferedInitNew
-( skill_t	skill,
+( GameMission_t miss,
+  skill_t	skill,
   int		episode,
   int		map) 
 { 
     d_skill = skill; 
     d_episode = episode; 
-    d_map = map; 
+    d_map = map;
+    d_miss = miss;
     gameaction = ga_newgame; 
 } 
 
 
 void G_DoNewGame (void) 
 {
+    int i;
+
     demoplayback = false; 
     netdemo = false;
     netgame = false;
     deathmatch = false;
-    playeringame[1] = playeringame[2] = playeringame[3] = playeringame[4] =
-                      playeringame[5] = playeringame[6] = playeringame[7] = 0;
-    respawnparm = false;
+
+    for (i=1;i<MAXPLAYERS;i++) playeringame[i]=0;
+
+    // respawnparm = false; - see menu
     fastparm = false;
     nomonsters = false;
     consoleplayer = 0;
     G_InitNew (d_skill, d_episode, d_map); 
     gameaction = ga_nothing; 
 } 
+
 
 // The sky texture to be used instead of the F_SKY1 dummy.
 extern  int	skytexture; 
@@ -1445,7 +1457,8 @@ G_InitNew
   int		episode,
   int		map ) 
 { 
-    int             i; 
+    int             i;
+    char	    buffer[9];
     if (paused) 
     { 
 	paused = false; 
@@ -1459,34 +1472,20 @@ G_InitNew
 
     // This was quite messy with SPECIAL and commented parts.
     // Supposedly hacks to make the latest edition work.
-    // It might not work properly.
-    if (episode < 1)
-      episode = 1; 
-
-    if ( gamemode == retail )
-    {
-      if (episode > 4)
-	episode = 4;
+    if (gamemode == shareware) {
+      episode = 1;
+      gamemission = doom;
     }
-    else if ( gamemode == shareware )
-    {
-      if (episode > 1) 
-	   episode = 1;	// only start episode 1 on shareware
-    }  
-    else
-    {
-      if (episode > 3)
-	episode = 3;
-    }
-    
-
-  
-    if (map < 1) 
-	map = 1;
-    
-    if ( (map > 9)
-	 && ( gamemode != commercial) )
-      map = 9; 
+    switch(gamemission)
+      {
+       case doom:
+            sprintf(buffer, "E%xM%d", episode, map);
+            break;
+       default:
+            sprintf(buffer, "MAP%02d", map);
+            break;
+      }
+    if (W_CheckNumForName(buffer) < 0) return; // This needs some work...
 		 
     M_ClearRandom (); 
 	 
@@ -1495,30 +1494,58 @@ G_InitNew
     else
 	respawnmonsters = false;
 
-    if (transluc==2)
-      {  //i just went thru dehacked's item list and enabled things that looked promising
-      mobjinfo[5-1].flags|=MF_TRANSLUC50;
-      mobjinfo[7-1].flags|=MF_TRANSLUC50;
-      mobjinfo[8-1].flags|=MF_TRANSLUC50;
-      mobjinfo[10-1].flags|=MF_TRANSLUC50;
-      mobjinfo[17-1].flags|=MF_TRANSLUC50;
-      mobjinfo[30-1].flags|=MF_TRANSLUC50;
-      mobjinfo[32-1].flags|=MF_TRANSLUC50;
-      mobjinfo[33-1].flags|=MF_TRANSLUC50;
-      mobjinfo[35-1].flags|=MF_TRANSLUC50;
-      mobjinfo[36-1].flags|=MF_TRANSLUC50;
-      mobjinfo[37-1].flags|=MF_TRANSLUC50;
-      mobjinfo[38-1].flags|=MF_TRANSLUC50;
-      mobjinfo[40-1].flags|=MF_TRANSLUC50;
-      mobjinfo[41-1].flags|=MF_TRANSLUC50;
-      mobjinfo[43-1].flags|=MF_TRANSLUC50;
-      mobjinfo[56-1].flags|=MF_TRANSLUC50;
-      mobjinfo[57-1].flags|=MF_TRANSLUC50;
-      mobjinfo[58-1].flags|=MF_TRANSLUC50;
-      mobjinfo[59-1].flags|=MF_TRANSLUC50;
-      mobjinfo[63-1].flags|=MF_TRANSLUC50;
-      mobjinfo[90-1].flags|=MF_TRANSLUC50;
-      }
+    // back again...until DDF setup
+    mobjinfo[4].flags |=MF_TRANSLUC; // Archvile Fire
+    mobjinfo[7].flags |=MF_TRANSLUC; // Missile Trail
+    mobjinfo[9].flags |=MF_TRANSLUC; // Mancubus Fireball
+    mobjinfo[16].flags|=MF_TRANSLUC; // Baron Fireball
+    mobjinfo[34].flags|=MF_TRANSLUC; // Plasma Bullet
+    mobjinfo[35].flags|=MF_TRANSLUC; // BFG Shot
+    mobjinfo[36].flags|=MF_TRANSLUC; // Arachontron Plasma
+    mobjinfo[37].flags|=MF_TRANSLUC; // Bullet Puff
+    mobjinfo[41].flags|=MF_TRANSLUC; // Teleport Exit
+    mobjinfo[42].flags|=MF_TRANSLUC; // BFG Hit
+    mobjinfo[55].flags|=MF_TRANSLUC; // SoulSphere
+    mobjinfo[58].flags|=MF_TRANSLUC; // Partially Invisible Sphere
+    mobjinfo[62].flags|=MF_TRANSLUC; // MegaSphere
+
+    // setup spectre ability
+    mobjinfo[13].flags &= ~MF_SHADOW;
+    mobjinfo[13].flags &= ~MF_STEALTH;
+    mobjinfo[13].flags &= ~MF_TRANSLUC;
+    switch (spectreability)
+    {
+     case 1:
+      mobjinfo[13].flags |= MF_SHADOW;
+      break;
+     case 2:
+      mobjinfo[13].flags |= MF_TRANSLUC;
+      break;
+     case 3:
+      mobjinfo[13].flags |= MF_STEALTH;
+      break;
+     default:
+      break;
+    }
+
+    // setup lost soul ability
+    mobjinfo[18].flags &= ~MF_SHADOW;
+    mobjinfo[18].flags &= ~MF_STEALTH;
+    mobjinfo[18].flags &= ~MF_TRANSLUC;
+    switch (lostsoulability)
+    {
+     case 1:
+      mobjinfo[18].flags |= MF_SHADOW;
+      break;
+     case 2:
+      mobjinfo[18].flags |= MF_TRANSLUC;
+      break;
+     case 3:
+      mobjinfo[18].flags |= MF_STEALTH;
+      break;
+     default:
+      break;
+    }
 		
     if (fastparm || (skill == sk_nightmare && gameskill != sk_nightmare) )
     { 
@@ -1552,34 +1579,7 @@ G_InitNew
     gameskill = skill; 
  
     viewactive = true;
-    
-    // set the sky map for the episode
-    if ( gamemode == commercial)
-    {
-	skytexture = R_TextureNumForName ("SKY3");
-	if (gamemap < 12)
-	    skytexture = R_TextureNumForName ("SKY1");
-	else
-	    if (gamemap < 21)
-		skytexture = R_TextureNumForName ("SKY2");
-    }
-    else
-	switch (episode) 
-	{ 
-	  case 1: 
-	    skytexture = R_TextureNumForName ("SKY1"); 
-	    break; 
-	  case 2: 
-	    skytexture = R_TextureNumForName ("SKY2"); 
-	    break; 
-	  case 3: 
-	    skytexture = R_TextureNumForName ("SKY3");
-	    break; 
-	  case 4:	// Special Edition sky
-	    skytexture = R_TextureNumForName ("SKY4");
-	    break;
-	} 
- 
+
     G_DoLoadLevel (); 
 } 
  
@@ -1610,7 +1610,7 @@ void G_WriteDemoTiccmd (ticcmd_t* cmd)
     if (gamekeydown['q'])           // press q to end demo recording 
 	G_CheckDemoStatus (); 
     *demo_p++ = cmd->forwardmove; 
-    *demo_p++ = cmd->sidemove; 
+    *demo_p++ = cmd->sidemove;
     *demo_p++ = (cmd->angleturn+128)>>8; 
     *demo_p++ = cmd->buttons; 
     demo_p -= 4; 
@@ -1654,7 +1654,7 @@ void G_BeginRecording (void)
 		
     demo_p = demobuffer;
 	
-    *demo_p++ = 110;
+    *demo_p++ = VERSION;
     *demo_p++ = gameskill; 
     *demo_p++ = gameepisode; 
     *demo_p++ = gamemap; 
@@ -1665,7 +1665,8 @@ void G_BeginRecording (void)
     *demo_p++ = consoleplayer;
 	 
     for (i=0 ; i<MAXPLAYERS ; i++) 
-	*demo_p++ = playeringame[i]; 		 
+	*demo_p++ = playeringame[i];
+    *demo_p++ = gamemission;
 } 
  
 
@@ -1692,29 +1693,33 @@ void G_DoPlayDemo (void)
     demversion= *demo_p++;
     if ( demversion < 109)
     {
-      fprintf( stderr, "Demo is from a different game version!\n");
+      I_Printf( "Demo is from a different game version!\n");
       gameaction = ga_nothing;
       return;
     }
     
     skill = *demo_p++; 
     episode = *demo_p++; 
-    map = *demo_p++; 
+    map = *demo_p++;
     deathmatch = *demo_p++;
     respawnparm = *demo_p++;
     fastparm = *demo_p++;
     nomonsters = *demo_p++;
     consoleplayer = *demo_p++;
 	
-    if (demversion==109)
+    if (demversion<=109)
       {
       for (i=0 ; i<4 ; i++)
         playeringame[i] = *demo_p++;
+      // Guess the game mission... Yuk!
+      if (map > 9) gamemission = doom2;
+      if (episode > 1) gamemission = doom;
       }
     else
       {
       for (i=0 ; i<MAXPLAYERS ; i++)
         playeringame[i] = *demo_p++;
+      gamemission = *demo_p++;
       }
 
     if (playeringame[1]) 
@@ -1747,19 +1752,17 @@ void G_TimeDemo (char* name)
 } 
  
  
-/* 
-=================== 
-= 
-= G_CheckDemoStatus 
-= 
-= Called after a death or level completion to allow demos to be cleaned up 
-= Returns true if a new demo loop action will take place 
-=================== 
-*/ 
- 
-boolean G_CheckDemoStatus (void) 
+// 
+// G_CheckDemoStatus 
+//
+//Called after a death or level completion to allow demos to be cleaned up, 
+//Returns true if a new demo loop action will take place 
+// 
+// 
+ boolean G_CheckDemoStatus (void) 
 { 
     int             endtime;
+    int             i;
 	 
     if (timingdemo) 
     { 
@@ -1781,8 +1784,9 @@ boolean G_CheckDemoStatus (void)
 	netdemo = false;
 	netgame = false;
 	deathmatch = false;
-	playeringame[1] = playeringame[2] = playeringame[3] = playeringame[4] =
-                  playeringame[5] = playeringame[6] = playeringame[7] = 0;
+
+        for (i=1;i<MAXPLAYERS;i++) playeringame[i]=0;
+
 	respawnparm = false;
 	fastparm = false;
 	nomonsters = false;
@@ -1802,6 +1806,6 @@ boolean G_CheckDemoStatus (void)
 	 
     return false; 
 } 
- 
+
  
  

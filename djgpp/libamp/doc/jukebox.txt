@@ -1,0 +1,27 @@
+Sajber Jukebox support
+
+	Starting with this version, you can use "amp" as a replacement
+to the default player in the sajber jukebox.
+
+	In order to do this, simply delete the "sajberplay" program that
+comes with the jukebox, and "mv" amp to "sajberplay".
+
+Notes about this support:
+
+	Look into "decodeMPEG_2" into audio.c; this is the main decoding
+loop when amp is controlled by the jukebox.
+       "controldata.h" contains a complete description of the communication
+protocol.
+
+SUPPORTED FUNCTIONS:
+	play, stop, pause, next track, previous track
+	ffwd and rew
+
+TO DO:
+	direct jump to anywhere in the track
+
+
+	Please send reports, comments, etc, to:
+                         Edouard.Lafargue@enst-bretagne.fr
+
+30 apr 1997,                     Edouard 

@@ -1,0 +1,19 @@
+1. Realtime related bugs
+   ---------------------
+   Sajber Jukebox support doesn't work with realtime amp, you
+   just can't have both in _this_ version.
+
+   Also, decoding to a file doesn't work as well. Bummer.
+
+2. Sound Quality
+   -------------
+   Bear in mind that amp is written from scratch so some bugs might 
+   have crept in. If a certain mp3 file gives you a particularly hard 
+   time, you can notify me and help me track the cause. mp2 files 
+   should not cause problems.
+
+3. Configure related problems
+   --------------------------
+   I only recently started cleaning up configure, so it's not in
+   the best of health. SunOs and Solaris in particular don't work
+   that well (code itself is OK, mind you). 

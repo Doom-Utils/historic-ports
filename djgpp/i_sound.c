@@ -17,12 +17,13 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	System interface for sound.
+//      System interface for sound.
 //
 //-----------------------------------------------------------------------------
 
 static const char
 rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,7 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 //im using allegro sound code
 #include <allegro.h>
+#include "i_alleg.h"
 #include <bcd.h>
 
 #include "z_zone.h"
@@ -53,44 +55,81 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "doomdef.h"
 
 //cd-audio stuff
+/*
 int cdaudio=0;
 int cdtrack=-1;
 int numtracks=0;
 int starttrack=0;
 volatile int cdcounter=0;
-
+*/
 //allegro has 256 virtual voices
 #define VIRTUAL_VOICES 256
-
+#define NUM_CHANNELS 16
 #define SAMPLECOUNT 512
-// The actual lengths of all sound effects.
-int 		lengths[NUMSFX];
 
 // Pitch to stepping lookup
-int		steptable[256];
+static int             steptable[256];
 
-int DetectMusicCard(void);
-int DetectSoundCard(void);
+//int channelids[NUM_CHANNELS];
+static int channelhandles[NUM_CHANNELS];
+//SAMPLE *channels[NUM_CHANNELS];
+static int channelstart[NUM_CHANNELS];
+
+extern boolean swapstereo;
+
+static int DetectMusicCard(void);
+static int DetectSoundCard(void);
+
+static inline int absolute_freq(int freq, SAMPLE *spl)
+{
+   if (freq == 1000)
+      return spl->freq;
+   else
+      return (spl->freq * freq) / 1000;
+}
+
+typedef struct doomsfx_s {
+    	unsigned short flags __attribute__((packed));
+        unsigned short samplerate __attribute__((packed));
+        unsigned long len __attribute__((packed));
+        unsigned char  data[0] __attribute__((packed));
+    } doomsfx_t;
 
 //this function converts raw 11khz, 8-bit data to a SAMPLE* that allegro uses
 //it is need cuz allegro only loads samples from wavs and vocs
-SAMPLE *raw2SAMPLE(unsigned char *rawdata, int len, unsigned short freq)
-  {
+//extern void lock_sample(SAMPLE *spl);
+static inline SAMPLE *raw2SAMPLE(
+  void *rawdata,            // Array of sample data
+  int len,                  // Length, in samples
+  unsigned short freq,      // Frequency: DOOM Default is 11025 (measured in Hz)
+  int bits,                 // Bits per sample: DOOM Default is 8
+  boolean stereo )          // if true, this sample has a stereo channel.  Can be used for cool fx
+{
   SAMPLE *spl;
 
-  spl=malloc(sizeof(SAMPLE));
-  spl->bits = 8;
+  spl=(SAMPLE *) ((byte *) rawdata + len * (bits / 8) * (stereo ? 2 : 1));
+  spl->bits = bits;
   spl->freq = freq;
+  spl->stereo = stereo;
   spl->len = len;
   spl->priority = 255;
   spl->loop_start = 0;
   spl->loop_end = len;
   spl->param = -1;
-  spl->data=(void *)rawdata;
+  spl->data = rawdata;
 
   return spl;
-  }
+}
 
+inline void unlock_sample(SAMPLE *spl)
+{
+ 	 _unlock_dpmi_data(spl->data, spl->len * spl->bits/8 * ((spl->stereo) ? 2 : 1));
+         _unlock_dpmi_data(spl, sizeof(SAMPLE));
+}
+#define CACHEBIT 0x8000
+#define LOCKBIT  0x4000
+#define BITSBIT    0x0001
+#define STEREOBIT 0x0002
 
 //
 // This function loads the sound data from the WAD lump,
@@ -98,22 +137,17 @@ SAMPLE *raw2SAMPLE(unsigned char *rawdata, int len, unsigned short freq)
 // This now returns a SAMPLE*, not a void*
 //
 SAMPLE*
-getsfx
-( char*         sfxname,
-  int*          len )
+I_CacheSFX
+( int		sfxnum )
 {
-    unsigned char*      sfx;
-    unsigned char*      paddedsfx;
-    int                 i;
-    int                 size;
-    int                 paddedsize;
-    char                name[20];
-    int                 sfxlump;
-
-    
+    char                name[9];
+    int			bits;
+    boolean		stereo;
+    SAMPLE		*spl;
+    doomsfx_t		*sfx;
     // Get the sound data from the WAD, allocate lump
     //  in zone memory.
-    sprintf(name, "ds%s", sfxname);
+    sprintf(name, "DS%s", (S_sfx[sfxnum].link ? S_sfx[sfxnum].link->name : S_sfx[sfxnum].name));
 
     // Now, there is a severe problem with the
     //  sound handling, in it is not (yet/anymore)
@@ -125,47 +159,159 @@ getsfx
     // I do not do runtime patches to that
     //  variable. Instead, we will use a
     //  default sound for replacement.
-    if ( W_CheckNumForName(name) == -1 )
-      sfxlump = W_GetNumForName("dspistol");
-    else
-      sfxlump = W_GetNumForName(name);
+    if ( (S_sfx[sfxnum].lumpnum = W_CheckNumForName(name)) == -1 )
+      S_sfx[sfxnum].lumpnum = W_GetNumForName("dspistol");
     
-    size = W_LumpLength( sfxlump );
+    sfx = (doomsfx_t *)W_CacheLumpNum( S_sfx[sfxnum].lumpnum, PU_SOUND );
 
-    // Debug.
-    // fprintf( stderr, "." );
-    //fprintf( stderr, " -loading  %s (lump %d, %d bytes)\n",
-    //	     sfxname, sfxlump, size );
-    //fflush( stderr );
-    
-    sfx = (unsigned char*)W_CacheLumpNum( sfxlump, PU_STATIC );
-
-    // Pads the sound effect out to the mixing buffer size.
-    // The original realloc would interfere with zone memory.
-    paddedsize = ((size-8 + (SAMPLECOUNT-1)) / SAMPLECOUNT) * SAMPLECOUNT;
-
-    // Allocate from zone memory.
-    paddedsfx = (unsigned char*)Z_Malloc( paddedsize+8, PU_STATIC, 0 );
-    // ddt: (unsigned char *) realloc(sfx, paddedsize+8);
-    // This should interfere with zone memory handling,
-    //  which does not kick in in the soundserver.
-
-    // Now copy and pad.
-    memcpy(  paddedsfx, sfx, size );
-    for (i=size ; i<paddedsize+8 ; i++)
-        paddedsfx[i] = 128;
-
-    // Remove the cached lump.
-    Z_Free( sfx );
-    
-    // Preserve padded length.
-    *len = paddedsize;
-
-
+    bits = (sfx->flags & BITSBIT) ? 8 : 16;
+    stereo = (sfx->flags & STEREOBIT) ? false : true;
+    Debug_Printf("%.8s, %d bits%s@ %d Hz, %ld samples flags: %d\n",
+                 name, bits, stereo ? " stereo " : " ", sfx->samplerate, sfx->len, sfx->flags);
     // Return allocated padded data.
-    return raw2SAMPLE(paddedsfx + 8,*len,*((unsigned short *)(paddedsfx+2)));
+    if (!(sfx->flags & CACHEBIT)) {
+      sfx = Z_ReMalloc(sfx, sfx->len * (bits / 8) * (stereo ? 2 : 1) + sizeof(doomsfx_t) + sizeof(SAMPLE));
+      sfx->flags |= CACHEBIT; // Mark as in use.
+    }
+    spl = raw2SAMPLE(sfx->data, sfx->len, sfx->samplerate, bits, stereo);
+
+    if (!(sfx->flags & LOCKBIT)) {
+      lock_sample(spl);
+      sfx->flags |= LOCKBIT;
+    }
+    return spl;
 }
 
+void
+I_DeCacheSFX
+( int sfxnum )
+{
+  doomsfx_t *sfx = (doomsfx_t *) ((byte *) S_sfx[sfxnum].data->data - sizeof(doomsfx_t));
+  if (sfx->flags & LOCKBIT) {
+    unlock_sample(S_sfx[sfxnum].data);
+    sfx->flags &= ~LOCKBIT;
+  }
+  Z_ChangeTag(sfx, PU_CACHE);
+  Debug_Printf("%s decached.\n", S_sfx[sfxnum].name);
+}
+
+//
+// This function adds a sound to the
+//  list of currently active sounds,
+//  which is maintained as a given number
+//  (eight, usually) of internal channels.
+// Returns a handle.
+//
+static inline int
+addsfx
+( int           sfxid,
+  int           volume,
+  int           step,
+  int           seperation )
+{
+
+
+    int         i;
+    int         rc = -1;
+    
+    int         oldest = gametic;
+    int         oldestnum = 0;
+    int         slot;
+
+
+    I_UpdateSound();
+
+    // Loop all channels to find oldest SFX.
+    for (i=0; (i<NUM_CHANNELS) && (channelhandles[i] >= 0); i++)
+      {
+      if (channelstart[i] < oldest)
+	{
+	     oldestnum = i;
+	     oldest = channelstart[i];
+	}
+      }
+
+    // Tales from the cryptic.
+    // If we found a channel, fine.
+    // If not, we simply overwrite the first one, 0.
+    // Probably only happens at startup.
+    slot = (i == NUM_CHANNELS)? oldestnum : i;
+    if ((channelhandles[slot] >= 0) && 
+	I_SoundIsPlaying(channelhandles[slot]))
+      I_StopSound(channelhandles[slot]);
+
+    // Okay, in the less recent channel,
+    //  we will handle the new SFX.
+    // volume is adjusted to global volume
+    // Not done in allegro, because that effects
+    // Midi volume as well
+
+    channelstart[slot] = volume;
+
+    // Preserve sound SFX id,
+    //  e.g. for avoiding duplicates of chainsaw.
+    //channelids[slot] = sfxid;
+
+    
+    //this is where the sound actually gets played.  i kept the previous code
+    //because i dont want to risk breaking anything
+    //max num in vol seems to be 8, i mul by 28 and not 31 just to be safe
+    //             Data             Volume    Pan          Pitch    Loop
+    rc = play_sample(S_sfx[sfxid].data,volume,seperation,   step ,     0);
+
+    // Assign current handle number.
+    // Preserved so sounds could be stopped (unused).
+    if (rc < 0) return rc;
+    rc += sfxid << 16;
+    channelhandles[slot] = rc;
+    
+    // You tell me.
+    return rc;
+}
+
+
+//
+// SFX API
+// Note: this was called by S_Init.
+// However, whatever they did in the
+// old DPMS based DOS version, this
+// were simply dummies in the Linux
+// version.
+// See soundserver initdata().
+//
+void I_SetChannels()
+{
+  // Init internal lookups (raw data, mixing buffer, channels).
+  // This function sets up internal lookups used during
+  //  the mixing process. 
+  int           i;
+    
+  int*  steptablemid = steptable + 128;
+  
+  // Okay, reset internal mixing channels to zero.
+  /*for (i=0; i<NUM_CHANNELS; i++)
+  {
+    channels[i] = 0;
+  }*/
+
+  // This table provides step widths for pitch parameters.
+  // I fail to see that this is currently used.
+  //for (i=-128 ; i<128 ; i++)
+    //steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
+  for (i=-128 ; i<128 ; i++)
+    steptablemid[i] = i * i * i / 4000 + 1000;
+}       
+
+ 
+void I_SetSfxVolume(int volume)
+{
+  // Identical to DOS.
+  // Basically, this should propagate
+  //  the menu/config file setting
+  //  to the state variable used in
+  //  the mixing.
+//  snd_SfxVolume = volume;
+}
 
 //
 // Retrieve the raw data lump index
@@ -178,283 +324,254 @@ int I_GetSfxLumpNum(sfxinfo_t* sfx)
     return W_GetNumForName(namebuf);
 }
 
-SAMPLE*
+//
+// Starting a sound means adding it
+//  to the current list of active sounds
+//  in the internal channels.
+// As the SFX info struct contains
+//  e.g. a pointer to the raw data,
+//  it is ignored.
+// As our sound handling does not handle
+//  priority, it is ignored.
+// Pitching (that is, increased speed of playback)
+//  is set, but currently not used by mixing.
+//
+int
 I_StartSound
-( int		id,
-  int		vol,
-  int		sep,
-  int		pitch,
-  int		priority )
-  {
-  int i;
-
-  // UNUSED
-  priority = 0;
-
-  //handle chainsaw
-  if ( id == sfx_sawup
-    || id == sfx_sawidl
-	 || id == sfx_sawful
-	 || id == sfx_sawhit
-	 || id == sfx_stnmov
-	 || id == sfx_pistol	 )
-    {
-    // Loop all channels, check.
-    for (i=0;i<VIRTUAL_VOICES;i++)
-      {
-      if (voice_check(i)==S_sfx[id].data)
-        {
-        stop_sample(S_sfx[id].data);
-        break;
-        }
-      }
-    }
-  pitch=(pitch-128)/8+128;
-  if (swapstereo==0)
-    play_sample(S_sfx[id].data,vol*16,sep,pitch*1000/128,0);
-  else
-    play_sample(S_sfx[id].data,vol*16,255-sep,pitch*1000/128,0);
-
-  // Returns a handle
-  return S_sfx[id].data;
-  }
-
-
-void I_StopSound (SAMPLE* handle)
-  {
-  stop_sample(handle);
-  }
-
-
-int I_SoundIsPlaying(SAMPLE* handle)
-  {
-  int i;
-
-  for (i=0;i<VIRTUAL_VOICES;i++)
-    {
-    if (voice_check(i)==handle)
-      return TRUE;
-    }
-  return FALSE;
-  }
-
-void
-I_UpdateSoundParams
-( SAMPLE*	handle,
-  int	vol,
-  int	sep,
-  int	pitch)
-  {
-  pitch=(pitch-128)/8+128;
-  if (swapstereo==0)
-    adjust_sample(handle,vol*16,sep,pitch*1000/128,0);
-  else
-    adjust_sample(handle,vol*16,255-sep,pitch*1000/128,0);
-  }
-
-void I_SetSfxVolume(int volume)
+( int           id,
+  int           vol,
+  int           sep,
+  int           pitch,
+  int           priority )
 {
-  // Identical to DOS.
-  // Basically, this should propagate
-  //  the menu/config file setting
-  //  to the state variable used in
-  //  the mixing.
-  snd_SfxVolume = volume;
-  set_volume(snd_SfxVolume*16,-1);
+    // Not much point in playing sound, is there...
+    if (digi_card == DIGI_NONE) return -1;
+
+    // Returns a handle
+    id = addsfx( id, vol, steptable[pitch], sep );
+    if (id >= 0) voice_set_priority(id & 0xffff, 128 - priority);
+    
+    return id;
 }
 
 
-//  allegro does these two things now
-void I_UpdateSound(void) { }
-void I_SubmitSound(void) { }
+
+void I_StopSound (int handle)
+{
+  // You need the handle returned by StartSound.
+  // Would be looping all channels,
+  //  tracking down the handle,
+  //  an setting the channel to zero.
+  int i;
+  if (handle >= 0) {
+    for (i = NUM_CHANNELS; i--;) {
+      if (channelhandles[i] == handle) {
+	channelhandles[i] = -1;
+	//channels[i] = 0;
+        if (voice_check(handle & 0xffff) == S_sfx[handle >> 16].data)
+          deallocate_voice(handle & 0xffff);
+	  //voice_stop(handle & 0xffff);
+      } /* if channelhandles[i] == handle */
+    } /* for (i = num_channels; i--;) */
+  } /* if handle >= 0 */
+}
+
+
+boolean I_SoundIsPlaying(int handle)
+{
+    int i;
+
+    // If handle < 0, voice was not played in the first place
+    if (handle >= 0) {
+
+      // Find a channel with the same handle...
+      for (i = NUM_CHANNELS; i--;)
+	if (channelhandles[i] == handle) break;
+      if (i < 0) return false;
+
+      // If the sample hasn't been overwritten...
+      if (voice_check(handle & 0xffff) != S_sfx[handle >> 16].data)
+        return false;
+
+      // If the sample hasn't finished playing...
+      // Sample is playing.
+      return ((voice_get_position(handle & 0xffff) == -1 )? false : true);
+    }
+
+    // Sample is not playing
+    return false;
+}
+
+
+
+
+//
+// This function loops all active (internal) sound
+//  channels, retrieves a given number of samples
+//  from the raw sound data, modifies it according
+//  to the current (internal) channel parameters,
+//  mixes the per channel samples into the global
+//  mixbuffer, clamping it to the allowed range,
+//  and sets up everything for transferring the
+//  contents of the mixbuffer to the (two)
+//  hardware channels (left and right, that is).
+//
+//  allegro does this now
+//
+void I_UpdateSound( void )
+{
+  int i;
+  for (i = NUM_CHANNELS; i--;) 
+    if (!I_SoundIsPlaying(channelhandles[i])) I_StopSound(channelhandles[i]);
+  I_MusicTicker2();
+}
+
+
+// 
+// This would be used to write out the mixbuffer
+//  during each game loop update.
+// Updates sound buffer and audio device at runtime. 
+// It is called during Timer interrupt with SNDINTR.
+// Mixing now done synchronous, and
+//  only output be done asynchronous?
+//
+
+void
+I_SubmitSound(void)
+{
+  //this should no longer be necessary cuz allegro is doing all the sound mixing now
+}
+
+
+
+void
+I_UpdateSoundParams
+( int   handle,
+  int   vol,
+  int   sep,
+  int   pitch)
+{
+
+  // Separation, that is, orientation/stereo.
+  //  range is: 1 - 256 (Allegro : 0 - 255)
+  if ((handle >= 0) && I_SoundIsPlaying(handle)) {
+    voice_set_volume(handle & 0xffff, vol);
+    voice_set_pan(handle & 0xffff, sep);
+    voice_set_frequency(handle & 0xffff, 
+       absolute_freq(steptable[pitch], 
+       S_sfx[handle >> 16].data));
+    voice_set_playmode(handle & 0xffff, PLAYMODE_PLAY);
+  }
+}
 
 void I_ShutdownSound(void)
 {    
   // Wait till all pending sounds are finished.
-  int done = 0;
+  boolean done = false, i;
     
-  while (!done)  //fixme
+  while ( !done )
   {
-
-//    for( i=0 ; i<8 && !channels[i] ; i++);
-    
-    // FIXME. No proper channel output.
-    //if (i==8)
-    done=1;
+    done = true;
+    I_UpdateSound();
+    for( i = NUM_CHANNELS; i--;) 
+      if (I_SoundIsPlaying(channelhandles[i])) done = false;
   }
 
   remove_sound();
 
-  if (cdaudio==1)
-    {
-    bcd_stop();
-    bcd_close();
-    }
   // Done.
   I_ShutdownMusic();
   return;
 }
 
-
 void
 I_InitSound()
 {
   int i;
-  int*  steptablemid = steptable + 128;
-
-  if (M_CheckParm("-cdaudio"))
-    {
-    if (bcd_open()==0)
-      printf ("Unable to access CD-ROM drive!  Defaulting to normal music\n");
-    else
-      {
-      if ((numtracks=bcd_get_audio_info())==0)
-        printf ("Error getting audio info - Defaulting to normal music!\n");
-      else
-        {
-        for (i=1;i<=numtracks;i++)
-          if (bcd_track_is_audio(i)==1)
-            {
-            starttrack=i;
-            break;
-            }
-        if (starttrack>numtracks)
-          printf ("No audio tracks! - Defaulting to normal music!\n");
-        else
-          {
-          cdaudio=1;
-          cdtrack=starttrack;
-          printf ("Starting CD-Audio from track %d\n",cdtrack);
-          }
-        }
-      }
-    }
-
-  if (M_CheckParm("-ilovebill"))
-    i_love_bill=true; //kill that stupid windoze warning message
   // Secure and configure sound device first.
-  fprintf( stderr, "I_InitSound: ");
+  I_Printf( "I_InitSound: ");
   if (install_sound(DetectSoundCard(),DetectMusicCard(),NULL)==-1)
-    fprintf(stderr,"ALLEGRO SOUND INIT ERROR!!!!\n");
-  else
-    fprintf(stderr, " configured audio device\n" );
-
-  // Initialize external data (all sounds) at start, keep static.
-  fprintf( stderr, "I_InitSound: ");
-  
-  for (i=1 ; i<NUMSFX ; i++)
-  { 
-    // Alias? Example is the chaingun sound linked to pistol.
-    if (!S_sfx[i].link)
-    {
-      // Load data from WAD file.
-      S_sfx[i].data = getsfx( S_sfx[i].name, &lengths[i] );
-    }	
-    else
-    {
-      // Previously loaded already?
-      S_sfx[i].data = S_sfx[i].link->data;
-      lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
-    }
+  {
+    I_Printf( "ALLEGRO SOUND INIT ERROR!!!!:\n\r");
+    I_Printf( "   %s\n\r", allegro_error);
+  } else { // Kester.  Useful information (for people who _think_ they
+           // have wavetable enabled and wonder why it sounds the same :-)
+    I_Printf( " configured audio device:\n\r" );
+    I_Printf( " SFX   : %s\n\r", digi_driver->desc);
+    I_Printf( " Music : %s\n\r", midi_driver->desc);
   }
 
-  fprintf( stderr, " pre-cached all sound data\n");
+  // Initialize external data (all sounds) at start, keep static.
+  I_Printf( "I_InitSound: ");
+  Debug_Printf("sizeof(doomsfx_t) = %ld\n", sizeof(doomsfx_t));
+  // Not much point in loading sounds if you don't have a sound card...
+  // If you don't have a sound card you probably have a 386 or something
+  // and want all the mem you can get :-)
+  if (digi_card != DIGI_NONE)
+    for (i = 1 ; i < NUMSFX; i++)
+    {
+        S_sfx[i].data = I_CacheSFX(i);
+    }
+
+  I_Printf( " pre-cached all sound data\n\r");
   
   // This table provides step widths for pitch parameters.
-  for (i=-128 ; i<128 ; i++)
+/*  for (i=-128 ; i<128 ; i++)
     steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
-
-  //cd-audio start
-  if (bcd_audio_busy())
-    {
-    bcd_stop();
-    delay(1000);
-    }
-  bcd_play_track(cdtrack);
+*/
+  I_SetChannels();
 
   //music stuff
   I_InitMusic();
 
   if (M_CheckParm("-swapstereo"))
-    swapstereo=1;
+    swapstereo=true;
+
 
   // Finished initialization.
-  fprintf(stderr, "I_InitSound: sound module ready\n");
+  I_Printf( "I_InitSound: sound module ready\n\r");
 
 }
 
 
 extern int snd_musicdevice;
 extern int snd_sfxdevice;
-
-int DetectMusicCard(void)
+static int DetectMusicCard(void)
   {
-  if (cdaudio==1)
-    return MIDI_NONE;
   if (M_CheckParm("-digmid"))
     return MIDI_DIGMID;
   if (M_CheckParm("-readmus"))
     {
-    switch (snd_musicdevice)
-      {
-      case 0: //nosound
-        return MIDI_NONE; break;
-      case 2: //adlib
-        return MIDI_ADLIB; break;
-      case 3: //sound blaster
-        return MIDI_OPL2; break;
-      case 4: //pro audio spectrum
-        return MIDI_NONE; break;
-      case 5: //gus
-        return MIDI_GUS; break;
-      case 6: //wave blaster
-        return MIDI_NONE; break;
-      case 7: //roland sound canvas
-        return MIDI_NONE; break;
-      case 8: //general midi
-        return MIDI_MPU; break;
-      case 9: //awe 32
-        return MIDI_AWE32; break;
-      }
+    static int allegro_midi_devices[] = { MIDI_NONE, // No sound
+                                          MIDI_NONE,
+                                          MIDI_ADLIB, // Adlib
+                                          MIDI_OPL2, // Sound Blaster
+                                          MIDI_NONE, // Pro Audio Spectrum
+                                          MIDI_GUS, // Gravis Ultrasound
+                                          MIDI_NONE, // Waveblaster
+                                          MIDI_NONE, // Roland Sound Canvas
+                                          MIDI_MPU, // General Midi
+                                          MIDI_AWE32
+                                        };
+    return allegro_midi_devices[snd_musicdevice];
     }
   return MIDI_AUTODETECT;
   }
 
-int DetectSoundCard(void)
+static int DetectSoundCard(void)
   {
   if (M_CheckParm("-readsfx"))
     {
-    switch (snd_sfxdevice)
-      {
-      case 0: //nosound
-        return DIGI_NONE; break;
-      case 3: //sound blaster
-        return DIGI_SB; break;
-      case 4: //pro audio spectrum
-        return DIGI_NONE; break;
-      case 5: //gus
-        return DIGI_GUS; break;
-      }
+       static int allegro_digi_devices[] = { DIGI_NONE, // No Sound
+                                           DIGI_NONE,
+                                           DIGI_NONE,
+                                           DIGI_SB, // Sound Blaster
+                                           DIGI_NONE, // Pro Audio Spectrum
+                                           DIGI_GUS //Gravis ultrasound
+                                          };
+       return allegro_digi_devices[snd_sfxdevice];
     }
   return DIGI_AUTODETECT;
   }
 
-//check cd player - if curr track is done, go to next track
-void I_CheckCD()
-  {
-  int temptrack;
-
-  if ((cdaudio==1)&&(cdcounter>2000)&&(!paused))
-    {
-    if (bcd_audio_busy()==0)
-      {
-      temptrack=cdtrack+1;
-      if (temptrack>(numtracks+starttrack-1))
-        temptrack=starttrack;
-      cdtrack=temptrack;
-      bcd_play_track(cdtrack);
-      cdcounter=0;
-      }
-    }
-  }
 

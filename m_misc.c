@@ -23,6 +23,10 @@
 //	PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
+// 07-Apr-98  Eduardo Casino <eduardo@medusa.es)
+//       Added "video" and "vid_path" options. Removed SNDSERV stuff
+// 09-Apr-98  Eduardo Casino <eduardo@medusa.es)
+//       Added "darken_screen" option
 
 static const char
 rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
@@ -50,7 +54,7 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "i_system.h"
 #include "i_video.h"
-#include "multires.h"
+#include "v_res.h"
 
 #include "hu_stuff.h"
 
@@ -176,11 +180,12 @@ extern int	viewwidth;
 extern int	viewheight;
 
 extern int	mouseSensitivity;
-extern int	showMessages;
 
 extern int	detailLevel;
 
 extern int	screenblocks;
+
+extern int	darken_screen;
 
 extern int	showMessages;
 
@@ -197,15 +202,11 @@ int snd_mport;
 int showmessages;
 int comport;
 
-// UNIX hack, to be removed.
-#ifdef SNDSERV
-extern char*	sndserver_filename;
-extern int	mb_used;
-#endif
-
 #ifdef LINUX
 char*		mousetype;
 char*		mousedev;
+char*		videoInterface;
+char*		vid_path;
 #endif
 
 extern char*	chat_macros[];
@@ -218,10 +219,10 @@ default_t	defaults[] =
     {"mouse_sensitivity",&mouseSensitivity, 5},
     {"sfx_volume",&snd_SfxVolume, 8},
     {"music_volume",&snd_MusicVolume, 8},
+    {"cdmusic_volume",&snd_CDMusicVolume, 8},
     {"show_messages",&showMessages, 1},
     
 
-#ifdef NORMALUNIX
     {"key_right",&key_right, KEYD_RIGHTARROW},
     {"key_left",&key_left, KEYD_LEFTARROW},
     {"key_up",&key_up, KEYD_UPARROW},
@@ -242,34 +243,39 @@ default_t	defaults[] =
     {"key_map",&key_map, KEYD_TAB},
     {"key_talk",&key_talk, 't'},
 
-    {"swapstereo",&swapstereo,0},
+    {"swapstereo",(int *) &swapstereo,0},
     {"mlookon",&mlookon,0},
     {"invertmouse",&invertmouse,0},
     {"mlookspeed",&keylookspeed,1000/64},
     {"translucency",&transluc,1},
+    {"spectreability",&spectreability,1},
+    {"lostsoulability",&lostsoulability,0},
     {"crosshair",&crosshair,0},
     {"stretchsky",&stretchsky,1},
     {"rotatemap",&rotatemap,0},
     {"newhud",&newhud,0},
     {"newnmrespawn",&newnmrespawn,0},
-    {"itemrespawn",&ItemRespawn,0},
-    {"randominfight",&RandomInfight,0},
-    {"totalwar",&TotalWar,0},
-    {"newai",&NewAI,0},
-    {"lessaccuratemon",&LessAccurateMon,0},
-    {"humanmad",&HumanMad,0},
-    {"humanexplode",&HumanExplode,0},
+    {"itemrespawn",&itemrespawn,0},
+    {"infight",&infight,0},
+    {"lessaccuratemon",&lessaccuratemon,0},
+    {"lessaccuratezom",&lessaccuratezom,1},
     {"grav",&grav,8},
     {"shootupdown",&shootupdown,0},
+    {"missileteleport",&missileteleport,0}, 
+    {"teleportdelay",&teleportdelay,0},     
+    {"menuoptionshade",&menuoptionshade,0},
+    {"menunameshade",&menunameshade,0},
 
 
-#endif
 
 #ifdef LINUX
     {"mousedev", (int*)&mousedev, (int)"/dev/ttyS0"},
     {"mousetype", (int*)&mousetype, (int)"microsoft"},
-#endif
 
+    {"video", (int*)&videoInterface, (int)"x"},
+    {"vid_path", (int*)&vid_path, (int)"/usr/lib/games/doom"},
+#endif
+    {"novert",&novert, 0},
     {"use_mouse",&usemouse, 1},
     {"mouseb_fire",&mousebfire,0},
     {"mouseb_strafe",&mousebstrafe,1},
@@ -283,6 +289,9 @@ default_t	defaults[] =
 
     {"screenblocks",&screenblocks, 9},
     {"detaillevel",&detailLevel, 0},
+    {"vsync",&retrace, 0},
+
+    {"darken_screen",&darken_screen, 1},
 
     {"snd_channels",&numChannels, 3},
 
@@ -363,7 +372,7 @@ void M_LoadDefaults (void)
     FILE*	f;
     char	def[80];
     char	strparm[100];
-    char*	newstring;
+    char*	newstring = 0;
     int		parm;
     boolean	isstring;
     
@@ -377,7 +386,7 @@ void M_LoadDefaults (void)
     if (i && i<myargc-1)
     {
 	defaultfile = myargv[i+1];
-	printf ("	default file: %s\n",defaultfile);
+	I_Printf ("	default file: %s\n",defaultfile);
     }
     else
 	defaultfile = basedefault;

@@ -271,17 +271,18 @@ void applystrings() //call after initstrings and after dehacked
   gammamsg[4]=GAMMALVL4;
 
   //m_misc.c
-  i=0; while (strcmp(defaults[i].name,"chatmacro0")!=0) i++;
-  defaults[i].defaultvalue=(int)HUSTR_CHATMACRO0;
-  defaults[i+1].defaultvalue=(int)HUSTR_CHATMACRO1;
-  defaults[i+2].defaultvalue=(int)HUSTR_CHATMACRO2;
-  defaults[i+3].defaultvalue=(int)HUSTR_CHATMACRO3;
-  defaults[i+4].defaultvalue=(int)HUSTR_CHATMACRO4;
-  defaults[i+5].defaultvalue=(int)HUSTR_CHATMACRO5;
-  defaults[i+6].defaultvalue=(int)HUSTR_CHATMACRO6;
-  defaults[i+7].defaultvalue=(int)HUSTR_CHATMACRO7;
-  defaults[i+8].defaultvalue=(int)HUSTR_CHATMACRO8;
-  defaults[i+9].defaultvalue=(int)HUSTR_CHATMACRO9;
+  i = 0;
+  while (strcmp(defaults[i].name,"chatmacro0")) i++;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO0;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO1;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO2;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO3;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO4;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO5;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO6;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO7;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO8;
+  defaults[i++].defaultvalue=(int)HUSTR_CHATMACRO9;
 
   //dstrings.c
   endmsg[0]=QUITMSG;

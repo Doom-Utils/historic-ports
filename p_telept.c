@@ -34,7 +34,7 @@ rcsid[] = "$Id: p_telept.c,v 1.3 1997/01/28 22:08:29 b1 Exp $";
 
 
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
 // State.
 #include "r_state.h"
@@ -61,15 +61,17 @@ EV_Teleport
     fixed_t	oldy;
     fixed_t	oldz;
 
+    extern int missileteleport;  //-jc-
+    extern int teleportdelay;    //-jc-
+
     // don't teleport missiles
-    if (thing->flags & MF_MISSILE)
+    if ((thing->flags & MF_MISSILE) && !missileteleport) //-jc-
 	return 0;		
 
     // Don't teleport if hit back of line,
     //  so you can get out of teleporter.
     if (side == 1)		
 	return 0;	
-
     
     tag = line->tag;
     for (i = 0; i < numsectors; i++)
@@ -108,21 +110,45 @@ EV_Teleport
 		    thing->player->viewz = thing->z+thing->player->viewheight;
 				
 		// spawn teleport fog at source and destination
-		fog = P_SpawnMobj (oldx, oldy, oldz, MT_TFOG);
-		S_StartSound (fog, sfx_telept);
-		an = m->angle >> ANGLETOFINESHIFT;
-		fog = P_SpawnMobj (m->x+20*finecosine[an], m->y+20*finesine[an]
-				   , thing->z, MT_TFOG);
+                if (!(thing->flags & MF_MISSILE) || missileteleport!=2) { //-JC-
+		   fog = P_SpawnMobj (oldx, oldy, oldz, MT_TFOG);
+		   S_StartSound (fog, sfx_telept);
+		   an = m->angle >> ANGLETOFINESHIFT;
+		   fog = P_SpawnMobj (m->x+20*finecosine[an], m->y+20*finesine[an]
+				     , thing->z, MT_TFOG);
 
 		// emit sound, where?
-		S_StartSound (fog, sfx_telept);
+		   S_StartSound (fog, sfx_telept);
+                }
 		
 		// don't move for a bit
-		if (thing->player)
-		    thing->reactiontime = 18;	
+		if (thing->player) {
+                    switch (teleportdelay) {
+                      case 0 :
+		              thing->reactiontime = 18;	
+                              break;
+                      case 1 :
+		              thing->reactiontime = 9;	
+                              break;
+                      case 2 :
+		              thing->reactiontime = 0;	
+                              break;
+                      default:
+		              thing->reactiontime = 18;	
+                    }
+		    thing->momx = thing->momy = thing->momz = 0;
+                }
+//-CTF(JC)----------------------------------------------------------------------
+                else
+                if (thing->flags & MF_MISSILE) {
+                   thing->z = thing->floorz + thing->origheight;
+                   thing->momx=FixedMul(thing->info->speed,finecosine[m->angle>> ANGLETOFINESHIFT]);
+                   thing->momy=FixedMul(thing->info->speed,finesine[m->angle>> ANGLETOFINESHIFT]);
+                }
+//------------------------------------------------------------------------------
 
 		thing->angle = m->angle;
-		thing->momx = thing->momy = thing->momz = 0;
+
 		return 1;
 	    }	
 	}

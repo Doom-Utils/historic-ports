@@ -49,7 +49,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 void	NetSend (void);
 boolean NetListen (void);
 
-
+int real_doomcom;
 //
 // NETWORKING
 //
@@ -65,7 +65,9 @@ void PacketSend (void)
 {
     __dpmi_regs r;
 				
+    movedata(_my_ds(), (int) doomcom, _dos_ds, real_doomcom, sizeof(*doomcom));
     __dpmi_int(doomcom->intnum,&r);
+    movedata(_dos_ds, real_doomcom, _my_ds(), (int) doomcom, sizeof(*doomcom));
 }
 
 
@@ -75,8 +77,10 @@ void PacketSend (void)
 void PacketGet (void)
 {
     __dpmi_regs r;
-				
+
+    movedata(_my_ds(), (int) doomcom, _dos_ds, real_doomcom, sizeof(*doomcom));
     __dpmi_int(doomcom->intnum,&r);
+    movedata(_dos_ds, real_doomcom, _my_ds(), (int) doomcom, sizeof(*doomcom));
 
 }
 
@@ -108,7 +112,10 @@ void I_InitNetwork (void)
       return;
       }
 
-    doomcom=(doomcom_t *)(__djgpp_conventional_base+atoi(myargv[i+1]));
+   // doomcom=(doomcom_t *)(__djgpp_conventional_base+atoi(myargv[i+1]));
+    doomcom = (doomcom_t *) malloc(sizeof(*doomcom));
+    real_doomcom = atoi(myargv[i+1]);
+    movedata(_dos_ds, real_doomcom, _my_ds(), (int) doomcom, sizeof(*doomcom));
 
     doomcom->ticdup=1;
     if (M_CheckParm ("-extratic"))

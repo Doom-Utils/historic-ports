@@ -26,7 +26,7 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 #include <ctype.h>
 
 #include "doomdef.h"
-#include "multires.h"
+#include "v_res.h"
 
 #include "z_zone.h"
 
@@ -42,9 +42,11 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 
 // Data.
 #include "dstrings.h"
-#include "sounds.h"
+#include "lu_sound.h"
 #include "i_system.h"
 #include "m_misc.h"
+
+#include "rad_trig.h"
 
 //
 // Locally used constants, shortcuts.
@@ -56,7 +58,6 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 #define HU_TITLEHEIGHT	1
 #define HU_TITLEX	0
 #define HU_TITLEY	(SCREENHEIGHT-(200-(167 - SHORT(hu_font[0]->height))))
-
 #define HU_INPUTTOGGLE	key_talk
 #define HU_INPUTX	HU_MSGX
 #define HU_INPUTY	(HU_MSGY + HU_MSGHEIGHT*(SHORT(hu_font[0]->height) +1))
@@ -66,27 +67,9 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 #define HU_CROSSHAIRCOLOR (256-5*16)
 #define SBARHEIGHT 32
 
-char*	chat_macros[10];/* =
-{
-    HUSTR_CHATMACRO0,
-    HUSTR_CHATMACRO1,
-    HUSTR_CHATMACRO2,
-    HUSTR_CHATMACRO3,
-    HUSTR_CHATMACRO4,
-    HUSTR_CHATMACRO5,
-    HUSTR_CHATMACRO6,
-    HUSTR_CHATMACRO7,
-    HUSTR_CHATMACRO8,
-    HUSTR_CHATMACRO9
-};*/
+char*	chat_macros[10];
 
-char*	player_names[MAXPLAYERS];/* =
-{
-    HUSTR_PLRGREEN,
-    HUSTR_PLRINDIGO,
-    HUSTR_PLRBROWN,
-    HUSTR_PLRRED
-};*/
+char*	player_names[MAXPLAYERS];
 
 
 char			chat_char; // remove later.
@@ -122,176 +105,10 @@ static hu_textline_t	textlinestats;
 // The actual names can be found in DStrings.h.
 //
 
-char*	mapnames[40];/* =	// DOOM shareware/registered/retail (Ultimate) names.
-{
-
-    HUSTR_E1M1,
-    HUSTR_E1M2,
-    HUSTR_E1M3,
-    HUSTR_E1M4,
-    HUSTR_E1M5,
-    HUSTR_E1M6,
-    HUSTR_E1M7,
-    HUSTR_E1M8,
-    HUSTR_E1M9,
-
-    HUSTR_E2M1,
-    HUSTR_E2M2,
-    HUSTR_E2M3,
-    HUSTR_E2M4,
-    HUSTR_E2M5,
-    HUSTR_E2M6,
-    HUSTR_E2M7,
-    HUSTR_E2M8,
-    HUSTR_E2M9,
-
-    HUSTR_E3M1,
-    HUSTR_E3M2,
-    HUSTR_E3M3,
-    HUSTR_E3M4,
-    HUSTR_E3M5,
-    HUSTR_E3M6,
-    HUSTR_E3M7,
-    HUSTR_E3M8,
-    HUSTR_E3M9,
-
-    HUSTR_E4M1,
-    HUSTR_E4M2,
-    HUSTR_E4M3,
-    HUSTR_E4M4,
-    HUSTR_E4M5,
-    HUSTR_E4M6,
-    HUSTR_E4M7,
-    HUSTR_E4M8,
-    HUSTR_E4M9,
-
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL",
-    "NEWLEVEL"
-};*/
-
-char*	mapnames2[40];/* =	// DOOM 2 map names.
-{
-    HUSTR_1,
-    HUSTR_2,
-    HUSTR_3,
-    HUSTR_4,
-    HUSTR_5,
-    HUSTR_6,
-    HUSTR_7,
-    HUSTR_8,
-    HUSTR_9,
-    HUSTR_10,
-    HUSTR_11,
-	
-    HUSTR_12,
-    HUSTR_13,
-    HUSTR_14,
-    HUSTR_15,
-    HUSTR_16,
-    HUSTR_17,
-    HUSTR_18,
-    HUSTR_19,
-    HUSTR_20,
-	
-    HUSTR_21,
-    HUSTR_22,
-    HUSTR_23,
-    HUSTR_24,
-    HUSTR_25,
-    HUSTR_26,
-    HUSTR_27,
-    HUSTR_28,
-    HUSTR_29,
-    HUSTR_30,
-    HUSTR_31,
-    HUSTR_32
-};
-*/
-
-char*	mapnamesp[40];/* =	// Plutonia WAD map names.
-{
-    PHUSTR_1,
-    PHUSTR_2,
-    PHUSTR_3,
-    PHUSTR_4,
-    PHUSTR_5,
-    PHUSTR_6,
-    PHUSTR_7,
-    PHUSTR_8,
-    PHUSTR_9,
-    PHUSTR_10,
-    PHUSTR_11,
-	
-    PHUSTR_12,
-    PHUSTR_13,
-    PHUSTR_14,
-    PHUSTR_15,
-    PHUSTR_16,
-    PHUSTR_17,
-    PHUSTR_18,
-    PHUSTR_19,
-    PHUSTR_20,
-	
-    PHUSTR_21,
-    PHUSTR_22,
-    PHUSTR_23,
-    PHUSTR_24,
-    PHUSTR_25,
-    PHUSTR_26,
-    PHUSTR_27,
-    PHUSTR_28,
-    PHUSTR_29,
-    PHUSTR_30,
-    PHUSTR_31,
-    PHUSTR_32
-};*/
-
-
-char *mapnamest[40];/* =	// TNT WAD map names.
-{
-    THUSTR_1,
-    THUSTR_2,
-    THUSTR_3,
-    THUSTR_4,
-    THUSTR_5,
-    THUSTR_6,
-    THUSTR_7,
-    THUSTR_8,
-    THUSTR_9,
-    THUSTR_10,
-    THUSTR_11,
-	
-    THUSTR_12,
-    THUSTR_13,
-    THUSTR_14,
-    THUSTR_15,
-    THUSTR_16,
-    THUSTR_17,
-    THUSTR_18,
-    THUSTR_19,
-    THUSTR_20,
-	
-    THUSTR_21,
-    THUSTR_22,
-    THUSTR_23,
-    THUSTR_24,
-    THUSTR_25,
-    THUSTR_26,
-    THUSTR_27,
-    THUSTR_28,
-    THUSTR_29,
-    THUSTR_30,
-    THUSTR_31,
-    THUSTR_32
-};
-*/
+char*	mapnames[40];
+char*	mapnames2[40];
+char*	mapnamesp[40];
+char*   mapnamest[40];
 
 const char*	shiftxform;
 
@@ -430,7 +247,7 @@ void HU_Start(void)
 {
 
     int		i;
-    char*	s;
+    char*	s = HU_TITLE;
 
     if (headsupactive)
 	HU_Stop();
@@ -470,17 +287,7 @@ void HU_Start(void)
     
 //Raven: Another patch to work with plutonia and tnt properly
 //Raven: Helps display the map names properly in map view mode...
-    switch ( gamemode )
-    {
-      case shareware:
-      case registered:
-      case retail:
-         s = HU_TITLE;
-         break;
-
-      case commercial:
-      default:
-         switch(gamemission)
+    switch(gamemission)
          {
             case pack_plut:
                s = HU_TITLEP;
@@ -491,10 +298,8 @@ void HU_Start(void)
             case doom2:
                s = HU_TITLE2;
                break;
-            case doom:  //Raven: should never happen, but I had to put it in
-            case none:  //Raven: should never happen, but I had to put it in
-      }
-    }
+            default:
+            }
 //Raven: End of patch
     
     while (*s)
@@ -522,37 +327,57 @@ void HU_PutPixel(int x,int y,int color)
     ((short *)(screens[0]))[y*SCREENWIDTH+x]=palette_color[color];
   }
 
+
+int chcount=0, chdir=1, chtimer=0; 
+extern int setblocks;              
+
 void HU_Drawer(void)
 {
 
+    int sbarheight=SBARHEIGHT; 
+
+    TIP_DisplayTips(((SCREENHEIGHT-sbarheight)/2)-2);
+	
     HUlib_drawSText(&w_message);
     HUlib_drawIText(&w_chat);
     if (automapactive)
 	HUlib_drawTextLine(&w_title, false);
 
+    if (setblocks==11 && !automapactive)
+       sbarheight=0;           //-JC- Make sure crosshair works full scr.
+
+    // -jc- Pulsating
+    if (chtimer++%5) {
+        if (chcount==14)
+           chdir=-1;
+        else if (chcount==0)
+                chdir=1;
+        chcount+=chdir;
+    }
+
     //do crosshairs
     if (crosshair==1)
       {
-      HU_PutPixel(SCREENWIDTH/2-3,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2-2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2+3,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2-3,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2-2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+3,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2-3,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2-2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2+3,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2-3,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2-2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+3,HU_CROSSHAIRCOLOR+chcount);
       }
     else if (crosshair==2)
       {
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       }
     else if (crosshair==3)
       {
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2+1,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+1,HU_CROSSHAIRCOLOR);
-      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2+1,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+1,HU_CROSSHAIRCOLOR+chcount);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+2,HU_CROSSHAIRCOLOR+chcount);
       }
 
     //now, draw stats
@@ -564,12 +389,12 @@ void HU_Drawer(void)
       int currtime,timediff;
 
       numframes++;
-      currtime=I_GetMilliTime();
+      currtime=I_GetTime();
       timediff=currtime-timelastframe;
-      if (timediff>333)  //update every third of a second
+      if (timediff>11)  //update every third of a second
         {
-        if (timediff<10000)
-          fps=numframes*10000/timediff;
+        if (timediff<350)
+          fps=numframes*350/timediff;
         else
           fps=0;
         timelastframe=currtime;      
@@ -588,11 +413,14 @@ void HU_Drawer(void)
         {
         HUlib_clearTextLine(&textlinepos);
         HUlib_clearTextLine(&textlinestats);
-        sprintf(textbuf,"ang=0x%x;x,y=(0x%x,0x%x)",
-              players[consoleplayer].mo->angle,
-              players[consoleplayer].mo->x,
-              players[consoleplayer].mo->y);      
-        s=textbuf; while (*s)HUlib_addCharToTextLine(&textlinepos,*(s++));
+
+
+        // Convert angle & x,y co-ordinates so they are easier to read.
+        sprintf(textbuf,"ang=0x%x; x,y=( %d, %d )",
+              players[consoleplayer].mo->angle>>16,
+              players[consoleplayer].mo->x>>16,
+              players[consoleplayer].mo->y>>16);
+        s=textbuf; 	 while (*s)HUlib_addCharToTextLine(&textlinepos,*(s++));
         sprintf(textbuf,"Kills:%d/%d   Items:%d/%d   Secrets:%d/%d",
               players[consoleplayer].killcount,totalkills,
               players[consoleplayer].itemcount,totalitems,
@@ -675,10 +503,10 @@ void HU_Ticker(void)
 			    message_nottobefuckedwith = true;
 			    message_on = true;
 			    message_counter = HU_MSGTIMEOUT;
-			    if ( gamemode == commercial )
-			      S_StartSound(0, sfx_radio);
-			    else
-			      S_StartSound(0, sfx_tink);
+                            if (W_CheckNumForName("DSRADIO") < 0)
+                              S_StartSound(NULL, sfx_tink);
+                            else
+  			      S_StartSound(NULL, sfx_radio);
 			}
 			HUlib_resetIText(&w_inputbuffer[i]);
 		    }

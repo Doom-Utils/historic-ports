@@ -37,7 +37,7 @@ rcsid[] = "$Id: p_doors.c,v 1.4 1997/02/03 16:47:53 b1 Exp $";
 
 // Data.
 #include "dstrings.h"
-#include "sounds.h"
+#include "lu_sound.h"
 
 #if 0
 //
@@ -572,8 +572,8 @@ void P_InitSlidingDoorFrames(void)
     int		f4;
 	
     // DOOM II ONLY...
-    if ( gamemode != commercial)
-	return;
+//    if ( gamemission != commercial)
+//	return;
 	
     for (i = 0;i < MAXSLIDEDOORS; i++)
     {
@@ -718,8 +718,8 @@ EV_SlidingDoor
     slidedoor_t*	door;
 	
     // DOOM II ONLY...
-    if (gamemode != commercial)
-	return;
+//    if (gamemode != commercial)
+//	return;
     
     // Make sure door isn't already being animated
     sec = line->frontsector;

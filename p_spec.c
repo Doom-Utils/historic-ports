@@ -50,7 +50,7 @@ rcsid[] = "$Id: p_spec.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 #include "r_state.h"
 
 // Data.
-#include "sounds.h"
+#include "lu_sound.h"
 
 
 //
@@ -354,8 +354,7 @@ P_FindNextHighestFloor
 	// Check for overflow. Exit.
 	if ( h >= MAX_ADJOINING_SECTORS )
 	{
-	    fprintf( stderr,
-		     "Sector with more than 20 adjoining sectors\n" );
+	    I_Printf("Sector with more than 20 adjoining sectors\n" );
 	    break;
 	}
     }
@@ -502,12 +501,23 @@ P_CrossSpecialLine
     //	Triggers that other things can activate
     if (!thing->player)
     {
+	// Things that NOW CAN trigger specials...
+        if (!missileteleport) {                                          //-JC-
+	   switch(thing->type)
+	   {
+	      case MT_ROCKET:
+	      case MT_PLASMA:
+	      case MT_BFG:
+                 return;
+                 break;
+
+	      default: break;
+           }
+        }
+
 	// Things that should NOT trigger specials...
 	switch(thing->type)
 	{
-	  case MT_ROCKET:
-	  case MT_PLASMA:
-	  case MT_BFG:
 	  case MT_TROOPSHOT:
 	  case MT_HEADSHOT:
 	  case MT_BRUISERSHOT:

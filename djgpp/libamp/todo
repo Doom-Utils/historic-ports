@@ -1,0 +1,53 @@
+amp0.7 TODO file
+================
+
+### immediate
+
+more carefully set audio parameters, report errors, etc..
+
+clearly separate three components from Thomas Sailer's rtbuf.c (prefetch, realtime
+privs and direct-to-DMA audio) so that any one of these could be enabled/disabled
+at runtime (for instance, users of GUS should be able to switch to write/audio)
+
+make guis really use the -gui option (consult with Edouard for xmpeg3 and Joel
+for Jukebox), merge.
+
+uncomment the -include .depend line in the makefile if we're using GNU Make
+
+amigaOS port
+
+8bit output
+
+qtamp
+
+nt port
+
+netbsd port
+
+HP term support
+
+karl's optimization patches
+
+budor's optimization patches
+
+Get rid of the nch global variable - even better, get rid of a lot of global
+variables. Try reducing the memory footprint.
+
+Synchronisation code needs to be improved still. (Sanity checks enhanced, take
+a look at test2.mp3 which wrongly reports fs of 48000)
+
+add an option to pick device file (instead of /dev/dsp)
+
+
+
+### not so immediate
+
+implement parse-only mode - should be useful, also quality debug output
+
+clean up wave header writing
+
+layer 1
+
+CRC checking
+
+httpget ("streaming")

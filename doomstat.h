@@ -115,6 +115,7 @@ extern  boolean	deathmatch;
 // These are multiplied by 8.
 extern int snd_SfxVolume;      // maximum volume for sound
 extern int snd_MusicVolume;    // maximum volume for music
+extern int snd_CDMusicVolume; // max vol for cd-audio
 
 // Current music/sfx card - index useless
 //  w/o a reference LUT in a sound module.
@@ -221,6 +222,24 @@ extern	player_t	players[MAXPLAYERS];
 // Alive? Disconnected?
 extern  boolean		playeringame[MAXPLAYERS];
 
+#define MAXHEALTH	200
+#define MAXARMOUR	200
+#define MAXSOULHEALTH	MAXHEALTH
+
+#define NORMHEALTH	100
+#define NORMARMOUR	0
+#define NORMAMMO	50
+#define BFGCELLS	40
+#define SOULHEALTH	NORMHEALTH
+#define MEGAHEALTH	MAXHEALTH
+
+#define GREENARMOUR	1
+#define BLUEARMOUR	2
+
+#define CHEATARMOUR     MAXARMOUR
+#define CHEATARMOURT    BLUEARMOUR
+
+
 
 // Player spawn spots for deathmatch.
 #define MAX_DM_STARTS   10
@@ -277,7 +296,7 @@ extern int		skyflatnum;
 
 // Netgame stuff (buffers and pointers, i.e. indices).
 
-// This is ???
+// This is for use in the network communication.
 extern  doomcom_t*	doomcom;
 
 // This points inside doomcom.
@@ -293,61 +312,52 @@ extern  int             nettics[MAXNETNODES];
 extern  ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
 extern	int		ticdup;
 
-//stuff changed by dehacked patches
-extern int deh_inithealth;
-extern int deh_initbullets;
-extern int deh_maxhealth;
-extern int deh_maxarmor;
-extern int deh_greenac;
-extern int deh_blueac;
-extern int deh_maxsoulhealth;
-extern int deh_soulhealth;
-extern int deh_megahealth;
-extern int deh_godhealth;
-extern int deh_idfaarmor;
-extern int deh_idfaac;
-extern int deh_idkfaarmor;
-extern int deh_idkfaac;
-extern int deh_bfgcells;
-extern int deh_infight;  //not yet implemented!
-
-
 //misc stuff
 extern boolean newhupd;
 extern int newnmrespawn;
-extern int LessAccurateMon;
+extern int lessaccuratemon;
+extern int lessaccuratezom;
+extern int spectreability;
+extern int lostsoulability;
 extern int rotatemap;
-extern int ItemRespawn;
+extern int itemrespawn;
 extern int showstats;
 extern int novert;
-extern int swapstereo;
+extern boolean swapstereo;
 extern int newhud;
 extern int crosshair;
 extern int screenblocks;
-extern int RandomInfight;
-extern int TotalWar;
-extern int NewAI;
-extern int HumanMad;
-extern int HumanExplode;
+extern int infight;
 extern int stretchsky;
 extern int grav;
 extern int shootupdown;
+extern int missileteleport; 
+extern int teleportdelay;
+
+extern int menuoptionshade;
+extern int menunameshade;
 
 //cd-audio stuff
-extern int cdaudio;
+typedef enum {
+  CD_OFF = 0,
+  CD_ON,
+  CD_ATMOS
+} cdType_t;
+extern cdType_t cdaudio;
 extern int cdtrack;
-extern int numtracks;
-extern int starttrack;
-extern volatile int cdcounter;
+extern int cdnumtracks;
+extern int cdcounter;
 
 //okay, heres the resolution/hicolor:
 extern int SCREENWIDTH;
 extern int SCREENHEIGHT;
 extern int SCREENPITCH;
-extern int BPP;    //BYTES per pixel, 1=256 color, 2=hi color
-extern int weirdaspect;   //1 means 8:5 aspect ratio, 0 means 4:3 aspect ratio
-extern short hicolortransmask1;  //mask for hi-color transparancy
-extern short hicolortransmask2;  //mask for hi-color transparancy
+extern int DX,DXI,DY,DYI,DY2,DYI2; // I_Video.c / V_Video*.c Precalc. Stuff
+extern int retrace;                // Can be used if DBLBUF is not.
+extern int BPP;                    //BYTES per pixel, 1=256 color, 2=hi color
+extern int weirdaspect;            //1 means 8:5 aspect ratio, 0 means 4:3 aspect ratio
+extern short hicolortransmask1;    //mask for hi-color transparancy
+extern short hicolortransmask2;    //mask for hi-color transparancy
 extern char *translucencytable25;
 extern char *translucencytable50;
 extern char *translucencytable75;

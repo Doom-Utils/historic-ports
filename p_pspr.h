@@ -26,7 +26,7 @@
 // Basic data types.
 // Needs fixed point, and BAM angles.
 #include "m_fixed.h"
-#include "tables.h"
+#include "lu_math.h"
 
 
 //
@@ -36,7 +36,7 @@
 // This includes all the data for thing animation,
 // i.e. the Thing Atrributes table
 // and the Frame Sequence table.
-#include "info.h"
+#include "lu_info.h"
 
 #ifdef __GNUG__
 #pragma interface
