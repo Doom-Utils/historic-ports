@@ -1,78 +1,103 @@
+        NTDOOM release 1998-01-29
+        -------------------------
 
-Here it is, at long last.  The DOOM source code is released for your
-non-profit use.  You still need real DOOM data to work with this code.
-If you don't actually own a real copy of one of the DOOMs, you should
-still be able to find them at software stores.
+        http://www.s2.org/ntdoom/
 
-Many thanks to Bernd Kreimeier for taking the time to clean up the
-project and make sure that it actually works.  Projects tends to rot if
-you leave it alone for a few years, and it takes effort for someone to
-deal with it again.
+Petteri Kangaslampi, pekangas@sci.fi
 
-The bad news:  this code only compiles and runs on linux.  We couldn't
-release the dos code because of a copyrighted sound library we used
-(wow, was that a mistake -- I write my own sound code now), and I
-honestly don't even know what happened to the port that microsoft did
-to windows.
+This is the third release of my Win32 port of the Public DOOM 1.10 source
+code. I'm aware of at least two other Win32 ports, one by Andy Bay and other
+by Bruce Lewis, but neither of them currently work on my NT machine, and
+neither have multiresolution support at the moment. At some point it is
+probably useful to combine these ports, and possibly even the DOS port by Chi
+Hoang, to a single source base - any volunteers?
 
-Still, the code is quite portable, and it should be straightforward to
-bring it up on just about any platform.
+New in this version:
+	- Highcolor and other fixes from Chi Hoang's DOSDOOM 0.45 - highcolor
+	  looks much better now
+	- Other minor fixes and updates
 
-I wrote this code a long, long time ago, and there are plenty of things
-that seem downright silly in retrospect (using polar coordinates for
-clipping comes to mind), but overall it should still be a usefull base
-to experiment and build on.
+Some highlights:
+        - Uses windowed graphics using StretchDIBits, DirectDraw not required
+        - Keyboard input works, apart from Alt
+        - Mouse works, if you have problems with -grabmouse, try alt-tabbing
+          to a different window and back again
+        - Sound, using MIDAS Digital Audio System, supports both standard wave
+          output and DirectSound
+        - Music, grabbed from Andy Bay's Win32 port. Uses QMUS2MID code by
+          Sebastien Bacquet and Hans Peter Verne. The QMUS2MID code is
+          distributed under the GNU General Public License, see
+          COPYING.
+        - Support for resolutions over 320x200, and highcolor support, grabbed
+          from Chi Hoang's DosDoom port. Highcolor support doesn't seem to
+          make that big of a difference in the display, but doesn't slow the
+          game much down either.
+        - TCP/IP networking might work, but is still not tested
+        - Source code compiles without warnings with Watcom C 10.6 and
+          Visual C 4.2
+        - I have already done some preliminary assembler optimizations, more
+          is to come.
+	- Run from a shell window if possible (Command Prompt or whatever),
+          so that you can actually see the error messages if NTDOOM crashes
+	- The game version is detected from the WAD file name, like the
+          original code does. Use "doom1.wad" for DOOM1 shareware, "doom.wad"
+          for DOOM1 registered, "doom2.wad" for DOOM2 and "doomu.wad" for
+          Ultimate DOOM.	
 
-The basic rendering concept -- horizontal and vertical lines of constant
-Z with fixed light shading per band was dead-on, but the implementation
-could be improved dramatically from the original code if it were
-revisited.  The way the rendering proceded from walls to floors to
-sprites could be collapsed into a single front-to-back walk of the bsp
-tree to collect information, then draw all the contents of a subsector
-on the way back up the tree.  It requires treating floors and ceilings
-as polygons, rather than just the gaps between walls, and it requires
-clipping sprite billboards into subsector fragments, but it would be
-The Right Thing.
+What certainly doesn't work:
+        - Joystick
 
-The movement and line of sight checking against the lines is one of the
-bigger misses that I look back on.  It is messy code that had some
-failure cases, and there was a vastly simpler (and faster) solution
-sitting in front of my face.  I used the BSP tree for rendering things,
-but I didn't realize at the time that it could also be used for
-environment testing.  Replacing the line of sight test with a bsp line
-clip would be pretty easy.  Sweeping volumes for movement gets a bit
-tougher, and touches on many of the challenges faced in quake / quake2
-with edge bevels on polyhedrons.
+The port was done under Windows NT, and works pretty much flawlessly under
+it. Win95 was quickly tested, and mostly works too. This port is mainly
+targetted at Windows NT though, as the name already suggests, and NT support
+is always priority number 1. Using a 16-bit or better display mode is
+recommended, but 8-bit modes should work reasonably well too.
 
-Some project ideas:
+Quick documentation on the command line options:
+        -grabmouse      grabs the mouse to the DOOM window and hides it,
+                        recommended if you use mouse
+        -novertmouse    disables mouse vertical movement -- very
+                        useful if you are used to Quake
+        -2, -3, -4      multiplies the pixels to make the window
+                        bigger. Unlike the X version, this port does not
+                        stretch the pixels in software, but rather lets the
+                        display adapter do that -- most modern display
+                        adapters have hardware stretching
+        -nosound        disables sound effects
+        -wavonly        do not use DirectSound
+        -primarysound   use DirectSound in primary buffer mode --
+                        might help to lower latency, but can be problematic.
+        -nomusic        disables MIDI music
+        -width xx       sets rendering width to xx pixels
+        -height yy      sets rendering height to yy pixels
+        -hicolor        enables hicolor support, only for 16bpp and better
+                        display modes
 
-Port it to your favorite operating system.
+As a hint, the options I normally use are
+        ntdoom -grabmouse -novertmouse -width 320 -height 240 -2 -nomusic
 
-Add some rendering features -- transparency, look up / down, slopes,
-etc.
+I have been planning to write a more user-friendly front-end, maybe some
+day...
 
-Add some game features -- weapons, jumping, ducking, flying, etc.
+As Alt currently doesn't work, strafing needs to be done with separate strafe
+keys, '.' and ',' by default. The file "sample.doomrc" includes an example
+configuration for players used to Quake -- cursor keys are used for moving and
+strafing and the mouse for turning. Copy it to ".doomrc" in either your home
+directory or the current directory.
 
-Create a packet server based internet game.
+The source compiles with both Visual C and Watcom C. To compile, you'll need
+MIDAS Digital Audio System 1.1.1, and a suitable compiler, plus GNU Make if
+you want to use the default Makefile and NASM to use the assembler sources.
+MIDAS is available at http://www.s2.org/midas/, and precompiled binaries for
+GNU Make and NASM at http://www.s2.org/ntdoom/. The Makefile doesn't do
+anything too magic, so you should be able to build a new Makefile or project
+file for your favorite tools easily.
 
-Create a client / server based internet game.
-
-Do a 3D accelerated version.  On modern hardware (fast pentium + 3DFX)
-you probably wouldn't even need to be clever -- you could just draw the
-entire level and get reasonable speed.  With a touch of effort, it should
-easily lock at 60 fps (well, there are some issues with DOOM's 35 hz
-timebase...).  The biggest issues would probably be the non-power of two
-texture sizes and the walls composed of multiple textures.
+Anyway, have fun. Bug reports are welcome, concrete fix suggestions as well as
+new feature ideas more than welcome, and actual source code for fixes and
+updates extremely well appreciated. E-mail preferred, pekangas@sci.fi. The
+latest version, as well as other NTDOOM information, can always be found at
+http://www.s2.org/ntdoom/.
 
 
-I don't have a real good guess at how many people are going to be
-playing with this, but if significant projects are undertaken, it would
-be cool to see a level of community cooperation.  I know that most early
-projects are going to be rough hacks done in isolation, but I would be
-very pleased to see a coordinated 'net release of an improved, backwards
-compatable version of DOOM on multiple platforms next year.
-
-Have fun.
-
-John Carmack
-12-23-97
+-- Petteri
