@@ -101,7 +101,7 @@ void P_Ticker (void)
   if (!netgame && menuactive && !demoplayback && players[consoleplayer].viewz != 1)
     return;
 
-  for (i=0 ; i<MAXPLAYERS ; i++)
+  for (i=0 ; i<maxplayers ; i++)
   {
     if (playeringame[i])
       P_PlayerThink (&players[i]);

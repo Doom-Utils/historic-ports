@@ -26,37 +26,11 @@ extern int MAXSTATES;
 typedef enum
 {
     SPR_TROO,
-    SPR_SHTG,
-/*    SPR_PUNG,
-    SPR_PISG,
-    SPR_PISF,
-    SPR_SHTF,
-    SPR_SHT2,
-    SPR_CHGG,
-    SPR_CHGF,
-    SPR_MISG,
-    SPR_MISF,
-    SPR_SAWG,
-    SPR_PLSG,
-    SPR_PLSF,
-    SPR_BFGG,
-    SPR_BFGF,*/
-    SPR_BLUD,
-    SPR_PUFF,
-/*    SPR_PLSS,
-    SPR_PLSE, */
     SPR_MISL,
-/*    SPR_BFS1,
-    SPR_BFE1,
-    SPR_BFE2, */
-    SPR_IFOG,
-//    SPR_PLAY,
     SPR_BBRN,
     SPR_BOSF,
-    SPR_POL5,
     SPR_FIRE,
     ORIG_NUMSPRITES
-
 } spritenum_t;
 
 
@@ -65,167 +39,10 @@ typedef enum
 {
     S_NULL,
     S_LIGHTDONE,
-/*    S_PUNCH,
-    S_PUNCHDOWN,
-    S_PUNCHUP,
-    S_PUNCH1,
-    S_PUNCH2,
-    S_PUNCH3,
-    S_PUNCH4,
-    S_PUNCH5,
-    S_PISTOL,
-    S_PISTOLDOWN,
-    S_PISTOLUP,
-    S_PISTOL1,
-    S_PISTOL2,
-    S_PISTOL3,
-    S_PISTOL4,
-    S_PISTOLFLASH,
-    S_SGUN,
-    S_SGUNDOWN,
-    S_SGUNUP,
-    S_SGUN1,
-    S_SGUN2,
-    S_SGUN3,
-    S_SGUN4,
-    S_SGUN5,
-    S_SGUN6,
-    S_SGUN7,
-    S_SGUN8,
-    S_SGUN9,
-    S_SGUNFLASH1,
-    S_SGUNFLASH2,
-    S_DSGUN,
-    S_DSGUNDOWN,
-    S_DSGUNUP,
-    S_DSGUN1,
-    S_DSGUN2,
-    S_DSGUN3,
-    S_DSGUN4,
-    S_DSGUN5,
-    S_DSGUN6,
-    S_DSGUN7,
-    S_DSGUN8,
-    S_DSGUN9,
-    S_DSGUN10,
-    S_DSNR1,
-    S_DSNR2,
-    S_DSGUNFLASH1,
-    S_DSGUNFLASH2,
-    S_CHAIN,
-    S_CHAINDOWN,
-    S_CHAINUP,
-    S_CHAIN1,
-    S_CHAIN2,
-    S_CHAIN3,
-    S_CHAINFLASH1,
-    S_CHAINFLASH2,
-    S_MISSILE,
-    S_MISSILEDOWN,
-    S_MISSILEUP,
-    S_MISSILE1,
-    S_MISSILE2,
-    S_MISSILE3,
-    S_MISSILEFLASH1,
-    S_MISSILEFLASH2,
-    S_MISSILEFLASH3,
-    S_MISSILEFLASH4,
-    S_SAW,
-    S_SAWB,
-    S_SAWDOWN,
-    S_SAWUP,
-    S_SAW1,
-    S_SAW2,
-    S_SAW3,
-    S_PLASMA,
-    S_PLASMADOWN,
-    S_PLASMAUP,
-    S_PLASMA1,
-    S_PLASMA2,
-    S_PLASMAFLASH1,
-    S_PLASMAFLASH2,
-    S_BFG,
-    S_BFGDOWN,
-    S_BFGUP,
-    S_BFG1,
-    S_BFG2,
-    S_BFG3,
-    S_BFG4,
-    S_BFGFLASH1,
-    S_BFGFLASH2,*/
-    S_BLOOD1,
-    S_BLOOD2,
-    S_BLOOD3,
-    S_PUFF1,
-    S_PUFF2,
-    S_PUFF3,
-    S_PUFF4,
-/*    S_PLASBALL,
-    S_PLASBALL2,
-    S_PLASEXP,
-    S_PLASEXP2,
-    S_PLASEXP3,
-    S_PLASEXP4,
-    S_PLASEXP5,*/
     S_ROCKET,
-/*    S_BFGSHOT,
-    S_BFGSHOT2,
-    S_BFGLAND,
-    S_BFGLAND2,
-    S_BFGLAND3,
-    S_BFGLAND4,
-    S_BFGLAND5,
-    S_BFGLAND6,
-    S_BFGEXP,
-    S_BFGEXP2,
-    S_BFGEXP3,
-    S_BFGEXP4,  */
     S_EXPLODE1,
     S_EXPLODE2,
     S_EXPLODE3,
-    S_IFOG,
-    S_IFOG01,
-    S_IFOG02,
-    S_IFOG2,
-    S_IFOG3,
-    S_IFOG4,
-    S_IFOG5,
-/*    S_PLAY,
-    S_PLAY_RUN1,
-    S_PLAY_RUN2,
-    S_PLAY_RUN3,
-    S_PLAY_RUN4,
-    S_PLAY_ATK1,
-    S_PLAY_ATK2,
-    S_PLAY_PAIN,
-    S_PLAY_PAIN2,
-    S_PLAY_DIE1,
-    S_PLAY_DIE2,
-    S_PLAY_DIE3,
-    S_PLAY_DIE4,
-    S_PLAY_DIE5,
-    S_PLAY_DIE6,
-    S_PLAY_DIE7,
-    S_PLAY_XDIE1,
-    S_PLAY_XDIE2,
-    S_PLAY_XDIE3,
-    S_PLAY_XDIE4,
-    S_PLAY_XDIE5,
-    S_PLAY_XDIE6,
-    S_PLAY_XDIE7,
-    S_PLAY_XDIE8,
-    S_PLAY_XDIE9,
-*/
-    // -------------------------------
-
-    S_SMOKE1,
-    S_SMOKE2,
-    S_SMOKE3,
-    S_SMOKE4,
-    S_SMOKE5,
-
-    // -------------------------------
-
     S_BRAIN,
     S_BRAIN_PAIN,
     S_BRAIN_DIE1,
@@ -250,7 +67,6 @@ typedef enum
     S_BRAINEXPLODE1,
     S_BRAINEXPLODE2,
     S_BRAINEXPLODE3,
-    S_GIBS,
     ORIG_NUMSTATES
 }
 statenum_t;
@@ -258,23 +74,12 @@ statenum_t;
 // Original MOBJ enum
 typedef enum
 {
-//    MT_PLAYER,
-    // ----------------------
-    MT_SMOKE,
-    // ----------------------
     MT_BOSSBRAIN,
     MT_BOSSSPIT,
     MT_BOSSTARGET,
     MT_SPAWNSHOT,
     MT_SPAWNFIRE,
     MT_ROCKET,
-//    MT_PLASMA,
-//    MT_BFG,
-    MT_PUFF,
-    MT_BLOOD,
-    MT_IFOG,
-    MT_TELEPORTMAN,
-//    MT_EXTRABFG,
     ORIG_NUMMOBJTYPES
 }
 mobjtype_t;
@@ -282,13 +87,7 @@ mobjtype_t;
 // special mobj types
 typedef enum
 {
-  MOBJ_PLAYER,
-  MOBJ_BLOOD,
-  MOBJ_PUFF,
-  MOBJ_RESPAWNFOG,
-  MOBJ_SMOKE,
   MOBJ_SPAWNSPOT,
-  MOBJ_TELEPOS,
   NUMMOBJSPEC
 }
 specialtype_t;
@@ -409,11 +208,17 @@ typedef struct mobjinfo_s
   fixed_t jumpheight;
   fixed_t maxfall;
   fixed_t fast;
+  int fuse;
+  int side;
+  int playernum;
   struct backpack_s* backpackinfo;
   struct attacktype_s* closecombat;
   struct attacktype_s* rangeattack;
   struct attacktype_s* spareattack;
   struct mobjinfo_s* dropitem;
+  struct mobjinfo_s* blood;
+  struct mobjinfo_s* gib;
+  struct mobjinfo_s* respawneffect;
   struct mobjinfo_s* next;
 }
 mobjinfo_t;
@@ -444,6 +249,7 @@ typedef struct attacktype_s
   int keepfirechance;
   struct mobjinfo_s *projectile;
   struct mobjinfo_s *aimspot;
+  struct mobjinfo_s *puff;
   struct attacktype_s *next;
 }
 attacktype_t;
@@ -474,7 +280,8 @@ typedef enum
   AF_SPAWNPRESTEP    = 4,
   AF_SPAWNTELEFRAGS  = 8,
   AF_NEEDSIGHT       = 16,
-  AF_FACETARGET      = 32
+  AF_FACETARGET      = 32,
+  AF_PLAYER          = 64
 }
 attackflags_t;
 
@@ -513,20 +320,9 @@ extern int NUMAMMO;
 // -KM- 1998/11/25 Weapons externalised, except for none and change.
 typedef enum
 {
+  // No pending weapon change.
   wp_nochange = -2,
   wp_none = -1
-/*  wp_fist,
-  wp_pistol,
-  wp_shotgun,
-  wp_supershotgun,
-  wp_chaingun,
-  wp_missile,
-  wp_plasma,
-  wp_bfg,
-  wp_chainsaw,
-  NUMWEAPONS, */
-
-  // No pending weapon change.
 }
 weapontype_t;
 
@@ -581,6 +377,8 @@ typedef struct weaponinfo_s
   sfx_t* sound3;
   // This close combat weapon should not throw the target away (chainsaw)
   boolean nothrust;
+  // Amount of shots in a clip
+  int clip;
   // Attack type used.
   struct attacktype_s *attack;
 }
@@ -681,9 +479,12 @@ typedef enum
   MPF_NORMALSKY   = 1024,          // Force Normal Sky
   MPF_NOTRUE3D    = 2048,          // Disable True 3D Gameplay
   MPF_NOSTOMP     = 4096,          // Monsters cannot stomp players
-  MPF_NORMBLOOD   = 8192,           // Use Normal Blood activity
-  MPF_RESPAWN     = 16384,          // Respawn ON
-  MPF_NORESPAWN   = 32768           // Respawn OFF
+  MPF_NORMBLOOD   = 8192,          // Use Normal Blood activity
+  MPF_RESPAWN     = 16384,         // Respawn ON
+  MPF_NORESPAWN   = 32768,         // Respawn OFF
+  MPF_AUTOAIMOFF  = 0x30000,       // Autoaim on
+  MPF_AUTOAIMON   = 0x10000,
+  MPF_AUTOAIMMLOOK= 0x20000
 }
 mapsettings_t;
 
@@ -787,10 +588,6 @@ typedef enum
 {
   AMMO_TYPE = -2,       // AMMO
   WEAPON = -1,           // Weapon
-/*  AMMO_TYPE1,           // BULLETS
-  AMMO_TYPE2,           // SHELLS
-  AMMO_TYPE3,           // ROCKETS
-  AMMO_TYPE4,           // CELLS*/
   KEY_BLUECARD,
   KEY_REDCARD,
   KEY_YELLOWCARD,
@@ -886,6 +683,7 @@ typedef enum
   mov_Once,
   mov_MoveWaitReturn,
   mov_Continuous,
+  mov_Plat,
   mov_Stairs,
   mov_Stop
 }
@@ -904,18 +702,6 @@ typedef enum
   KF_REQUIRESALL = 0x3F
 }
 keys_e;
-
-// Scrolling
-typedef enum
-{
-  dir_none = 0,
-  dir_vert = 1,
-  dir_up   = 2,
-  dir_horiz= 4,
-  dir_left = 8
-}
-scrolldirs_e;
-
 
 // Moving Planes (Ceilings, floors and doors)
 typedef struct
@@ -1022,8 +808,8 @@ typedef struct linedeftype_s
   int e_exit; // Exit Switch: 0 = no, 1 = yes, 2 = secret level.
 
   // SCROLLER SPECIFIC
-  scrolldirs_e scroller; // Scroll Dir.
-  fixed_t s_speed;
+  fixed_t s_xspeed;
+  fixed_t s_yspeed;
 
   // -ACB- 1998/09/11 Message handling
   char* failedmessage;
@@ -1142,6 +928,7 @@ void DDF_ReadGames(void *data, int size);
 void DDF_ReadLangs(void *data, int size);
 void DDF_ReadLevels(void *data, int size);
 void DDF_ReadLines(void *data, int size);
+void DDF_ReadThings(void *data, int size);
 void DDF_ReadCreatures(void* data, int size);
 void DDF_ReadItems(void* data, int size);
 void DDF_ReadScenery(void *data, int size);

@@ -29,7 +29,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -39,6 +38,18 @@
 #include "ddf_main.h"
 
 #include "ddf_locl.h"
+
+// -KM- 1999/01/29 Improved scrolling.
+// Scrolling
+typedef enum
+{
+  dir_none = 0,
+  dir_vert = 1,
+  dir_up   = 2,
+  dir_horiz= 4,
+  dir_left = 8
+}
+scrolldirs_e;
 
 // Check for walk/push/shoot
 static void DDF_LineGetTrigType(char *info, int c);
@@ -56,6 +67,8 @@ static void DDF_LineGetScroller(char *info, int c);
 linedeftype_t *specialLineDefs[256] = { [0 ... 255] = NULL};
 
 static linedeftype_t bufferlinetype;
+static fixed_t s_speed = FRACUNIT;
+static scrolldirs_e s_dir = dir_none;
 // -KM- 1998/09/27 Reversable linedefs.  Time functions.  More light functions
 static const linedeftype_t defaultlinetype =
 {
@@ -110,7 +123,7 @@ static const linedeftype_t defaultlinetype =
   },
 
   0,                                      // Not an exit
-  0, FRACUNIT,                            // Not scrolling
+  0, 0,                            // Not scrolling
   NULL,                                   // Security Message
   "\0",                                        // Colourmaplump
   -1,                                          // Colourmap
@@ -173,8 +186,10 @@ static commandlist_t linedefcommands[] =
  {"LIGHT PROBABILITY"   , DDF_MainGetNumeric,         &bufferlinetype.l.light},
  {"LIGHT SYNC"          , DDF_MainGetTime,            &bufferlinetype.l.sync},
  {"EXIT"                , DDF_MainGetExit,            &bufferlinetype.e_exit},
- {"SCROLL"              , DDF_LineGetScroller,        &bufferlinetype.scroller},
- {"SCROLLING SPEED"     , DDF_MainGetFixed,           &bufferlinetype.s_speed},
+ {"SCROLL"              , DDF_LineGetScroller,        &s_dir},
+ {"SCROLLING SPEED"     , DDF_MainGetFixed,           &s_speed},
+ {"SCROLL XSPEED"       , DDF_MainGetFixed,           &bufferlinetype.s_xspeed},
+ {"SCROLL YSPEED"       , DDF_MainGetFixed,           &bufferlinetype.s_yspeed},
  {"COLOURMAPLUMP"        , DDF_MainGetLumpName,     &bufferlinetype.colourmaplump},
  {"COLOURMAP"            , DDF_MainGetNumeric,      &bufferlinetype.colourmap},
  {"GRAVITY"              , DDF_MainGetNumeric,      &bufferlinetype.gravity},
@@ -277,8 +292,8 @@ void DDF_LineGetScroller(char *info, int c)
   {
     if (!strcasecmp(info, s_scroll[i].s))
     {
-      bufferlinetype.scroller &= s_scroll[i].n >> 16;
-      bufferlinetype.scroller |= s_scroll[i].n & 0xffff;
+      s_dir &= s_scroll[i].n >> 16;
+      s_dir |= s_scroll[i].n & 0xffff;
       return;
     }
   }
@@ -396,7 +411,24 @@ void DDF_LinedefCheckNum(char *info)
 void DDF_LinedefCreate(void)
 {
   bufferlinetype.c.crush = bufferlinetype.f.crush = bufferlinetype.crush;
+  // -KM- 1999/01/29 Convert old style scroller to new.
+  if (s_dir & dir_vert)
+  {
+    if (s_dir & dir_up)
+      bufferlinetype.s_yspeed = s_speed;
+    else
+      bufferlinetype.s_yspeed = -s_speed;
+  }
+  if (s_dir & dir_horiz)
+  {
+    if (s_dir & dir_left)
+      bufferlinetype.s_xspeed = s_speed;
+    else
+      bufferlinetype.s_xspeed = -s_speed;
+  }
   DDF_LineAdd2HashTable(&bufferlinetype);
+  s_dir = dir_none;
+  s_speed = FRACUNIT;
 }
 
 void DDF_ReadLines(void *data, int size)
@@ -412,6 +444,7 @@ void DDF_ReadLines(void *data, int size)
     lines.message = NULL;
     lines.memfile = data;
     lines.memsize = size;
+    lines.filename = NULL;
   }
 
   lines.DDF_MainCheckName     = DDF_LinedefCheckNum;
@@ -500,375 +533,4 @@ linedeftype_t* DDF_GetFromLineHashTable(int trignum)
   I_Error("Unknown Special LineDef type %d\n", trignum);
 }
 
-/*
- Linedef Types to define:
- 2: Open Door W1
-	EV_DoDoor(line,open);
- 3: Close Door W1
-	EV_DoDoor(line,close);
- 4: Raise Door W1
-	EV_DoDoor(line,normal);
- 5: Raise Floor W1
-	EV_DoFloor(line,raiseFloor);
- 6: Fast Ceiling Crush & Raise W1
-	EV_DoCeiling(line,fastCrushAndRaise);
- 8: Build Stairs W1
-	EV_BuildStairs(line,build8);
- 10: PlatDownWaitUp W1
-	EV_DoPlat(line,downWaitUpStay,0);
- 12: Light Turn On - brightest near W1
-	EV_LightTurnOn(line,0);
- 13: Light Turn On 255 W1
-	EV_LightTurnOn(line,255);
- 16: Close Door 30 W1
-	EV_DoDoor(line,close30ThenOpen);
- 17: Start Light Strobing W1
-	EV_StartLightStrobing(line);
- 19: Lower Floor W1
-	EV_DoFloor(line,lowerFloor);
- 22: Raise floor to nearest height and change texture W1
-	EV_DoPlat(line,raiseToNearestAndChange,0);
- 25: Ceiling Crush and Raise W1
-	EV_DoCeiling(line,crushAndRaise);
- 30: Raise floor to shortest texture height on either side of lines W1
-     Finds the shortest bottom texture around the target sector, and raises to it.
-        EV_DoFloor(line, raiseToTexture);
- 35: Lights Very Dark W1
-	EV_LightTurnOn(line,35);
- 36: Lower Floor (TURBO) W1
-	EV_DoFloor(line,turboLower);
- 37: LowerAndChange W1
-	EV_DoFloor(line,lowerAndChange);
- 38: Lower Floor To Lowest W1
-	EV_DoFloor( line, lowerFloorToLowest );
- 39: TELEPORT! W1
-	EV_Teleport( line, side, thing );
- 40: RaiseCeilingLowerFloor W1
-	EV_DoCeiling( line, raiseToHighest );
-	EV_DoFloor( line, lowerFloorToLowest );
- 44: Ceiling Crush W1
-	EV_DoCeiling( line, lowerAndCrush );
- 52: EXIT! W1
-	G_ExitLevel ();
- 53: Perpetual Platform Raise W1
-	EV_DoPlat(line,perpetualRaise,0);
- 54: Platform Stop W1
-	EV_StopPlat(line);
- 56: Raise Floor Crush W1
-	EV_DoFloor(line,raiseFloorCrush);
- 57: Ceiling Crush Stop W1
-	EV_CeilingCrushStop(line);
- 58: Raise Floor 24 W1
-	EV_DoFloor(line,raiseFloor24);
- 59: Raise Floor 24 And Change W1
-	EV_DoFloor(line,raiseFloor24AndChange);
- 104: Turn lights off in sector(tag) W1
-	EV_TurnTagLightsOff(line);
- 108: Blazing Door Raise (faster than TURBO!) W1
-	EV_DoDoor (line,blazeRaise);
- 109: Blazing Door Open (faster than TURBO!) W1
-	EV_DoDoor (line,blazeOpen);
- 100: Build Stairs Turbo 16 W1
-	EV_BuildStairs(line,turbo16);
- 110: Blazing Door Close (faster than TURBO!) W1
-	EV_DoDoor (line,blazeClose);
- 119: Raise floor to nearest surr. floor W1
-	EV_DoFloor(line,raiseFloorToNearest);
- 121: Blazing PlatDownWaitUpStay W1
-	EV_DoPlat(line,blazeDWUS,0);
- 124: Secret EXIT W1
-	G_SecretExitLevel ();
- 125: TELEPORT MonsterONLY W1
-	if (!thing->player)
-	    EV_Teleport( line, side, thing );
- 130: Raise Floor Turbo W1
-	EV_DoFloor(line,raiseFloorTurbo);
- 141: Silent Ceiling Crush & Raise W1
-	EV_DoCeiling(line,silentCrushAndRaise);
 
-	// RETRIGGERS.  All from here till end.
- 72: Ceiling Crush WR
-	EV_DoCeiling( line, lowerAndCrush );
- 73: Ceiling Crush and Raise WR
-	EV_DoCeiling(line,crushAndRaise);
- 74: Ceiling Crush Stop WR
-	EV_CeilingCrushStop(line);
- 75: Close Door WR
-	EV_DoDoor(line,close);
- 76: Close Door 30 WR
-	EV_DoDoor(line,close30ThenOpen);
- 77: Fast Ceiling Crush & Raise WR
-	EV_DoCeiling(line,fastCrushAndRaise);
- 79: Lights Very Dark WR
-	EV_LightTurnOn(line,35);
- 80: Light Turn On - brightest near WR
-	EV_LightTurnOn(line,0);
- 81: Light Turn On 255 WR
-	EV_LightTurnOn(line,255);
- 82: Lower Floor To Lowest WR
-	EV_DoFloor( line, lowerFloorToLowest );
- 83: Lower Floor WR
-	EV_DoFloor(line,lowerFloor);
- 84: LowerAndChange WR
-	EV_DoFloor(line,lowerAndChange);
- 86: Open Door WR
-	EV_DoDoor(line,open);
- 87: Perpetual Platform Raise WR
-	EV_DoPlat(line,perpetualRaise,0);
- 88: PlatDownWaitUp WR
-	EV_DoPlat(line,downWaitUpStay,0);
- 89: Platform Stop WR
-	EV_StopPlat(line);
- 90: Raise Door WR
-	EV_DoDoor(line,normal);
- 91: Raise Floor WR
-	EV_DoFloor(line,raiseFloor);
- 92: Raise Floor 24 WR
-	EV_DoFloor(line,raiseFloor24);
- 93: Raise Floor 24 And Change WR
-	EV_DoFloor(line,raiseFloor24AndChange);
- 94: Raise Floor Crush WR
-	EV_DoFloor(line,raiseFloorCrush);
- 95: Raise floor to nearest height and change texture. WR
-	EV_DoPlat(line,raiseToNearestAndChange,0);
- 96: Raise floor to shortest texture height on either side of lines.
-	EV_DoFloor(line,raiseToTexture);
- 97: TELEPORT! WR
-	EV_Teleport( line, side, thing );
- 98: Lower Floor (TURBO) WR
-	EV_DoFloor(line,turboLower);
- 105: Blazing Door Raise (faster than TURBO!) WR
-	EV_DoDoor (line,blazeRaise);
- 106: Blazing Door Open (faster than TURBO!) WR
-	EV_DoDoor (line,blazeOpen);
- 107: Blazing Door Close (faster than TURBO!) WR
-	EV_DoDoor (line,blazeClose);
- 120: Blazing PlatDownWaitUpStay. WR
-	EV_DoPlat(line,blazeDWUS,0);
- 126: TELEPORT MonsterONLY.
-	if (!thing->player)
-	    EV_Teleport( line, side, thing );
- 128: Raise To Nearest Floor WR
-	EV_DoFloor(line,raiseFloorToNearest);
- 129: Raise Floor Turbo WR
-	EV_DoFloor(line,raiseFloorTurbo);
- 24: RAISE FLOOR GR
-	EV_DoFloor(line,raiseFloor);
-	P_ChangeSwitchTexture(line,0);
- 46: OPEN DOOR GR
-	EV_DoDoor(line,open);
-	P_ChangeSwitchTexture(line,1);
- 47: RAISE FLOOR NEAR AND CHANGE GR
-	EV_DoPlat(line,raiseToNearestAndChange,0);
-	P_ChangeSwitchTexture(line,0);
- 1: Vertical Door SR
- 26: Blue Door/Locked SR
- 27: Yellow Door /Locked SR
- 28: Red Door /Locked SR
- 31: Manual door open SR
- 32: Blue locked door open SR
- 33: Red locked door open SR
- 34: Yellow locked door open SR
- 117: Blazing door raise SR
- 118: Blazing door open SR
-	EV_VerticalDoor (line, thing);
- 7: Build Stairs S1
-	if (EV_BuildStairs(line,build8))
-	    P_ChangeSwitchTexture(line,0);
- 9: Change Donut S1
-	if (EV_DoDonut(line))
-	    P_ChangeSwitchTexture(line,0);
- 11: Exit level S1
-	P_ChangeSwitchTexture(line,0);
-	G_ExitLevel ();
- 14: Raise Floor 32 and change texture S1
-	if (EV_DoPlat(line,raiseAndChange,32))
-	    P_ChangeSwitchTexture(line,0);
- 15: Raise Floor 24 and change texture S1
-	if (EV_DoPlat(line,raiseAndChange,24))
-	    P_ChangeSwitchTexture(line,0);
- 18: Raise Floor to next highest floor S1
-	if (EV_DoFloor(line, raiseFloorToNearest))
-	    P_ChangeSwitchTexture(line,0);
- 20: Raise Plat next highest floor and change texture S1
-	if (EV_DoPlat(line,raiseToNearestAndChange,0))
-	    P_ChangeSwitchTexture(line,0);
- 21: PlatDownWaitUpStay S1
-	if (EV_DoPlat(line,downWaitUpStay,0))
-	    P_ChangeSwitchTexture(line,0);
- 23: Lower Floor to Lowest S1
-	if (EV_DoFloor(line,lowerFloorToLowest))
-	    P_ChangeSwitchTexture(line,0);
- 29: Raise Door S1
-	if (EV_DoDoor(line,normal))
-	    P_ChangeSwitchTexture(line,0);
- 41: Lower Ceiling to Floor S1
-	if (EV_DoCeiling(line,lowerToFloor))
-	    P_ChangeSwitchTexture(line,0);
- 49: Ceiling Crush And Raise S1
-	if (EV_DoCeiling(line,crushAndRaise))
-	    P_ChangeSwitchTexture(line,0);
- 50: Close Door S1
-	if (EV_DoDoor(line,close))
-	    P_ChangeSwitchTexture(line,0);
- 51: Secret EXIT S1
-	P_ChangeSwitchTexture(line,0);
-	G_SecretExitLevel ();
- 55: Raise Floor Crush S1
-	if (EV_DoFloor(line,raiseFloorCrush))
-	    P_ChangeSwitchTexture(line,0);
- 71: Turbo Lower Floor S1
-	if (EV_DoFloor(line,turboLower))
-	    P_ChangeSwitchTexture(line,0);
- 101: Raise Floor S1
-	if (EV_DoFloor(line,raiseFloor))
-	    P_ChangeSwitchTexture(line,0);
- 102: Lower Floor to Surrounding floor height S1
-	if (EV_DoFloor(line,lowerFloor))
-	    P_ChangeSwitchTexture(line,0);
- 103: Open Door S1
-	if (EV_DoDoor(line,open))
-	    P_ChangeSwitchTexture(line,0);
- 111: Blazing Door Raise (faster than TURBO!) S1
-	if (EV_DoDoor (line,blazeRaise))
-	    P_ChangeSwitchTexture(line,0);
- 112: Blazing Door Open (faster than TURBO!) S1
-	if (EV_DoDoor (line,blazeOpen))
-	    P_ChangeSwitchTexture(line,0);
- 113: Blazing Door Close (faster than TURBO!) S1
-	if (EV_DoDoor (line,blazeClose))
-	    P_ChangeSwitchTexture(line,0);
- 122: Blazing PlatDownWaitUpStay S1
-	if (EV_DoPlat(line,blazeDWUS,0))
-	    P_ChangeSwitchTexture(line,0);
- 127: Build Stairs Turbo 16 S1
-	if (EV_BuildStairs(line,turbo16))
-	    P_ChangeSwitchTexture(line,0);
- 131: Raise Floor Turbo S1
-	if (EV_DoFloor(line,raiseFloorTurbo))
-	    P_ChangeSwitchTexture(line,0);
- 133: BlzOpenDoor BLUE S1
- 135: BlzOpenDoor RED  S1
- 137: BlzOpenDoor YELLOW S1
-	if (EV_DoLockedDoor (line,blazeOpen,thing))
-	    P_ChangeSwitchTexture(line,0);
- 140: Raise Floor 512 S1
-	if (EV_DoFloor(line,raiseFloor512))
-	    P_ChangeSwitchTexture(line,0);
- 42: Close Door SR
-	if (EV_DoDoor(line,close))
-	    P_ChangeSwitchTexture(line,1);
- 43: Lower Ceiling to Floor SR
-	if (EV_DoCeiling(line,lowerToFloor))
-	    P_ChangeSwitchTexture(line,1);
- 45: Lower Floor to Surrounding floor height SR
-	if (EV_DoFloor(line,lowerFloor))
-	    P_ChangeSwitchTexture(line,1);
- 60: Lower Floor to Lowest SR
-	if (EV_DoFloor(line,lowerFloorToLowest))
-	    P_ChangeSwitchTexture(line,1);
- 61: Open Door SR
-	if (EV_DoDoor(line,open))
-	    P_ChangeSwitchTexture(line,1);
- 62: PlatDownWaitUpStay SR
-	if (EV_DoPlat(line,downWaitUpStay,1))
-	    P_ChangeSwitchTexture(line,1);
- 63: Raise Door SR
-	if (EV_DoDoor(line,normal))
-	    P_ChangeSwitchTexture(line,1);
- 64: Raise Floor to ceiling SR
-	if (EV_DoFloor(line,raiseFloor))
-	    P_ChangeSwitchTexture(line,1);
- 66: Raise Floor 24 and change texture SR
-	if (EV_DoPlat(line,raiseAndChange,24))
-	    P_ChangeSwitchTexture(line,1);
- 67: Raise Floor 32 and change texture SR
-	if (EV_DoPlat(line,raiseAndChange,32))
-	    P_ChangeSwitchTexture(line,1);
- 65: Raise Floor Crush SR
-	if (EV_DoFloor(line,raiseFloorCrush))
-	    P_ChangeSwitchTexture(line,1);
- 68: Raise Plat to next highest floor and change texture SR
-	if (EV_DoPlat(line,raiseToNearestAndChange,0))
-	    P_ChangeSwitchTexture(line,1);
- 69: Raise Floor to next highest floor SR
-	if (EV_DoFloor(line, raiseFloorToNearest))
-	    P_ChangeSwitchTexture(line,1);
- 70: Turbo Lower Floor SR
-	if (EV_DoFloor(line,turboLower))
-	    P_ChangeSwitchTexture(line,1);
- 99: BlzOpenDoor BLUE
-	if (EV_DoLockedDoor (line,blazeOpen,thing))
-	    P_ChangeSwitchTexture(line,1);
- 114: Blazing Door Raise (faster than TURBO!) SR
-	if (EV_DoDoor (line,blazeRaise))
-	    P_ChangeSwitchTexture(line,1);
- 115: Blazing Door Open (faster than TURBO!) SR
-	if (EV_DoDoor (line,blazeOpen))
-	    P_ChangeSwitchTexture(line,1);
- 116: Blazing Door Close (faster than TURBO!) SR
-	if (EV_DoDoor (line,blazeClose))
-	    P_ChangeSwitchTexture(line,1);
- 123: Blazing PlatDownWaitUpStay SR
-	if (EV_DoPlat(line,blazeDWUS,0))
-	    P_ChangeSwitchTexture(line,1);
- 132: Raise Floor Turbo SR
-	if (EV_DoFloor(line,raiseFloorTurbo))
-	    P_ChangeSwitchTexture(line,1);
- 134: BlzOpenDoor RED
- 136: BlzOpenDoor YELLOW
-        if (EV_DoLockedDoor (line,blazeOpen,thing))
-	    P_ChangeSwitchTexture(line,1);
- 138: Light Turn On
-	EV_LightTurnOn(line,255);
-	P_ChangeSwitchTexture(line,1);
- 139: Light Turn Off SR
-	EV_LightTurnOn(line,35);
-	P_ChangeSwitchTexture(line,1);
- 48: SCROLL + (Left)
- 9000: SCROLL - (Right)
- 9001: SCROLL + (Up)
- 9002: SCROLL - (Down)
- 9003: SCROLL - (Left & Up)
- 9004: SCROLL - (Left & Down)
- 9005: SCROLL - (Right & Up)
- 9006: SCROLL - (Right & Down)
-
- Action pointers:
- EV_DoFloor(line_t* trig, floor_e floortype); // Add speed, amount
-
-Need to implement:
-  type:  Shoot, Walk, Use: How this line is triggered
-  count: how many times this line can be triggered: 1 = once, -1 = any amount, 2... = twice
-  type2: Monsters/Players/Projectiles can use this line.
-  keys: red/yellow/blue key required to activate.
-  Special: Special sector type to change to.
-  SFX: Sound to trigger (overridden by other sfx's)
-
-  Floor Specific
-     Speed: How fast it moves
-     Destination: Height to move to
-     Texture: Texture to change to
-     SFX: Sound to trigger
-     Floor Sub Catagory: Plats
-       Plat pause time: Time plat stays at destination before returning
-
-  Ceiling Specific
-     Speed: How fast it moves
-     Destination: Height to move to
-     SFX: Sound to trigger
-     Ceiling Sub Catagory: Doors
-       Door pause time: Time door stays open before closing.
-
-  Light Specific:
-     Type: Set, flash (random), strobe (non-random), flicker
-     Destination: Light level to change to.
-     SFX: Sound to trigger
-
-  Donut Specific:
-     DoDonut
-
-  Exit Level Specific:
-     Secret Level exit: true/false.
-
-*/

@@ -5,13 +5,13 @@
 //
 // Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
+#include <stdlib.h>
 
 #include "dm_data.h"
 #include "dm_defs.h"
 #include "dm_state.h"
 
 #include "d_main.h"
-#include "i_alleg.h"
 #include "i_system.h"
 #include "m_bbox.h"
 #include "m_swap.h"
@@ -40,9 +40,9 @@ void V_CopyRect8 (int srcx, int srcy, int srcscrn,
 { 
   byte* src;
   byte* dest;
-	 
+         
   V_MarkRect8 (destx, desty, width, height);
-	 
+         
   src = screens[srcscrn]+SCREENWIDTH*srcy+srcx;
   dest = screens[destscrn]+SCREENWIDTH*desty+destx;
 
@@ -60,7 +60,6 @@ void V_CopyRect8 (int srcx, int srcy, int srcscrn,
 // V_DrawPatch8
 //
 // Masks a column based masked pic to the screen. 
-//
 void V_DrawPatch8 (int x, int y, int scrn, patch_t* patch)
 { 
 
@@ -71,7 +70,7 @@ void V_DrawPatch8 (int x, int y, int scrn, patch_t* patch)
   byte* dest;
   byte* source;
   int w;
-	 
+         
   y -= SHORT(patch->topoffset);
   x -= SHORT(patch->leftoffset);
 
@@ -80,7 +79,7 @@ void V_DrawPatch8 (int x, int y, int scrn, patch_t* patch)
 
   col = 0;
   desttop = screens[scrn]+y*SCREENWIDTH+x;
-	 
+         
   for (w = SHORT(patch->width); col<w ; x++, col++, desttop++)
   {
     column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
@@ -95,10 +94,10 @@ void V_DrawPatch8 (int x, int y, int scrn, patch_t* patch)
       while (count--)
       {
         *dest = *source++;
-	dest += SCREENWIDTH;
+        dest += SCREENWIDTH;
       }
 
-      column = (column_t *)((byte *)column +	column->length + 4);
+      column = (column_t *)((byte *)column +    column->length + 4);
     }
 
   }
@@ -118,10 +117,10 @@ void V_DrawPatchFlipped8(int x, int y, int scrn, patch_t* patch)
   int col;
   column_t* column;
   byte* desttop;
-  byte*	dest;
-  byte*	source;
+  byte* dest;
+  byte* source;
   int w;
-	 
+         
   y -= SHORT(patch->topoffset);
   x -= SHORT(patch->leftoffset);
  
@@ -141,7 +140,7 @@ void V_DrawPatchFlipped8(int x, int y, int scrn, patch_t* patch)
       source = (byte *)column + 3;
       dest = desttop + column->topdelta*SCREENWIDTH;
       count = column->length;
-			 
+                         
       while (count--)
       {
         *dest = *source++;
@@ -176,9 +175,9 @@ void V_DrawPatchInDirect8 (int x, int y, int scrn, patch_t* patch)
   int count;
   int col;
   column_t* column;
-  byte*	desttop;
-  byte*	dest;
-  byte*	source;
+  byte* desttop;
+  byte* dest;
+  byte* source;
   int w;
 
   int stretchx,stretchy;
@@ -207,7 +206,7 @@ void V_DrawPatchInDirect8 (int x, int y, int scrn, patch_t* patch)
     // step through the posts in a column
     while (column->topdelta != 0xff)
     {
-      source = (byte *)column +	3;
+      source = (byte *)column + 3;
       dest=desttop+((column->topdelta*DY)>>16)*SCREENWIDTH;
       count=(column->length*DY)>>16;
       srccol=0;
@@ -215,7 +214,7 @@ void V_DrawPatchInDirect8 (int x, int y, int scrn, patch_t* patch)
       while (count--)
       {
         *dest=source[srccol>>16];
-	dest += SCREENWIDTH;
+        dest += SCREENWIDTH;
         srccol+=DYI;
       }
 
@@ -241,14 +240,14 @@ void V_DrawPatchInDirectFlipped8 (int x, int y, int scrn, patch_t* patch)
   int count;
   int col;
   column_t* column;
-  byte*	desttop;
-  byte*	dest;
-  byte*	source;
+  byte* desttop;
+  byte* dest;
+  byte* source;
   int w;
 
   int stretchx,stretchy;
   int srccol;
-	 
+         
   y -= SHORT(patch->topoffset);
   x -= SHORT(patch->leftoffset);
 
@@ -280,7 +279,7 @@ void V_DrawPatchInDirectFlipped8 (int x, int y, int scrn, patch_t* patch)
       while (count--)
       {
         *dest=source[srccol>>16];
-	dest += SCREENWIDTH;
+        dest += SCREENWIDTH;
         srccol+=DYI;
       }
 
@@ -302,9 +301,9 @@ void V_DrawPatchShrink8 (int x, int y, int scrn, patch_t* patch)
   int count;
   int col;
   column_t* column;
-  byte*	desttop;
-  byte*	dest;
-  byte*	source;
+  byte* desttop;
+  byte* dest;
+  byte* source;
   int w;
 
   int stretchx,stretchy;
@@ -328,7 +327,7 @@ void V_DrawPatchShrink8 (int x, int y, int scrn, patch_t* patch)
 
   for (w = (patch->width)<<16; col<w; x++, col+=DXI, desttop++)
   {
-    column=(column_t *)((byte *)patch	+ LONG(patch->columnofs[col>>16]));
+    column=(column_t *)((byte *)patch   + LONG(patch->columnofs[col>>16]));
  
     // step through the posts in a column
     while (column->topdelta != 0xff)
@@ -412,11 +411,11 @@ void V_DrawPatchTrans8 (int x, int y, int index, int scrn, patch_t* patch)
       source = (byte *)column + 3;
       dest = desttop+column->topdelta*SCREENWIDTH;
       count = column->length;
-			 
+                         
       while (count--)
       {
         *dest = remaptable[*source++];
-	dest += SCREENWIDTH;
+        dest += SCREENWIDTH;
       }
 
       column = (column_t *)((byte *)column+column->length+4);
@@ -444,10 +443,10 @@ void V_DrawPatchInDirectTrans8 (int x, int y, int index, int scrn, patch_t* patc
   int count;
   int col;
   column_t* column;
-  byte*	desttop;
-  byte*	dest;
+  byte* desttop;
+  byte* dest;
   byte* remaptable;
-  byte*	source;
+  byte* source;
   int w;
 
   int stretchx,stretchy;
@@ -503,7 +502,7 @@ void V_DrawPatchInDirectTrans8 (int x, int y, int index, int scrn, patch_t* patc
 void V_GetBlock8 (int x, int y, int scrn, int width, int height, byte* dest)
 { 
   byte* src;
-	  
+          
   src = screens[scrn] + y*SCREENWIDTH+x;
 
   while (height--)
@@ -538,21 +537,27 @@ void V_Init8(void)
 // Darkens the background screen in menus etc...
 //
 // -ACB- 1998/06/20 Implemented JC's alternate 'GLQuake' Darken Screen
+// -KM- 1998/01/29 Use longs to darken screen 4 pixels at a time: speed increase.
+//  This will always work as long as screen sizes are even, ie 320x200 works, but
+//  317x201 possibly won't.
 //
 void V_DarkenScreen8(int scrn)
 {
-  char *lineptr;
-  int i,j;
+  unsigned long *pixel;
+  int i;
   lighttable_t *m_colormap;
 
   newhupd=true; // Force the entire status bar to update
-  lineptr=screens[scrn];
+  pixel=(long *) screens[scrn];
   m_colormap=(colormaps + (10*256));
 
-  for (i=0; i<SCREENHEIGHT; i++, lineptr+=SCREENWIDTH)
+  for (i=0; i<SCREENHEIGHT*SCREENWIDTH/4; i++)
   {
-    for (j=0;j<SCREENWIDTH;j++)
-      lineptr[j]=m_colormap[(int)lineptr[j]];
+    *pixel = m_colormap[*pixel & 0xFF]
+           | (m_colormap[(*pixel >>  8) & 0xFF] << 8)
+           | (m_colormap[(*pixel >> 16) & 0xFF] << 16)
+           | (m_colormap[(*pixel >> 24) & 0xFF] << 24);
+    pixel++;
   }
 
 }

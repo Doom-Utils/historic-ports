@@ -14,7 +14,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -84,6 +83,9 @@ specflags_t mapspecials[] =
    { "NORMAL BLOOD",      MPF_NORMBLOOD   },
    { "RESPAWN",           MPF_RESPAWN     },
    { "NO RESPAWN",        MPF_NORESPAWN   },
+   { "NO AUTOAIM",        MPF_AUTOAIMOFF  },
+   { "AUTOAIM",           MPF_AUTOAIMON   },
+   { "AA MLOOK",          MPF_AUTOAIMMLOOK},
    { COMMAND_TERMINATOR,  0               }};
 
 //
@@ -96,6 +98,9 @@ specflags_t mapspecials[] =
 mapstuff_t* DDF_LevelGetNewMap(const char *newmapname)
 {
   mapstuff_t *checkmap;
+
+  if (!newmapname)
+    return NULL;
 
   checkmap = maphead;
 
@@ -151,31 +156,32 @@ void DDF_LevelCreateMap()
   mapstuff_t* currmap;
 
   if (replace)
+  {
     newmap = replace;
+    buffermap.next = replace->next;
+  }
   else
   {
     newmap = malloc(sizeof(mapstuff_t));
   
     if (newmap == NULL)
       I_Error("DDF_LevelCreateMap: Malloc error");
+
+    if (maphead == NULL)
+    {
+      maphead = newmap;
+    }
+    else
+    {
+      currmap = maphead;
+  
+      while (currmap->next != NULL)
+        currmap = currmap->next;
+  
+      currmap->next = newmap;
+    }
   }
   memcpy(newmap, &buffermap, sizeof(mapstuff_t));
-
-  if (maphead == NULL)
-  {
-    maphead = newmap;
-  }
-  else
-  {
-    currmap = maphead;
-
-    while (currmap->next != NULL)
-      currmap = currmap->next;
-
-    currmap->next = newmap;
-  }
-
-  newmap->next = NULL;
 
   memset(&buffermap,0,sizeof(mapstuff_t));
   buffermap.f[0].text_speed = buffermap.f[1].text_speed = 3;
@@ -234,6 +240,7 @@ void DDF_ReadLevels(void *data, int size)
     levels.message = NULL;
     levels.memfile = data;
     levels.memsize = size;
+    levels.filename = NULL;
   }
   levels.DDF_MainCheckName     = DDF_LevelCheckName;
   levels.DDF_MainCreateEntry   = DDF_LevelCreateMap;

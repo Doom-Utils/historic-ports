@@ -51,7 +51,6 @@ typedef struct
 
 typedef struct wadtex_resource_s
 {
-        int mission; //useless, but here
 	int pnames;
         int texture[2];
 }

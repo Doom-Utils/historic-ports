@@ -3,18 +3,19 @@
 //
 // By the DOSDoom Team
 //
-
+#define DDF_MAIN
 #include "d_debug.h"
 #include "dm_state.h"
+#include "dstrings.h"
 #include "i_system.h"
 #include "lu_sound.h"
 #include "m_argv.h"
 #include "m_fixed.h"
+#include "m_misc.h"
 #include "p_mobj.h"
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,12 +27,25 @@
 
 #include "ddf_locl.h"
 
+#include "p_action.h"
+
 void DDF_MainTransferExisting(void);
 void DDF_MainCleanUpLooseEnds(void);
 
+int maxplayers = 8;
+
 mobjinfo_t *specials[NUMMOBJSPEC];
 
-backpack_t buffpack;
+backpack_t buffpack =
+{
+  NULL, // Ammo
+  NULL, // Ammolimit
+  { false, false, false, false, false, false }, // Keys
+  NULL, // weapons
+  0, // armour
+  0, // armourclass
+  NULL
+};
 mapstuff_t buffermap;
 mobjinfo_t buffermobj;
 mobjinfo_t* bufferreplacemobj;
@@ -45,9 +59,7 @@ boolean terminated;
 char **sprnames;
 int MAXSPRITES = 256;
 static char *oldsprnames[] = {
-    "TROO","SHTG",/*"PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
-    "MISF","SAWG","PLSG","PLSF","BFGG","BFGF",*/"BLUD","PUFF",/*"PLSS","PLSE",*/
-    "MISL",/*"BFS1","BFE1","BFE2",*/"IFOG",/*"PLAY",*/"BBRN","BOSF","POL5","FIRE"
+    "TROO","MISL","BBRN","BOSF","FIRE",NULL
 };
 
 // -KM- 1998/11/25 All weapon related states are out
@@ -55,235 +67,13 @@ state_t* states;
 int MAXSTATES = 1024;
 static state_t	oldstates[] = {
     {SPR_TROO,0,-1,{NULL},S_NULL,0,0},	// S_NULL
-    {SPR_SHTG,4,0,{A_Light0},S_NULL,0,0},	// S_LIGHTDONE
-
-    //-------------------------------------
-    //                FIST
-    //-------------------------------------
-/*
-    {SPR_PUNG,0,1,{A_WeaponReady},S_PUNCH,0,0},	// S_PUNCH
-
-    {SPR_PUNG,0,1,{A_Lower},S_PUNCHDOWN,0,0},	// S_PUNCHDOWN
-    {SPR_PUNG,0,1,{A_Raise},S_PUNCHUP,0,0},	// S_PUNCHUP
-
-    {SPR_PUNG,1,4,{NULL},S_PUNCH2,0,0},		// S_PUNCH1
-    {SPR_PUNG,2,4,{A_Punch},S_PUNCH3,0,0},	// S_PUNCH2
-    {SPR_PUNG,3,5,{NULL},S_PUNCH4,0,0},		// S_PUNCH3
-    {SPR_PUNG,2,4,{NULL},S_PUNCH5,0,0},		// S_PUNCH4
-    {SPR_PUNG,1,5,{A_ReFire},S_PUNCH,0,0},	// S_PUNCH5
-
-    //-------------------------------------
-    //             PISTOL
-    //-------------------------------------
-    {SPR_PISG,0,1,{A_WeaponReady},S_PISTOL,0,0},// S_PISTOL
-
-    {SPR_PISG,0,1,{A_Lower},S_PISTOLDOWN,0,0},	// S_PISTOLDOWN
-    {SPR_PISG,0,1,{A_Raise},S_PISTOLUP,0,0},	// S_PISTOLUP
-
-    {SPR_PISG,0,4,{NULL},S_PISTOL2,0,0},	// S_PISTOL1
-    {SPR_PISG,1,6,{A_FirePistol},S_PISTOL3,0,0},// S_PISTOL2
-    {SPR_PISG,2,4,{NULL},S_PISTOL4,0,0},	// S_PISTOL3
-    {SPR_PISG,1,5,{A_ReFire},S_PISTOL,0,0},	// S_PISTOL4
-
-    {SPR_PISF,32768,7,{A_Light1},S_LIGHTDONE,0,0}, // S_PISTOLFLASH
-
-    //-------------------------------------
-    //          SHOTGUN
-    //-------------------------------------
-    {SPR_SHTG,0,1,{A_WeaponReady},S_SGUN,0,0},	// S_SGUN
-
-    {SPR_SHTG,0,1,{A_Lower},S_SGUNDOWN,0,0},	// S_SGUNDOWN
-    {SPR_SHTG,0,1,{A_Raise},S_SGUNUP,0,0},	// S_SGUNUP
-
-    {SPR_SHTG,0,3,{NULL},S_SGUN2,0,0},	// S_SGUN1
-    {SPR_SHTG,0,7,{A_FireShotgun},S_SGUN3,0,0},	// S_SGUN2
-    {SPR_SHTG,1,5,{NULL},S_SGUN4,0,0},	// S_SGUN3
-    {SPR_SHTG,2,5,{NULL},S_SGUN5,0,0},	// S_SGUN4
-    {SPR_SHTG,3,4,{NULL},S_SGUN6,0,0},	// S_SGUN5
-    {SPR_SHTG,2,5,{NULL},S_SGUN7,0,0},	// S_SGUN6
-    {SPR_SHTG,1,5,{NULL},S_SGUN8,0,0},	// S_SGUN7
-    {SPR_SHTG,0,3,{NULL},S_SGUN9,0,0},	// S_SGUN8
-    {SPR_SHTG,0,7,{A_ReFire},S_SGUN,0,0},	// S_SGUN9
-
-    {SPR_SHTF,32768,4,{A_Light1},S_SGUNFLASH2,0,0},	// S_SGUNFLASH1
-    {SPR_SHTF,32769,3,{A_Light2},S_LIGHTDONE,0,0},	// S_SGUNFLASH2
-
-    //-------------------------------------
-    //           DOUBLE-BARREL
-    //-------------------------------------
-    {SPR_SHT2,0,1,{A_WeaponReady},S_DSGUN,0,0},	// S_DSGUN
-
-    {SPR_SHT2,0,1,{A_Lower},S_DSGUNDOWN,0,0},	// S_DSGUNDOWN
-    {SPR_SHT2,0,1,{A_Raise},S_DSGUNUP,0,0},	// S_DSGUNUP
-
-    {SPR_SHT2,0,3,{NULL},S_DSGUN2,0,0},	// S_DSGUN1
-    {SPR_SHT2,0,7,{A_FireShotgun2},S_DSGUN3,0,0},	// S_DSGUN2
-    {SPR_SHT2,1,7,{NULL},S_DSGUN4,0,0},	// S_DSGUN3
-    {SPR_SHT2,2,7,{A_CheckReload},S_DSGUN5,0,0},	// S_DSGUN4
-    {SPR_SHT2,3,7,{A_OpenShotgun2},S_DSGUN6,0,0},	// S_DSGUN5
-    {SPR_SHT2,4,7,{NULL},S_DSGUN7,0,0},	// S_DSGUN6
-    {SPR_SHT2,5,7,{A_LoadShotgun2},S_DSGUN8,0,0},	// S_DSGUN7
-    {SPR_SHT2,6,6,{NULL},S_DSGUN9,0,0},	// S_DSGUN8
-    {SPR_SHT2,7,6,{A_CloseShotgun2},S_DSGUN10,0,0},	// S_DSGUN9
-    {SPR_SHT2,0,5,{A_ReFire},S_DSGUN,0,0},	        // S_DSGUN10
-
-    {SPR_SHT2,1,7,{NULL},S_DSNR2,0,0},	                // S_DSNR1
-    {SPR_SHT2,0,3,{NULL},S_DSGUNDOWN,0,0},	        // S_DSNR2
-
-    {SPR_SHT2,32776,5,{A_Light1},S_DSGUNFLASH2,0,0},	// S_DSGUNFLASH1
-    {SPR_SHT2,32777,4,{A_Light2},S_LIGHTDONE,0,0},	// S_DSGUNFLASH2
-
-    //-------------------------------------
-    //           CHAINGUN
-    //-------------------------------------
-    {SPR_CHGG,0,1,{A_WeaponReady},S_CHAIN,0,0},	// S_CHAIN
-
-    {SPR_CHGG,0,1,{A_Lower},S_CHAINDOWN,0,0},	// S_CHAINDOWN
-    {SPR_CHGG,0,1,{A_Raise},S_CHAINUP,0,0},	// S_CHAINUP
-
-    {SPR_CHGG,0,4,{A_FireCGun},S_CHAIN2,0,0},	// S_CHAIN1
-    {SPR_CHGG,1,4,{A_FireCGun},S_CHAIN3,0,0},	// S_CHAIN2
-    {SPR_CHGG,1,0,{A_ReFire},S_CHAIN,0,0},	// S_CHAIN3
-
-    {SPR_CHGF,32768,5,{A_Light1},S_LIGHTDONE,0,0},	// S_CHAINFLASH1
-    {SPR_CHGF,32769,5,{A_Light2},S_LIGHTDONE,0,0},	// S_CHAINFLASH2
-
-    //-------------------------------------
-    //           MISSILE LAUNCHER
-    //-------------------------------------
-    {SPR_MISG,0,1,{A_WeaponReady},S_MISSILE,0,0},	// S_MISSILE
-
-    {SPR_MISG,0,1,{A_Lower},S_MISSILEDOWN,0,0},	// S_MISSILEDOWN
-    {SPR_MISG,0,1,{A_Raise},S_MISSILEUP,0,0},	// S_MISSILEUP
-
-    {SPR_MISG,1,8,{A_GunFlash},S_MISSILE2,0,0},	// S_MISSILE1
-    {SPR_MISG,1,12,{A_FireMissile},S_MISSILE3,0,0},	// S_MISSILE2
-    {SPR_MISG,1,0,{A_ReFire},S_MISSILE,0,0},	// S_MISSILE3
-
-    {SPR_MISF,32768,3,{A_Light1},S_MISSILEFLASH2,0,0},	// S_MISSILEFLASH1
-    {SPR_MISF,32769,4,{NULL},S_MISSILEFLASH3,0,0},	// S_MISSILEFLASH2
-    {SPR_MISF,32770,4,{A_Light2},S_MISSILEFLASH4,0,0},	// S_MISSILEFLASH3
-    {SPR_MISF,32771,4,{A_Light2},S_LIGHTDONE,0,0},	// S_MISSILEFLASH4
-
-    //-------------------------------------
-    //           CHAINSAW
-    //-------------------------------------
-    {SPR_SAWG,2,4,{A_WeaponReady},S_SAWB,0,0},	// S_SAW
-    {SPR_SAWG,3,4,{A_WeaponReady},S_SAW,0,0},	// S_SAWB
-
-    {SPR_SAWG,2,1,{A_Lower},S_SAWDOWN,0,0},	// S_SAWDOWN
-    {SPR_SAWG,2,1,{A_Raise},S_SAWUP,0,0},	// S_SAWUP
-
-    {SPR_SAWG,0,4,{A_Saw},S_SAW2,0,0},	// S_SAW1
-    {SPR_SAWG,1,4,{A_Saw},S_SAW3,0,0},	// S_SAW2
-    {SPR_SAWG,1,0,{A_ReFire},S_SAW,0,0},	// S_SAW3
-
-    //-------------------------------------
-    //           PLASMA-GUN
-    //-------------------------------------
-    {SPR_PLSG,0,1,{A_WeaponReady},S_PLASMA,0,0},	// S_PLASMA
-
-    {SPR_PLSG,0,1,{A_Lower},S_PLASMADOWN,0,0},	// S_PLASMADOWN
-    {SPR_PLSG,0,1,{A_Raise},S_PLASMAUP,0,0},	// S_PLASMAUP
-
-    {SPR_PLSG,0,3,{A_FirePlasma},S_PLASMA2,0,0}, // S_PLASMA1
-    {SPR_PLSG,1,20,{A_ReFire},S_PLASMA,0,0},	 // S_PLASMA2
-
-    {SPR_PLSF,32768,4,{A_Light1},S_LIGHTDONE,0,0},	// S_PLASMAFLASH1
-    {SPR_PLSF,32769,4,{A_Light1},S_LIGHTDONE,0,0},	// S_PLASMAFLASH2
-
-    //-------------------------------------
-    //           BFG9000
-    //-------------------------------------
-    {SPR_BFGG,0,1,{A_WeaponReady},S_BFG,0,0},	// S_BFG
-
-    {SPR_BFGG,0,1,{A_Lower},S_BFGDOWN,0,0},	// S_BFGDOWN
-    {SPR_BFGG,0,1,{A_Raise},S_BFGUP,0,0},	// S_BFGUP
-
-    {SPR_BFGG,0,20,{A_BFGsound},S_BFG2,0,0},	// S_BFG1
-    {SPR_BFGG,1,10,{A_GunFlash},S_BFG3,0,0},	// S_BFG2
-    {SPR_BFGG,1,10,{A_FireBFG},S_BFG4,0,0},	// S_BFG3
-    {SPR_BFGG,1,20,{A_ReFire},S_BFG,0,0},	// S_BFG4
-
-    {SPR_BFGF,32768,11,{A_Light1},S_BFGFLASH2,0,0},	// S_BFGFLASH1
-    {SPR_BFGF,32769,6,{A_Light2},S_LIGHTDONE,0,0},	// S_BFGFLASH2
-*/
-
-    {SPR_BLUD,2,8,{NULL},S_BLOOD2,0,0},	// S_BLOOD1
-    {SPR_BLUD,1,8,{NULL},S_BLOOD3,0,0},	// S_BLOOD2
-    {SPR_BLUD,0,8,{NULL},S_NULL,0,0},	// S_BLOOD3
-
-    {SPR_PUFF,32768,4,{NULL},S_PUFF2,0,0},	// S_PUFF1
-    {SPR_PUFF,1,4,{NULL},S_PUFF3,0,0},	// S_PUFF2
-    {SPR_PUFF,2,4,{NULL},S_PUFF4,0,0},	// S_PUFF3
-    {SPR_PUFF,3,4,{NULL},S_NULL,0,0},	// S_PUFF4
+    {SPR_TROO,4,0,{A_Light0},S_NULL,0,0},	// S_LIGHTDONE
 
     // ------------------------------------------------------
-/*
-    {SPR_PLSS,32768,6,{NULL},S_PLASBALL2,0,0},	// S_PLASBALL
-    {SPR_PLSS,32769,6,{NULL},S_PLASBALL,0,0},	// S_PLASBALL2
-    {SPR_PLSE,32768,4,{NULL},S_PLASEXP2,0,0},	// S_PLASEXP
-    {SPR_PLSE,32769,4,{NULL},S_PLASEXP3,0,0},	// S_PLASEXP2
-    {SPR_PLSE,32770,4,{NULL},S_PLASEXP4,0,0},	// S_PLASEXP3
-    {SPR_PLSE,32771,4,{NULL},S_PLASEXP5,0,0},	// S_PLASEXP4
-    {SPR_PLSE,32772,4,{NULL},S_NULL,0,0},	// S_PLASEXP5 */
     {SPR_MISL,32768,1,{NULL},S_ROCKET,0,0},	// S_ROCKET
-/*    {SPR_BFS1,32768,4,{NULL},S_BFGSHOT2,0,0},	// S_BFGSHOT
-    {SPR_BFS1,32769,4,{NULL},S_BFGSHOT,0,0},	// S_BFGSHOT2
-    {SPR_BFE1,32768,8,{NULL},S_BFGLAND2,0,0},	// S_BFGLAND
-    {SPR_BFE1,32769,8,{NULL},S_BFGLAND3,0,0},	// S_BFGLAND2
-    {SPR_BFE1,32770,8,{A_BFGSpray},S_BFGLAND4,0,0},	// S_BFGLAND3
-    {SPR_BFE1,32771,8,{NULL},S_BFGLAND5,0,0},	// S_BFGLAND4
-    {SPR_BFE1,32772,8,{NULL},S_BFGLAND6,0,0},	// S_BFGLAND5
-    {SPR_BFE1,32773,8,{NULL},S_NULL,0,0},	// S_BFGLAND6
-    {SPR_BFE2,32768,8,{NULL},S_BFGEXP2,0,0},	// S_BFGEXP
-    {SPR_BFE2,32769,8,{NULL},S_BFGEXP3,0,0},	// S_BFGEXP2
-    {SPR_BFE2,32770,8,{NULL},S_BFGEXP4,0,0},	// S_BFGEXP3
-    {SPR_BFE2,32771,8,{NULL},S_NULL,0,0},	// S_BFGEXP4 */
     {SPR_MISL,32769,8,{A_Explode},S_EXPLODE2,0,0},	// S_EXPLODE1
     {SPR_MISL,32770,6,{NULL},S_EXPLODE3,0,0},	// S_EXPLODE2
     {SPR_MISL,32771,4,{NULL},S_NULL,0,0},	// S_EXPLODE3
-    {SPR_IFOG,32768,6,{NULL},S_IFOG01,0,0},	// S_IFOG
-    {SPR_IFOG,32769,6,{NULL},S_IFOG02,0,0},	// S_IFOG01
-    {SPR_IFOG,32768,6,{NULL},S_IFOG2,0,0},	// S_IFOG02
-    {SPR_IFOG,32769,6,{NULL},S_IFOG3,0,0},	// S_IFOG2
-    {SPR_IFOG,32770,6,{NULL},S_IFOG4,0,0},	// S_IFOG3
-    {SPR_IFOG,32771,6,{NULL},S_IFOG5,0,0},	// S_IFOG4
-    {SPR_IFOG,32772,6,{NULL},S_NULL,0,0},	// S_IFOG5
-/*    {SPR_PLAY,0,-1,{NULL},S_NULL,0,0},	// S_PLAY
-    {SPR_PLAY,0,4,{NULL},S_PLAY_RUN2,0,0},	// S_PLAY_RUN1
-    {SPR_PLAY,1,4,{NULL},S_PLAY_RUN3,0,0},	// S_PLAY_RUN2
-    {SPR_PLAY,2,4,{NULL},S_PLAY_RUN4,0,0},	// S_PLAY_RUN3
-    {SPR_PLAY,3,4,{NULL},S_PLAY_RUN1,0,0},	// S_PLAY_RUN4
-    {SPR_PLAY,4,12,{NULL},S_PLAY,0,0},	// S_PLAY_ATK1
-    {SPR_PLAY,32773,6,{NULL},S_PLAY_ATK1,0,0},	// S_PLAY_ATK2
-    {SPR_PLAY,6,4,{NULL},S_PLAY_PAIN2,0,0},	// S_PLAY_PAIN
-    {SPR_PLAY,6,4,{A_Pain},S_PLAY,0,0},	// S_PLAY_PAIN2
-    {SPR_PLAY,7,10,{NULL},S_PLAY_DIE2,0,0},	// S_PLAY_DIE1
-    {SPR_PLAY,8,10,{A_PlayerScream},S_PLAY_DIE3,0,0},	// S_PLAY_DIE2
-    {SPR_PLAY,9,10,{A_Fall},S_PLAY_DIE4,0,0},	// S_PLAY_DIE3
-    {SPR_PLAY,10,10,{NULL},S_PLAY_DIE5,0,0},	// S_PLAY_DIE4
-    {SPR_PLAY,11,10,{NULL},S_PLAY_DIE6,0,0},	// S_PLAY_DIE5
-    {SPR_PLAY,12,10,{NULL},S_PLAY_DIE7,0,0},	// S_PLAY_DIE6
-    {SPR_PLAY,13,-1,{NULL},S_NULL,0,0},	// S_PLAY_DIE7
-    {SPR_PLAY,14,5,{NULL},S_PLAY_XDIE2,0,0},	// S_PLAY_XDIE1
-    {SPR_PLAY,15,5,{A_XScream},S_PLAY_XDIE3,0,0},	// S_PLAY_XDIE2
-    {SPR_PLAY,16,5,{A_Fall},S_PLAY_XDIE4,0,0},	// S_PLAY_XDIE3
-    {SPR_PLAY,17,5,{NULL},S_PLAY_XDIE5,0,0},	// S_PLAY_XDIE4
-    {SPR_PLAY,18,5,{NULL},S_PLAY_XDIE6,0,0},	// S_PLAY_XDIE5
-    {SPR_PLAY,19,5,{NULL},S_PLAY_XDIE7,0,0},	// S_PLAY_XDIE6
-    {SPR_PLAY,20,5,{NULL},S_PLAY_XDIE8,0,0},	// S_PLAY_XDIE7
-    {SPR_PLAY,21,5,{NULL},S_PLAY_XDIE9,0,0},	// S_PLAY_XDIE8
-    {SPR_PLAY,22,-1,{NULL},S_NULL,0,0},	// S_PLAY_XDIE9
-  */
-    // ----------------------------------------------------------
-
-    {SPR_PUFF,1,4,{NULL},S_SMOKE2,0,0},	// S_SMOKE1
-    {SPR_PUFF,2,4,{NULL},S_SMOKE3,0,0},	// S_SMOKE2
-    {SPR_PUFF,1,4,{NULL},S_SMOKE4,0,0},	// S_SMOKE3
-    {SPR_PUFF,2,4,{NULL},S_SMOKE5,0,0},	// S_SMOKE4
-    {SPR_PUFF,3,4,{NULL},S_NULL,0,0},	// S_SMOKE5
-
     // ----------------------------------------------------------
 
     {SPR_BBRN,0,-1,{NULL},S_NULL,0,0},		// S_BRAIN
@@ -313,75 +103,12 @@ static state_t	oldstates[] = {
     {SPR_MISL,32769,10,{NULL},S_BRAINEXPLODE2,0,0},	// S_BRAINEXPLODE1
     {SPR_MISL,32770,10,{NULL},S_BRAINEXPLODE3,0,0},	// S_BRAINEXPLODE2
     {SPR_MISL,32771,10,{A_BrainExplode},S_NULL,0,0},	// S_BRAINEXPLODE3
-
-    {SPR_POL5,0,-1,{NULL},S_NULL,0,0}// S_GIBS - Crunched remains, keep -ACB-
-    
 };
 
 // -KM- 1998/09/27 Change of SFX from enum to String
 // -KM- 1998/10/29 String is converted to sfx_t at runtime. Yuk!
 // -KM- 1998/11/25 All Weapon related things are out. Default visibilities are in.
 mobjinfo_t oldmobjinfo[ORIG_NUMMOBJTYPES] = {
-/*
-    {		// MT_PLAYER
-	-1,		// doomednum
-	S_PLAY,		// spawnstate
-	100,		// spawnhealth
-	S_PLAY_RUN1,		// seestate
-	sfx_None,		// seesound
-	0,		// reactiontime
-	sfx_None,		// attacksound
-	S_PLAY_PAIN,		// painstate
-	255,		// painchance
-	(sfx_t *) "PLPAIN",		// painsound
-	S_PLAY_ATK1,		// meleestate
-	S_PLAY_ATK1,		// missilestate
-	S_PLAY_DIE1,		// deathstate
-	S_PLAY_XDIE1,		// xdeathstate
-	(sfx_t *) "PLDETH",		// deathsound
-	0,		// speed
-	16*FRACUNIT,		// radius
-	56*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-        MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,		// flags
-	S_NULL,		// raisestate
-//        castorder: 1, // castorder
-        name: "The Hero",
-        invisibility: VISIBLE
-    },            */
-
-    {		// MT_SMOKE
-	-1,		// doomednum
-	S_SMOKE1,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE,
-        fast: FRACUNIT
-    },
-
     {		// MT_BOSSBRAIN
 	88,		// doomednum
 	S_BRAIN,		// spawnstate
@@ -554,207 +281,7 @@ mobjinfo_t oldmobjinfo[ORIG_NUMMOBJTYPES] = {
 	S_NULL,		// raisestate
         invisibility: VISIBLE,
         fast: FRACUNIT
-    },
-/*
-    {		// MT_PLASMA
-	-1,		// doomednum
-	S_PLASBALL,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	(sfx_t *) "PLASMA",		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_PLASEXP,		// deathstate
-	S_NULL,		// xdeathstate
-	(sfx_t *) "FIRXPL",		// deathsound
-	25*FRACUNIT,		// speed
-	13*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	100,		// mass
-	5,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE
-    },
-
-    {		// MT_BFG
-	-1,		// doomednum
-	S_BFGSHOT,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_BFGLAND,		// deathstate
-	S_NULL,		// xdeathstate
-	(sfx_t *) "RXPLOD",		// deathsound
-	25*FRACUNIT,		// speed
-	13*FRACUNIT,		// radius
-	8*FRACUNIT,		// height
-	100,		// mass
-	100,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_MISSILE|MF_DROPOFF|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE
-    },
-  */
-    {		// MT_PUFF
-	-1,		// doomednum
-	S_PUFF1,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOCLIP|MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: (2*VISIBLE)/3,
-        fast: FRACUNIT
-    },
-
-    {		// MT_BLOOD
-	-1,		// doomednum
-	S_BLOOD1,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	FRACUNIT,		// radius 20
-	FRACUNIT,		// height 15
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-        MF_CORPSE|MF_DROPOFF,             // flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE,
-        fast: FRACUNIT
-    },
-
-    {		// MT_IFOG
-	-1,		// doomednum
-	S_IFOG,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE,
-        fast: FRACUNIT
-    },
-
-    {		// MT_TELEPORTMAN
-	14,		// doomednum
-	S_NULL,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_NOSECTOR,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE,
-        fast: FRACUNIT
-    },
-/*
-    {		// MT_EXTRABFG
-	-1,		// doomednum
-	S_BFGEXP,		// spawnstate
-	1000,		// spawnhealth
-	S_NULL,		// seestate
-	sfx_None,		// seesound
-	8,		// reactiontime
-	sfx_None,		// attacksound
-	S_NULL,		// painstate
-	0,		// painchance
-	sfx_None,		// painsound
-	S_NULL,		// meleestate
-	S_NULL,		// missilestate
-	S_NULL,		// deathstate
-	S_NULL,		// xdeathstate
-	sfx_None,		// deathsound
-	0,		// speed
-	20*FRACUNIT,		// radius
-	16*FRACUNIT,		// height
-	100,		// mass
-	0,		// damage
-	sfx_None,		// activesound
-        NULL,                   // enemyattackmissile        
-	MF_NOBLOCKMAP|MF_NOGRAVITY,		// flags
-	S_NULL,		// raisestate
-        invisibility: VISIBLE
-    }*/
+    }
 };
 
 framedest_t framedestlist[] =
@@ -809,99 +336,10 @@ specials_t specialslist[] =
                     { "NEVERTARGETED" ,0              ,EF_NEVERTARGET,0        },
                     { "NOGRAV KILL"   ,0              ,EF_NOGRAVKILL,0         },
                     { "NO GRUDGE"     ,0              ,EF_NOGRUDGE,0           },
+                    { "BOUNCE"        ,0              ,EF_BOUNCE,0             },
                     { "INVISIBLE"     ,0              ,0           ,INVISIBLE  },
                     { COMMAND_TERMINATOR,0,0,0 } };
 
-// -KM- 1998/11/25 Added weapon functions.
-actioncode_t actions[] = {{ "ALTERTRANSLUC"    , {P_ActAlterTransluc}           },
-                          { "ALTERVISIBILITY"  , {P_ActAlterVisibility}         },
-                          { "LESSVISIBLE"      , {P_ActBecomeLessVisible}       },
-                          { "MOREVISIBLE"      , {P_ActBecomeMoreVisible}       },
-                          { "CLOSEATTEMPTSND"  , {P_ActMakeCloseAttemptSound}   },
-                          { "COMBOATTACK"      , {P_ActComboAttack}             },
-                          { "FACETARGET"       , {P_ActFaceTarget}              },
-                          { "MAKESOUND"        , {P_ActMakeAmbientSound}        },
-                          { "MAKESOUNDRANDOM"  , {P_ActMakeAmbientSoundRandom}  },
-                          { "MAKEDEATHSOUND"   , {P_ActMakeDyingSound}          },
-                          { "MAKEDEAD"         , {P_ActMakeIntoCorpse}          },
-                          { "MAKEOVERKILLSOUND", {P_ActMakeOverKillSound}       },
-                          { "MAKEPAINSOUND"    , {P_ActMakePainSound}           },
-                          { "CLOSE COMBAT"     , {P_ActMeleeAttack}             },
-                          { "RANGE ATTACK"     , {P_ActRangeAttack}             },
-                          { "SPARE ATTACK"     , {P_ActSpareAttack}             },
-                          { "RANGEATTEMPTSND"  , {P_ActMakeRangeAttemptSound}   },
-                          { "REFIRE CHECK"     , {P_ActRefireCheck}             },
-                          { "LOOKOUT"          , {P_ActStandardLook}            },
-                          { "SUPPORT LOOKOUT"  , {P_ActPlayerSupportLook}       },
-                          { "CHASE"            , {P_ActStandardChase}           },
-                          { "RESCHASE"         , {P_ActResurrectChase}          },
-                          { "WALKSOUND CHASE"  , {P_ActWalkSoundChase}          },
-                          { "MEANDER"          , {P_ActStandardMeander}         },
-                          { "SUPPORT MEANDER"  , {P_ActPlayerSupportMeander}    },
-                          { "EXPLOSIONDAMAGE"  , {P_ActSetDamageExplosion}      },
-                          { "VARIEDEXPDAMAGE"  , {P_ActVaryingDamageExplosion}  },
-                          { "TRACER"           , {P_ActFixedHomingProjectile}   },
-                          { "RANDOM TRACER"    , {P_ActRandomHomingProjectile}  },
-                          { "RESET SPREADER"   , {P_ActResetSpreadCount}        },
-                          { "SMOKING"          , {P_ActCreateSmokeTrail}        },
-                          { "TRACKERACTIVE"    , {P_ActTrackerActive}           },
-                          { "TRACKERFOLLOW"    , {P_ActTrackerFollow}           },
-                          { "TRACKERSTART"     , {P_ActTrackerStart}            },
-                          { "EFFECTTRACKER"    , {P_ActEffectTracker}           },
-                          { "WEAPON RAISE"     , {A_Raise}                      },
-                          { "WEAPON LOWER"     , {A_Lower}                      },
-                          { "WEAPON READY"     , {A_WeaponReady}                },
-                          { "WEAPON SHOOT"     , {A_FireWeapon}                 },
-                          { "WEAPON REFIRE"    , {A_ReFire}                     },
-                          { "WEAPON LIGHT0"    , {A_Light0}                     },
-                          { "WEAPON LIGHT1"    , {A_Light1}                     },
-                          { "WEAPON LIGHT2"    , {A_Light2}                     },
-                          { "WEAPON CHECKRELOAD",{A_CheckReload}               },
-                          { "WEAPON FLASH"     , {A_GunFlash}                  },
-                          { "WEAPON SOUND1"      , {A_SFXWeapon1}                },
-                          { "WEAPON SOUND2"    , {A_SFXWeapon2}              },
-                          { "WEAPON SOUND3"     , {A_SFXWeapon3}               },
-                          { "NOTHING"          , {NULL}                         },
-                          { COMMAND_TERMINATOR , {NULL}                         }};
-
-//
-// PSPRITE ACTIONS for weapons.
-// This struct controls the weapon animations.
-//
-// -ACB- 1998/06/25 Put this in logical order.
-//
-// -KM- 1998/11/25 Externalised in DDF.
-/*
-weaponinfo_t	weaponinfo[NUMWEAPONS] =
-{
-    // TYPE 0 - fist
-    { am_noammo, S_PUNCHUP, S_PUNCHDOWN, S_PUNCH, S_PUNCH1, S_NULL, NULL },
-
-    // TYPE 1 - pistol
-    { am_clip, S_PISTOLUP, S_PISTOLDOWN, S_PISTOL, S_PISTOL1, S_PISTOLFLASH, NULL },
-
-    // TYPE 2 - shotgun
-    { am_shell, S_SGUNUP, S_SGUNDOWN, S_SGUN, S_SGUN1, S_SGUNFLASH1, NULL },
-
-    // TYPE 3 - super shotgun
-    { am_shell, S_DSGUNUP, S_DSGUNDOWN, S_DSGUN, S_DSGUN1, S_DSGUNFLASH1, NULL },
-
-    // TYPE 4 - chaingun
-    { am_clip, S_CHAINUP, S_CHAINDOWN, S_CHAIN, S_CHAIN1, S_CHAINFLASH1, NULL },
-
-    // TYPE 5 - missile launcher
-    { am_misl, S_MISSILEUP,S_MISSILEDOWN,S_MISSILE,S_MISSILE1,S_MISSILEFLASH1, NULL},
-
-    // TYPE 6 - plasma rifle
-    { am_cell, S_PLASMAUP, S_PLASMADOWN, S_PLASMA, S_PLASMA1, S_PLASMAFLASH1, NULL },
-
-    // TYPE 7 - bfg 9000
-    { am_cell, S_BFGUP, S_BFGDOWN, S_BFG, S_BFG1, S_BFGFLASH1, NULL },
-
-    // TYPE 8 - chainsaw
-    { am_noammo, S_SAWUP, S_SAWDOWN, S_SAW, S_SAW1, S_NULL, NULL }
-};
-*/
 int NUMMOBJTYPES;
 int NUMSTATES;
 int NUMSPRITES;
@@ -934,10 +372,7 @@ void DDF_MainInit()
   // -KM- 1998/11/25 Items.ddf must be loaded after weapons.ddf
   DDF_WeaponInit();    // Initialise Player Weapon Types
 
-  DDF_MobjItemInit();      //  }
-  DDF_MobjSceneInit();     //   } - Initialise the moving objects (mobj's)
-  DDF_MobjCreatureInit();  //  }
-
+  DDF_MobjInit();      //   } - Initialise the moving objects (mobj's)
 
   DDF_LinedefInit();   // Map stuff: Linedefs
   DDF_SectorInit();    //            Sectors
@@ -993,6 +428,7 @@ void DDF_MainTransferExisting()
  memcpy(states, oldstates, sizeof(oldstates));
 }
 
+// -KM- 1999/01/29 Fixed #define system.
 typedef struct
 {
   char* name;
@@ -1013,7 +449,7 @@ void DDF_MainAddDefine(char* name, char* value)
 
    defines = realloc(defines, (numDefines+1)*sizeof(define_t));
    defines[numDefines].name = name;
-   defines[numDefines].value = value;
+   defines[numDefines++].value = value;
 }
 
 char* DDF_MainGetDefine(char* name)
@@ -1043,12 +479,18 @@ void DDF_MainCleanUpLooseEnds()
 
   while (curratk != NULL)
   {
+    name = (char *) curratk->puff;
+    if (name)
+      curratk->puff = DDF_MobjLookup(name);
+    else
+      curratk->puff = DDF_MobjLookup("PUFF");
+
     if (curratk->attackstyle==ATK_SPAWNER || curratk->attackstyle==ATK_TRIPLESPAWNER)
     {
       name = (char *) curratk->projectile;
 
       if (!name)
-        I_Error("DDF_MainCleanUp: No spawn object given for %s", curratk->name);
+        I_Error("DDF_MainCleanUp: No spawn object given for '%s'\n", curratk->name);
 
       curratk->projectile = DDF_MobjLookup(name);
 
@@ -1091,15 +533,33 @@ void DDF_MainCleanUpLooseEnds()
   {
     name = (char *) currmobj->dropitem;
 
-    if (!name)
+    if (name)
+      currmobj->dropitem = DDF_MobjLookup(name);
+
+    name = (char *) currmobj->blood;
+    if (name)
+      currmobj->blood = DDF_MobjLookup(name);
+    else
+      currmobj->blood = DDF_MobjLookup("BLOOD");
+
+    name = (char *) currmobj->respawneffect;
+    if (name)
+      currmobj->respawneffect = DDF_MobjLookup(name);
+    else
     {
-      currmobj = currmobj->next;
-      continue;
+      if ((currmobj->flags & MF_SPECIAL))
+        currmobj->respawneffect = DDF_MobjLookup("ITEM RESPAWN");
+      else
+        currmobj->respawneffect = DDF_MobjLookup("RESPAWN FLASH");
     }
 
-    currmobj->dropitem = DDF_MobjLookup(name);
-    currmobj = currmobj->next;
+    name = (char *) currmobj->gib;
+    if (name)
+      currmobj->gib = DDF_MobjLookup(name);
+    else
+      currmobj->gib = DDF_MobjLookup("GIB");
 
+    currmobj = currmobj->next;
   }
 
   // ------------
@@ -1142,7 +602,60 @@ void DDF_MainCleanUpLooseEnds()
       }
     }
   }
+
+  //
+  // Sprite names
+  //
   sprnames[NUMSPRITES] = NULL;
+
+  //hu_stuff.c
+  //m_misc.c
+  // -KM- 1999/01/29 Added chat macro defaults, gamma messages and talk keys back in.
+  i = 0;
+
+  while (strcmp(defaults[i].name,"chatmacro0"))
+    i++;
+
+  defaults[i++].defaultvalue=(int)chat_macros[0]=DDF_LanguageLookup("DefaultCHATMACRO0");
+  defaults[i++].defaultvalue=(int)chat_macros[1]=DDF_LanguageLookup("DefaultCHATMACRO1");
+  defaults[i++].defaultvalue=(int)chat_macros[2]=DDF_LanguageLookup("DefaultCHATMACRO2");
+  defaults[i++].defaultvalue=(int)chat_macros[3]=DDF_LanguageLookup("DefaultCHATMACRO3");
+  defaults[i++].defaultvalue=(int)chat_macros[4]=DDF_LanguageLookup("DefaultCHATMACRO4");
+  defaults[i++].defaultvalue=(int)chat_macros[5]=DDF_LanguageLookup("DefaultCHATMACRO5");
+  defaults[i++].defaultvalue=(int)chat_macros[6]=DDF_LanguageLookup("DefaultCHATMACRO6");
+  defaults[i++].defaultvalue=(int)chat_macros[7]=DDF_LanguageLookup("DefaultCHATMACRO7");
+  defaults[i++].defaultvalue=(int)chat_macros[8]=DDF_LanguageLookup("DefaultCHATMACRO8");
+  defaults[i++].defaultvalue=(int)chat_macros[9]=DDF_LanguageLookup("DefaultCHATMACRO9");
+
+  destination_keys = malloc(maxplayers*sizeof(*destination_keys) + 1);
+  strncpy(destination_keys, DDF_LanguageLookup("ChatKeys"), maxplayers);
+
+  //m_menu.c
+  gammamsg[0]=DDF_LanguageLookup("GammaOff");
+  gammamsg[1]=DDF_LanguageLookup("GammaLevelOne");
+  gammamsg[2]=DDF_LanguageLookup("GammaLevelTwo");
+  gammamsg[3]=DDF_LanguageLookup("GammaLevelThree");
+  gammamsg[4]=DDF_LanguageLookup("GammaLevelFour");
+
+  name = alloca(16);
+  player_names = malloc(maxplayers*sizeof(*player_names));
+  for (i = 0; i < maxplayers; i++)
+  {
+    sprintf(name, "Player%dName", i+1);
+    player_names[i] = DDF_LanguageLookup(name);
+  }
+
+  players = malloc(maxplayers*sizeof(*players));
+  memset(players, 0, sizeof(*players) * maxplayers);
+  for (i = 0; i < maxplayers; i++)
+  {
+     players[i].weaponowned =
+       malloc(numweapons * sizeof(boolean));
+     // -KM- 1998/12/17 We want to realloc ammo and max ammo, not weaponowned!
+     players[i].ammo =
+       malloc(NUMAMMO * sizeof(int));
+     players[i].maxammo = malloc(NUMAMMO * sizeof(int));
+  }
 }
 
 // -KM- 1998/12/16 This loads the ddf file into memory for parsing.
@@ -1297,7 +810,7 @@ void DDF_MainReadFile (readinfo_t *readinfo)
 
   statecount = NUMSTATES;
   status = waiting_newdef;
-  formerstatus = NULL;
+  formerstatus = 0;
   commandref = NULL;
   firstgo = true;
 
@@ -1327,16 +840,32 @@ void DDF_MainReadFile (readinfo_t *readinfo)
   while (memfileptr < &memfile[size])
   {
     // -KM- 1998/12/16 Added #define command to ddf files.
-    if (!strcmp(memfileptr, "#DEFINE"))
+    if (!strncasecmp(memfileptr, "#DEFINE", 7))
     {
-      char* name = memfileptr;
+      char* name;
       char* value;
+      boolean line = false;
+      memfileptr += 8;
+      name = memfileptr;
       while (*memfileptr != ' ' && memfileptr < &memfile[size]) memfileptr++;
       if (memfileptr < &memfile[size])
+      {
+        *memfileptr++ = 0;
         value = memfileptr;
+      }
       else
         I_Error("\n#DEFINE '%s' as what?!\n", name);
-      while (*memfileptr != ' ' && memfileptr < &memfile[size]) memfileptr++;
+      while (memfileptr < &memfile[size])
+      {
+        if (*memfileptr == '\r')
+          *memfileptr = ' ';
+        if (*memfileptr == '\\')
+          line = true;
+        if (*memfileptr == '\n' && !line)
+          break;
+        memfileptr++;
+      }
+      *memfileptr++ = 0;
       DDF_MainAddDefine(name, value);
       buffer[0] = '\0';
       status = reading_command;
@@ -1444,9 +973,18 @@ void DDF_MainReadFile (readinfo_t *readinfo)
   // if firstgo is true, nothing was defined
   if (!firstgo) readinfo->DDF_MainFinishingCode();
 
-  I_Printf("\n");
   free(buffer);
-  free(memfile);
+  if (defines)
+  {
+     free(defines);
+     numDefines = 0;
+     defines = NULL;
+  }
+  if (readinfo->filename)
+  {
+    free(memfile);
+    I_Printf("\n");
+  }
 }
 
 //
@@ -1577,11 +1115,9 @@ readchar_t DDF_MainProcessChar(char character, char *buffer, readstatus_t status
      break;
 
    case reading_string: // -ACB- 1998/08/10 New string handling
-     if (character == STRINGSTOP)
-     {
-       return string_stop;
-     }
-     else if (formatchar)
+     // -KM- 1999/01/29 Fixed nasty bug where \" would be recognised as
+     //  string end over quote mark.  One of the level text used this.
+     if (formatchar)
      {
        // -ACB- 1998/08/11 Formatting check: Carriage-return.
        if (character == 'n')
@@ -1599,6 +1135,10 @@ readchar_t DDF_MainProcessChar(char character, char *buffer, readstatus_t status
          formatchar = false;
          return ok_char;
        }
+     }
+     else if (character == STRINGSTOP)
+     {
+       return string_stop;
      }
      // -KM- 1998/10/29 Removed ascii check, allow foreign characters („)
      else
@@ -1625,7 +1165,8 @@ void DDF_MainGetNumeric(char *info, int commandref)
 {
   int i;
 
-  i = atoi(info); // straight conversion - no messin'
+  // -KM- 1999/01/29 strtol accepts hex and decimal.
+  i = strtol(info, NULL, 0); // straight conversion - no messin'
 
   if (currentcmdlist[commandref].data == NULL)
     I_Error("\nDDF_MainGetNumeric: Integer not specified\n");
@@ -1787,7 +1328,7 @@ void DDF_MainGetSpecial(char *info, int commandref)
   }
 
   if (!strcmp(specialslist[i].specialname, COMMAND_TERMINATOR))
-    I_Error("\n\tDDF_MainGetSpecial: No such special %s",info);
+    I_Error("\n\tDDF_MainGetSpecial: No such special '%s'",info);
 
   if (specialslist[i].flags)
     buffermobj.flags |= specialslist[i].flags;
@@ -1832,80 +1373,6 @@ int DDF_MainSplitIntoState(char *info)
   return i;
 }
 
-/*
-void DDF_MainSplitIntoState(char *info)
-{
-  char *temp;
-  char *remaininginfo;
-  int i,j;
-
-  remaininginfo = info;
-
-  temp = strchr(remaininginfo,DIVIDE);        // find DIVIDE
-
-  if (remaininginfo[0] == REDIRECTOR)
-  {
-     stateinfo[2] = NULL; // signify that we have found redirector
-     remaininginfo++;
-
-     if (temp == NULL)
-     {
-       stateinfo[0] = remaininginfo;      // copy it to the info
-       stateinfo[1] = NULL;
-       return;
-     }
-
-     i = strlen(remaininginfo) - strlen(temp);
-
-     stateinfo[0]=malloc(sizeof(char)*(i+1));
-
-     if (stateinfo[0]==NULL)
-       I_Error("\n\tDDF_MainSplitIntoState: Malloc Failed\n");
-
-     memset(stateinfo[0],'\0',sizeof(char)*(i+1));
-     strncat(stateinfo[0],remaininginfo,i);      // copy it to the info
-     remaininginfo+=(i+1);
-
-     stateinfo[1] = &remaininginfo[0];
-     return;
-  }
-
-  for (j=0; j<(NUMSPLIT-1); j++)
-  {
-    temp = strchr(remaininginfo,DIVIDE);        // find DIVIDE
-
-    i = strlen(remaininginfo) - strlen(temp);
-
-    stateinfo[j]=malloc(sizeof(char)*(i+1));
-
-    if (stateinfo[j]==NULL)
-      I_Error("\n\tDDF_SplitIntoStateInfo: Malloc Failed\n");
-
-    memset(stateinfo[j],'\0',sizeof(char)*(i+1));
-    strncat(stateinfo[j],remaininginfo,i);      // copy it to the info
-
-    remaininginfo+=(i+1);
-  }
-
-  temp = (remaininginfo+1); // step over the DIVIDE.
-
-  if (temp==NULL)
-    I_Error("DDF_SplitIntoStateInfo: Nothing to split up\n");
-
-  i = strlen(remaininginfo);
-
-  stateinfo[NUMSPLIT-1]=malloc(sizeof(char)*(i+1));
-  memset(stateinfo[NUMSPLIT-1],'\0',sizeof(char)*(i+1));
-
-  if (stateinfo[NUMSPLIT-1]==NULL)
-    I_Error("\n\tDDF_SplitIntoStateInfo: Malloc Failed\n");
-
-  strcpy(stateinfo[NUMSPLIT-1],remaininginfo);      // copy it to the info
-
-  return;
-}
-*/
-
 //
 // DDF_MainLoadStates
 //
@@ -1942,7 +1409,8 @@ void DDF_MainLoadStates(char *info, int commandref)
       I_Printf("\n\tDDF_MainLoadStates: Warning - redirector terminates\n");
 
     // Copy Tempstates to states table......
-    if (statecount > MAXSTATES)
+    // -KM- 1999/01/29 Ouch, nast bug. > should be >=
+    if (statecount >= MAXSTATES)
     {
       MAXSTATES = statecount + 32;
       states = realloc(states, sizeof(*states) * MAXSTATES);
@@ -2032,7 +1500,8 @@ void DDF_MainLoadStates(char *info, int commandref)
     tempstates[count]->sprite = NUMSPRITES;
     NUMSPRITES++;
 
-    if (NUMSPRITES > MAXSPRITES)
+    // -KM- 1999/01/29 > should have been >=
+    if (NUMSPRITES >= MAXSPRITES)
     {
       MAXSPRITES += 32;
       sprnames = realloc(sprnames, sizeof(*sprnames) * MAXSPRITES);
@@ -2088,12 +1557,13 @@ void DDF_MainLoadStates(char *info, int commandref)
   //--------------------------------------------------
   //--------------------------------------------------
   // Misc1 + 2
+  // -KM- 1999/01/29 Use strtol instead of atoi.
   if (stateinfo[5])
-    tempstates[count]->misc1 = atoi(stateinfo[5]);
+    tempstates[count]->misc1 = strtol(stateinfo[5], NULL, 0);
   else
     tempstates[count]->misc1 = 0;
   if (stateinfo[6])
-    tempstates[count]->misc2 = atoi(stateinfo[6]);
+    tempstates[count]->misc2 = strtol(stateinfo[6], NULL, 0);
   else
     tempstates[count]->misc2 = 0;
 
@@ -2103,7 +1573,8 @@ void DDF_MainLoadStates(char *info, int commandref)
     // data is a void pointer, use memcpy to transfer info -ACB- 1998/07/31
     memcpy(currentcmdlist[commandref].data, &NUMSTATES, sizeof(int));
 
-    if (statecount > MAXSTATES)
+    // -KM- 1999/01/29 Again > should be >=
+    if (statecount >= MAXSTATES)
     {
       MAXSTATES = statecount + 32;
       states = realloc(states, sizeof(*states) * MAXSTATES);
@@ -2202,7 +1673,7 @@ void DDF_MainRefAttack(char *info, int commandref)
     currattack = currattack->next;
 
   if (currattack == NULL)
-    I_Error("\n\tDDF_MainRefAttack: Attack - %s - does not exist\n",info);
+    I_Error("\n\tDDF_MainRefAttack: Attack - '%s' - does not exist\n",info);
 
   memcpy((attacktype_t *)currentcmdlist[commandref].data,
            &currattack, sizeof(attacktype_t *));
@@ -2297,13 +1768,15 @@ static inline fixed_t DDF_MainGetFixedHelper(char *info, int fixed)
   int j;
 
   // Get the integer part
-  i = atoi(strtok(info, ".")) * fixed;
+  // -KM- 1999/01/29 Use strtol instead of atoi.  Don't know how this works
+  //  in hex for fixed point...
+  i = strtol(strtok(info, "."), NULL, 0) * fixed;
 
   // Get the decimal part
   temp = strtok(NULL, ".");
   if (temp)
   {
-    f = (fixed * atoi(temp));
+    f = (fixed * strtol(temp, NULL, 0));
     // -KM- 1998/11/25 Fixed major bug, that resulted in incorrect fracs
     //   for anything with more than one decimal place, eg 0.3 worked, but
     //   0.33333 would not.
@@ -2362,7 +1835,7 @@ void DDF_MainGetFixed(char *info, int commandref)
 
   if (!string) // no decimal point
   {
-    *(int *)currentcmdlist[commandref].data = atoi(info)<<FRACBITS;
+    *(int *)currentcmdlist[commandref].data = strtol(info, NULL, 0)<<FRACBITS;
     return;
   }
 
@@ -2372,7 +1845,7 @@ void DDF_MainGetFixed(char *info, int commandref)
 
   if (!string) // nothing after the decimal point
   {
-    *(int *)currentcmdlist[commandref].data = atoi(info)<<FRACBITS;
+    *(int *)currentcmdlist[commandref].data = strtol(info, NULL, 0)<<FRACBITS;
     return;
   }
 
@@ -2434,7 +1907,7 @@ void DDF_MainGetTime(char *info, int commandref)
 
   if (!string) // no decimal point
   {
-    *(int *)currentcmdlist[commandref].data = atoi(info)*TICRATE;
+    *(int *)currentcmdlist[commandref].data = strtol(info, NULL, 0)*TICRATE;
     return;
   }
 
@@ -2444,7 +1917,7 @@ void DDF_MainGetTime(char *info, int commandref)
 
   if (!string) // nothing after the decimal point
   {
-    *(int *)currentcmdlist[commandref].data = atoi(info)*TICRATE;
+    *(int *)currentcmdlist[commandref].data = strtol(info, NULL, 0)*TICRATE;
     return;
   }
 
@@ -2490,14 +1963,8 @@ void DDF_DummyFunction(char *info) {return;};
 //
 void DDF_OldThingInit()
 {
-  // PRE-DDF Hack
-//  specials[MOBJ_PLAYER]      = &oldmobjinfo[MT_PLAYER];
-  specials[MOBJ_BLOOD]       = &oldmobjinfo[MT_BLOOD];
-  specials[MOBJ_PUFF]        = &oldmobjinfo[MT_PUFF];
-  specials[MOBJ_RESPAWNFOG]  = &oldmobjinfo[MT_IFOG];
-  specials[MOBJ_SMOKE]       = &oldmobjinfo[MT_SMOKE];
+  // -KM- 1999/01/29 Removed fixed old things.
   specials[MOBJ_SPAWNSPOT]   = &oldmobjinfo[MT_BOSSTARGET];
-  specials[MOBJ_TELEPOS]     = &oldmobjinfo[MT_TELEPORTMAN];
 }
 
 // -KM- 1998/10/29 Add stuff from ddf_lines.c that is also shared by ddf_sect.c
@@ -2529,6 +1996,7 @@ s_movement[] =
   {"MOVE"          , mov_Once},
   {"MOVEWAITRETURN", mov_MoveWaitReturn},
   {"CONTINUOUS"    , mov_Continuous},
+  {"PLAT"          , mov_Plat},
   {"BUILDSTAIRS"   , mov_Stairs},
   {"STOP"          , mov_Stop}
 },
@@ -2627,6 +2095,13 @@ void DDF_MainGetDestRef(char *info, int c)
   }
 
   I_Error("\nUnknown Reference Point %s\n", info);
+}
+
+void DDF_MobjGetPlayer(char *info, int commandref)
+{
+  DDF_MainGetNumeric(info, commandref);
+  if (*(int *)currentcmdlist[commandref].data > maxplayers)
+    maxplayers = *(int *)currentcmdlist[commandref].data;
 }
 
 

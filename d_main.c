@@ -4,25 +4,29 @@
 // Based on the sources released by Id Software (c) 1994-1996
 //
 // DESCRIPTION:
-//	DOOM main program (D_DoomMain) and
+//      DOOM main program (D_DoomMain) and
 //      game loop (D_DoomLoop), plus functions
 //      to determine game mode (shareware, registered),
-//	parse command line parameters,
+//      parse command line parameters,
 //      configure game parameters (turbo),
-//	and call the startup functions.
+//      and call the startup functions.
 //
 // -MH- 1998/07/02 "shootupdown" --> "true3dgameplay"
 // -MH- 1998/08/19 added up/down movement variables
 //
 #ifdef DEVELOPERS
 // -KM- 1998/09/27 I don't like this; conio is non-portable.
+#ifdef DJGPP
 #include <conio.h>
+#else
+int getch(void) { return 0;}
+#endif
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <dir.h>
+#include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -90,6 +94,7 @@ boolean devparm;    // started game with -devparm
 boolean singletics = false; // debug flag to cancel adaptiveness
 
 // -KM- 1998/12/16 These flags hold everything needed about a level
+// -KM- 1999/01/29 Added autoaim flag.
 gameflags_t gameflags = {
  false, // nomonsters
  false, // fastparm
@@ -101,10 +106,9 @@ gameflags_t gameflags = {
  false, // extra blood
  true, // jump
  true, // freelook
+ AA_ON, // Autoaim
  true, // trans
  true, // cheats
- false, // drone
- 0 // view offset
 };
 // -KM- 1998/12/16 These flags are the users prefs and are copied to
 //   gameflags when a new level is started.
@@ -119,20 +123,21 @@ gameflags_t settingflags = {
  false, // extra blood
  true, // jump
  true, // freelook
+ AA_ON, // autoaim
  true, // trans
  true, // cheats
- false, // drone
- 0 // view offset
 };
 
+boolean drone = false;
 
 extern boolean inhelpscreens;
 
 skill_t startskill;
+char *startmap;
 
 boolean autostart;
 
-FILE* debugfile;
+FILE* debugfile = NULL;
 
 boolean advancedemo;
 
@@ -175,7 +180,7 @@ void D_DoAdvanceDemo (void);
 //
 event_t         events[MAXEVENTS];
 int             eventhead;
-int 		eventtail;
+int             eventtail;
 
 
 //
@@ -195,14 +200,14 @@ void D_PostEvent (event_t* ev)
 //
 void D_ProcessEvents (void)
 {
-    event_t*	ev;
+    event_t*    ev;
 
     for ( ; eventtail != eventhead ; eventtail = (++eventtail)&(MAXEVENTS-1) )
     {
-	ev = &events[eventtail];
-	if (M_Responder (ev))
-	    continue;               // menu ate the event
-	G_Responder (ev);
+        ev = &events[eventtail];
+        if (M_Responder (ev))
+            continue;               // menu ate the event
+        G_Responder (ev);
     }
 }
 
@@ -210,14 +215,12 @@ void D_ProcessEvents (void)
 // D_Display
 //  draw current display, possibly wiping it from the previous
 //
-// -ACB- 1998/07/27 Removed doublebufferflag check (unneeded).	
+// -ACB- 1998/07/27 Removed doublebufferflag check (unneeded).  
 //
 
 // wipegamestate can be set to -1 to force a wipe on the next draw
 gamestate_t wipegamestate = GS_DEMOSCREEN;
 int wipe_method = wipe_Melt;
-extern boolean changeresneeded; // -ES- 1998/08/20
-extern boolean setsizeneeded;
 extern int showMessages;
 boolean redrawsbar;
 void R_ExecuteChangeResolution (void); // -ES- 1998/08/20
@@ -229,7 +232,7 @@ void D_Display (void)
     static boolean menuactivestate = false;
     static boolean inhelpscreensstate = false;
     static boolean fullscreen = false;
-    static int	borderdrawcount;
+    static int  borderdrawcount;
     static gamestate_t oldgamestate = -1;
     int nowtime;
     int tics;
@@ -239,60 +242,60 @@ void D_Display (void)
     boolean wipe;
 
     if (nodrawers)
-	 return;                    // for comparative timing / profiling
+         return;                    // for comparative timing / profiling
 
     // -ES- 1998/08/20 Resolution Change Check
     if (changeresneeded)
       R_ExecuteChangeResolution();
-		    
+                    
     // change the view size if needed
     if (setsizeneeded)
     {
-	 R_ExecuteSetViewSize ();
-	 oldgamestate = -1;                      // force background redraw
-	 borderdrawcount = 3;
+         R_ExecuteSetViewSize ();
+         oldgamestate = -1;                      // force background redraw
+         borderdrawcount = 3;
     }
 
     // save the current screen if about to wipe
     if (gamestate != wipegamestate)
     {
-	wipe = true;
-	wipe_StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
+        wipe = true;
+        wipe_StartScreen(0, 0, SCREENWIDTH, SCREENHEIGHT);
     }
     else
-	wipe = false;
+        wipe = false;
 
     if (gamestate == GS_LEVEL && gametic)
-	HU_Erase();
+        HU_Erase();
     
     // do buffered drawing
     switch (gamestate)
     {
       case GS_LEVEL:
-	if (!gametic)
-	    break;
-	if (automapactive==2)
-	    AM_Drawer ();
-	if (wipe || (viewheight != SCREENHEIGHT && fullscreen) )
-	    redrawsbar = true;
-	if (inhelpscreensstate && !inhelpscreens)
-	    redrawsbar = true;              // just put away the help screen
-	ST_Drawer (viewheight == SCREENHEIGHT, redrawsbar );
+        if (!gametic)
+            break;
+        if (automapactive==2)
+            AM_Drawer ();
+        if (wipe || (viewheight != SCREENHEIGHT && fullscreen) )
+            redrawsbar = true;
+        if (inhelpscreensstate && !inhelpscreens)
+            redrawsbar = true;              // just put away the help screen
+        ST_Drawer (viewheight == SCREENHEIGHT, redrawsbar );
         redrawsbar = false;
-	fullscreen = viewheight == SCREENHEIGHT;
-	break;
+        fullscreen = viewheight == SCREENHEIGHT;
+        break;
 
       case GS_INTERMISSION:
-	WI_Drawer ();
-	break;
+        WI_Drawer ();
+        break;
 
       case GS_FINALE:
-	F_Drawer ();
-	break;
+        F_Drawer ();
+        break;
 
       case GS_DEMOSCREEN:
-	D_PageDrawer ();
-	break;
+        D_PageDrawer ();
+        break;
     }
     
     // draw buffered stuff to screen
@@ -300,36 +303,37 @@ void D_Display (void)
     
     // draw the view directly
     if (gamestate == GS_LEVEL && gametic && automapactive != 2 )
-      {
-       R_RenderPlayerView (&players[displayplayer]);
+    {
+      R_Render ();
+
       if (automapactive)
         AM_Drawer ();
-      }
+    }
 
     if (gamestate == GS_LEVEL && gametic)
-	HU_Drawer ();
+        HU_Drawer ();
     
     // clean up border stuff
     if (gamestate != oldgamestate && gamestate != GS_LEVEL)
-	I_SetPalette (W_CacheLumpName ("PLAYPAL",PU_CACHE),0);
+        I_SetPalette (W_CacheLumpName ("PLAYPAL",PU_CACHE),0);
 
     // see if the border needs to be initially drawn
     if (gamestate == GS_LEVEL && oldgamestate != GS_LEVEL)
     {
-	viewactivestate = false;        // view was not active
-	R_FillBackScreen ();    // draw the pattern into the back screen
+        viewactivestate = false;        // view was not active
+        R_FillBackScreen ();    // draw the pattern into the back screen
     }
 
     // see if the border needs to be updated to the screen
    if (gamestate == GS_LEVEL && automapactive != 2 )
     {
-	if (menuactive || menuactivestate || !viewactivestate)
-	    borderdrawcount = 3;
-	if (borderdrawcount)
-	{
-	    R_DrawViewBorder ();    // erase old menu stuff
-	    borderdrawcount--;
-	}
+        if (menuactive || menuactivestate || !viewactivestate)
+            borderdrawcount = 3;
+        if (borderdrawcount)
+        {
+            R_DrawViewBorder ();    // erase old menu stuff
+            borderdrawcount--;
+        }
 
     }
 
@@ -341,12 +345,12 @@ void D_Display (void)
     // draw pause pic
     if (paused)
     {
-	if (automapactive)
-	    y = 4;
-	else
-	    y = viewwindowy+4;
-	V_DrawPatchDirect(viewwindowx+(scaledviewwidth-68)/2,
-			  y,0,W_CacheLumpName ("M_PAUSE", PU_CACHE));
+        if (automapactive)
+            y = 4;
+        else
+            y = viewwindowy+4;
+        V_DrawPatchDirect(viewwindowx+(scaledviewwidth-68)/2,
+                          y,0,W_CacheLumpName ("M_PAUSE", PU_CACHE));
     }
 
     // menus go directly to the screen
@@ -358,8 +362,8 @@ void D_Display (void)
     // normal update
     if (!wipe)
     {
-	I_FinishUpdate ();              // page flip or blit buffer
-	return;
+        I_FinishUpdate ();              // page flip or blit buffer
+        return;
     }
     
     // wipe update
@@ -371,17 +375,17 @@ void D_Display (void)
 
     do
     {
-	do
-	{
-	    nowtime = I_GetTime ();
-	    tics = nowtime - wipestart;
-	} while (!tics);
-	wipestart = nowtime;
-	done = wipe_ScreenWipe(wipe_method
-			       , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
-	I_UpdateNoBlit ();
-	M_Drawer ();                            // menu is drawn even on top of wipes
-	I_FinishUpdate ();                      // page flip or blit buffer
+        do
+        {
+            nowtime = I_GetTime ();
+            tics = nowtime - wipestart;
+        } while (!tics);
+        wipestart = nowtime;
+        done = wipe_ScreenWipe(wipe_method
+                               , 0, 0, SCREENWIDTH, SCREENHEIGHT, tics);
+        I_UpdateNoBlit ();
+        M_Drawer ();                            // menu is drawn even on top of wipes
+        I_FinishUpdate ();                      // page flip or blit buffer
     } while (!done);
 }
 
@@ -394,7 +398,7 @@ void D_DoomLoop (void)
     extern int mselapsed;
     if (demorecording)
       G_BeginRecording ();
-		
+                
     I_InitGraphics ();
     // -ES- 1998/09/11 Use R_ChangeResolution to enter gfx mode
     R_ChangeResolution(SCREENWIDTH,SCREENHEIGHT,BPP);
@@ -411,31 +415,31 @@ void D_DoomLoop (void)
         Z_CheckHeap ();
         #endif
 
-	// frame syncronous IO operations
-	I_StartFrame ();                
-	
-	// process one or more tics
-	if (singletics)
-	{
-	    I_StartTic ();
-	    D_ProcessEvents ();
-	    G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
-	    if (advancedemo)
+        // frame syncronous IO operations
+        I_StartFrame ();                
+        
+        // process one or more tics
+        if (singletics)
+        {
+            I_StartTic ();
+            D_ProcessEvents ();
+            G_BuildTiccmd (&netcmds[consoleplayer][maketic%BACKUPTICS]);
+            if (advancedemo)
               D_DoAdvanceDemo ();
-	    M_Ticker ();
-	    G_Ticker ();
-	    gametic++;
-	    maketic++;
-	}
-	else
-	{
-	    TryRunTics (); // will run at least one tic
-	}
-		
-	    S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
+            M_Ticker ();
+            G_Ticker ();
+            gametic++;
+            maketic++;
+        }
+        else
+        {
+            TryRunTics (); // will run at least one tic
+        }
+                
+            S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
-	    // Update display, next frame, with current state.
-	    D_Display ();
+            // Update display, next frame, with current state.
+            D_Display ();
         }
 }
 
@@ -453,7 +457,7 @@ char                    *pagename;
 void D_PageTicker (void)
 {
     if (--pagetic < 0)
-	D_AdvanceDemo ();
+        D_AdvanceDemo ();
 }
 
 //
@@ -497,7 +501,7 @@ void D_DoAdvanceDemo (void)
     switch (demosequence) // - Kester
     {
       case 0: // Picture
-	if (picnumber == 0)
+        if (picnumber == 0)
         {
               while ((W_CheckNumForName(wi_maps[mapon].titlemusic) == -1)
                  || (picnumber >= wi_maps[mapon].numtitlepics))
@@ -505,14 +509,14 @@ void D_DoAdvanceDemo (void)
                 mapon = (mapon + 1) % wi_nummaps;
                 picnumber = 0;
               }
-	      pagetic = wi_maps[mapon].titletics;
+              pagetic = wi_maps[mapon].titletics;
               S_ChangeMusic(wi_maps[mapon].titlemusic, false); // DOOM II TITLE (game->intromusic);
-	}
+        }
         else
            pagetic = 320;
 
-	gamestate = GS_DEMOSCREEN;
-	while (W_CheckNumForName(wi_maps[mapon].titlepics[picnumber]) < 0)
+        gamestate = GS_DEMOSCREEN;
+        while (W_CheckNumForName(wi_maps[mapon].titlepics[picnumber]) < 0)
         {
             picnumber ++;
             while (picnumber >= wi_maps[mapon].numtitlepics)
@@ -521,23 +525,23 @@ void D_DoAdvanceDemo (void)
               picnumber = 0;
             }
         }
-	pagename = wi_maps[mapon].titlepics[picnumber];
+        pagename = wi_maps[mapon].titlepics[picnumber];
         picnumber++;
         while (picnumber >= wi_maps[mapon].numtitlepics)
         {
           mapon = (mapon + 1) % wi_nummaps;
           picnumber = 0;
         }
-	break;
+        break;
 
       default: // Demo
-	sprintf(buffer, "DEMO%x", demonumber++);
-	if (W_CheckNumForName(buffer) < 0) {
-	  demonumber = 1;
-	  sprintf(buffer, "DEMO1");
-	}
-	G_DeferedPlayDemo (buffer);
-	break;
+        sprintf(buffer, "DEMO%x", demonumber++);
+        if (W_CheckNumForName(buffer) < 0) {
+          demonumber = 1;
+          sprintf(buffer, "DEMO1");
+        }
+        G_DeferedPlayDemo (buffer);
+        break;
     }
 }
 
@@ -557,14 +561,14 @@ void D_StartTitle (void)
 void D_AddFile (char *file)
 {
     char    *newfile;
-	
+        
     if (addwadnum == maxwadfiles) {
       wadfiles = realloc(wadfiles, (++maxwadfiles + 1) * sizeof(char *));
     }
 
     newfile = malloc (strlen(file)+1);
     strcpy (newfile, file);
-	
+        
     wadfiles[addwadnum++] = newfile;
     wadfiles[addwadnum] = NULL;
 }
@@ -593,6 +597,8 @@ void D_AddFile (char *file)
 //      are found and loaded.  The -iwad param is used to load either only a
 //      single wad file, or specify a new directory to search for iwads in.
 //      dosdoom.wad will also be found in the current directory.
+// -KM- 1999/01/29 Fixed this for portability.  The opendir method works in DJGPP,
+//      CYGWIN, and probably Linux.
 //
 void D_IdentifyVersion (void)
 {
@@ -601,11 +607,12 @@ void D_IdentifyVersion (void)
     char *home;
     char *doomwaddir;
     char *iwad = NULL;
-    struct ffblk files;
+    DIR  *d = NULL;
+    struct dirent* de;
     boolean done = false;
     doomwaddir = getenv("DOOMWADDIR");
     if (!doomwaddir)
-	doomwaddir = ".";
+        doomwaddir = ".";
 
     p=M_CheckParm("-gwaddir");
     if (p && p<myargc-1)
@@ -614,12 +621,13 @@ void D_IdentifyVersion (void)
       strcpy(doomwaddir,myargv[p+1]);
     }
 
-#ifdef DJGPP
+#ifndef LINUX
     home = getenv("DOSDOOM");
     if (!home)
       sprintf(basedefault,"default.cfg");
     else
       sprintf(basedefault, "%s\\default.cfg", home);
+    I_Printf("  Config File: %s\n", basedefault);
 #else
     home=getenv("HOME");
     if (!home)
@@ -631,38 +639,45 @@ void D_IdentifyVersion (void)
     if (p && p < myargc-1)
     {
       iwad = myargv[p+1];
-      if (!access(iwad, D_OK))
+      d = opendir(iwad);
+      if (!d)
       {
-        doomwaddir = iwad;
-      } else {
         D_AddFile(iwad);
         done = true;
       }
     }
 
-    iwad = alloca(strlen(doomwaddir) + 7);
+    if (!iwad)
+      iwad = doomwaddir;
 
     if (!done)
     {
-      sprintf(iwad, "%s/*.wad", doomwaddir);
-      done = findfirst(iwad, &files, FA_ARCH|FA_RDONLY);
-    }
+      if (!d)
+      {
+        d = opendir(doomwaddir);
+      }
 
-    while (!done)
-    {
-       int fd;
-       char id[4];
-       char *temp;
-       temp = alloca(strlen(doomwaddir) + strlen(files.ff_name) + 2);
-       sprintf(temp, "%s/%s", doomwaddir, files.ff_name);
-       fd = open(temp, O_RDONLY|O_BINARY);
-       read(fd, id, 4);
-       close(fd);
-       if (!memcmp(id, "IWAD", 4))
-         D_AddFile(temp);
-       done = findnext(&files);
+      if (d)
+      {
+        while ((de = readdir(d)))
+        {
+           if (strlen(de->d_name) >= 4)
+           if (!strcasecmp(de->d_name + strlen(de->d_name) - 4, ".wad"))
+           {
+             int fd;
+             char id[4];
+             char temp[strlen(iwad) + strlen(de->d_name) + 2];
+             sprintf(temp, "%s/%s", iwad, de->d_name);
+             fd = open(temp, O_RDONLY|O_BINARY);
+             read(fd, id, 4);
+             close(fd);
+             if (!memcmp(id, "IWAD", 4))
+               D_AddFile(temp);
+           }
+        }
+        closedir(d);
+      }
     }
-
     if (!addwadnum)
       I_Error("No IWADS found!\n");
 
@@ -698,7 +713,7 @@ void D_ApplyResponseFile (char *filename, int i)
   char    *file;
   char    *moreargs[20];
   char    *firstargv;
-			
+                        
   // READ THE RESPONSE FILE INTO MEMORY
   handle = fopen (filename,"rb");
   if (!handle)
@@ -717,12 +732,12 @@ void D_ApplyResponseFile (char *filename, int i)
   // KEEP ALL CMDLINE ARGS FOLLOWING @RESPONSEFILE ARG
   for (index = 0,k = i+1; k < myargc; k++)
     moreargs[index++] = myargv[k];
-			
+                        
   firstargv = myargv[0];
   myargv = malloc(sizeof(char *)*MAXARGVS);
   memset(myargv,0,sizeof(char *)*MAXARGVS);
   myargv[0] = firstargv;
-			
+                        
   infile = file;
   indexinfile = k = 0;
   indexinfile++;  // SKIP PAST ARGV[0] (KEEP IT)
@@ -736,19 +751,19 @@ void D_ApplyResponseFile (char *filename, int i)
      ((*(infile+k)<= ' ') || (*(infile+k)>'z')))
        k++;
     } while(k < size);
-			
+                        
     for (k = 0;k < index;k++)
-	myargv[indexinfile++] = moreargs[k];
+        myargv[indexinfile++] = moreargs[k];
     myargc = indexinfile;
-	
+        
     // DISPLAY ARGS
     //
     // -ACB- 1998/06/19 Removed the display of the dosdoom.cmd
-    // 		        (was it really necessary).
+    //                  (was it really necessary).
     //
     Debug_Printf("%d command-line args:\n",myargc);
     for (k=1;k<myargc;k++)
-	Debug_Printf("%s\n",myargv[k]);
+        Debug_Printf("%s\n",myargv[k]);
 }
 //
 // Find a Response File
@@ -762,11 +777,11 @@ void D_FindResponseFile (void)
 
     for (i = 1;i < myargc;i++)
     {
-	if (myargv[i][0] == '@')
-	{
+        if (myargv[i][0] == '@')
+        {
         D_ApplyResponseFile(&(myargv[i][1]),i);
         break;
-	}
+        }
     }
 }
 
@@ -783,7 +798,6 @@ void D_DoomMain (void)
 {
   int p;
   char file[256];
-  char *startmap = "MAP01";
     
   //      print title for every printed line
   char title[] = "DOSDoom";
@@ -804,10 +818,24 @@ void D_DoomMain (void)
 #ifdef DEVELOPERS
   // -ACB- 1998/09/06 Only used for debugging.
   //                  Moved here to setup debug file for DDF Parsing...
-  if (M_CheckParm ("-debugfile"))
+  p=M_CheckParm ("-debugfile");
+  if (p)
   {
-    char filename[20];
-    sprintf (filename,"Debug%i.txt",consoleplayer);
+    char filename[100];
+    int i = 1;
+
+    // -ES- 1999/03/29 allow -debugfile <file>
+    if (p+1 < myargc && myargv[p+1][0] != '-')
+    {
+      strcpy(filename,myargv[p+1]);
+    } else
+    {
+
+      // -KM- 1999/01/29 Consoleplayer is always 0 at this stage.
+      sprintf (filename,"debug0.txt");
+      while (!access(filename, R_OK))
+        sprintf(filename, "debug%d.txt", i++);
+    }
     I_Printf ("debug output to: %s\n",filename);
     debugfile = fopen (filename,"w");
     Debug_Printf(title);
@@ -817,10 +845,9 @@ void D_DoomMain (void)
   DDF_MainInit();
 
   D_FindResponseFile();
-	
+        
   D_IdentifyVersion();
 
-  setbuf (stdout, NULL);
   modifiedgame = false;
 
   oldsetup = M_CheckParm("-oldset"); // Original Doom Packet Send
@@ -833,8 +860,15 @@ void D_DoomMain (void)
     
   if (M_CheckParm ("-altdeath"))
     deathmatch = 2;
-  else if (M_CheckParm ("-deathmatch"))
+  else if ((p = M_CheckParm ("-deathmatch")))
+  {
     deathmatch = 1;
+    if (p && p < myargc-1)
+      deathmatch = atoi(myargv[p+1]);
+
+    if (!deathmatch)
+      deathmatch = 1;
+  }
 
   if (devparm)
     I_Printf(DDF_LanguageLookup("DevelopmentMode"));
@@ -846,7 +880,7 @@ void D_DoomMain (void)
     extern int upwardmove[2]; // -MH- 1998/08/19 up/down movement factors
     extern int forwardmove[2];
     extern int sidemove[2];
-	
+        
     if (p<myargc-1)
       scale = atoi (myargv[p+1]);
 
@@ -899,14 +933,15 @@ void D_DoomMain (void)
   // get skill / episode / map from parms
   startskill = sk_medium;
   autostart = false;
-		
+                
+  // -KM- 1999/01/29 Use correct skill: 1 is easiest, not 0
   p = M_CheckParm ("-skill");
   if (p && p < myargc-1)
   {
-    startskill = atoi(myargv[p+1]);
+    startskill = atoi(myargv[p+1])-1;
     autostart = true;
   }
-	
+        
   p = M_CheckParm ("-timer");
   if (p && p < myargc-1 && deathmatch)
   {
@@ -1061,7 +1096,7 @@ void D_DoomMain (void)
     G_RecordDemo (myargv[p+1]);
     autostart = true;
   }
-	
+        
   p = M_CheckParm ("-playdemo");
 
   if (p && p < myargc-1)
@@ -1070,14 +1105,14 @@ void D_DoomMain (void)
     G_DeferedPlayDemo (myargv[p+1]);
     D_DoomLoop ();  // never returns
   }
-	
+        
   p = M_CheckParm ("-timedemo");
   if (p && p < myargc-1)
   {
     G_TimeDemo (myargv[p+1]);
     D_DoomLoop ();  // never returns
   }
-	
+        
   p = M_CheckParm ("-loadgame");
   if (p && p < myargc-1)
   {
@@ -1096,6 +1131,7 @@ void D_DoomMain (void)
     if (autostart || netgame)
     {
       mapstuff_t* map = DDF_LevelGetNewMap(startmap);
+      free(startmap);
 
       // if startmap is failed, do normal start.
       // -KM- 1998/12/21 G_DeferedInitNew will set netgame to false!

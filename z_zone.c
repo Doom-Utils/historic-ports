@@ -83,7 +83,7 @@ void Z_Init (void)
     // -KM- 1998/07/31 Added an error message; handle cleanly instead
     //                 of crash + traceback
     if (!mainzone)
-      I_Printf("Couldn't allocate memory for zone\n");
+      I_Error("Z_Init: Couldn't allocate memory for zone\n");
 
     mainzone->size = size;
 

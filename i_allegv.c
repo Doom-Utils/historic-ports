@@ -11,13 +11,13 @@
 #include <sys/segments.h>
 #include <sys/movedata.h>
 #include <sys/nearptr.h>
+#include <allegro.h>
 
 #include "d_debug.h"
 #include "dm_state.h"
 #include "m_argv.h"
 #include "dm_defs.h"
 #include "v_res.h"
-#include "i_alleg.h"
 #include "i_allegv.h"
 #include "m_bbox.h"
 
@@ -52,6 +52,37 @@ DECLARE_COLOR_DEPTH_LIST(
 #define BF_LINEAR 1
 #define BF_NEARPTR 2
 
+// ldb= low detail at the borders. No point yet, I'm just checking out what it looks like.
+// in the future, this will get twice as fast as normal rendering.
+void ldbblit(void)
+{
+  char *dest;
+  char *src;
+  unsigned long screen_base_addr;
+  int x,y;
+  int fw=444,fh=332;
+
+  src=screens[0];
+  __dpmi_get_segment_base_address(screen->seg, &screen_base_addr);
+  dest = screen->line[0] + screen_base_addr - __djgpp_base_address;
+  for (y=0; y<SCREENHEIGHT;y+=2)
+  {
+    for (x=0; x<SCREENWIDTH;x+=2)
+    {
+      dest[x]=dest[x+1]=src[x];
+      dest[x+SCREENWIDTH]=dest[x+SCREENWIDTH+1]=src[x];
+    }
+    if (y>(SCREENHEIGHT-fh)/2 && y<(SCREENHEIGHT+fh)/2)
+    {
+      memcpy(dest+(SCREENWIDTH-fw)/2, src+(SCREENWIDTH-fw)/2, fw);
+      memcpy(dest+SCREENWIDTH+(SCREENWIDTH-fw)/2, src+SCREENWIDTH+(SCREENWIDTH-fw)/2, fw);
+    }
+
+    dest += SCREENWIDTH*2;
+    src+= SCREENWIDTH*2;
+  }
+}
+
 static struct
 {
   char* name;
@@ -62,20 +93,14 @@ static struct
   {"Linear",  linearblit, BF_LINEAR},
   {"Nearptr", nearptrblit, BF_NEARPTR|BF_LINEAR},
   {"Lbl", lblblit, 0},
-  {"banked", bankedblit, 0}
+  {"banked", bankedblit, 0},
+  {"ldb", ldbblit, BF_NEARPTR|BF_LINEAR},
 };
 
 
 boolean enter_graphics_mode()
 {
   int p;
-  if (M_CheckParm("-forcevga"))
-  {
-    // -ES- 1998/08/24 -forcevga should mean that we actually try to force VGA,
-    // so I removed the resolution check
-    //if ((SCREENWIDTH==320)&&(SCREENHEIGHT<=200)&&(BPP==1))
-    forcevga=true;
-  }
 
   // -ES- 1998/08/20 Changed select_blit_function() error handling
   if (select_blit_function())
@@ -133,8 +158,6 @@ boolean enter_graphics_mode()
       hicolortransmask3=0xF81F07C0;
       hicolortransshift=6;
     }
-/*    hicolortransmask1=makecol(127,127,127);
-    hicolortransmask2=makecol(63,63,63);*/
   }
 
   p = M_CheckParm("-blitfunc");
@@ -285,6 +308,7 @@ void bankedblit(void)
 
 // -ES- 1998/10/29 Added fading effect
 // -ES- 1998/11/08 Added 16-bit version
+// -ES- 1998/02/12 Changed col2rgb format
 unsigned char *fade_screen = NULL;
 void (*oldblitter)(void);
 int fade_start,fade_progress,fade_goal;
@@ -307,8 +331,8 @@ void do_fadeblit8(fixed_t fglevel)
   {
     for (x=SCREENWIDTH;x>0;x--)
     {
-      fg = (fg2rgb[*new_scr]+bg2rgb[*old_scr++]) | 0xF07C3E1F;
-      *new_scr++ = rgb_8k[0][0][(fg>>5) & (fg>>19)];
+      fg = (fg2rgb[*new_scr]+bg2rgb[*old_scr++]) & 0xF80F0780;
+      *new_scr++ = rgb_8k[0][0][(0x1FFF & (fg>>7)) | (fg>>23)];
     }
   }
 }

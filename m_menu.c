@@ -30,8 +30,10 @@
 #include "lu_sound.h"
 #include "m_argv.h"
 #include "m_menu.h"
+#include "m_misc.h"
 #include "m_option.h"
 #include "m_swap.h"
+#include "m_random.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "v_res.h"
@@ -937,10 +939,7 @@ void M_NewGame(int choice)
 	return;
     }
 	
-    //if (gamemode == commercial)
-//      M_SetupNextMenu(&NewDef);
-    //else
-      M_SetupNextMenu(&EpiDef);
+    M_SetupNextMenu(&EpiDef);
 }
 
 
@@ -1148,52 +1147,49 @@ void M_FinishReadThis(int choice)
 //
 // M_QuitDOOM
 //
-bastard_sfx_t     quitsounds[] =
-{
-  {0, "pldeth"},
-  {0, "dmpain"},
-  {0, "popain"},
-  {0, "slop"},
-  {0, "telept"},
-  {0, "posit1"},
-  {0, "posit3"},
-  {0, "sgtatk"},
-  {0, "vilact"},
-  {0, "getpow"},
-  {0, "boscub"},
-  {0, "slop"},
-  {0, "skeswg"},
-  {0, "kntdth"},
-  {0, "bspact"},
-  {0, "sgtatk"}
-};
-
-
 // -KM- 1998/12/16 Handle sfx that don't exist in this
 //   version.
+// -KM- 1999/01/31 Generate quitsounds from default.ldf
 void M_QuitResponse(int ch)
 {
     if (ch != 'y')
 	return;
     if (!netgame)
     {
-        int i, j = 0;
-        if (!quitsounds[0].s)
+        extern langref_t* langrefhead;
+        int numsounds = 0;
+        char refname[16];
+        char sound[9];
+        langref_t* entry;
+        // Count the quit messages
+        do
         {
-          char name[9];
-          for (i = sizeof(quitsounds) / sizeof(quitsounds[0]); i--;)
-          {
-             sprintf(name, "DS%s", quitsounds[i].name);
-             if (W_CheckNumForName(name) != -1)
-               quitsounds[i].s = DDF_LookupSound(quitsounds[i].name);
-          }
-        }
-        i = sizeof(quitsounds) / sizeof(quitsounds[0]);
-	//if ((gamemode == commercial) || (gamemode == dosdoom))
-        while (!quitsounds[((gametic>>2)+j)%i].s) j++;
-        S_StartSound(NULL, quitsounds[((gametic>>2)+j)%i].s);
-	//else
-	//    S_StartSound(NULL,quitsounds[(gametic>>2)&7]);
+           entry = langrefhead;
+      
+           sprintf(refname, "QuitSnd%d", numsounds+1);
+           while (entry != NULL && stricmp(refname, entry->refname))
+             entry = entry->next;
+      
+           if (entry)
+             numsounds++;
+        } while (entry);
+
+        do
+        {
+           entry = langrefhead;
+      
+           sprintf(refname, "QuitSnd%d", (M_Random()%numsounds)+1);
+           while (entry != NULL && stricmp(refname, entry->refname))
+             entry = entry->next;
+
+           sprintf(sound, "DS%s", DDF_LanguageLookup(refname));
+           if (W_CheckNumForName(sound) != -1)
+             S_StartSound(NULL, DDF_LookupSound(DDF_LanguageLookup(refname)));
+           else
+             entry = 0;
+
+        } while (!entry);
+
 	I_WaitVBL(105);
     }
     I_Quit ();
@@ -1209,32 +1205,46 @@ void M_QuitResponse(int ch)
 //                   is all you have to do.  Using P_Random for the random number
 //                   automatically kills the demo sync...
 // -KM- 1998/07/31 Removed Limit. So there.
+// -KM- 1999/01/31 Load quit messages from default.ldf
 static char *endstring = NULL;
 void M_QuitDOOM(int choice)
 {
+  extern langref_t* langrefhead;
   char* DOSY;
+  char  refname[16];
+  langref_t* entry;
 
   int num_quitmessages;
   int longest_quitmessage = 0;
 
   DOSY = DDF_LanguageLookup("PressToQuit");
 
-  // Count the quit messages
-  for (num_quitmessages = 0; endmsg[num_quitmessages]; num_quitmessages++)
-    if (!endstring && strlen(endmsg[num_quitmessages]) > longest_quitmessage)
-      longest_quitmessage = strlen(endmsg[num_quitmessages]);
+  num_quitmessages = 0;
 
+  // Count the quit messages
+  do
+  {
+     entry = langrefhead;
+
+     sprintf(refname, "QUITMSG%d", num_quitmessages+1);
+     while (entry != NULL && stricmp(refname, entry->refname))
+       entry = entry->next;
+
+     if (entry)
+     {
+       if (!endstring && strlen(entry->string) > longest_quitmessage)
+         longest_quitmessage = strlen(entry->string);
+       num_quitmessages++;
+     }
+  } while (entry);
   if (!endstring)
       endstring = Z_Malloc(longest_quitmessage + 3 + strlen(DOSY), PU_STATIC, NULL);
-
   //
   // We pick index 0 which is language sensitive,
   // or one at random, between 1 and maximum number.
   //
-//  if (language != english )
-    sprintf(endstring,"%s\n\n%s", endmsg[0],DOSY );
-//  else
-//    sprintf(endstring,"%s\n\n%s", endmsg[ gametic % num_quitmessages ],DOSY);
+  sprintf(refname, "QUITMSG%d", (gametic % num_quitmessages)+1);
+  sprintf(endstring,"%s\n\n%s", DDF_LanguageLookup(refname),DOSY );
   
   M_StartMessage(endstring,M_QuitResponse,true);
 }
@@ -1556,61 +1566,8 @@ boolean M_Responder (event_t* ev)
 {
     int             ch = -1;
     int             i;
-    static  int     analogue_wait = 0;
 	
-    if (ev->type == ev_analogue && analogue_wait < I_GetTime())
-    {
-        if (ev->data4 < 0)
-        {
-            ch = KEYD_UPARROW;
-            analogue_wait = I_GetTime() + 5;
-        } else if (ev->data4 > 0)
-        {
-            ch = KEYD_DOWNARROW;
-            analogue_wait = I_GetTime() + 5;
-        }
-
-        if (ev->data2 < 0)
-        {
-            ch = KEYD_LEFTARROW;
-            analogue_wait = I_GetTime() + 5;
-        } else if (ev->data2 > 0)
-        {
-            ch = KEYD_RIGHTARROW;
-            analogue_wait = I_GetTime() + 5;
-        }
-    } else if (ev->type == ev_keydown)
-    {
-	ch = ev->data1;
-        if (menuactive)
-        {
-          switch (ch)
-          {
-                  case KEYD_JOY1:
-                  case KEYD_MOUSE1:
-                       ch = KEYD_ENTER;
-                       break;
-                  case KEYD_JOY2:
-                  case KEYD_MOUSE2:
-                       ch = KEYD_ESCAPE;
-                       break;
-                  case KEYD_HATN:
-                       ch = KEYD_UPARROW;
-                       break;
-                  case KEYD_HATE:
-                       ch = KEYD_RIGHTARROW;
-                       break;
-                  case KEYD_HATS:
-                       ch = KEYD_DOWNARROW;
-                       break;
-                  case KEYD_HATW:
-                       ch = KEYD_LEFTARROW;
-                       break;
-                  default:
-                       break;
-          }
-        }
-    }
+    ch = ev->data1;
 
     if ((ev->type == ev_keyup) || (ch == -1)) return false;
 

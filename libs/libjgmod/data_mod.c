@@ -1,4 +1,4 @@
-/*   
+/*
  *
  *                _______  _______  __________  _______  _____ 
  *               /____  / / _____/ /         / / ___  / / ___ \
@@ -107,23 +107,16 @@ int detect_m31 (char *data)
 //#define SWAPS(x) x <<= 8; SWAPL((long) x); x >>= 8
 static inline int SWAPL(int x)
 {
- __asm__("bswapl %0"
-	 : "=r" (x) /* Outputs */
-	 : "0" (x)  /* Inputs */
-	 );
- return x;
+    return
+	(x>>24)
+	| ((x>>8) & 0xff00)
+	| ((x<<8) & 0xff0000)
+	| (x<<24);
 }
 
 static inline short SWAPS(short x)
 {
- int y = x & 0xffff;
- y <<= 8;
- __asm__("bswapl %0"
-	 : "=r" (y) /* Outputs */
-	 : "0" (y)  /* Inputs */
-	 );
- y >>= 8;
- return (short) y;
+    return (x>>8) | (x<<8);
 }
 // Load protracker 15 or 31 instruments. no_inst is used for
 // determining no of instruments.

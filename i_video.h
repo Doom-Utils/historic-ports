@@ -12,13 +12,14 @@
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
 
+// For palette_color
+#include <allegro.h>
 
 #include "dm_type.h"
 
 #ifdef __GNUG__
 #pragma interface
 #endif
-
 
 void I_AutodetectBPP();
 void I_GetResolution(void);
@@ -43,8 +44,6 @@ void I_ReadScreen (byte* scr);
 
 void I_BeginRead (void);
 void I_EndRead (void);
-
-
 
 #endif
 //-----------------------------------------------------------------------------

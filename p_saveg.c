@@ -58,8 +58,10 @@ typedef struct savegmobj_s
   fixed_t momz;
 
   fixed_t speed;
+  fixed_t fasttics;
 
   int tics;
+  int fuse;
   int state;
   int flags;
   int health;
@@ -78,6 +80,7 @@ typedef struct savegmobj_s
   int target;
   int tracer;
   int supportobj;
+  int side;
 
   byte playxtra;
   fixed_t origheight;
@@ -124,12 +127,12 @@ void P_ArchivePlayers (void)
   player_t* dest;
   int* s;
 		
-  P_GrowSGBuffer(MAXPLAYERS * sizeof(player_t) +
+  P_GrowSGBuffer(maxplayers * sizeof(player_t) +
                  2 * sizeof(int) +
                  numweapons * sizeof(boolean) +
                  2 * NUMAMMO * sizeof(int));
 
-  for (i=0 ; i<MAXPLAYERS ; i++)
+  for (i=0 ; i<maxplayers ; i++)
   {
     if (!playeringame[i])
       continue;
@@ -183,7 +186,7 @@ void P_UnArchivePlayers (void)
     Debug_Printf("Current position: %ld\n",save_p - savebuffer);
 #endif
 
-  for (i=0 ; i<MAXPLAYERS ; i++)
+  for (i=0 ; i<maxplayers ; i++)
   {
 #ifdef DEVELOPERS
     Debug_Printf("Current position: %ld\n",save_p - savebuffer);
@@ -394,6 +397,9 @@ void P_ArchiveWorld (void)
 
      memcpy(save_p, worldmap.mapdone, sizeof(boolean) * worldmap.nummaps);
      save_p += sizeof(boolean) * worldmap.nummaps;
+  } else {
+     P_GrowSGBuffer(1);
+     *save_p++ = 0;
   }
 
 #ifdef DEVELOPERS
@@ -506,7 +512,7 @@ void P_UnArchiveWorld (void)
        memset(&worldmap.mapdone[nummaps], false, sizeof(boolean) * (worldmap.nummaps - nummaps));
        save_p += sizeof(boolean) * nummaps;
      }
-  }
+  } else save_p++;
 
 }
 
@@ -581,9 +587,13 @@ void P_ArchiveThinkers (void)
     savemobj.speed = currmobj->speed;
 
     savemobj.tics = currmobj->tics;
+    savemobj.fasttics = currmobj->fasttics;
+    savemobj.fuse = currmobj->fuse;
     savemobj.state = currmobj->state - states;
     savemobj.flags = currmobj->flags;
     savemobj.health = currmobj->health;
+
+    savemobj.side = currmobj->side;
 
     savemobj.movedir = currmobj->movedir;
     savemobj.movecount = currmobj->movecount;
@@ -749,9 +759,13 @@ void P_UnArchiveSingleThinker(savegmobj_t* savedmobj)
   mobj->type = objecttype->doomednum;
 
   mobj->tics = savedmobj->tics;
+  mobj->fasttics = savedmobj->fasttics;
+  mobj->fuse = savedmobj->fuse;
   mobj->state = &states[savedmobj->state];
   mobj->flags = savedmobj->flags;
   mobj->health = savedmobj->health;
+
+  mobj->side = savedmobj->side;
 
   mobj->movedir = savedmobj->movedir;
   mobj->movecount = savedmobj->movecount;

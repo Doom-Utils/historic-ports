@@ -31,11 +31,25 @@
 
 // Endianess handling.
 // WAD files are stored little endian.
+
+// Not needed with little endian.
 #ifdef __BIG_ENDIAN__
-short	SwapSHORT(short);
-long	SwapLONG(long);
-#define SHORT(x)	((short)SwapSHORT((unsigned short) (x)))
-#define LONG(x)         ((long)SwapLONG((unsigned long) (x)))
+// Swap 16bit, that is, MSB and LSB byte.
+static inline unsigned short SHORT(unsigned short x)
+{
+    // No masking with 0xFF should be necessary.
+    return (x>>8) | (x<<8);
+}
+
+// Swapping 32bit.
+static inline unsigned long LONG( unsigned long x)
+{
+    return
+	(x>>24)
+	| ((x>>8) & 0xff00)
+	| ((x<<8) & 0xff0000)
+	| (x<<24);
+}
 #else
 #define SHORT(x)	(x)
 #define LONG(x)         (x)

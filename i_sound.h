@@ -24,7 +24,7 @@
 #define __I_SOUND__
 
 #include "dm_defs.h"
-#include "i_alleg.h"
+#include <allegro.h>
 
 #include <stdio.h>
 

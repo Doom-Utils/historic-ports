@@ -1,5 +1,76 @@
 Erik Sandberg's Log
 
+1999/03/30
+
+Finally added a proper system to change the FOV. The zoom key (default tilde)
+toggles between normal fov and zoomed fov, both of these are configurable in
+the menu.
+
+1999/03/28
+
+Enabled the enter key on the numeric keypad.
+
+-debugfile can now be followed by the name of the output file. If no name is
+given it will be debug<d>.txt, where <d> is the lowest integer that doesn't
+result in a name conflict.
+
+Fixed some bugs that made low resolutions like 80x80 impossible.
+
+Made -fast_startup the default setting, pass -slow_startup instead for the
+slower startup. The slowdown that -fast_startup results in is not even
+possible to measure.
+
+Wrote BLF versions of 8- and 16-bit R_DrawColumn routines.
+
+1999/03/21
+
+Cleaned up mlook, and finished all the FOV code.
+
+There is no good fov interface yet, but there will come one soon. There is
+support for weird asymmetric fovs, but currently the player view will only
+use a normal fov type.
+
+Variables:
+FIELDOFVIEW is back (I removed a week ago). It shows the x fov.
+aspect_ratio shows the normal texel w/h ratio on the monitor (ie 5/8).
+top/bottom/left/rightangle show the angles of the edges of the screen.
+0 is straight forward (focus), negative is down/right and positive is up/left
+top/bottom/left/rightslope show the slopes of the edges of the screen. These
+are the variables that actually are used. slope = tan(angle).
+
+1999/03/20
+
+Asymmetric X FOV, including cleanup. Added leftangle and rightangle.
+Fixed mlook, so that any fractional mlook angles work (prepares for
+asymmetric Y FOV)
+
+Change in *ALL* DrawColumn routines: Frac calculation now works in a different
+way: Previously, the initial frac was calculated as
+(dc_texturemid + (dc_yl-centery)*dc_iscale). Now centery*dc_iscale is
+subtracted from dc_texturemid before the call, so the frac is instead
+calculated as (dc_texturemid + dc_yl*dc_iscale). This change was necessary to
+make mlook steps smaller than 1 pixel possible.
+
+1999/03/14
+
+Continued the FIELDOFVIEW improvements: Replaced FIELDOFVIEW variable by
+X_FOV and Y_FOV. These can be changed dynamically. Boosted up the maximal
+X FOV from 127 to 176 degrees (Bigger FOVs would result in texture
+scale overwrapping).
+
+1999/03/07
+
+Made FIELDOFVIEW dynamic, fixed the aspect ratio problem in weird gfx modes
+
+1999/02/12
+
+Improved the 8-bit translucency. Four bits more precision, but mariginally
+slower (1 more assembler instruction required per pixel)
+
+1999/02/12
+
+Improved & optimised the R_DrawColumn16_BLF routine, and made an 8-bit version
+
 1998/12/18
 
 Made 8-bit versions of Kester's R_DrawSpan16_KM and R_DrawColumn16_KM.

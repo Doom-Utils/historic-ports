@@ -86,12 +86,14 @@ void T_MoveSector (secMove_t* sec)
 	{
             S_StartSound((mobj_t *)&sec->sector->soundorg, sec->type->sfxstop);
             sec->speed = sec->type->speed_up;
-            sec->sector->special = sec->newspecial;
+            if (sec->newspecial != -1)
+              sec->sector->special = sec->newspecial;
             SECPIC(sec->sector, sec->floorOrCeiling, sec->texture);
 
             switch(sec->type->type)
 	    {
 	      case mov_Continuous:
+              case mov_Plat:
 		sec->direction = 0;
                 sec->waited = sec->type->wait;
                 sec->speed = sec->type->speed_up;
@@ -191,11 +193,13 @@ void T_MoveSector (secMove_t* sec)
             S_StartSound((mobj_t *)&sec->sector->soundorg,
                          sec->type->sfxstop);
 
-            sec->sector->special = sec->newspecial;
+            if (sec->newspecial != -1)
+              sec->sector->special = sec->newspecial;
             SECPIC(sec->sector, sec->floorOrCeiling, sec->texture);
 
             switch(sec->type->type)
 	    {
+              case mov_Plat:
               case mov_Continuous:
 		sec->direction = 0;
                 sec->waited = sec->type->wait;
@@ -266,7 +270,7 @@ void T_MoveSector (secMove_t* sec)
 
 }
 
-static sector_t* P_GetSectorSurrounding(sector_t* sec, int dest, boolean forc)
+static sector_t* P_GSS(sector_t* sec, int dest, boolean forc)
 {
   int i;
   int secnum = sec - sectors;
@@ -299,7 +303,37 @@ static sector_t* P_GetSectorSurrounding(sector_t* sec, int dest, boolean forc)
       }
     }
   }
+
+  for (i=sec->linecount; i--;)
+  {
+    if (twoSided(secnum, i))
+    {
+      if (getSide(secnum,i,0)->sector-sectors == secnum)
+      {
+        sector = getSector(secnum,i,1);
+      }
+      else
+      {
+        sector = getSector(secnum,i,0);
+      }
+      if (sector->validcount != validcount)
+      {
+        sector->validcount = validcount;
+        sector = P_GSS(sector, dest, forc);
+        if (sector)
+          return sector;
+      }
+    }
+  }
+
   return NULL;
+}
+
+static sector_t* P_GetSectorSurrounding(sector_t* sec, int dest, boolean forc)
+{
+  validcount ++;
+  sec->validcount = validcount;
+  return P_GSS(sec, dest, forc);
 }
 
 //
@@ -329,6 +363,9 @@ static secMove_t* P_SetupSectorAction(sector_t* sector, movinPlane_t* type, sect
 
   dest = DDF_GetSecHeightReference(type->destref, sector);
   dest += type->dest;
+
+  if (type->type == mov_Plat)
+    start = DDF_GetSecHeightReference(ref_HighestSurroundingFloor, sector);
 
   //--------------------------------------------------------------------------
   // Floor Speed Notes:
@@ -379,7 +416,7 @@ static secMove_t* P_SetupSectorAction(sector_t* sector, movinPlane_t* type, sect
   sec->tag = sector->tag;
   sec->type = type;
   sec->texture = SECPIC(sector, type->floorOrCeiling, -1);
-  sec->newspecial = sector->special;
+  sec->newspecial = -1;
   sec->wait = type->wait;
   sec->floorOrCeiling = type->floorOrCeiling;
 
@@ -395,18 +432,25 @@ static secMove_t* P_SetupSectorAction(sector_t* sector, movinPlane_t* type, sect
     if (sec->direction == (type->floorOrCeiling ? -1 : 1))
     {
       SECPIC(sector, type->floorOrCeiling, sec->texture);
+      if (sec->newspecial != -1)
+        sector->special = sec->newspecial;
     }
   }
   else if (type->tex[0] == '+')
   {
-    sec->texture = SECPIC(model, type->floorOrCeiling, -1);
-    sec->newspecial = model->special;
-    if (sec->direction == (type->floorOrCeiling ? -1 : 1))
+    if (SECPIC(model, type->floorOrCeiling, -1) == SECPIC(sector, type->floorOrCeiling, -1))
+      model = P_GetSectorSurrounding(model, sec->destheight, type->floorOrCeiling);
+    if (model)
     {
-      SECPIC(sector, type->floorOrCeiling, sec->texture);
+      sec->texture = SECPIC(model, type->floorOrCeiling, -1);
+      sec->newspecial = model->special;
+      if (sec->direction == (type->floorOrCeiling ? -1 : 1))
+      {
+        SECPIC(sector, type->floorOrCeiling, sec->texture);
+      }
     }
   }
-  else if (type->tex[0] != NULL)
+  else if (type->tex[0])
   {
     sec->texture = R_FlatNumForName(type->tex);
   }
@@ -440,6 +484,7 @@ static secMove_t* P_SetupSectorAction(sector_t* sector, movinPlane_t* type, sect
 //
 // -ES- 1998/11/28 Changed Kester's code a bit :-) Teleport method can now be
 //  toggled in the menu. (That is the way it should be. -KM)
+// -KM- 1999/01/31 Search only the target sector, not the entire map.
 //
 void R_StartFading(int,int);
 int faded_teleportation;
@@ -450,7 +495,6 @@ boolean EV_Teleport (line_t* line, int side, mobj_t* thing, int delay,
   int tag;
   angle_t an;
   mobj_t* currmobj;
-  sector_t* sector;
   fixed_t oldx;
   fixed_t oldy;
   fixed_t oldz;
@@ -466,23 +510,14 @@ boolean EV_Teleport (line_t* line, int side, mobj_t* thing, int delay,
   {
     if (sectors[i].tag == tag)
     {
-      currmobj = mobjlisthead;
+      currmobj = sectors[i].thinglist;
 
-      while (currmobj != NULL)
+      while (currmobj)
       {
         // not a teleportman
-        if (currmobj->info != specials[MOBJ_TELEPOS])
+        if (currmobj->info != outeffectobj)
         {
-          currmobj = currmobj->next;
-          continue;
-        }
-
-        sector = currmobj->subsector->sector;
-
-	// wrong sector
-        if (sector-sectors != i)
-        {
-          currmobj = currmobj->next;
+          currmobj = currmobj->snext;
           continue;
         }
 
@@ -501,7 +536,8 @@ boolean EV_Teleport (line_t* line, int side, mobj_t* thing, int delay,
           thing->player->viewz = thing->z+thing->player->viewheight;
 				
 	// spawn teleport fog at source and destination
-        P_MobjCreateObject(oldx, oldy, oldz, ineffectobj);
+        fog = P_MobjCreateObject(oldx, oldy, oldz, ineffectobj);
+        P_SetMobjState(fog, fog->info->seestate);
 
         an=currmobj->angle >> ANGLETOFINESHIFT;
 
@@ -513,6 +549,9 @@ boolean EV_Teleport (line_t* line, int side, mobj_t* thing, int delay,
         fog = P_MobjCreateObject (currmobj->x+20*finecosine[an],
                                   currmobj->y+20*finesine[an],
                                      currmobj->z, outeffectobj);
+
+        P_SetMobjState(fog, fog->info->seestate);
+
         if (thing->player && faded_teleportation == 2)
           fog->deltainvis = fog->invisibility = INVISIBLE;
 
@@ -521,7 +560,7 @@ boolean EV_Teleport (line_t* line, int side, mobj_t* thing, int delay,
         {
           thing->reactiontime = delay;
           // -ES- 1998/10/29 Start the fading
-          if (faded_teleportation)
+          if (faded_teleportation && thing->player == &players[displayplayer])
             R_StartFading(0,(delay*5)/2);
           thing->momx = thing->momy = thing->momz = 0;
         }
@@ -637,6 +676,7 @@ boolean EV_DoSector (sector_t* sec, movinPlane_t* type, sector_t* model)
   // Activate all <type> plats that are in_stasis
   switch(type->type)
   {
+    case mov_Plat:
     case mov_Continuous:
       if (P_ActivateInStasis(sec->tag))
         return true;
@@ -819,7 +859,6 @@ T_MovePlane
 		{
 		    sector->floorheight =lastpos;
 		    P_ChangeSector(sector,crush);
-		    //return crushed;
 		}
 		return pastdest;
 	    }
@@ -1099,6 +1138,7 @@ boolean EV_DoDonut (sector_t* s1, sfx_t* sfx[4])
       {
         sec->destheight = s3->floorheight;
         s2->floorpic = sec->texture = s3->floorpic;
+        s2->special = s3->special;
       }
       
       //	Spawn lowering donut-hole

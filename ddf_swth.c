@@ -14,7 +14,6 @@
 #include "p_spec.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -70,6 +69,7 @@ void DDF_ReadSW(void *data, int size)
     switches.message = NULL;
     switches.memfile = data;
     switches.memsize = size;
+    switches.filename = NULL;
   }
   switches.DDF_MainCheckName     = DDF_DummyFunction; // no need to check name
   switches.DDF_MainCheckCmd      = DDF_MainCheckCommand;

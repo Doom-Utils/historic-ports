@@ -34,7 +34,6 @@
 //
 // -ES- 1998/11/28 Added faded teleportation option
 //
-//
 
 #include <ctype.h>
 #include <stdio.h>
@@ -42,6 +41,7 @@
 
 #include "dm_state.h"
 
+#include "d_debug.h"
 #include "g_game.h"
 #include "hu_stuff.h"
 #include "i_video.h"
@@ -87,15 +87,21 @@ static void M_ChangeItemRespawn(void);
 static void M_ChangeStretchSky(void);
 static void M_ChangeTransluc(void);
 static void M_ChangeTrue3d(void);
+static void M_ChangeAutoAim(void);
 static void M_ChangeFastparm(void);
 static void M_ChangeRespawn(void);
 
 //Special function declarations
+int menunormalfov,menuzoomedfov;
 int screenSize;
 static void M_ChangeScreenSize() {R_SetViewSize(screenSize+3,0);}
 static void M_ChangeSfxVol()     {S_SetSfxVolume(snd_SfxVolume);}
 static void M_ChangeMusVol()     {S_SetMusicVolume(snd_MusicVolume);}
 static void M_ChangeCDMusVol()   {S_SetCDMusicVolume(snd_CDMusicVolume);}
+
+static void M_ChangeNormalFOV()  {R_SetNormalFOV((ANG45/9)*(menunormalfov+1));}
+static void M_ChangeZoomedFOV()  {R_SetZoomedFOV((ANG45/9)*(menuzoomedfov+1));}
+
 static void M_SetCDAudio(void);
 
 static void M_ChangeBlood(void);
@@ -139,6 +145,7 @@ static char Colours[]="8 bit/16 bit";
 // -ES- 1998/11/28 Wipe and Faded teleportation options
 static char FadeT[]="Off/On, w flash/On, wo flash";
 static char WipeM[]="Fade/Melt";
+static char AAim[]="Off/On/Mlook";
 
 typedef struct menuinfo_s
 {
@@ -176,10 +183,10 @@ typedef struct
   int width;
   int height;
 }
-scrres_t;
+screenmode_t;
 
 // -KM- 1998/11/25 Removed extreme aspect modes.
-scrres_t screenres[] = {
+screenmode_t screenres[] = {
    { 320,   200}, //0.625
    { 320,   240}, //0.75
    { 360,   200}, //0.5555555
@@ -195,9 +202,10 @@ scrres_t screenres[] = {
    { 800,   600}, //0.75
    { 1024,  768}, //0.75
    { 1280,  1024},//0.8
-   { 1600,  1200},//0.75
-   {  -1,    -1}
+   { 1600,  1200}, //0.75
+   { -1, -1}
 };
+
 
 #define mainmenusize 17
 
@@ -222,16 +230,20 @@ optmenuitem_t mainmenu[mainmenusize]=
   {2,"Reset to Recommended",    NULL, 0, 0, 0, NULL,M_ResetToDefaults, "ResetDOSDoom"},
   {2,"Reset to Original Doom",  NULL, 0, 0, 0, NULL,M_ResetToOrigDoom, "ResetDoom"}};
 
-#define vidoptionssize 15
+#define vidoptionssize 18
 
 // -ACB- 1998/07/15 Altered menu structure
 menuinfo_t vidoptionsinfo={vidoptionssize,150,77,"M_VIDEO"};
 
+// -ES- 1999/03/29 New fov stuff
 optmenuitem_t vidoptions[vidoptionssize]=
  {{2,"Set Resolution",          NULL, 0, 0, 0, NULL,M_ResolutionOptions, "ChangeRes"},
   {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
   {3,"Screensize",              NULL, 9, 7, 7, &screenSize,M_ChangeScreenSize,NULL},
   {3,"Brightness",              NULL, 5, 0, 0, &usegamma,M_ChangeGamma,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {3,"Field Of View",           NULL, 35, 17, 17, &menunormalfov,M_ChangeNormalFOV,NULL},
+  {3,"Zoomed Field of View",    NULL, 35, 1, 1, &menuzoomedfov,M_ChangeZoomedFOV,NULL},
   {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
   {1,"Translucency",            YesNo,2, 1, 0, (int *) &settingflags.trans,M_ChangeTransluc,NULL},
   {1,"Faded teleportation",     FadeT,3, 2, 0, &faded_teleportation,NULL,NULL},
@@ -284,7 +296,7 @@ optmenuitem_t analogueoptions[analogueoptionssize]=
   {1,"Joystick Y Axis",         Axis, 6, AXIS_FORWARD, AXIS_FORWARD, &joy_yaxis, NULL,NULL},
   {2,"Calibrate Joystick",      NULL, 0, 0, 0, NULL, M_CalibrateJoystick,NULL}};
   
-#define playoptionssize 9
+#define playoptionssize 10
 
 // -ACB- 1998/07/15 Altered menu structure
 menuinfo_t playoptionsinfo={playoptionssize,160,46,"M_GAMEPL"};
@@ -292,21 +304,15 @@ menuinfo_t playoptionsinfo={playoptionssize,160,46,"M_GAMEPL"};
 // -KM- 1998/07/21 Change blood to switch
 optmenuitem_t playoptions[playoptionssize]=
  {{3,"Gravity",                 NULL, 20,8, 8, &settingflags.grav,NULL,"Gravity"},
-  {1,"Blood",			YesNo,2 ,0, 0, (int *) &settingflags.blood, M_ChangeBlood,"Blood"},
+  {1,"Blood",                   YesNo,2 ,0, 0, (int *) &settingflags.blood, M_ChangeBlood,"Blood"},
   {1,"True 3D Gameplay",        YesNo,2, 1, 0, (int *) &settingflags.true3dgameplay, M_ChangeTrue3d,"True3d"},
+  {1,"AutoAiming",              AAim, 3, 1, 1, (int *) &settingflags.autoaim, M_ChangeAutoAim, NULL},
   {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
   {1,"Enemy Respawn Mode",      Respw,2, 1, 0, (int *) &settingflags.respawnsetting,M_ChangeMonsterRespawn,NULL},
-/*  {1,"Enemy Infighting",        Infig,3, 0, 0, &infight,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
-  {1,"Monster Targeting",       ImPer,2, 0, 0, &lessaccuratemon,NULL},
-  {1,"Zombie Targeting",        ImPer,2, 1, 1, &lessaccuratezom,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},            */
   {1,"Item Respawn",            YesNo,2, 0, 0, (int *) &settingflags.itemrespawn,M_ChangeItemRespawn,NULL},
   {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
   {1,"Fast Monsters",           YesNo,2, 0, 0, (int *) &settingflags.fastparm,M_ChangeFastparm,NULL},
   {1,"Respawn",                 YesNo,2, 0, 0, (int *) &settingflags.respawn,M_ChangeRespawn,NULL}
-//  {1,"Teleport Missiles",       MTele,3, 0, 0, &missileteleport,NULL},
-//  {1,"Teleport Delay",          TelDl,3, 0, 0, &teleportdelay,NULL}
 };
   
 #define stdkeyconfigsize 15
@@ -332,9 +338,10 @@ optmenuitem_t stdkeyconfig[stdkeyconfigsize]=
   {4,"Strafe Right",            NULL, 0, '.', 0, &key_straferight,NULL,NULL},
   {4,"Strafe",                  NULL, 0, KEYD_RALT, 0, &key_strafe,NULL,NULL}};
 
-#define extkeyconfigsize 9
+#define extkeyconfigsize 10
 
 // -ACB- 1998/07/15 Altered menuinfo struct
+// -ES- 1999/03/28 Added Zoom Key
 menuinfo_t extkeyconfiginfo={extkeyconfigsize,110,98,"M_CONTRL"};
 
 optmenuitem_t extkeyconfig[extkeyconfigsize]=
@@ -343,6 +350,7 @@ optmenuitem_t extkeyconfig[extkeyconfigsize]=
   {4,"Look Up",                 NULL, 0, KEYD_PGUP, 0, &key_lookup,NULL,NULL},
   {4,"Look Down",               NULL, 0, KEYD_PGDN, 0, &key_lookdown,NULL,NULL},
   {4,"Center View",             NULL, 0, KEYD_HOME, 0, &key_lookcenter,NULL,NULL},
+  {4,"Zoom in/out",             NULL, 0, KEYD_TILDE,  0, &key_zoom,NULL,NULL},
   {4,"180 degree turn",         NULL, 0, 0, 0, &key_180,NULL,NULL},
   {4,"Jump",                    NULL, 0, 0, 0, &key_jump,NULL,NULL},
   {4,"Map Toggle",              NULL, 0, KEYD_TAB,0,&key_map,NULL,NULL},
@@ -385,24 +393,10 @@ specialkey_t specialkeylist[]= //terminate on -1
   {KEYD_END,        "End"},
   {32,              "Space"},
   {'\'',            "\'"},
-  {'`',             "Tilde"},
+  {KEYD_TILDE,             "Tilde"},
   {KEYD_MOUSE1,     "Mouse1"},
   {KEYD_MOUSE2,     "Mouse2"},
   {KEYD_MOUSE3,     "Mouse3"},
-  {KEYD_JOY1,       "Joystick1"},
-  {KEYD_JOY2,       "Joystick2"},
-  {KEYD_JOY3,       "Joystick3"},
-  {KEYD_JOY4,       "Joystick4"},
-  {KEYD_JOY5,       "Joystick5"},
-  {KEYD_JOY6,       "Joystick6"},
-  {KEYD_JOY7,       "Joystick7"},
-  {KEYD_JOY8,       "Joystick8"},
-
-  // -KM- 1998/09/01 Joystick Hat support
-  {KEYD_HATW,       "Hat Left"},
-  {KEYD_HATS,       "Hat Down"},
-  {KEYD_HATE,       "Hat Right"},
-  {KEYD_HATN,       "Hat Up"},
   {-1,              ""}};
 
 optmenuitem_t* currmenu;
@@ -547,84 +541,86 @@ void M_OptDrawer()
 
 boolean M_OptResponder (event_t *ev, int ch)
 {
+  // Scan for keycodes
   if (keyscan)
   {
     if (ev->type==ev_keydown)
-      {
+    {
       int* blah;
       keyscan=0;
 
       blah=(currmenu[cursorpos].switchvar);
       if (((*blah)>>16)==ev->data1)
-        {
+      {
         (*blah)&=0xffff;
         return true;
-        }
+      }
       if (((*blah)&0xffff)==ev->data1)
-        {
+      {
         (*blah)>>=16;
         return true;
-        }
+      }
 
       if (((*blah)&0xffff)==0)
         *blah=ev->data1;
       else if (((*blah)>>16)==0)
         *blah|=ev->data1<<16;
       else
-        {
+      {
         *blah>>=16;
         *blah|=ev->data1<<16;
-        }
-      return true;
       }
+      return true;
+    }
     else
       return false;
-    }
+  }
+
   switch (ch)
-    {
+  {
+/*    case KEYD_F1:
+      if (!devparm)
+        break;
     case KEYD_PRTSCR: // -ACB- 1998/07/10 Allow printing screen in text menu
       G_ScreenShot();
       return true;
-    case KEYD_F1:
-      if (devparm)
-      {
-       G_ScreenShot();
-       return true;
-      }
+*/
     case KEYD_BACKSPACE:
       if (currmenu[cursorpos].type==4)
         *(currmenu[cursorpos].switchvar)=0;
       return true;
     case KEYD_DOWNARROW:
-      do{
+      do
+      {
         cursorpos++;
         if (cursorpos>=(currmenuinfo->menusize))
           cursorpos=0;
-        } while (currmenu[cursorpos].type==0);
+      } while (currmenu[cursorpos].type==0);
       S_StartSound(NULL, sfx_pstop);
       return true;
     case KEYD_UPARROW:
-      do{
+      do
+      {
         cursorpos--;
         if (cursorpos<0)
           cursorpos=(currmenuinfo->menusize)-1;
-        } while (currmenu[cursorpos].type==0);
+      } while (currmenu[cursorpos].type==0);
       S_StartSound(NULL, sfx_pstop);
       return true;
     case KEYD_LEFTARROW:
       if (currmenu[cursorpos].type==3)
-        {
+      {
         if ((*(currmenu[cursorpos].switchvar))>0)
-          {
+        {
           (*(currmenu[cursorpos].switchvar))--;
           S_StartSound(NULL,sfx_stnmov);
-          }
+        }
         if (currmenu[cursorpos].routine!=NULL)
           currmenu[cursorpos].routine();
         return true;
-        }
+      }
       else if (currmenu[cursorpos].type==1)
-        {
+      {
         (*(currmenu[cursorpos].switchvar))--;
         if ((*(currmenu[cursorpos].switchvar))<0)
           (*(currmenu[cursorpos].switchvar))=currmenu[cursorpos].numtypes-1;
@@ -632,12 +628,12 @@ boolean M_OptResponder (event_t *ev, int ch)
         if (currmenu[cursorpos].routine!=NULL)
           currmenu[cursorpos].routine();
         return true;
-        }
+      }
       break;
     case KEYD_RIGHTARROW:
     case KEYD_ENTER:
       switch (currmenu[cursorpos].type)
-        {
+      {
         case 0:
           return false;
         case 1:
@@ -655,17 +651,17 @@ boolean M_OptResponder (event_t *ev, int ch)
           return true;
         case 3:
           if ((*(currmenu[cursorpos].switchvar))<(currmenu[cursorpos].numtypes-1))
-            {
+          {
             (*(currmenu[cursorpos].switchvar))++;
             S_StartSound(NULL,sfx_stnmov);
-            }
+          }
           if (currmenu[cursorpos].routine!=NULL)
             currmenu[cursorpos].routine();
           return true;
         case 4:
           keyscan=1;
           return true;
-        }
+      }
       I_Error("Invalid menu type!");
     case KEYD_ESCAPE:
       if (currmenu==mainmenu)
@@ -678,9 +674,9 @@ boolean M_OptResponder (event_t *ev, int ch)
       }
       S_StartSound(NULL,sfx_swtchx);
       return true;
-    }
-  return false;
   }
+  return false;
+}
 
 static void M_VideoOptions()
 {
@@ -840,13 +836,16 @@ static void M_Key2String(int key, char *deststring)
 
   //first do key 1
   if ((toupper(key1)>=',')&&(toupper(key1)<=']'))
-    {
+  {
     deststring[0]=toupper(key1);
     deststring[1]=0;
-    }
+  }
   else
-    {
-    sprintf (deststring,"Keycode %d",key1);
+  {
+    if (key1 >= KEYD_JOYBASE)
+      sprintf (deststring, "Joystick %d", key1 - KEYD_JOYBASE + 1);
+    else
+      sprintf (deststring,"Keycode %d",key1);
     j=0; while (specialkeylist[j].keycode!=-1)
       {
       if (specialkeylist[j].keycode==key1)
@@ -863,13 +862,16 @@ static void M_Key2String(int key, char *deststring)
 
   //now, do key 2
   if ((toupper(key2)>=',')&&(toupper(key2)<=']'))
-    {
+  {
     key2string[0]=toupper(key2);
     key2string[1]=0;
-    }
+  }
   else
-    {
-    sprintf (key2string,"Keycode %d",key2);
+  {
+    if (key2 >= KEYD_JOYBASE)
+      sprintf (key2string, "Joystick %d", key2 - KEYD_JOYBASE + 1);
+    else
+      sprintf (key2string,"Keycode %d",key2);
     j=0; while (specialkeylist[j].keycode!=-1)
       {
       if (specialkeylist[j].keycode==key2)
@@ -928,6 +930,12 @@ static void M_ChangeTrue3d(void)
 {
   if (!(currentmap->flags & MPF_NOTRUE3D))
     gameflags.true3dgameplay = settingflags.true3dgameplay;
+}
+
+static void M_ChangeAutoAim(void)
+{
+  if (!(currentmap->flags & MPF_AUTOAIMOFF))
+    gameflags.autoaim = settingflags.autoaim;
 }
 
 static void M_ChangeRespawn(void)
@@ -992,6 +1000,6 @@ static void M_SetCDAudio(void)
  }
  oldcdaudio = cdaudio;
 
-  I_StartCDAudio();
+ I_StartCDAudio();
 }
 

@@ -5,7 +5,7 @@
 
 #include "dm_type.h"
 #ifndef NOMP3
-#include "mus_lib1.h"
+#include "mus_lmp3.h"
 #endif
 struct MP3_handle_t {
   int numplayers;
@@ -29,7 +29,7 @@ void MP3_ResumeSong(void);
 
 // Places the song in the internal database, inits its paramaters and
 // returns a handle to control the song later
-struct MP3_handle_t *MP3_RegisterSong(void *data);
+struct MP3_handle_t *MP3_RegisterSong(char *data);
 
 // like the > button on ya stereo
 // if looping is nonzero, will play forever

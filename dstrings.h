@@ -35,6 +35,10 @@
 #define DEVMAPS "devmaps"
 #define DEVDATA "devdata"
 
-extern char* endmsg[];
+//extern char* endmsg[];
+extern char* chat_macros[10];
+//extern char destination_keys[MAXPLAYERS+1];
+extern char* destination_keys;
+extern char* gammamsg[5];
 
 #endif

@@ -2,9 +2,8 @@
 #ifndef __MOD_MUSIC__
 #define __MOD_MUSIC__
 
-#include "i_alleg.h"
 #ifndef NOMOD
-#include "mus_lib2.h"
+#include "mus_lmod.h"
 #else
 #define JGMOD void
 #endif

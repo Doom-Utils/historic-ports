@@ -42,7 +42,7 @@
 #include "misc2.h"
 
 #define TRANSFORM
-#include "transform.h"
+#include "transfor.h"
 
 #define PI12      0.261799387f
 #define PI36      0.087266462f

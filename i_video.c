@@ -11,12 +11,12 @@
 //
 
 #include <stdlib.h>
+#include <allegro.h>
 
 #include "d_debug.h"
 #include "dm_defs.h"
 #include "dm_state.h"
 #include "i_system.h"
-#include "i_alleg.h"
 #include "i_allegv.h"
 #include "v_res.h"
 #include "m_argv.h"
@@ -106,32 +106,32 @@ void I_UpdateNoBlit (void)
 
 void I_FinishUpdate(void)
   {
-    static int	lasttic;
-    int		tics;
-    int		i;
+    static int  lasttic;
+    int         tics;
+    int         i;
     // UNUSED static unsigned char *bigscreen=0;
 
     // draws little dots on the bottom of the screen
     if (devparm)
     {
 
-	i = I_GetTime();
-	tics = i - lasttic;
-	lasttic = i;
-	if (tics > 20) tics = 20;
+        i = I_GetTime();
+        tics = i - lasttic;
+        lasttic = i;
+        if (tics > 20) tics = 20;
 
        // -ACB- 1998/06/18 used SCREENDEPTH to replace j (SCREENWIDTH*BPP)
        for (i=0 ; i<tics*2 ; i+=2)
        {
-	    screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)] = 0xff;
+            screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)] = 0xff;
        if (BPP==2)
-	      screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)+1] = 0xff;
+              screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)+1] = 0xff;
        }
-	for ( ; i<35*2 ; i+=2)
+        for ( ; i<35*2 ; i+=2)
        {
-	    screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)] = 0x0;
+            screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)] = 0x0;
        if (BPP==2)
-	      screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)+1] = 0x0;
+              screens[0][ ((SCREENHEIGHT-1)*SCREENDEPTH + i*BPP)+1] = 0x0;
        }
     }
 
@@ -154,11 +154,11 @@ static BITMAP*
 GetDisk(void)
 {
  patch_t*       patch;
- int		count;
- int		col;
- column_t*	column;
- byte*		source;
- int		w;
+ int            count;
+ int            col;
+ column_t*      column;
+ byte*          source;
+ int            w;
  int            y;
  patch = W_CacheLumpName("STDISK", PU_STATIC);
  the_disk = create_bitmap(patch->width, patch->height);
@@ -169,25 +169,25 @@ GetDisk(void)
 
  for (col = 0; col<w ; col++)
  {
-	column = (column_t *)((byte *)patch + patch->columnofs[col]);
+        column = (column_t *)((byte *)patch + patch->columnofs[col]);
  
-	// step through the posts in a column 
-	while	(column->topdelta	!=	0xff ) 
-	{ 
-		 source = (byte *)column + 3;
+        // step through the posts in a column 
+        while   (column->topdelta       !=      0xff ) 
+        { 
+                 source = (byte *)column + 3;
                  y = column->topdelta;
-		 count  = column->length;
-			 
-		 while (count--) 
-		 {	
+                 count  = column->length;
+                         
+                 while (count--) 
+                 {      
                   if (BPP == 2)
                     putpixel(the_disk, col, y, palette_color[*source++]);
                   else
                     putpixel(the_disk, col, y, *source++);
                   y++;
-		 }	
-		 column = (column_t *)((byte *)column +	column->length + 4);
-	} 
+                 }      
+                 column = (column_t *)((byte *)column + column->length + 4);
+        } 
    }
   Z_ChangeTag(patch, PU_CACHE);
   return the_disk;
@@ -381,49 +381,49 @@ void dosdoom_create_rgb_table(RGB_MAP *table, PALLETE pal, void (*callback)(int 
 
    /* macro add adds to single linked list */
    #define add(i)    (next[(i)] == UNUSED ? (next[(i)] = LAST, \
-		     (first != LAST ? (next[last] = (i)) : (first = (i))), \
-		     (last = (i))) : 0)
+                     (first != LAST ? (next[last] = (i)) : (first = (i))), \
+                     (last = (i))) : 0)
 
    /* same but w/o checking for first element */
    #define add1(i)   (next[(i)] == UNUSED ? (next[(i)] = LAST, \
-		     next[last] = (i), \
-		     (last = (i))) : 0)
+                     next[last] = (i), \
+                     (last = (i))) : 0)
 
    /* calculates distance between two colors */
    #define dist(a1, a2, a3, b1, b2, b3) \
-		     (col_diff[ ((a2) - (b2)) & 0x7F] + \
-		     (col_diff + 128)[((a1) - (b1)) & 0x7F] + \
-		     (col_diff + 256)[((a3) - (b3)) & 0x7F])
+                     (col_diff[ ((a2) - (b2)) & 0x7F] + \
+                     (col_diff + 128)[((a1) - (b1)) & 0x7F] + \
+                     (col_diff + 256)[((a3) - (b3)) & 0x7F])
 
    /* converts r,g,b to position in array and back */
    #define pos(r, g, b) \
-		     (((r) / 2) * 32 * 32 + ((g) / 2) * 32 + ((b) / 2))
+                     (((r) / 2) * 32 * 32 + ((g) / 2) * 32 + ((b) / 2))
 
    #define depos(pal, r, g, b) \
-		     ((b) = ((pal) & 31) * 2, \
-		      (g) = (((pal) >> 5) & 31) * 2, \
-		      (r) = (((pal) >> 10) & 31) * 2)
+                     ((b) = ((pal) & 31) * 2, \
+                      (g) = (((pal) >> 5) & 31) * 2, \
+                      (r) = (((pal) >> 10) & 31) * 2)
 
    /* is current color better than pal1? */
    #define better(r1, g1, b1, pal1) \
-		     (((int)dist((r1), (g1), (b1), \
-				 (pal1).r, (pal1).g, (pal1).b)) > (int)dist2)
+                     (((int)dist((r1), (g1), (b1), \
+                                 (pal1).r, (pal1).g, (pal1).b)) > (int)dist2)
 
    /* checking of possition */
    #define dopos(rp, gp, bp, ts) \
       if ((rp > -1 || r > 0) && (rp < 1 || r < 61) && \
-	  (gp > -1 || g > 0) && (gp < 1 || g < 61) && \
-	  (bp > -1 || b > 0) && (bp < 1 || b < 61)) { \
-	 i = first + rp * 32 * 32 + gp * 32 + bp; \
-	 if (ts ? data[i] != val : !data[i]) { \
-	    dist2 = (rp ? (col_diff+128)[(r+2*rp-pal[val].r) & 0x7F] : r2) + \
-		    (gp ? (col_diff)[(g+2*gp-pal[val].g) & 0x7F] : g2) + \
-		    (bp ? (col_diff+256)[(b+2*bp-pal[val].b) & 0x7F] : b2); \
-	    if (better((r+2*rp), (g+2*gp), (b+2*bp), pal[data[i]])) { \
-	       data[i] = val; \
-	       add1 (i); \
-	    } \
-	 } \
+          (gp > -1 || g > 0) && (gp < 1 || g < 61) && \
+          (bp > -1 || b > 0) && (bp < 1 || b < 61)) { \
+         i = first + rp * 32 * 32 + gp * 32 + bp; \
+         if (ts ? data[i] != val : !data[i]) { \
+            dist2 = (rp ? (col_diff+128)[(r+2*rp-pal[val].r) & 0x7F] : r2) + \
+                    (gp ? (col_diff)[(g+2*gp-pal[val].g) & 0x7F] : g2) + \
+                    (bp ? (col_diff+256)[(b+2*bp-pal[val].b) & 0x7F] : b2); \
+            if (better((r+2*rp), (g+2*gp), (b+2*bp), pal[data[i]])) { \
+               data[i] = val; \
+               add1 (i); \
+            } \
+         } \
       }
 
    int i, curr, r, g, b, val, r2, g2, b2, dist2;
@@ -450,8 +450,8 @@ void dosdoom_create_rgb_table(RGB_MAP *table, PALLETE pal, void (*callback)(int 
    for (i=0; i<256; i++) {
       curr = pos(pal[i].r, pal[i].g, pal[i].b);
       if (next[curr] == UNUSED) {
-	 data[curr] = i;
-	 add(curr);
+         data[curr] = i;
+         add(curr);
       }
    }
 
@@ -475,16 +475,16 @@ void dosdoom_create_rgb_table(RGB_MAP *table, PALLETE pal, void (*callback)(int 
 
       /* faster growing of blue direction */
       if ((b > 0) && (data[first-1] == val)) { 
-	 b -= 2;
-	 first--;
-	 b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7F];
+         b -= 2;
+         first--;
+         b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7F];
 
-	 dopos(-1, 0, 0, 0);
-	 dopos( 1, 0, 0, 0);
-	 dopos( 0,-1, 0, 0);
-	 dopos( 0, 1, 0, 0);
+         dopos(-1, 0, 0, 0);
+         dopos( 1, 0, 0, 0);
+         dopos( 0,-1, 0, 0);
+         dopos( 0, 1, 0, 0);
 
-	 first++;
+         first++;
       }
 
       /* get next from list */
@@ -494,51 +494,51 @@ void dosdoom_create_rgb_table(RGB_MAP *table, PALLETE pal, void (*callback)(int 
 
       /* second version of loop */
       if (first != LAST) { 
-	 depos(first, r, g, b);
+         depos(first, r, g, b);
 
-	 val = data[first];
-	 r2 = (col_diff+128)[((pal[val].r)-(r)) & 0x7F];
-	 g2 = (col_diff    )[((pal[val].g)-(g)) & 0x7F];
-	 b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7F];
+         val = data[first];
+         r2 = (col_diff+128)[((pal[val].r)-(r)) & 0x7F];
+         g2 = (col_diff    )[((pal[val].g)-(g)) & 0x7F];
+         b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7F];
 
-	 dopos( 0, 0, 1, 1);
-	 dopos( 0, 0,-1, 1);
-	 dopos( 1, 0, 0, 1);
-	 dopos(-1, 0, 0, 1);
-	 dopos( 0, 1, 0, 1);
-	 dopos( 0,-1, 0, 1);
+         dopos( 0, 0, 1, 1);
+         dopos( 0, 0,-1, 1);
+         dopos( 1, 0, 0, 1);
+         dopos(-1, 0, 0, 1);
+         dopos( 0, 1, 0, 1);
+         dopos( 0,-1, 0, 1);
 
-	 if ((b < 61) && (data[first + 1] == val)) {
-	    b += 2;
-	    first++;
-	    b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7f];
+         if ((b < 61) && (data[first + 1] == val)) {
+            b += 2;
+            first++;
+            b2 = (col_diff+256)[((pal[val].b)-(b)) & 0x7f];
 
-	    dopos(-1, 0, 0, 0);
-	    dopos( 1, 0, 0, 0);
-	    dopos( 0,-1, 0, 0);
-	    dopos( 0, 1, 0, 0);
+            dopos(-1, 0, 0, 0);
+            dopos( 1, 0, 0, 0);
+            dopos( 0,-1, 0, 0);
+            dopos( 0, 1, 0, 0);
 
-	    first--;
-	 }
+            first--;
+         }
 
-	 i = first;
-	 first = next[first];
-	 next[i] = UNUSED;
+         i = first;
+         first = next[first];
+         next[i] = UNUSED;
       }
 
       count++;
       if (count == (cbcount+1)*AVERAGE_COUNT/256) {
-	 if (cbcount < 256) {
-	    if (callback)
-	       callback(cbcount);
-	    cbcount++;
-	 }
+         if (cbcount < 256) {
+            if (callback)
+               callback(cbcount);
+            cbcount++;
+         }
       }
    }
 
    if (callback)
       while (cbcount < 256)
-	 callback(cbcount++);
+         callback(cbcount++);
 }
 
 
@@ -574,7 +574,7 @@ void calctranslucencytable()
      for (g=0; g<32; g++)
        for (b=0; b<16; b++)
        {
-       	 rgb_8k[r][g][b] = rgb_table.data[r*2][g][b*2];
+         rgb_8k[r][g][b] = rgb_table.data[r*2][g][b*2];
        }
 
    /* Create the table */
@@ -604,13 +604,14 @@ void calctranslucencytable()
      callback_func(x);
      }
 #endif
+   // -ES- 1999/02/12 Changed col2rgb format
    for (x=0; x<65; x++)
    {
      for (y=0; y<256; y++)
      {
-       col2rgb8[x][y] = ((thepalette[y*3+0]*x>>5)<<9)  |
-                       ((thepalette[y*3+1]*x>>4)<<18) |
-                        (thepalette[y*3+2]*x>>5);
+       col2rgb8[x][y] = ((thepalette[y*3+0]*x>>5)<<11)  |
+                       ((thepalette[y*3+1]*x>>2)<<20) |
+                        (thepalette[y*3+2]*x>>3);
      }
    }
 

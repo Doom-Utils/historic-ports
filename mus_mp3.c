@@ -6,8 +6,8 @@
 // These routines provide MP3 Music to DOOM.
 //
 
+#include <allegro.h>
 #include "mus_mp3.h"
-#include "i_alleg.h"
 
 #include "dm_type.h"
 #include <stdlib.h>
@@ -69,13 +69,11 @@ void MP3_ResumeSong(void)
 
 // Places the song in the internal database, inits its paramaters and
 // returns a handle to control the song later
-struct MP3_handle_t *MP3_RegisterSong(void *data)
+struct MP3_handle_t *MP3_RegisterSong(char *data)
 {
 #ifndef NOMP3
-  char *tok;
   struct MP3_handle_t *rc;
   int i, num_mp3s;
-
 
   // Find the number of songs in the playlist, by cheating
   if (sscanf(data, "dosdoom_playlist %d", &num_mp3s) != 1)
@@ -87,11 +85,16 @@ struct MP3_handle_t *MP3_RegisterSong(void *data)
   // Pre init values
   rc->playing = 0;
   // Skip header
-  strtok(data, "\n");
+  while (*data++ != '\n');
+  if (*data == '\r')
+    data++;
   // Setup pointers to the file names
   for (i = 0; i < rc->numplayers; i++) {
-    tok = strtok(NULL, "\n\r");
-    rc->playlist[i] = tok;
+    rc->playlist[i] = data;
+    while (*data != '\n' && *data != '\r') data++;
+    *data++ = 0;
+    if (*data == '\r' || *data == '\n')
+      data++;
   }
 
   // Check that all the MP3's exist...
@@ -160,6 +163,7 @@ void MP3_UnRegisterSong(struct MP3_handle_t *handle)
 void MP3_Ticker(void)
 {
 #ifndef NOMP3
-  if (amp_decode() < 1) PlayNext(MP3_playing);
+  if (amp_decode() < 1)
+    PlayNext(MP3_playing);
 #endif
 }

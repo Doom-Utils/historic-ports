@@ -15,7 +15,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -57,6 +56,7 @@ commandlist_t weaponcommands[] =
   {"NOTHRUST"           , DDF_MainGetBoolean, &bufferweapon.nothrust},
   {"FEEDBACK"           , DDF_MainGetBoolean, &bufferweapon.feedback},
   {"KICK"               , DDF_MainGetFixed,   &bufferweapon.kick},
+  {"CLIPSIZE"           , DDF_MainGetNumeric, &bufferweapon.clip},
   {COMMAND_TERMINATOR   , NULL,                 NULL}};
 
 struct
@@ -172,15 +172,14 @@ static void DDF_WCreate(void)
   }
   memset(&bufferweapon, 0, sizeof(weaponinfo_t));
   bufferweapon.replaces = -1;
+  bufferweapon.clip = 1;
 }
 
 void DDF_ReadWeapons(void *data, int size)
 {
   readinfo_t weapons;
-  int i;
-  static boolean reinit = false;
-
   bufferweapon.replaces = -1;
+  bufferweapon.clip = 1;
 
   if (!data)
   {
@@ -191,6 +190,7 @@ void DDF_ReadWeapons(void *data, int size)
     weapons.message = NULL;
     weapons.memfile = data;
     weapons.memsize = size;
+    weapons.filename = NULL;
   }
   weapons.DDF_MainCheckName     = DDF_WGetName;
   weapons.DDF_MainCheckCmd      = DDF_MainCheckCommand;
@@ -199,15 +199,6 @@ void DDF_ReadWeapons(void *data, int size)
   weapons.cmdlist               = weaponcommands;
 
   DDF_MainReadFile(&weapons);
-
-  for (i = 0; i < MAXPLAYERS; i++)
-  {
-     players[i].weaponowned = realloc(reinit?players[i].weaponowned:NULL, numweapons * sizeof(boolean));
-     // -KM- 1998/12/17 We want to realloc ammo and max ammo, not weaponowned!
-     players[i].ammo = realloc(reinit?players[i].ammo:NULL, NUMAMMO * sizeof(int));
-     players[i].maxammo = realloc(reinit?players[i].maxammo:NULL, NUMAMMO * sizeof(int));
-  }
-  reinit = true;
 }
 
 void DDF_WeaponInit()

@@ -5,16 +5,21 @@
 //
 // -KM- 1998/07/10 Removed I_SongSync: No longer used
 // -KM- 1998/07/31 Change Volume Dynamics, fixed CD player.
-
-#include "i_alleg.h"
+// -KM- 1999/01/31 If you want to disable MIDI/MUS/MP3/CD music,
+//  add -DNOMIDI, -DNOMOD, -DNOMP3, -DNOCD to your command line
+#include <allegro.h>
 
 // For struct defines and function prototypes
 #include "i_music.h"
 #include "m_swap.h"
-
+#ifndef NOMIDI
 // For midi drivers and timer routines
 void update_controllers(void);
 MIDI *load_midi_data(char *dat);
+#else
+void update_controllers(void) {}
+MIDI *load_midi_data(char *dat) { return NULL;}
+#endif
 
 // For memcpy routines
 #include <string.h>
@@ -22,7 +27,9 @@ MIDI *load_midi_data(char *dat);
 #include "m_argv.h"
 #include "i_system.h"
 
+#ifndef NOCD
 #include <bcd.h>
+#endif
 #include "mus_mus.h"
 #include "mus_mod.h"
 #include "mus_mp3.h"
@@ -132,11 +139,13 @@ boolean I_QrySongPlaying(int handle)
 // Close down the music player
 void I_ShutdownMusic(void)
 {
+#ifndef NOCD
   if (cdaudio)
-    {
+  {
     bcd_stop();
     bcd_close();
-    }
+  }
+#endif
   // This is done automatically by Allegro, but...
   remove_int(MusicTicker);
 }
@@ -180,14 +189,18 @@ void I_SetCDMusicVolume(int volume)
 
 //  snd_CDMusicVolume = volume;
   // -KM- 1998/07/31 Change volume range.
+#ifndef NOCD
   if (cdaudio & CD_ON) bcd_set_volume(volume * 17);
+#endif
 }
 
 // like the || button on ya stereo
 void I_PauseSong(int handle)
 {
  // CD Music
+#ifndef NOCD
  if (cdaudio & CD_ON) bcd_pause();
+#endif
 
  if ((handle >= 0) && (handle < MusicListLen) && // Check handle in range
     (MusicList[handle].slotUsed == 1))  // Check music at slot
@@ -226,7 +239,9 @@ void I_PauseSong(int handle)
 void I_ResumeSong(int handle)
 {
  // CD Music
+#ifndef NOCD
  if (cdaudio & CD_ON) bcd_resume();
+#endif
 
  if ((handle >= 0) && (handle < MusicListLen) && // Check handle in range
     (MusicList[handle].slotUsed == 1))  // Check music at slot
@@ -281,10 +296,12 @@ int I_RegisterSong(void *data)
      
   MusicList[slot].data = (void *) MUS_RegisterSong(data);
   MusicList[slot].SongType = M_MUS;
+#ifndef NOMIDI
   if (MusicList[slot].data == NULL) {
     MusicList[slot].data = (void *) load_midi_data(data);
     MusicList[slot].SongType = M_MIDI;
   }
+#endif
   if (MusicList[slot].data == NULL) {
     MusicList[slot].data = (void *) MOD_RegisterSong(data);
     MusicList[slot].SongType = M_MOD;
@@ -457,6 +474,7 @@ END_OF_FUNCTION(MusicTicker)
 
 void CD_Next(void)
 {
+#ifndef NOCD
      int play = 0;
      // All this modulo arithmatic shit means the cd loops
      // Finds the next audio track: won't play data tracks
@@ -475,10 +493,12 @@ void CD_Next(void)
      // -KM- 1998/07/31 Changed time to 1 sec... Checking the CD every
      // 30 seconds will leave an average 15 sec of silence!
      cdcounter = TICRATE;
+#endif
 }
 
 void CD_Prev(void)
 {
+#ifndef NOCD
      int play;
      // All this modulo arithmatic means the cd loops
      // Searches backward to find the next audio track: won't play data
@@ -497,6 +517,7 @@ void CD_Prev(void)
      // -KM- 1998/07/31 Changed time to 1 sec... Checking the CD every
      // 30 seconds will leave an average 15 sec of silence!
      cdcounter = TICRATE; // 1 seconds.
+#endif
 }
 
 void CD_Play(int track, boolean looping)
@@ -509,6 +530,7 @@ void CD_Play(int track, boolean looping)
 
 static void CheckCD(void)
 {
+#ifndef NOCD
   if ((cdaudio & CD_ON) && (cdcounter <= 0)) {
 
     // Find out if the disc has been changed
@@ -529,6 +551,7 @@ static void CheckCD(void)
     play = bcd_now_playing();
     if (!play) CD_Next();
   }
+#endif
 }
 
 void I_MusicTicker2(void)
@@ -551,6 +574,7 @@ void I_MusicTicker2(void)
 
 void I_StartCDAudio(void)
 {
+#ifndef NOCD
   static boolean CD_Enabled = false;
   int i;
   if (cdaudio & CD_ON)
@@ -582,9 +606,12 @@ void I_StartCDAudio(void)
 	  I_Printf ( "Starting CD-Audio from track %d\n\r",starttrack);
 	  cdtrack=starttrack - 1;
 	  if (bcd_audio_busy()) bcd_stop();
+          CD_Next();
       }
     }
-  }
+  } else if (CD_Enabled)
+   bcd_stop();
+#endif
 }
 
 // Inits defaults, install MUSTicker etc...
@@ -648,7 +675,9 @@ void I_InitMusic(void)
 	 all_sound_off[0] <= 0xbf; 
 	 all_sound_off[0]++, all_sound_off[3]++)
 	     midi_out(all_sound_off, sizeof(all_sound_off));
+#ifndef NOMIDI
   update_controllers();
+#endif
 }
 
 

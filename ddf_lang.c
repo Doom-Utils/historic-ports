@@ -35,7 +35,6 @@
 #include "p_spec.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -74,7 +73,7 @@ char* DDF_LanguageLookup(const char *refname)
       entry = entry->next;
 
     if (entry == NULL)
-      I_Error("\n\tDDF_LanguageLookup: Unknown String Ref - %s\n", refname);
+      I_Error("\n\tDDF_LanguageLookup: Unknown String Ref - '%s'\n", refname);
 
     return entry->string;
 }
@@ -168,7 +167,7 @@ void DDF_LanguageCheckName(char *info)
     valid_language = false;
 
     p = M_CheckParm("-lang");
-    if (p && (p < myargc))
+    if (p && (p < myargc-1))
     {
       if (!stricmp(info, myargv[p+1]))
       {
@@ -195,6 +194,7 @@ void DDF_ReadLangs(void *data, int size)
     language.memfile = data;
     language.memsize = size;
     language.message = NULL;
+    language.filename = NULL;
   }
   language.DDF_MainCheckName     = DDF_LanguageCheckName;
   language.DDF_MainCreateEntry   = DDF_DummyFunction;

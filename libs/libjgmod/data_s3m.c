@@ -262,7 +262,7 @@ JGMOD *load_s3m (unsigned char *fdata)
         if (*fdata != 1)               // is not a sample structure
             {
 		 fdata+=sizeof(char);
-                 s->data = malloc(0);
+                 s->data = NULL;
             continue;
             }
 	fdata+=sizeof(char);
@@ -298,7 +298,7 @@ JGMOD *load_s3m (unsigned char *fdata)
 
         if ( memcmp (id, "SCRS", 4) != 0)   // dont load the samples
             {
-            s->data = malloc(0);
+            s->data = NULL;
             continue;
             }
 

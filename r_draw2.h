@@ -20,9 +20,11 @@
 void resinit_r_draw_c16(void);
 
 void R_DrawColumn16_KM(void);          // Smooth version
+void R_DrawColumn16_BLF (void);        // Smooth version
 void R_DrawColumn16_CVersion (void);   // C Version
 void R_DrawColumn16_Rasem(void);       // Rasem's
 void R_DrawColumn16_Old(void);         // Chi's Original
+void R_DrawSpan16_BLF (void);          // Bilinear Filtering
 
 void R_DrawFuzzColumn16 (void);
 

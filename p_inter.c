@@ -27,7 +27,7 @@
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-int maxammo[4] = {200, 50, 50, 300};
+//int maxammo[4] = {200, 50, 50, 300};
 //int clipammo[NUMAMMO] = {10, 4, 1, 20};
 
 //
@@ -68,10 +68,10 @@ boolean P_GiveAmmo (player_t* player, ammotype_t ammo, int num)
 
   // We were down to zero, so select a new weapon.
   // Preferences are not user selectable.
-  priority = 0;
+  priority = weaponinfo[player->readyweapon].priority;
   for (i = 0; i < numweapons; i++)
   {
-      if (weaponinfo[i].priority >= priority &&
+      if (weaponinfo[i].priority > priority &&
           player->weaponowned[i] &&
           (weaponinfo[i].ammo == am_noammo ||
           player->ammo[weaponinfo[i].ammo] >= weaponinfo[i].ammopershot) &&
@@ -117,7 +117,7 @@ boolean P_GiveWeapon
   // -ACB- 1998/06/27 Update Weapons Widget
   weaponupdate = true;
 
-  if (netgame && (deathmatch!=2) && !dropped )
+  if (netgame && (deathmatch <= 1) && !dropped )
   {
     // leave placed weapons forever on net games
     if (player->weaponowned[weapon])
@@ -350,6 +350,9 @@ boolean P_GivePower ( player_t*	player, int power, int amount, int limit )
 //
 // P_TouchSpecialThing
 //
+// -KM- 1999/01/31 Things that give you item bonus are always
+//  picked up.  Picked up object is set to death frame instead
+//  of removed so that effects can happen.
 void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
 {
   player_t* player;
@@ -359,12 +362,13 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
   sfx_t* sound;
   int i;
   boolean dropped;
+  boolean pickup = false;
   backpack_t* backpack;
 
   delta = special->z - toucher->z;
 
   // out of reach
-  if (delta > toucher->height || delta < -8*FRACUNIT)
+  if (delta > toucher->height || delta < -special->height)
     return;
     	
   player = toucher->player;
@@ -379,84 +383,20 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
   backpack = special->backpackinfo;
   // -KM- 1998/09/27 Sounds.ddf
   sound = special->info->activesound;
+  toucher->flags |= MF_JUSTPICKEDUP;
 
   //
   // -ACB- 1998/06/19, DDF Change: Give benefit in reference to info
-  //                               from the mobjinfo array, not the sprite.
   //
   switch (special->info->benefittype)
   {
     // -KM- 1998/12/16 Ammo types are generalised.
     case AMMO_TYPE:
        if (dropped)
-       {
-         if (!P_GiveAmmo (player, special->info->benefitammo, special->info->benefitamount/2))
-            return;
-       } else {
-         if (!P_GiveAmmo (player, special->info->benefitammo, special->info->benefitamount))
-            return;
-       }
-       break;
-/*
-    case AMMO_TYPE1:          // BULLETS
-    {
-       if (dropped)
-       {
-     	if (!P_GiveAmmo (player, am_clip, special->info->benefitamount/2))
-	    return;
-       }
+         pickup = P_GiveAmmo (player, special->info->benefitammo, special->info->benefitamount/2);
        else
-       {
-     	if ( !P_GiveAmmo (player, am_clip, special->info->benefitamount) )
-	    return;
-       }
+         pickup = P_GiveAmmo (player, special->info->benefitammo, special->info->benefitamount);
        break;
-    }
-    case AMMO_TYPE2:          // SHELLS
-    {
-      if (dropped)
-       {
-     	if (!P_GiveAmmo (player, am_shell, special->info->benefitamount/2))
-	    return;
-       }
-       else
-       {
-     	if ( !P_GiveAmmo (player, am_shell, special->info->benefitamount) )
-	    return;
-       }
-       break;
-    }
-
-    case AMMO_TYPE3:          // ROCKETS
-    {
-      if (dropped)
-      {
-     	if (!P_GiveAmmo (player, am_misl, special->info->benefitamount/2))
-	    return;
-      }
-      else
-      {
-        if (!P_GiveAmmo (player, am_misl, special->info->benefitamount))
-	    return;
-      }
-      break;
-    }
-
-    case AMMO_TYPE4:          // CELLS
-    {
-      if (dropped)
-      { 
-        if (!P_GiveAmmo (player, am_cell, special->info->benefitamount/2))
-          return;
-      }
-      else
-      {
-        if (!P_GiveAmmo (player, am_cell, special->info->benefitamount))
-          return;
-      }
-      break;
-    }
-  */
     case KEY_BLUECARD:
     {
       if (!player->cards[it_bluecard])
@@ -465,10 +405,14 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_bluecard);
 
       if (!netgame)
-          break;
+         pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case KEY_REDCARD:
@@ -479,10 +423,14 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_redcard);
 
       if (!netgame)
-        break;
+        pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case KEY_YELLOWCARD:
@@ -493,10 +441,14 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_yellowcard);
 
       if (!netgame)
-        break;
+        pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case KEY_BLUESKULL:
@@ -507,10 +459,14 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_blueskull);
 
       if (!netgame)
-        break;
+        pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case KEY_REDSKULL:
@@ -521,10 +477,14 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_redskull);
 
       if (!netgame)
-        break;
+        pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case KEY_YELLOWSKULL:
@@ -535,33 +495,31 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
       P_GiveCard (player, it_yellowskull);
 
       if (!netgame)
-        break;
+        pickup = true;
+      else
+      {
+        player->message = special->info->message;
+        S_StartSound (player->mo, sound);
+      }
 
-      S_StartSound(NULL, sound);
-      return;
+      break;
     }
 
     case POWERUP_ACIDSUIT:
     {
-      if (!P_GivePower (player, pw_ironfeet, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_ironfeet, addvalue, limit);
       break;
     }
 
     case POWERUP_ARMOUR:
     {
-      if (!P_GiveArmour(player, addvalue, limit))
-        return;
-
+      pickup = P_GiveArmour(player, addvalue, limit);
       break;
     }
 
     case POWERUP_AUTOMAP:
     {
-      if (!P_GivePower (player, pw_allmap, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_allmap, addvalue, limit);
       break;
     }
 
@@ -600,25 +558,25 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
          if (backpack->cards[i] == true)
            player->cards[i] = true;
       }
+      pickup = true;
       break;
     }
 
     case POWERUP_BERSERK:
     {
-      if (!P_GivePower (player, pw_strength, addvalue, limit))
-        return;
+      if (P_GivePower (player, pw_strength, addvalue, limit))
+      {
+        pickup = true;
 
-      if (player->readyweapon != DDF_WeaponGetType("FIST"))
-        player->pendingweapon = DDF_WeaponGetType("FIST");
-
+        if (player->readyweapon != DDF_WeaponGetType("FIST"))
+          player->pendingweapon = DDF_WeaponGetType("FIST");
+      }
       break;
     }
 
     case POWERUP_HEALTH:
     {
-      if (!P_GiveHealth( player, addvalue, limit ))
-        return;
-
+      pickup = P_GiveHealth( player, addvalue, limit );
       break;
     }
 
@@ -626,46 +584,37 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
     {
       P_GiveArmour(player, addvalue, limit);
       P_GiveHealth(player, addvalue, limit);
+      pickup = true;
       break;
     }
 
     case POWERUP_INVULNERABLE:
     {
-      if (!P_GivePower (player, pw_invulnerability, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_invulnerability, addvalue, limit);
       break;
     }
 
     case POWERUP_JETPACK:
     {
-      if (!P_GivePower (player, pw_jetpack, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_jetpack, addvalue, limit);
       break;
     }
 
     case POWERUP_LIGHTGOGGLES:
     {
-      if (!P_GivePower (player, pw_infrared, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_infrared, addvalue, limit);
       break;
     }
 
     case POWERUP_NIGHTVISION:
     {
-      if (!P_GivePower (player, pw_nightvision, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_nightvision, addvalue, limit);
       break;
     }
 
     case POWERUP_PARTINVIS:
     {
-      if (!P_GivePower (player, pw_invisibility, addvalue, limit))
-        return;
-
+      pickup = P_GivePower (player, pw_invisibility, addvalue, limit);
       break;
     }
 
@@ -674,9 +623,7 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
     {
       i = special->info->benefitweapon;
 
-      if (!P_GiveWeapon (player, i, dropped, addvalue, sound) )
-        return;
-
+      pickup = P_GiveWeapon (player, i, dropped, addvalue, sound);
       break;
     }
 
@@ -684,17 +631,19 @@ void P_TouchSpecialThing ( mobj_t* special, mobj_t* toucher )
         I_Error ("P_SpecialThing: Unknown Benefit Type Specified");
   }
 	
+  if (pickup || special->flags & MF_COUNTITEM)
+  {
     if (special->flags & MF_COUNTITEM)
       player->itemcount++;
-
-    player->message = special->info->message;
-
-    P_RemoveMobj (special);
-
+  
+    special->health = 0;
+    P_KillMobj (player->mo, special);
+  
     player->bonuscount += BONUSADD;
-
-    if (player == &players[consoleplayer])
-      S_StartSound (NULL, sound);
+  
+    player->message = special->info->message;
+    S_StartSound (player->mo, sound);
+  }
 }
 
 
@@ -722,8 +671,6 @@ void P_KillMobj (mobj_t* source, mobj_t* target)
   target->flags |= MF_CORPSE|MF_DROPOFF;
   target->height >>= 2;
 
-  item = target->info->dropitem;
-
   if (source && source->player)
   {
     // count for intermission
@@ -731,7 +678,19 @@ void P_KillMobj (mobj_t* source, mobj_t* target)
       source->player->killcount++; 
 
     if (target->player)
-      source->player->frags[target->player-players]++;
+    {
+      // Killed a team mate?
+      if ((deathmatch >= 3) && (target->side & source->side))
+      {
+        source->player->frags--;
+        source->player->totalfrags--;
+      }
+      else
+      {
+        source->player->frags++;
+        source->player->totalfrags++;
+      }
+    }
   }
   else if (!netgame && (target->flags & MF_COUNTKILL) )
   {
@@ -743,8 +702,11 @@ void P_KillMobj (mobj_t* source, mobj_t* target)
   if (target->player)
   {
     // count environment kills against you
-    if (!source) 
-      target->player->frags[target->player-players]++;
+    if (!source)
+    {
+      target->player->frags--;
+      target->player->totalfrags--;
+    }
 			
     target->flags &= ~MF_SOLID;
     target->player->playerstate = PST_DEAD;
@@ -767,6 +729,8 @@ void P_KillMobj (mobj_t* source, mobj_t* target)
 		
   // Drop stuff. This determines the kind of object spawned
   // during the death frame of a thing.
+  item = target->info->dropitem;
+
   if (item)
   {
     mo = P_MobjCreateObject(target->x,target->y, ONFLOORZ, item);
@@ -807,14 +771,17 @@ void P_DamageMobj (mobj_t* target, mobj_t* inflictor, mobj_t* source, int damage
 
   // -ACB- 1998/07/12 Use Visibility Enum
   // A Damaged Stealth Creature becomes more visible
-  if ((target->flags & MF_STEALTH) && (target->invisibility < 3*VISIBLE/4))
-    target->invisibility+=VISIBLE/4;
+  if (target->flags & MF_STEALTH)
+    target->deltainvis = VISIBLE;
 
   if (target->health <= 0)
     return;
 
   if (target->flags & MF_SKULLFLY)
+  {
     target->momx = target->momy = target->momz = 0;
+    target->flags &= ~MF_SKULLFLY;
+  }
 	
   player = target->player;
 

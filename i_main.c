@@ -39,8 +39,8 @@ void break_handler(int a)
 
 int VERSION       = 200;
 int VERSIONFIX    = 100;
-int DOSDOOMVER    = 0x65;
-int DOSDOOMVERFIX = 0x100;
+int DOSDOOMVER    = 0x651;
+int DOSDOOMVERFIX = 0x1000;
 
 int main ( int argc, char** argv )
 { 

@@ -40,6 +40,77 @@ int scaledviewwidth;
 // just for profiling
 int dccount;
 
+// -ES- 1999/02/12 Converted BLF stuff to 8-bit
+#define BLFshift 2 // Detail level. High detail levels look better, but
+                   // consume more memory. For each detail increase by one,
+                   // the BLF table needs approx. four times as much memory.
+#define BLFsz (1<<BLFshift)
+#define BLFmax (BLFsz-1)
+
+typedef unsigned long BLF8LUT; // Table with 256 longs containing translucency table-style fix-point RGBs.
+
+static BLF8LUT *BLFTab[BLFsz][BLFsz]; // Totally 8*8*256 BLF16LUTs
+
+static void BLF_Init8 (void)
+{
+  static boolean firsttime = true;
+  unsigned int i;
+
+  unsigned long r,g,b,x,y,xy;
+
+  unsigned char *thepalette;
+  BLF8LUT *BLFBuf; // Array of all the used BLF16LUTs
+  int BLFCheck[4*BLFsz*BLFsz]; // Stores which index to BLFBuf a certain x*y should use (x and y are 31.1 fix point)
+  int count=0;
+
+  if (!firsttime)
+    return;
+  firsttime = false;
+
+  I_Printf("BLF_Init: Init Bilinear Filtering");
+
+  // Init BLFCheck
+  for (x=0; x<4*BLFsz*BLFsz; x++)
+    BLFCheck[x]=-1;
+  for (x=1; x<2*BLFsz; x+=2)
+    for (y=1; y<2*BLFsz; y+=2)
+      if (BLFCheck[x*y] == -1)
+      {
+        BLFCheck[x*y] = count;
+        count++;
+      }
+  // Allocate the memory if it isn't already allocated. Use 32-byte alignment.
+  BLFBuf = BLFTab[0][0];
+  if (!BLFBuf)
+  {
+    BLFBuf = Z_Malloc(count*256*sizeof(BLF8LUT)+31, PU_STATIC, NULL); // allocate memory
+    if (BLFBuf==NULL)
+      I_Error("Out of memory!");
+    BLFBuf = (BLF8LUT*) (((long)BLFBuf+31) & ~31); // align
+  }
+
+  for (x=0; x<BLFsz; x++)
+    for (y=0; y<BLFsz; y++)
+      BLFTab[x][y] = &BLFBuf[256*BLFCheck[(2*x+1) * (2*y+1)]];
+
+  thepalette = W_CacheLumpNum (W_GetNumForName("PLAYPAL"), PU_CACHE);
+  for (xy=0; xy<4*BLFsz*BLFsz; xy++)
+    if (BLFCheck[xy] != -1)
+    {
+      for (i=0; i<256; i++)
+      {
+        r = thepalette[i*3+0];
+        g = thepalette[i*3+1];
+        b = thepalette[i*3+2];
+        r = (( r * xy ) << 1) >> (2 + 2*BLFshift);
+        g = (( g * xy ) << 4) >> (2 + 2*BLFshift);
+        b = (( b * xy ) << 3) >> (2 + 2*BLFshift);
+        (&BLFBuf[256*BLFCheck[xy]])[i] = (r<<11) + (g << 20) + b;
+      }
+    }
+  I_Printf("\n");
+}
+
 void resinit_r_draw_c8(void)
 {
   int i;
@@ -54,6 +125,7 @@ void resinit_r_draw_c8(void)
   }
   fuzzpos=0;
 
+#ifdef DJGPP
 #define set_screenwidth(val, lbl) asm("movl %0," lbl "-4":: "r" (val) : "memory")
   set_screenwidth(SCREENWIDTH,  "rdc8iwidth1");
   set_screenwidth(2*SCREENWIDTH,  "rdc8iwidth2");
@@ -73,7 +145,10 @@ void resinit_r_draw_c8(void)
   set_screenwidth(-2*SCREENWIDTH, "rdc8pwidth5");
   set_screenwidth(-SCREENWIDTH, "rdc8pwidth6");
 #undef set_screenwidth
+#endif
 
+  if (R_DrawSpan == R_DrawSpan8_BLF || R_DrawColumn == R_DrawColumn8_BLF)
+    BLF_Init8();
 }
 
 //
@@ -86,6 +161,7 @@ void resinit_r_draw_c8(void)
 // Thus a special case loop for very fast rendering can
 // be used. It has also been used with Wolfenstein 3D.
 //
+
 void R_DrawColumn8_CVersion (void)
 { 
   int count;
@@ -112,7 +188,7 @@ void R_DrawColumn8_CVersion (void)
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Inner loop that does the actual texture mapping,
   // e.g. a DDA-lile scaling. This is as fast as it gets.
@@ -121,6 +197,56 @@ void R_DrawColumn8_CVersion (void)
     // Re-map color indices from wall texture column
     // using a lighting/special effects LUT.
     *dest = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
+        
+    dest += SCREENWIDTH;
+    frac += fracstep;
+        
+  }
+  while (--count);
+} 
+
+// -ES- 1999-04-07 Mipmapping test
+void R_DrawColumn8_MIP (void)
+{ 
+  int count;
+  byte* dest;
+  fixed_t frac;
+  fixed_t fracstep;
+  unsigned long mask;
+  fixed_t i;
+ 
+  count = dc_yh - dc_yl+1;
+
+  // Zero length, column does not exceed a pixel.
+  if (count <= 0)
+    return;
+                                 
+#ifdef DEVELOPERS
+  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+    I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+#endif 
+
+  //
+  // Framebuffer destination address.
+  // Use ylookup LUT to avoid multiply with ScreenWidth.
+  //
+  dest = ylookup[dc_yl] + columnofs[dc_x];
+
+  // Determine scaling, which is the only mapping to be done.
+  fracstep = dc_iscale;
+  frac = dc_texturemid + dc_yl*fracstep;
+
+  mask = 0xffff0000;
+  for (i=abs(fracstep); i>FRACUNIT; i>>=1)
+    mask <<= 1;
+  mask &= 127*FRACUNIT;
+  // Inner loop that does the actual texture mapping,
+  // e.g. a DDA-lile scaling. This is as fast as it gets.
+  do
+  {
+    // Re-map color indices from wall texture column
+    // using a lighting/special effects LUT.
+    *dest = dc_colormap[dc_source[((unsigned long)(frac&mask))>>FRACBITS]];
         
     dest += SCREENWIDTH;
     frac += fracstep;
@@ -158,7 +284,7 @@ void R_DrawColumn8_KM ()
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = (dc_iscale);
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Inner loop that does the actual texture mapping, e.g. a DDA-lile scaling.
   if (fracstep > 0x12000)
@@ -181,8 +307,6 @@ void R_DrawColumn8_KM ()
     unsigned long level[4];
     unsigned long c;
     int i;
-    extern fixed_t dc_xfrac;
-    extern byte* dc_source2;
 
     dc_xfrac &= 0xffff;
     do
@@ -191,17 +315,19 @@ void R_DrawColumn8_KM ()
       level[2] = (FRACUNIT - (frac&0xffff))* dc_xfrac;
       level[1] = (frac&0xffff)             * (FRACUNIT - dc_xfrac-1);
       level[0] = (FRACUNIT - (frac&0xffff))* (FRACUNIT - dc_xfrac-1);
-      spot[0] = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
-      spot[1] = dc_colormap[dc_source[((frac>>FRACBITS)+1)&127]];
-      spot[2] = dc_colormap[dc_source2[(frac>>FRACBITS)&127]];
-      spot[3] = dc_colormap[dc_source2[((frac>>FRACBITS)+1)&127]];
+      spot[0] = dc_source[(frac>>FRACBITS)&127];
+      spot[1] = dc_source[((frac>>FRACBITS)+1)&127];
+      spot[2] = dc_source2[(frac>>FRACBITS)&127];
+      spot[3] = dc_source2[((frac>>FRACBITS)+1)&127];
 
       for (i = 0, c = 0; i < 4; i++)
       {
         c += col2rgb8[level[i]>>26][spot[i]];
       }
-      c |= 0xF07C3E1F;
-      *dest = rgb_8k[0][0][(c>>5) & (c>>19)];
+
+      // -ES- 1999/03/13 Fixed the RGB conversion
+      c &= 0xF80F0780;
+      *dest = dc_colormap[rgb_8k[0][0][(0x1FFF & (c>>7)) | (c>>23)]];
 
       dest += SCREENWIDTH;
       frac += fracstep;
@@ -209,6 +335,141 @@ void R_DrawColumn8_KM ()
   }
 #endif
 };
+
+// -ES- 1999/03/29 Added this
+void R_DrawColumn8_BLF ()
+{
+#ifndef SMOOTHING
+  R_DrawColumn8_CVersion();
+#else
+  int count;
+  char* dest;
+  fixed_t yfrac;
+  fixed_t ystep;
+  unsigned long col1, col2, col3, col4;
+  unsigned long x1,x2,y1,y2;
+
+  if (dc_iscale > 0x20000)
+    R_DrawColumn8_CVersion();
+
+  count = dc_yh - dc_yl+1;
+
+  // Zero length, column does not exceed a pixel.
+  if (count <= 0)
+    return;
+                                 
+#ifdef DEVELOPERS 
+  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+    I_Error ("R_DrawColumn16_CVersion: %i to %i at %i", dc_yl, dc_yh, dc_x);
+#endif 
+
+  // Framebuffer destination address.
+  // Use ylookup LUT to avoid multiply with ScreenWidth.
+  dest = ylookup[dc_yl] + columnofs[dc_x];
+
+  // Determine scaling, which is the only mapping to be done.
+  ystep = dc_iscale;
+  yfrac = dc_texturemid + dc_yl*ystep - FRACUNIT/2;
+
+  dc_xfrac &= 0xffff;
+
+  // x position is constant
+  x1 = (dc_xfrac >> (16-BLFshift));
+  x2 = BLFmax - x1;
+
+  // Inner loop that does the actual texture mapping, e.g. a DDA-lile scaling.
+  do
+  {
+    col1 = dc_source[  (yfrac>>FRACBITS)&127];
+    col2 = dc_source2[ (yfrac>>FRACBITS)&127];
+    col3 = dc_source[ ((yfrac>>FRACBITS)+1)&127];
+    col4 = dc_source2[((yfrac>>FRACBITS)+1)&127];
+
+    // Get the texture sub-coordinates
+    y1 = (yfrac >> (16-BLFshift)) & BLFmax;
+    y2 = BLFmax - y1;
+
+    col1 = BLFTab[x2][y2][col1]
+         + BLFTab[x1][y2][col2]
+         + BLFTab[x2][y1][col3]
+         + BLFTab[x1][y1][col4];
+
+    // Convert to usable RGB
+    col1 &= 0xF80F0780;
+
+    // Store pixel
+    *dest = dc_colormap[rgb_8k[0][0][(0x1FFF & (col1>>7)) | (col1>>23)]];
+
+    dest += SCREENWIDTH;
+    yfrac += ystep;
+  } while (--count);
+#endif
+};
+
+// -KM- 1999/01/31 Low resolution Column drawer
+void R_DrawColumn8_LowRes (void)
+{ 
+  int count;
+  unsigned short* dest;
+  unsigned short pixel;
+  fixed_t frac;
+  fixed_t fracstep;
+ 
+  // Only render even columns
+  if (dc_x & 1)
+    return;
+
+  count = dc_yh - dc_yl+1;
+
+  // Zero length, column does not exceed a pixel.
+  if (count <= 0)
+    return;
+                                 
+#ifdef DEVELOPERS
+  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+    I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
+#endif 
+
+  //
+  // Framebuffer destination address.
+  // Use ylookup LUT to avoid multiply with ScreenWidth.
+  //
+  dest = (unsigned short *) (ylookup[dc_yl] + columnofs[dc_x]);
+
+  // Determine scaling, which is the only mapping to be done.
+  fracstep = dc_iscale;
+  frac = dc_texturemid + (dc_yl)*fracstep;
+
+  // Inner loop that does the actual texture mapping,
+  // e.g. a DDA-lile scaling. This is as fast as it gets.
+  if (count & 1)
+  {
+    pixel = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
+    pixel |= pixel << 8;
+
+    *dest = pixel;
+          
+    dest += SCREENWIDTH>>1;
+    frac += fracstep;
+    if (--count == 0)
+      return;
+  }
+  fracstep <<= 1;
+  do
+  {
+    // Re-map color indices from wall texture column
+    // using a lighting/special effects LUT.
+    pixel = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
+    pixel |= pixel << 8;
+
+    *dest = pixel;
+    dest += SCREENWIDTH>>1;
+    *dest = pixel;
+    dest += SCREENWIDTH>>1;
+
+    frac += fracstep;
+  } while ((count-=2) > 0);
+} 
 
 //
 // R_DrawFuzzColumn8
@@ -253,7 +514,7 @@ void R_DrawFuzzColumn8 (void)
 
   // Looks familiar.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   //
   // Looks like an attempt at dithering, using the colormap #6 (of 0-31, a bit
@@ -281,8 +542,9 @@ void R_DrawFuzzColumn8 (void)
 
 // -ES- 1998/10/29 New translucency
 //
-//
 // -KM- 1998/11/25 Modified rest of DOSDoom to work with this.
+//
+// -ES- 1998/02/12 New col2rgb format
 void R_DrawTranslucentColumn8 ()
 { 
   int count;
@@ -292,7 +554,7 @@ void R_DrawTranslucentColumn8 ()
 
   fixed_t fglevel, bglevel;
   unsigned long *fg2rgb, *bg2rgb;
-  unsigned long fg,bg;  // current colours
+  unsigned long fg;  // current colours
 
   fglevel = dc_translucency;
   fglevel = fglevel&~0x3ff;
@@ -321,7 +583,7 @@ void R_DrawTranslucentColumn8 ()
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   //
   // Inner loop that does the actual texture mapping,
@@ -353,24 +615,20 @@ void R_DrawTranslucentColumn8 ()
     Bit 14-17: Int  part of red   (4 bits)
     Bit 18-22: Frac part of green (5 bits)
     Bit 23-27: Int  part of green (5 bits)
-    Bit 28-31: All zeros          (4 bits)
 
     The point of this format is that the two colours now can be added, and
     then be converted to a RGB table index very easily: First, we just set
     all the frac bits and the four upper zero bits to 1. It's now possible
-    to get the RGB table index by anding the current value >> 5 with the
-    current value >> 19. When asm-optimised, this should be the fastest
-    algorithm that uses RGB tables.
+    to get the RGB table index by ORing the current value >> 7 with the
+    current value >> 23, and then mask away some high bits by anding it
+    with 0x1FFF.
 
     */
 
-    fg = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
-    bg = *dest;
+    fg = (fg2rgb[dc_colormap[dc_source[(frac>>FRACBITS)&127]]] +
+          bg2rgb[*dest]) & 0xF80F0780;
 
-    fg=fg2rgb[fg];
-    bg=bg2rgb[bg];
-    fg = (fg+bg) | 0xF07C3E1F;
-    *dest = rgb_8k[0][0][(fg>>5) & (fg>>19)];
+    *dest = rgb_8k[0][0][(0x1FFF & (fg>>7)) | (fg>>23)];
 
     dest+=SCREENWIDTH;
     frac+=fracstep;
@@ -413,7 +671,7 @@ void R_DrawTranslatedColumn8 (void)
 
   // Looks familiar.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Here we do an additional index re-mapping.
   do
@@ -431,6 +689,7 @@ void R_DrawTranslatedColumn8 (void)
   while (count--);
 } 
 
+// -ES- 1998/02/12 New col2rgb format
 void R_DrawTranslucentTranslatedColumn8 ()
 { 
   int count;
@@ -440,7 +699,7 @@ void R_DrawTranslucentTranslatedColumn8 ()
  
   fixed_t fglevel, bglevel;
   unsigned long *fg2rgb, *bg2rgb;
-  unsigned long fg,bg;  // current colours
+  unsigned long fg;  // current colours
 
   fglevel = dc_translucency;
   fglevel = fglevel&~0x3ff;
@@ -468,7 +727,7 @@ void R_DrawTranslucentTranslatedColumn8 ()
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   //
   // Inner loop that does the actual texture mapping,
@@ -479,13 +738,10 @@ void R_DrawTranslucentTranslatedColumn8 ()
     //
     // This is R_DrawTranslucentColumn with an extra translation table lookup
     //
-    fg = dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&127]]];
-    bg = *dest;
+    fg = (fg2rgb[dc_colormap[dc_translation[dc_source[(frac>>FRACBITS)&127]]]] +
+          bg2rgb[*dest]) & 0xF80F0780;
 
-    fg=fg2rgb[fg];
-    bg=bg2rgb[bg];
-    fg = (fg+bg) | 0xF07C3E1F;
-    *dest = rgb_8k[0][0][(fg>>5) & (fg>>19)];
+    *dest = rgb_8k[0][0][(0x1FFF & (fg>>7)) | (fg>>23)];
         
     dest+=SCREENWIDTH;
     frac+=fracstep;
@@ -566,6 +822,7 @@ void R_InitTranslationTables8 (void)
 //
 // Draws the actual span.
 //
+
 void R_DrawSpan8_CVersion (void)
 { 
   fixed_t xfrac;
@@ -591,6 +848,55 @@ void R_DrawSpan8_CVersion (void)
   {
     // Current texture index in u,v.
     spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
+
+    // Lookup pixel from flat texture tile,
+    // re-index using light/colormap.
+    *dest++ = ds_colormap[ds_source[spot]];
+
+    // Next step in u,v.
+    xfrac += ds_xstep;
+    yfrac += ds_ystep;  
+  }
+  while (count--);
+}
+
+// -ES- 1999-04-07 Mipmapping test
+void R_DrawSpan8_MIP (void)
+{ 
+  fixed_t xfrac;
+  fixed_t yfrac;
+  byte* dest;
+  int count;
+  int spot;
+
+  unsigned long xmask, ymask;
+  unsigned long i;
+       
+#ifdef DEVELOPERS 
+  if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2>=SCREENWIDTH || (unsigned)ds_y>SCREENHEIGHT)
+    I_Error( "R_DrawSpan: %i to %i at %i",ds_x1,ds_x2,ds_y);
+#endif 
+
+  xfrac = ds_xfrac;
+  yfrac = ds_yfrac;
+         
+  dest = ylookup[ds_y] + columnofs[ds_x1];
+
+  // We do not check for zero spans here?
+  count = ds_x2 - ds_x1;
+
+  xmask = 0xffff0000;
+  for (i=abs(ds_xstep); i>FRACUNIT; i>>=1)
+    xmask <<= 1;
+  xmask &= 63*FRACUNIT;
+  ymask = 0xffff0000;
+  for (i=abs(ds_ystep); i>FRACUNIT; i>>=1)
+    ymask <<= 1;
+  ymask &= 63*FRACUNIT;
+  do
+  {
+    // Current texture index in u,v.
+    spot = ((yfrac&ymask)>>(16-6)) + ((xfrac&xmask)>>16);
 
     // Lookup pixel from flat texture tile,
     // re-index using light/colormap.
@@ -661,11 +967,13 @@ void R_DrawSpan8_KM (void)
 
       for (i = 0, c = 0; i < 4; i++)
       {
-        spot[i]=(unsigned long) ((ds_colormap)[ds_source[spot[i]]]);
+        spot[i]=(unsigned long)(ds_source[spot[i]]);
         c += col2rgb8[level[i]>>26][spot[i]];
       }
-      c |= 0xF07C3E1F;
-      *dest++ = rgb_8k[0][0][(c>>5) & (c>>19)];
+
+      // -ES- 1999/03/13 Fixed the RGB conversion
+      c &= 0xF80F0780;
+      *dest++ = ds_colormap[rgb_8k[0][0][(0x1FFF & (c>>7)) | (c>>23)]];
 
       // Next step in u,v.
       xfrac += ds_xstep;
@@ -673,7 +981,112 @@ void R_DrawSpan8_KM (void)
     }
     while (count--);
   }
+}
 
+//------------------------------------------------------------
+// Bilinear Filtering
+// 16-bit version originally written by Vitek Kavan vit.kavan@usa.net
+// Improved & converted to 8-bit colour by -ES- 1999/02/12
+
+void R_DrawSpan8_BLF (void)
+{
+    int                 count;
+    unsigned long col1, col2, col3, col4;
+    unsigned long x1,x2,y1,y2;
+    unsigned char* dest = (ylookup[ds_y] + columnofs[ds_x1]);
+    unsigned long xfrac = ds_xfrac - FRACUNIT/2;
+    unsigned long yfrac = ds_yfrac - FRACUNIT/2;
+
+    // We do not check for zero spans here?
+    count = ds_x2 - ds_x1;
+
+    do
+    {
+      // Get the texture coordinates
+      y1 = ((yfrac>>10)&(63*64));
+      x1 = ((xfrac>>16)&63);
+      y2 = (y1+64)&(63*64);
+      x2 = (x1+1)&63;
+
+      // Get the colours of the four corners
+      col1 = ds_source[y1+x1];
+      col2 = ds_source[y1+x2];
+      col3 = ds_source[y2+x1];
+      col4 = ds_source[y2+x2];
+
+      // Get the texture sub-coordinates
+      x1 = (xfrac >> (16-BLFshift)) & BLFmax;
+      y1 = (yfrac >> (16-BLFshift)) & BLFmax;
+      x2 = BLFmax - x1;
+      y2 = BLFmax - y1;
+
+      // Get the fixed-point RGB value
+      col1 = BLFTab[x2][y2][col1]
+           + BLFTab[x1][y2][col2]
+           + BLFTab[x2][y1][col3]
+           + BLFTab[x1][y1][col4];
+
+      // Convert to usable RGB
+      col1 &= 0xF80F0780;
+
+      // Store pixel
+      *dest++ = ds_colormap[rgb_8k[0][0][(0x1FFF & (col1>>7)) | (col1>>23)]];
+
+      // Next step
+      xfrac += ds_xstep;
+      yfrac += ds_ystep;
+    } while (count--);
+}
+
+// -KM- 1999/01/31 Low resolution span drawer for 386 etc
+void R_DrawSpan8_LowRes (void)
+{ 
+  fixed_t xfrac;
+  fixed_t yfrac;
+  unsigned short* dest;
+  unsigned short* dest2;
+  unsigned short pixel;
+  int count;
+  int spot;
+         
+  // Render even rows only
+  if (ds_y & 1)
+    return;
+
+#ifdef DEVELOPERS
+  if (ds_x2 < ds_x1 || ds_x1<0 || ds_x2>=SCREENWIDTH || (unsigned)ds_y>SCREENHEIGHT)
+    I_Error( "R_DrawSpan: %i to %i at %i",ds_x1,ds_x2,ds_y);
+#endif 
+
+  xfrac = ds_xfrac;
+  yfrac = ds_yfrac;
+         
+  dest = (unsigned short *) (ylookup[ds_y] + columnofs[ds_x1]);
+  dest2 = dest + (SCREENWIDTH>>1);
+
+  // We do not check for zero spans here?
+  count = ds_x2 - ds_x1;
+
+  count >>= 1;
+  ds_xstep <<= 1;
+  ds_ystep <<= 1;
+  do
+  {
+    // Current texture index in u,v.
+    spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
+
+    // Lookup pixel from flat texture tile,
+    // re-index using light/colormap.
+    // Render pixels four at a time
+    pixel = ds_colormap[ds_source[spot]];
+    pixel |= pixel << 8;
+    *dest2++ = *dest++ = pixel;
+
+    // Next step in u,v.
+    xfrac += ds_xstep;
+    yfrac += ds_ystep;  
+  }
+  while (count--);
 }
 
 //

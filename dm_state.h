@@ -25,9 +25,9 @@
 #endif
 
 #ifndef DJGPP
-extern short palette_color[256];
-extern int key_shifts;
-extern int KB_CAPSLOCK_FLAG;
+//extern short palette_color[256];
+//extern int key_shifts;
+//extern int KB_CAPSLOCK_FLAG;
 #endif
 
 
@@ -63,6 +63,8 @@ extern  boolean	modifiedgame;
 
 // Defaults for menu, methinks.
 extern  skill_t		startskill;
+extern  char*           startmap;
+extern  boolean         drone;
 
 extern  boolean		autostart;
 
@@ -74,7 +76,7 @@ extern  boolean	netgame;
 
 // Flag: true only if started as net deathmatch.
 // An enum might handle altdeath/cooperative better.
-extern boolean deathmatch; 
+extern int deathmatch;
 	
 // -------------------------
 // Internal parameters for sound rendering.
@@ -127,11 +129,12 @@ extern	int		scaledviewwidth;
 
 // This one is related to the 3-screen display mode.
 // ANG90 = left side, ANG270 = right
-//extern  int	viewangleoffset;
+extern  angle_t	viewangleoffset;
 
 // Player taking events, and displaying.
 extern  int	consoleplayer;	
 extern  int	displayplayer;
+extern  int     maxplayers;
 
 
 // -------------------------------------
@@ -170,11 +173,16 @@ extern  gamestate_t     gamestate;
 
 extern	int		gametic;
 
+extern char**	player_names;
 // Bookkeeping on players - state.
-extern	player_t	players[MAXPLAYERS];
+//extern	player_t	players[MAXPLAYERS];
+extern	player_t*	players;
 
 // Alive? Disconnected?
-extern  boolean		playeringame[MAXPLAYERS];
+extern  boolean*		playeringame;
+//extern  boolean		playeringame[MAXPLAYERS];
+
+extern short		(*consistancy)[BACKUPTICS];
 
 #define MAXHEALTH	200
 #define MAXARMOUR	200
@@ -203,7 +211,8 @@ extern  mapthing_t*     deathmatchstarts;
 extern  mapthing_t*	deathmatch_p;
 
 // Player spawn spots.
-extern  mapthing_t      playerstarts[MAXPLAYERS];
+extern  mapthing_t*      playerstarts;
+//extern  mapthing_t      playerstarts[MAXPLAYERS];
 
 // Intermission stats.
 // Parameters for world map / intermission.
@@ -260,9 +269,12 @@ extern  ticcmd_t	localcmds[BACKUPTICS];
 extern	int		rndindex;
 
 extern	int		maketic;
-extern  int             nettics[MAXNETNODES];
+extern  int*             nettics;
 
-extern  ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
+extern  ticcmd_t        (*netcmds)[BACKUPTICS];
+//extern  int             nettics[MAXNETNODES];
+
+//extern  ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
 extern	int		ticdup;
 
 //misc stuff

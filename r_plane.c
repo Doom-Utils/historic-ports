@@ -20,8 +20,8 @@
 #include "r_local.h"
 #include "r_sky.h"
 
-planefunction_t		floorfunc;
-planefunction_t		ceilingfunc;
+planefunction_t         floorfunc;
+planefunction_t         ceilingfunc;
 
 //
 // opening
@@ -29,18 +29,18 @@ planefunction_t		ceilingfunc;
 
 // Here comes the obnoxious "visplane".
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-int 			maxvisplanes = 128;
-visplane_t*		visplanes = NULL;
-int			lastvisplane;
-int			floorplane;
-int			ceilingplane;
+int                     maxvisplanes = 128;
+visplane_t*             visplanes = NULL;
+int                     lastvisplane;
+int                     floorplane;
+int                     ceilingplane;
 
 // ?
-int			maxopenings;
+int                     maxopenings;
 
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-short*			openings = NULL;
-short*			lastopening;
+short*                  openings = NULL;
+short*                  lastopening;
 
 //
 // Clip values are the solid pixel bounding the range.
@@ -48,35 +48,40 @@ short*			lastopening;
 //  ceilingclip starts out -1
 //
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-short			*floorclip = NULL;
-short			*ceilingclip = NULL;
+short                   *floorclip = NULL;
+short                   *ceilingclip = NULL;
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-int			*spanstart = NULL;
-int			*spanstop = NULL;
+int                     *spanstart = NULL;
+int                     *spanstop = NULL;
 
 //
 // texture mapping
 //
 int*                    planezlight;
-fixed_t			planeheight;
+fixed_t                 planeheight;
 
-fixed_t			*yslope;
+// 1999/03/20 Removed the origyslope hack
+fixed_t                 *yslope = NULL;
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-fixed_t			*origyslope = NULL;
-fixed_t			*distscale = NULL;
-fixed_t			basexscale;
-fixed_t			baseyscale;
+fixed_t                 *distscale = NULL;
+fixed_t                 basexscale;
+fixed_t                 baseyscale;
 
 // 98-7-10 KM Init to NULL so we don't need a special case Z_Malloc
-fixed_t			*cachedheight = NULL;
-fixed_t			*cacheddistance = NULL;
-fixed_t			*cachedxstep = NULL;
-fixed_t			*cachedystep = NULL;
+// -ES- 1999/03/23 Changed to cache struct
+struct planecache_s
+{
+  fixed_t height;
+  fixed_t distance;
+  fixed_t xstep;
+  fixed_t ystep;
+};
+struct planecache_s *planecache = NULL;
 
 
 void resinit_r_plane_c(void)  //called before anything else
@@ -134,26 +139,17 @@ void R_InitPlanes (void)
   // -ES- 1998/08/30 This memset now clears the number of allocated bytes :-)
   memset(spanstop, 0, SCREENHEIGHT * sizeof(int));
 
-  origyslope=(fixed_t *)Z_ReMalloc(origyslope, SCREENHEIGHT*2*sizeof(fixed_t));
-  memset(origyslope, 0, SCREENHEIGHT*2*sizeof(fixed_t));
-  yslope=origyslope+(SCREENHEIGHT/2);
+  // -ES- 1999/03/20 Removed origyslope
+  yslope=(fixed_t *)Z_ReMalloc(yslope, SCREENHEIGHT*sizeof(fixed_t));
+  memset(yslope, 0, SCREENHEIGHT*sizeof(fixed_t));
 
   distscale=(fixed_t *)Z_ReMalloc(distscale, SCREENWIDTH*sizeof(fixed_t));
-// -ES- 1998/09/08 Oops, this one too :-)
+  // -ES- 1998/09/08 Oops, this one too :-)
   memset(distscale, 0, SCREENWIDTH*sizeof(fixed_t));
 
-  cachedheight=(fixed_t *)Z_ReMalloc(cachedheight, SCREENHEIGHT*sizeof(fixed_t));
-  memset(cachedheight, 0, SCREENHEIGHT*sizeof(fixed_t));
-
-  cacheddistance=(fixed_t *)Z_ReMalloc(cacheddistance, SCREENHEIGHT*sizeof(fixed_t));
-  memset(cacheddistance, 0, SCREENHEIGHT*sizeof(fixed_t));
-
-  cachedxstep=(fixed_t *)Z_ReMalloc(cachedxstep, SCREENHEIGHT*sizeof(fixed_t));
-  memset(cachedxstep, 0, SCREENHEIGHT*sizeof(fixed_t));
-
-  cachedystep=(fixed_t *)Z_ReMalloc(cachedystep, SCREENHEIGHT*sizeof(fixed_t));
-  memset(cachedystep, 0, SCREENHEIGHT*sizeof(fixed_t));
-
+  // -ES- 1999/03/23 Structified this caching system
+  planecache=(struct planecache_s *)Z_ReMalloc(planecache, SCREENHEIGHT*sizeof(struct planecache_s));
+  memset(planecache, 0, SCREENHEIGHT*sizeof(struct planecache_s));
 }
 
 
@@ -172,59 +168,59 @@ void R_InitPlanes (void)
 //
 void
 R_MapPlane
-( int		y,
-  int		x1,
-  int		x2 )
+( int           y,
+  int           x1,
+  int           x2 )
 {
-    angle_t	angle;
-    fixed_t	distance;
-    fixed_t	length;
-    unsigned	index;
-	
+    angle_t     angle;
+    fixed_t     distance;
+    fixed_t     length;
+    unsigned    index;
+        
 #ifdef DEVELOPERS
     if (x2 < x1 || x1<0 || x2>=viewwidth || (unsigned)y>viewheight)
     {
-	I_Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
+        I_Error ("R_MapPlane: %i, %i at %i",x1,x2,y);
     }
 #endif
 
-    if (planeheight != cachedheight[y])
+    if (planeheight != planecache[y].height)
     {
-	cachedheight[y] = planeheight;
-	distance = cacheddistance[y] = FixedMul (planeheight, yslope[y]);
-	ds_xstep = cachedxstep[y] = FixedMul (distance,basexscale);
-	ds_ystep = cachedystep[y] = FixedMul (distance,baseyscale);
+        planecache[y].height = planeheight;
+        distance = planecache[y].distance = FixedMul (planeheight, yslope[y]);
+        ds_xstep = planecache[y].xstep = FixedMul (distance,basexscale);
+        ds_ystep = planecache[y].ystep = FixedMul (distance,baseyscale);
     }
     else
     {
-	distance = cacheddistance[y];
-	ds_xstep = cachedxstep[y];
-	ds_ystep = cachedystep[y];
+        distance = planecache[y].distance;
+        ds_xstep = planecache[y].xstep;
+        ds_ystep = planecache[y].ystep;
     }
-	
+        
     length = FixedMul (distance,distscale[x1]);
     angle = (viewangle + xtoviewangle[x1])>>ANGLETOFINESHIFT;
     ds_xfrac = viewx + FixedMul(finecosine[angle], length);
     ds_yfrac = -viewy - FixedMul(finesine[angle], length);
 
     if (fixedcolormap)
-	ds_colormap = fixedcolormap;
+        ds_colormap = fixedcolormap;
     else
     {
-	index = distance >> LIGHTZSHIFT;
-	
-	if (index >= MAXLIGHTZ )
-	    index = MAXLIGHTZ-1;
+        index = distance >> LIGHTZSHIFT;
+        
+        if (index >= MAXLIGHTZ )
+            index = MAXLIGHTZ-1;
 
-	ds_colormap = colormaps + planezlight[index];
+        ds_colormap = colormaps + planezlight[index];
     }
-	
+        
     ds_y = y;
     ds_x1 = x1;
     ds_x2 = x2;
 
     // high or low detail
-    spanfunc ();	
+    spanfunc ();        
 }
 
 
@@ -234,28 +230,29 @@ R_MapPlane
 //
 void R_ClearPlanes (void)
 {
-    int		i;
-    angle_t	angle;
+    int         i;
+    angle_t     angle;
     
     // opening / clipping determination
     for (i=0 ; i<viewwidth ; i++)
     {
-	floorclip[i] = viewheight;
-	ceilingclip[i] = -1;
+        floorclip[i] = viewheight;
+        ceilingclip[i] = -1;
     }
 
     lastvisplane = 0;
     lastopening = openings;
     
     // texture calculation
-    memset (cachedheight, 0, SCREENHEIGHT*sizeof(fixed_t));
+    memset (planecache, 0, SCREENHEIGHT*sizeof(struct planecache_s));
 
     // left to right mapping
     angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
-	
-    // scale will be unit scale at SCREENWIDTH/2 distance
-    basexscale = FixedDiv (finecosine[angle],centerxfrac);
-    baseyscale = -FixedDiv (finesine[angle],centerxfrac);
+
+    // -ES- 1999/03/07 Fixed X FOV
+    // scale will be unit scale at distance x_distunit
+    basexscale = FixedDiv (finecosine[angle],x_distunit);
+    baseyscale = -FixedDiv (finesine[angle], x_distunit);
 }
 
 
@@ -266,38 +263,38 @@ void R_ClearPlanes (void)
 // 23-6-98 KM Visplanes fixed
 int
 R_FindPlane
-( fixed_t	height,
-  int		picnum,
-  int		lightlevel,
+( fixed_t       height,
+  int           picnum,
+  int           lightlevel,
   int           colourmaplump,
   int           colourmap)
 {
-    int		check;
-    visplane_t*	pl;
-	
+    int         check;
+    visplane_t* pl;
+        
     if (picnum == skyflatnum)
     {
-//	height = 0;			// all skys map together
-	lightlevel = 0;
+//      height = 0;                     // all skys map together
+        lightlevel = 0;
         colourmaplump = -1;
         colourmap = -1;
     }
-	
+        
     for (check = lastvisplane, pl = visplanes; check--; pl++)
     {
         // -KM- 1998/07/31 Little Optimisation here...
-	if ((height == pl->height)
-	    && (picnum == pl->picnum)
-	    && (lightlevel == pl->lightlevel)
+        if ((height == pl->height)
+            && (picnum == pl->picnum)
+            && (lightlevel == pl->lightlevel)
             && (colourmaplump == pl->colourmaplump)
             && (colourmap == pl->colourmaplump))
-	      return lastvisplane - check - 1;
+              return lastvisplane - check - 1;
     }
 
 
     if (lastvisplane == maxvisplanes)
     {
-        unsigned short*		memory;
+        unsigned short*         memory;
         visplanes = Z_ReMalloc(visplanes, sizeof(visplane_t) * ++maxvisplanes);
         pl = &visplanes[lastvisplane];
         memory = (unsigned short *)Z_Malloc((SCREENWIDTH*2+4)*sizeof(unsigned short), PU_STATIC, NULL);
@@ -327,55 +324,55 @@ R_FindPlane
 // 23-6-98 KM Visplanes fixed
 int
 R_CheckPlane
-( int		pl_i,
-  int		start,
-  int		stop )
+( int           pl_i,
+  int           start,
+  int           stop )
 {
-    int		intrl;
-    int		intrh;
-    int		unionl;
-    int		unionh;
-    int		x;
+    int         intrl;
+    int         intrh;
+    int         unionl;
+    int         unionh;
+    int         x;
     visplane_t* pl = &visplanes[pl_i];
-	
+        
     if (start < pl->minx)
     {
-	intrl = pl->minx;
-	unionl = start;
+        intrl = pl->minx;
+        unionl = start;
     }
     else
     {
-	unionl = pl->minx;
-	intrl = start;
+        unionl = pl->minx;
+        intrl = start;
     }
-	
+        
     if (stop > pl->maxx)
     {
-	intrh = pl->maxx;
-	unionh = stop;
+        intrh = pl->maxx;
+        unionh = stop;
     }
     else
     {
-	unionh = pl->maxx;
-	intrh = stop;
+        unionh = pl->maxx;
+        intrh = stop;
     }
 
     for (x=intrl ; x<= intrh ; x++)
-	if (pl->top[x] != 0xffff)
-	    break;
+        if (pl->top[x] != 0xffff)
+            break;
 
     if (x > intrh)
     {
-	pl->minx = unionl;
-	pl->maxx = unionh;
+        pl->minx = unionl;
+        pl->maxx = unionh;
 
-	// use the same one
-	return pl_i;
+        // use the same one
+        return pl_i;
     }
-	
+        
     if (lastvisplane == maxvisplanes)
     {
-        unsigned short*		memory;
+        unsigned short*         memory;
         visplanes = Z_ReMalloc(visplanes, sizeof(visplane_t) * ++maxvisplanes);
         pl = &visplanes[lastvisplane];
         memory=(unsigned short *)Z_Malloc((SCREENWIDTH*2+4)*sizeof(unsigned short), PU_STATIC, NULL);
@@ -407,11 +404,11 @@ R_CheckPlane
 //
 void
 R_MakeSpans
-( int		x,
-  int		t1,
+( int           x,
+  int           t1,
   int           b1,
-  int		t2,
-  int		b2 )
+  int           t2,
+  int           b2 )
 {
 
 #ifdef DEVELOPERS
@@ -422,24 +419,24 @@ R_MakeSpans
 
     while (t1 < t2 && t1<=b1)
     {
-	R_MapPlane (t1,spanstart[t1],x-1);
-	t1++;
+        R_MapPlane (t1,spanstart[t1],x-1);
+        t1++;
     }
     while (b1 > b2 && b1>=t1)
     {
         R_MapPlane (b1,spanstart[b1],x-1);
-	b1--;
+        b1--;
     }
-	
+        
     while (t2 < t1 && t2<=b2)
     {
-	spanstart[t2] = x;
-	t2++;
+        spanstart[t2] = x;
+        t2++;
     }
     while (b2 > b1 && b2>=t2)
     {
-	spanstart[b2] = x;
-	b2--;
+        spanstart[b2] = x;
+        b2--;
     } 
 }
 
@@ -451,66 +448,66 @@ R_MakeSpans
 //
 void R_DrawPlanes (void)
 {
-    visplane_t*		pl;
+    visplane_t*         pl;
     lighttable_t* tempcolourmap = fixedcolormap;
-    int			light;
-    int			x;
-    int			i;
-    int			stop;
-    int			angle;
-				
+    int                 light;
+    int                 x;
+    int                 i;
+    int                 stop;
+    int                 angle;
+                                
 #ifdef DEVELOPERS
     // 23-6-98 KM Fixed this detection routine.
     // Could possibly happen
     if (lastopening - openings > maxopenings)
-	I_Error ("R_DrawPlanes: opening overflow (%ld)",
-		 (lastopening - openings) - maxopenings);
+        I_Error ("R_DrawPlanes: opening overflow (%ld)",
+                 (lastopening - openings) - maxopenings);
 #endif
 
     for (pl = visplanes, i = lastvisplane ; i-- ; pl++)
     {
-	if (pl->minx > pl->maxx)
-	    continue;
+        if (pl->minx > pl->maxx)
+            continue;
 
-	
-	// sky flat
-	if (pl->picnum == skyflatnum)
-	{
-	    dc_iscale = pspriteiscale2>>gameflags.stretchsky;
-	    
-	    // Sky is allways drawn full bright,
-	    //  i.e. colormaps[0] is used.
-	    // Because of this hack, sky is not affected
-	    //  by INVUL inverse mapping.
+        
+        // sky flat
+        if (pl->picnum == skyflatnum)
+        {
+            dc_iscale = pspriteiscale2>>gameflags.stretchsky;
+            
+            // Sky is allways drawn full bright,
+            //  i.e. colormaps[0] is used.
+            // Because of this hack, sky is not affected
+            //  by INVUL inverse mapping.
             if (fixedcolormap == (colormaps + 33*256*sizeof(lighttable_t)))
               dc_colormap = fixedcolormap;
             else
-	      dc_colormap = colormaps;
-	    dc_texturemid = skytexturemid;
-	    for (x=pl->minx ; x <= pl->maxx ; x++)
-	    {
-		dc_yl = pl->top[x];
-		dc_yh = pl->bottom[x];
+              dc_colormap = colormaps;
+            dc_texturemid = skytexturemid;
+            for (x=pl->minx ; x <= pl->maxx ; x++)
+            {
+                dc_yl = pl->top[x];
+                dc_yh = pl->bottom[x];
 
-		if (dc_yl <= dc_yh)
-		{
+                if (dc_yl <= dc_yh)
+                {
 #ifdef SMOOTHING
                     extern byte* dc_source2;
                     extern fixed_t dc_xfrac;
                     dc_xfrac = ((viewangle+xtoviewangle[x])>>6)&0xffff;
 #endif
-		    angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
-		    dc_x = x;
+                    angle = (viewangle + xtoviewangle[x])>>ANGLETOSKYSHIFT;
+                    dc_x = x;
                     // -KM- 1998/07/31 Give skytextures the possibility of being
                     //  animated...
-		    dc_source = R_GetColumn(texturetranslation[skytexture], angle);
+                    dc_source = R_GetColumn(texturetranslation[skytexture], angle);
 #ifdef SMOOTHING
                     dc_source2 = R_GetColumn(texturetranslation[skytexture], angle+1);
 #endif
-		    colfunc ();
-		}
-	    }
-	}
+                    colfunc ();
+                }
+            }
+        }
         else
         {
           // regular flat
@@ -535,7 +532,7 @@ void R_DrawPlanes (void)
     
           pl->top[pl->maxx+1] = 0xffff;
           pl->top[pl->minx-1] = 0xffff;
-    		
+                
           stop = pl->maxx + 1;
     
           for (x=pl->minx ; x<= stop ; x++)

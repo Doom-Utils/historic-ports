@@ -17,6 +17,8 @@
 
 #define FLOATSPEED (FRACUNIT*4)  // Floating speed, should be info->floatspeed
 #define VIEWHEIGHT (41*FRACUNIT) // Player Standard View Height
+#define LOOKUPLIMIT   SHRT_MAX
+#define LOOKDOWNLIMIT SHRT_MIN
 
 // mapblocks are used to check movement
 // against lines and things
@@ -34,7 +36,8 @@
 #define MAXRADIUS       32*FRACUNIT
 
 #define GRAVITY         (8192*grav)       
-#define MAXMOVE		(30*FRACUNIT)
+#define MAXMOVE		(100*FRACUNIT)
+#define STEPMOVE        (10*FRACUNIT)
 #define USERANGE	(64*FRACUNIT)
 #define MELEERANGE	(64*FRACUNIT)
 #define MISSILERANGE	(32*64*FRACUNIT)
@@ -89,8 +92,8 @@ void P_PlayerThink (player_t* player);
 //
 // P_MOBJ
 //
-#define ONFLOORZ		MININT
-#define ONCEILINGZ		MAXINT
+#define ONFLOORZ		INT_MIN
+#define ONCEILINGZ		INT_MAX
 
 iteminque_t* itemquehead; // -ACB- 1998/07/30 Start Pointer the item-respawn-que.
 mobj_t* mobjlisthead;     // -ACB- 1998/08/27 Start Pointer in the mobj list.
@@ -99,8 +102,8 @@ mobj_t* P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
 void 	P_RemoveMobj (mobj_t* th);
 boolean	P_SetMobjState (mobj_t* mobj, statenum_t state);
 void 	P_MobjThinker (mobj_t* mobj);
-void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z);
-void 	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle);
+void	P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, mobjinfo_t* puff);
+void 	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle, mobjinfo_t* blood);
 mobj_t* P_SpawnMissile (mobj_t* source, mobj_t* dest, mobjtype_t type);
 void	P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type);
 

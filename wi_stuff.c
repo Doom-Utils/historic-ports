@@ -15,6 +15,7 @@
 #include "g_game.h"
 #include "i_system.h"
 #include "m_random.h"
+#include "m_menu.h"
 #include "m_swap.h"
 #include "lu_sound.h"
 #include "r_local.h"
@@ -83,7 +84,6 @@
 #define SHOWNEXTLOCDELAY	4
 #define SHOWLASTLOCDELAY	SHOWNEXTLOCDELAY
 
-
 // used to accelerate or skip a stage
 static boolean		acceleratestage;
 
@@ -107,9 +107,9 @@ static int 		bcnt;
 // signals to refresh everything for one frame
 static int 		firstrefresh; 
 
-static int		cnt_kills[MAXPLAYERS];
-static int		cnt_items[MAXPLAYERS];
-static int		cnt_secret[MAXPLAYERS];
+static int		cnt_kills[10];
+static int		cnt_items[10];
+static int		cnt_secret[10];
 static int		cnt_time;
 static int		cnt_par;
 static int		cnt_pause;
@@ -165,10 +165,10 @@ static patch_t*		star;
 static patch_t*		bstar;
 
 // "red P[1..MAXPLAYERS]"
-static patch_t*		p[MAXPLAYERS];
+//static patch_t*		p[MAXPLAYERS];
 
 // "gray P[1..MAXPLAYERS]"
-static patch_t*		bp[MAXPLAYERS];
+//static patch_t*		bp[MAXPLAYERS];
 
  // Name graphics of each level (centered)
 static patch_t*	        lnames[2];
@@ -295,108 +295,6 @@ void WI_drawOnLnode (int n, patch_t* p[2] )
     }
 }
 
-
-
-/* void WI_initAnimatedBack(void)
-{
-    int		i;
-    anim_t*	a;
-
-    if (gamemission != doom)
-	return;
-
-    if (wbs->epsd > 2)
-	return;
-
-    for (i=0;i<NUMANIMS[wbs->epsd];i++)
-    {
-	a = &anims[wbs->epsd][i];
-
-	// init variables
-	a->ctr = -1;
-
-	// specify the next time to draw it
-	if (a->type == ANIM_ALWAYS)
-	    a->nexttic = bcnt + 1 + (M_Random()%a->period);
-	else if (a->type == ANIM_RANDOM)
-	    a->nexttic = bcnt + 1 + a->data2+(M_Random()%a->data1);
-	else if (a->type == ANIM_LEVEL)
-	    a->nexttic = bcnt + 1;
-    }
-
-}
-
-void WI_updateAnimatedBack(void)
-{
-    int		i;
-    anim_t*	a;
-
-    if (gamemission != doom)
-	return;
-
-    if (wbs->epsd > 2)
-	return;
-
-    for (i=0;i<NUMANIMS[wbs->epsd];i++)
-    {
-	a = &anims[wbs->epsd][i];
-
-	if (bcnt == a->nexttic)
-	{
-	    switch (a->type)
-	    {
-	      case ANIM_ALWAYS:
-		if (++a->ctr >= a->nanims) a->ctr = 0;
-		a->nexttic = bcnt + a->period;
-		break;
-
-	      case ANIM_RANDOM:
-		a->ctr++;
-		if (a->ctr == a->nanims)
-		{
-		    a->ctr = -1;
-		    a->nexttic = bcnt+a->data2+(M_Random()%a->data1);
-		}
-		else a->nexttic = bcnt + a->period;
-		break;
-		
-	      case ANIM_LEVEL:
-		// gawd-awful hack for level anims
-		if (!(state == StatCount && i == 7)
-		    && wbs->next == a->data1)
-		{
-		    a->ctr++;
-		    if (a->ctr == a->nanims) a->ctr--;
-		    a->nexttic = bcnt + a->period;
-		}
-		break;
-	    }
-	}
-
-    }
-
-}
-
-void WI_drawAnimatedBack(void)
-{
-    int			i;
-    anim_t*		a;
-
-    if (commercial)
-	return;
-
-    if (wbs->epsd > 2)
-	return;
-
-    for (i=0 ; i<NUMANIMS[wbs->epsd] ; i++)
-    {
-	a = &anims[wbs->epsd][i];
-
-	if (a->ctr >= 0)
-	    V_DrawPatchInDirect(a->loc.x, a->loc.y, FB, a->p[a->ctr]);
-    }
-
-}                                */
 
 //
 // Draws a number.
@@ -531,10 +429,8 @@ void WI_initNoState(void)
     cnt = 10;
 }
 
-void WI_updateNoState(void) {
-
-    //WI_updateAnimatedBack();
-
+void WI_updateNoState(void)
+{
     if (!--cnt)
     {
 	WI_End();
@@ -556,13 +452,10 @@ void WI_initShowNextLoc(void)
     for (i = 0; i < worldmap.nummaps; i++)
        if (!strcmp(worldmap.mappos[i].name, wbs->last->name))
          worldmap.mapdone[i] = true;
-    //WI_initAnimatedBack();
 }
 
 void WI_updateShowNextLoc(void)
 {
-    //WI_updateAnimatedBack();
-
     if (!--cnt || acceleratestage)
 	WI_initNoState();
     else
@@ -591,42 +484,28 @@ void WI_drawNoState(void)
     WI_drawShowNextLoc();
 }
 
-int WI_fragSum(int playernum)
-{
-    int		i;
-    int		frags = 0;
-    
-    for (i=0 ; i<MAXPLAYERS ; i++)
-    {
-	if (playeringame[i]
-	    && i!=playernum)
-	{
-	    frags += plrs[playernum].frags[i];
-	}
-    }
-
-	
-    // JDC hack - negative frags.
-    frags -= plrs[playernum].frags[playernum];
-    // UNUSED if (frags < 0)
-    // 	frags = 0;
-
-    return frags;
-}
-
-
 
 static int		dm_state;
-static int		dm_frags[MAXPLAYERS][MAXPLAYERS];
-static int		dm_totals[MAXPLAYERS];
+static int		dm_frags[10];
+static int		dm_totals[10];
+static int              dm_rank[10];
 
-
+static inline int WI_DeathmatchScore(int pl)
+{
+  if (pl >= 0)
+  {
+    return plrs[pl].totalfrags*2 + plrs[pl].frags;
+  }
+  return INT_MIN;
+}
 
 void WI_initDeathmatchStats(void)
 {
 
     int		i;
     int		j;
+    boolean     done = false;
+    int         rank[maxplayers];
 
     state = StatCount;
     acceleratestage = false;
@@ -634,47 +513,62 @@ void WI_initDeathmatchStats(void)
 
     cnt_pause = TICRATE;
 
-    for (i=0 ; i<MAXPLAYERS ; i++)
-    {
-	if (playeringame[i])
-	{
-	    for (j=0 ; j<MAXPLAYERS ; j++)
-		if (playeringame[j])
-		    dm_frags[i][j] = 0;
+    for (i=0; i<maxplayers; i++)
+       rank[i] = plrs[i].in?i:-1;
+    for (i=0; i < 10; i++)
+       dm_frags[i] = dm_totals[i] = 0;
 
-	    dm_totals[i] = 0;
-	}
+    while (!done)
+    {
+      for (i = 0; i < maxplayers-1; i++)
+      {
+        if (WI_DeathmatchScore(rank[i]) < WI_DeathmatchScore(rank[i+1]))
+        {
+          j = rank[i];
+          rank[i] = rank[i+1];
+          rank[i+1] = j;
+        }
+      }
+      done = true;
+      for (i = 0; i < maxplayers-1; i++)
+      {
+        if (WI_DeathmatchScore(rank[i]) < WI_DeathmatchScore(rank[i+1]))
+        {
+          done = false;
+          break;
+        }
+      }
     }
-    
-    //WI_initAnimatedBack();
+    for (i = 0; i < (10>maxplayers?maxplayers:10); i++)
+       dm_rank[i] = rank[i];
+    for (; i < 10; i++)
+       dm_rank[i] = -1;
 }
 
 
 
 void WI_updateDeathmatchStats(void)
 {
-
     int		i;
-    int		j;
+    int         p;
     
     boolean	stillticking;
-
-    //WI_updateAnimatedBack();
 
     if (acceleratestage && dm_state != 4)
     {
 	acceleratestage = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<10 ; i++)
 	{
-	    if (playeringame[i])
+          p = dm_rank[i];
+          if (p >= 0)
+          {
+	    if (playeringame[p])
 	    {
-		for (j=0 ; j<MAXPLAYERS ; j++)
-		    if (playeringame[j])
-			dm_frags[i][j] = plrs[i].frags[j];
-
-		dm_totals[i] = WI_fragSum(i);
+              dm_frags[i] = plrs[p].frags;
+              dm_totals[i] = plrs[p].totalfrags;
 	    }
+          }
 	}
 	
 
@@ -682,183 +576,119 @@ void WI_updateDeathmatchStats(void)
 	dm_state = 4;
     }
 
-    
-    if (dm_state == 2)
+    switch (dm_state)
     {
+       case 2:
 	if (!(bcnt&3))
 	    S_StartSound(0, worldmap.percent);
 	
 	stillticking = false;
-
-	for (i=0 ; i<MAXPLAYERS ; i++)
-	{
-	    if (playeringame[i])
-	    {
-		for (j=0 ; j<MAXPLAYERS ; j++)
-		{
-		    if (playeringame[j]
-			&& dm_frags[i][j] != plrs[i].frags[j])
-		    {
-			if (plrs[i].frags[j] < 0)
-			    dm_frags[i][j]--;
-			else
-			    dm_frags[i][j]++;
-
-			if (dm_frags[i][j] > 99)
-			    dm_frags[i][j] = 99;
-
-			if (dm_frags[i][j] < -99)
-			    dm_frags[i][j] = -99;
-			
-			stillticking = true;
-		    }
-		}
-		dm_totals[i] = WI_fragSum(i);
-
-		if (dm_totals[i] > 99)
-		    dm_totals[i] = 99;
-		
-		if (dm_totals[i] < -99)
-		    dm_totals[i] = -99;
-	    }
-	    
+        for (i = 0; i < 10; i++)
+        {
+          p = dm_rank[i];
+          if (p >= 0)
+          {
+            if (playeringame[p])
+            {
+              if (dm_frags[i] < plrs[p].frags)
+              {
+                dm_frags[i]++;
+                stillticking = true;
+              }
+              if (dm_totals[i] < plrs[p].totalfrags)
+              {
+                dm_totals[i]++;
+                stillticking = true;
+              }
+            }
+          }
 	}
 	if (!stillticking)
 	{
 	    S_StartSound(0, worldmap.done);
 	    dm_state++;
 	}
-
-    }
-    else if (dm_state == 4)
-    {
+        break;
+      case 4:
 	if (acceleratestage)
 	{
 	    S_StartSound(0, sfx_slop);
 
-	    //if ( gamemission != doom)
-	    //else
             if (!worldmap.nummaps)
   	      WI_initNoState();
             else
 	      WI_initShowNextLoc();
 	}
-    }
-    else if (dm_state & 1)
-    {
+        break;
+      default:
 	if (!--cnt_pause)
 	{
 	    dm_state++;
 	    cnt_pause = TICRATE;
 	}
+        break;
     }
 }
-
-
 
 void WI_drawDeathmatchStats(void)
 {
-
     int		i;
-    int		j;
-    int		x;
     int		y;
-    int		w;
-    
-    int		lh;	// line height
+    int         p;
 
-    lh = WI_SPACINGY;
+    char        temp[16];
 
-    WI_slamBackground();
-    
-    // draw animated background
-    //WI_drawAnimatedBack();
     WI_drawLF();
 
-    // draw stat titles (top line)
-    V_DrawPatchInDirect(DM_TOTALSX-SHORT(total->width)/2,
-		DM_MATRIXY-WI_SPACINGY+10,
-		FB,
-		total);
-    
-    V_DrawPatchInDirect(DM_KILLERSX, DM_KILLERSY, FB, killers);
-    V_DrawPatchInDirect(DM_VICTIMSX, DM_VICTIMSY, FB, victims);
+    M_WriteText(20, 40, "Player");
+    M_WriteText(100, 40, "Frags");
+    M_WriteText(200, 40, "Total Frags");
+    y = 40;
 
-    // draw P?
-    x = DM_MATRIXX + DM_SPACINGX;
-    y = DM_MATRIXY;
-
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<10 ; i++)
     {
-        if (i>3) break; //-jc- (Only shows the first 4 players)
-	if (playeringame[i])
-	{
-	    V_DrawPatchInDirect(x-SHORT(p[i]->width)/2,
-			DM_MATRIXY - WI_SPACINGY,
-			FB,
-			p[i]);
-	    
-	    V_DrawPatchInDirect(DM_MATRIXX-SHORT(p[i]->width)/2,
-			y,
-			FB,
-			p[i]);
-
-	    if (i == me)
-	    {
-		V_DrawPatchInDirect(x-SHORT(p[i]->width)/2,
-			    DM_MATRIXY - WI_SPACINGY,
-			    FB,
-			    bstar);
-
-		V_DrawPatchInDirect(DM_MATRIXX-SHORT(p[i]->width)/2,
-			    y,
-			    FB,
-			    star);
-	    }
-	}
-//	else
-//	{
-	    // V_DrawPatch(x-SHORT(bp[i]->width)/2,
-	    //   DM_MATRIXY - WI_SPACINGY, FB, bp[i]);
-	    // V_DrawPatch(DM_MATRIXX-SHORT(bp[i]->width)/2,
-	    //   y, FB, bp[i]);
-//	}
-	x += DM_SPACINGX;
-	y += WI_SPACINGY;
-    }
-
-    // draw stats
-    y = DM_MATRIXY+10;
-    w = SHORT(num[0]->width);
-
-    for (i=0 ; i<MAXPLAYERS ; i++)
-    {
-        if (i>3) break; //-jc- (Only shows the first 4 players)
-	x = DM_MATRIXX + DM_SPACINGX;
-
-	if (playeringame[i])
-	{
-	    for (j=0 ; j<MAXPLAYERS ; j++)
-	    {
-		if (playeringame[j])
-		    WI_drawNum(x+w, y, dm_frags[i][j], 2);
-
-		x += DM_SPACINGX;
-	    }
-	    WI_drawNum(DM_TOTALSX+w, y, dm_totals[i], 2);
-	}
-	y += WI_SPACINGY;
+        p = dm_rank[i];
+        if (p >= 0)
+        {
+              y += 12;
+              if (p == me && ((bcnt & 31) < 16))
+                continue;
+  
+              M_WriteTextTrans(20, y, 15, player_names[p]);
+              sprintf(temp, "%5d", dm_frags[i]);
+              M_WriteTextTrans(100, y, 15, temp);
+              sprintf(temp, "%11d", dm_totals[i]);
+              M_WriteTextTrans(200, y, 15, temp);
+        }
     }
 }
 
-static int	cnt_frags[MAXPLAYERS];
+static int	cnt_frags[10];
+static int      cnt_tfrags[10];
 static int	dofrags;
 static int	ng_state;
 
+// Calculates value of this player for ranking
+static inline int WI_NetgameScore (pl)
+{
+  if (pl >= 0)
+  {
+    int kills = plrs[pl].skills*400/wbs->maxkills;
+    int items = plrs[pl].sitems*100/wbs->maxitems;
+    int secret = plrs[pl].ssecret*200/wbs->maxsecret;
+    int frags = (plrs[pl].frags + plrs[pl].totalfrags)*25;
+
+    return kills + items + secret - frags;
+  }
+  return INT_MIN;
+}
+
+
 void WI_initNetgameStats(void)
 {
-
-    int i;
+    int rank[maxplayers];
+    int i, j;
+    boolean done = false;
 
     state = StatCount;
     acceleratestage = false;
@@ -866,69 +696,105 @@ void WI_initNetgameStats(void)
 
     cnt_pause = TICRATE;
 
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0; i<(10>maxplayers?maxplayers:10); i++)
+       rank[i] = plrs[i].in?i:-1;
+
+    while (!done)
     {
-	if (!playeringame[i])
+      for (i = 0; i < maxplayers-1; i++)
+      {
+        if (WI_NetgameScore(rank[i]) < WI_NetgameScore(rank[i+1]))
+        {
+          j = rank[i];
+          rank[i] = rank[i+1];
+          rank[i+1] = j;
+        }
+      }
+      done = true;
+      for (i = 0; i < maxplayers-1; i++)
+      {
+        if (WI_NetgameScore(rank[i]) < WI_NetgameScore(rank[i+1]))
+        {
+          done = false;
+          break;
+        }
+      }
+    }
+    for (i = 0; i < (10>maxplayers?maxplayers:10); i++)
+       dm_rank[i] = rank[i];
+    for (; i < 10; i++)
+       dm_rank[i] = -1;
+
+
+    for (i=0 ; i<10 ; i++)
+    {
+        if (dm_rank[i] < 0)
+          continue;
+	if (!playeringame[dm_rank[i]])
 	    continue;
 
-	cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
+	cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = cnt_tfrags[i] = 0;
 
-	dofrags += WI_fragSum(i);
+	dofrags += plrs[dm_rank[i]].frags + plrs[dm_rank[i]].totalfrags;
     }
-
-    dofrags = !!dofrags;
-
-    //WI_initAnimatedBack();
 }
-
 
 
 void WI_updateNetgameStats(void)
 {
 
     int		i;
-    int		fsum;
+    int         p;
     
     boolean	stillticking;
-
-    //WI_updateAnimatedBack();
 
     if (acceleratestage && ng_state != 10)
     {
 	acceleratestage = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0; i<10; i++)
 	{
-	    if (!playeringame[i])
-		continue;
+            p = dm_rank[i];
+            if (p < 0)
+              continue;
+	    if (!playeringame[p])
+	      continue;
 
-	    cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
-	    cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
-	    cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+	    cnt_kills[i] = (plrs[p].skills * 100) / wbs->maxkills;
+	    cnt_items[i] = (plrs[p].sitems * 100) / wbs->maxitems;
+	    cnt_secret[i] = (plrs[p].ssecret * 100) / wbs->maxsecret;
 
 	    if (dofrags)
-		cnt_frags[i] = WI_fragSum(i);
+            {
+		cnt_frags[i] = plrs[p].frags;
+                cnt_tfrags[i] = plrs[p].totalfrags;
+            }
 	}
 	S_StartSound(0, worldmap.done);
 	ng_state = 10;
     }
 
-    if (ng_state == 2)
+    switch (ng_state)
     {
+      case 2:
 	if (!(bcnt&3))
 	    S_StartSound(0, worldmap.percent);
 
 	stillticking = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<10 ; i++)
 	{
-	    if (!playeringame[i])
+            p = dm_rank[i];
+            if (p < 0)
+                break;
+	    if (!playeringame[p])
 		continue;
+
 
 	    cnt_kills[i] += 2;
 
-	    if (cnt_kills[i] >= (plrs[i].skills * 100) / wbs->maxkills)
-		cnt_kills[i] = (plrs[i].skills * 100) / wbs->maxkills;
+	    if (cnt_kills[i] >= (plrs[p].skills * 100) / wbs->maxkills)
+		cnt_kills[i] = (plrs[p].skills * 100) / wbs->maxkills;
 	    else
 		stillticking = true;
 	}
@@ -938,22 +804,24 @@ void WI_updateNetgameStats(void)
 	    S_StartSound(0, worldmap.done);
 	    ng_state++;
 	}
-    }
-    else if (ng_state == 4)
-    {
+        break;
+      case 4:
 	if (!(bcnt&3))
 	    S_StartSound(0, worldmap.percent);
 
 	stillticking = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<10 ; i++)
 	{
-	    if (!playeringame[i])
+            p = dm_rank[i];
+            if (p < 0)
+                break;
+	    if (!playeringame[p])
 		continue;
 
 	    cnt_items[i] += 2;
-	    if (cnt_items[i] >= (plrs[i].sitems * 100) / wbs->maxitems)
-		cnt_items[i] = (plrs[i].sitems * 100) / wbs->maxitems;
+	    if (cnt_items[i] >= (plrs[p].sitems * 100) / wbs->maxitems)
+		cnt_items[i] = (plrs[p].sitems * 100) / wbs->maxitems;
 	    else
 		stillticking = true;
 	}
@@ -962,23 +830,25 @@ void WI_updateNetgameStats(void)
 	    S_StartSound(0,worldmap.done);
 	    ng_state++;
 	}
-    }
-    else if (ng_state == 6)
-    {
+        break;
+      case 6:
 	if (!(bcnt&3))
 	    S_StartSound(0, worldmap.percent);
 
 	stillticking = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<10 ; i++)
 	{
-	    if (!playeringame[i])
-		continue;
+            p = dm_rank[i];
+            if (p < 0)
+              break;
+	    if (!playeringame[p])
+	      continue;
 
 	    cnt_secret[i] += 2;
 
-	    if (cnt_secret[i] >= (plrs[i].ssecret * 100) / wbs->maxsecret)
-		cnt_secret[i] = (plrs[i].ssecret * 100) / wbs->maxsecret;
+	    if (cnt_secret[i] >= (plrs[p].ssecret * 100) / wbs->maxsecret)
+		cnt_secret[i] = (plrs[p].ssecret * 100) / wbs->maxsecret;
 	    else
 		stillticking = true;
 	}
@@ -988,24 +858,30 @@ void WI_updateNetgameStats(void)
 	    S_StartSound(0, worldmap.done);
 	    ng_state += 1 + 2*!dofrags;
 	}
-    }
-    else if (ng_state == 8)
-    {
+        break;
+    case 8:
 	if (!(bcnt&3))
 	    S_StartSound(0, worldmap.percent);
 
 	stillticking = false;
 
-	for (i=0 ; i<MAXPLAYERS ; i++)
+	for (i=0 ; i<10 ; i++)
 	{
-	    if (!playeringame[i])
+            p = dm_rank[i];
+            if (p < 0)
+              break;
+
+	    if (!playeringame[p])
 		continue;
 
-	    cnt_frags[i] += 1;
+	    cnt_frags[i] ++;
+            cnt_tfrags[i] ++;
 
-	    if (cnt_frags[i] >= (fsum = WI_fragSum(i)))
-		cnt_frags[i] = fsum;
-	    else
+	    if (cnt_frags[i] >= plrs[p].frags)
+		cnt_frags[i] = plrs[p].frags;
+	    else if (cnt_tfrags[i] >= plrs[p].totalfrags)
+                cnt_tfrags[i] = plrs[p].totalfrags;
+            else
 		stillticking = true;
 	}
 	
@@ -1014,27 +890,23 @@ void WI_updateNetgameStats(void)
 	    S_StartSound(0, sfx_pldeth);
 	    ng_state++;
 	}
-    }
-    else if (ng_state == 10)
-    {
+        break;
+    case 10:
 	if (acceleratestage)
 	{
 	    S_StartSound(0, worldmap.nextmap);
-	    //if ( gamemission != doom )
             if (!worldmap.nummaps)
   	      WI_initNoState();
             else
 	      WI_initShowNextLoc();
 	}
-    }
-    else if (ng_state & 1)
-    {
+    default:
 	if (!--cnt_pause)
 	{
 	    ng_state++;
 	    cnt_pause = TICRATE;
 	}
-    }
+  }
 }
 
 
@@ -1042,57 +914,48 @@ void WI_updateNetgameStats(void)
 void WI_drawNetgameStats(void)
 {
     int		i;
-    int		x;
     int		y;
-    int		pwidth = SHORT(percent->width);
-
-    WI_slamBackground();
-    
-    // draw animated background
-    //WI_drawAnimatedBack();
+    int         p;
+    char        temp[16];
 
     WI_drawLF();
 
-    // draw stat titles (top line)
-    V_DrawPatchInDirect(NG_STATSX+NG_SPACINGX-SHORT(kills->width),
-		NG_STATSY, FB, kills);
-
-    V_DrawPatchInDirect(NG_STATSX+2*NG_SPACINGX-SHORT(items->width),
-		NG_STATSY, FB, items);
-
-    V_DrawPatchInDirect(NG_STATSX+3*NG_SPACINGX-SHORT(secret->width),
-		NG_STATSY, FB, secret);
-    
+    M_WriteText(6, 40, "Player");
+    M_WriteText(56, 40, "Kills");
+    M_WriteText(98, 40, "Items");
+    M_WriteText(142, 40, "Secret");
     if (dofrags)
-	V_DrawPatchInDirect(NG_STATSX+4*NG_SPACINGX-SHORT(frags->width),
-		    NG_STATSY, FB, frags);
-
-    // draw stats
-    y = NG_STATSY + SHORT(kills->height);
-
-    for (i=0 ; i<MAXPLAYERS ; i++)
     {
-        if (i>3) break; //-jc- (Only shows the first 4 players)
-	if (!playeringame[i])
-	    continue;
-
-	x = NG_STATSX;
-	V_DrawPatchInDirect(x-SHORT(p[i]->width), y, FB, p[i]);
-
-	if (i == me)
-	    V_DrawPatchInDirect(x-SHORT(p[i]->width), y, FB, star);
-
-	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_items[i]);	x += NG_SPACINGX;
-	WI_drawPercent(x-pwidth, y+10, cnt_secret[i]);	x += NG_SPACINGX;
-
-	if (dofrags)
-	    WI_drawNum(x, y+10, cnt_frags[i], -1);
-
-	y += WI_SPACINGY;
+      M_WriteText(190, 40, "Frags");
+      M_WriteText(232, 40, "Total Frags");
     }
 
+    y = 40;
+    for (i = 0; i < 10; i++)
+    {
+       p = dm_rank[i];
+       if (p < 0)
+         break;
+       y += 12;
+       if (p == me && ((bcnt & 31) < 16))
+         continue;
+       sprintf(temp, "%s", player_names[p]);
+       M_WriteTextTrans(6, y, 15, temp);
+       sprintf(temp, "%%%3d", cnt_kills[i]);
+       M_WriteTextTrans(64, y, 15, temp);
+       sprintf(temp, "%%%3d", cnt_items[i]);
+       M_WriteTextTrans(106, y, 15, temp);
+       sprintf(temp, "%%%3d", cnt_secret[i]);
+       M_WriteTextTrans(158, y, 15, temp);
+
+       if (dofrags)
+       {
+         sprintf(temp, "%5d", cnt_frags[i]);
+         M_WriteTextTrans(190, y, 15, temp);
+         sprintf(temp, "%11d", cnt_tfrags[i]);
+         M_WriteTextTrans(232, y, 15, temp);
+       }
+    }
 }
 
 typedef enum
@@ -1266,7 +1129,7 @@ void WI_checkForAccelerate(void)
     player_t  *player;
 
     // check for button presses to skip delays
-    for (i=0, player = players ; i<MAXPLAYERS ; i++, player++)
+    for (i=0, player = players ; i<maxplayers ; i++, player++)
     {
 	if (playeringame[i])
 	{
@@ -1388,7 +1251,7 @@ void WI_loadData(void)
     total = W_CacheLumpName("WIMSTT", PU_STATIC);
     star = W_CacheLumpName("STFST01", PU_STATIC); // your face
     bstar = W_CacheLumpName("STFDEAD0", PU_STATIC); // dead face
-
+/*
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
 	sprintf(name, "STPB%d", i);      
@@ -1400,7 +1263,7 @@ void WI_loadData(void)
 	  bp[i] = W_CacheLumpName(name, PU_STATIC);
         }
     }
-
+  */
     for (i=0;i<10;i++)
     {
 	// numbers 0-9
@@ -1435,6 +1298,9 @@ void WI_unloadData(void)
         Z_ChangeTag(yah[i], PU_CACHE);
       if (splat[i])
         Z_ChangeTag(splat[i], PU_CACHE);
+      lnames[i] = NULL;
+      yah[i] = NULL;
+      splat[i] = NULL;
     }
     Z_ChangeTag(wiminus, PU_CACHE);
     Z_ChangeTag(percent, PU_CACHE);
@@ -1454,12 +1320,12 @@ void WI_unloadData(void)
     Z_ChangeTag(total, PU_CACHE);
     Z_ChangeTag(star, PU_CACHE);
     Z_ChangeTag(bstar, PU_CACHE);
-    
+/*
     for (i=0 ; i<MAXPLAYERS ; i++)
 	Z_ChangeTag(p[i], PU_CACHE);
 
     for (i=0 ; i<4 ; i++)
-	Z_ChangeTag(bp[i], PU_CACHE);
+	Z_ChangeTag(bp[i], PU_CACHE);*/
 }
 
 void WI_Drawer (void)

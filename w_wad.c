@@ -679,7 +679,7 @@ ExtractFileBase
 wadtex_resource_t*	wadtex = NULL;
 int			maxwadtex = 1;
 
-void RegisterTexLumps (int mission, int pnames, int texture1, int texture2)
+static void RegisterTexLumps (int pnames, int texture1, int texture2)
 {
   if (!wadtex)
   {
@@ -693,7 +693,6 @@ void RegisterTexLumps (int mission, int pnames, int texture1, int texture2)
       (wadtex_resource_t *)Z_ReMalloc(wadtex, sizeof(wadtex_resource_t)*++maxwadtex);
   }
 
-  wadtex[maxwadtex - 1].mission = mission;
   wadtex[maxwadtex - 1].pnames  = pnames;
   wadtex[maxwadtex - 1].texture[0] = texture1;
   wadtex[maxwadtex - 1].texture[1] = texture2;
@@ -703,7 +702,7 @@ wadtex_resource_t*
 W_GetTextureResources(void)
 {
    wadtex = (wadtex_resource_t *) Z_ReMalloc(wadtex, sizeof(wadtex_resource_t) * (maxwadtex + 1));
-   wadtex[maxwadtex].mission = -1;
+   wadtex[maxwadtex].pnames = -2;
    return wadtex;
 }
 
@@ -730,24 +729,28 @@ char*			reloadname;
 
 static int wadfile = -1;
 
+// -KM- 1999/01/31 Order is important, Languages are loaded before sfx, etc...
 static struct
 {
   char* name;
   void (*func)(void *, int);
+  int lump;
 } DDF_Readers[] = {
-  {"DDFANIM", DDF_ReadAnims },
-  {"DDFATK", DDF_ReadAtks },
-  {"DDFGAME", DDF_ReadGames },
-  {"DDFLANG", DDF_ReadLangs },
-  {"DDFLEVL", DDF_ReadLevels },
-  {"DDFLINE", DDF_ReadLines },
-  {"DDFCRTR", DDF_ReadCreatures },
-  {"DDFITEM", DDF_ReadItems },
-  {"DDFCNRY", DDF_ReadScenery },
-  {"DDFSECT", DDF_ReadSectors },
-  {"DDFSFX", DDF_ReadSFX },
-  {"DDFSWTH", DDF_ReadSW },
-  {"DDFWEAP", DDF_ReadWeapons }
+  {"DDFLANG", DDF_ReadLangs, 0 },
+  {"DDFSFX", DDF_ReadSFX, 0 },
+  {"DDFATK", DDF_ReadAtks, 0 },
+  {"DDFWEAP", DDF_ReadWeapons, 0 },
+  {"DDFMOBJ", DDF_ReadThings, 0 },
+  // Reserved for backward compatibility
+  {"DDFCRTR", DDF_ReadThings, 0 },
+  {"DDFITEM", DDF_ReadThings, 0 },
+  {"DDFCNRY", DDF_ReadThings, 0 },
+  {"DDFLINE", DDF_ReadLines, 0 },
+  {"DDFSECT", DDF_ReadSectors, 0 },
+  {"DDFSWTH", DDF_ReadSW, 0 },
+  {"DDFANIM", DDF_ReadAnims, 0 },
+  {"DDFGAME", DDF_ReadGames, 0 },
+  {"DDFLEVL", DDF_ReadLevels, 0 }
 };
 
 void W_AddFile (char *filename)
@@ -759,7 +762,6 @@ void W_AddFile (char *filename)
   int length;
   int startlump;
   int storehandle;
-  int mission = 0; // useless, but here
   int pnames = -1;
   int texture1 = -1;
   int texture2 = -1;
@@ -767,131 +769,134 @@ void W_AddFile (char *filename)
   filelump_t singleinfo;
   int j;
     
-    // open the file and add to directory
+  // open the file and add to directory
+  for (i = sizeof(DDF_Readers)/sizeof(DDF_Readers[0]); i--;)
+     DDF_Readers[i].lump = -1;
 
-    // handle reload indicator.
-    if (filename[0] == '~')
+  // handle reload indicator.
+  if (filename[0] == '~')
+  {
+    filename++;
+    reloadname = filename;
+    reloadlump = numlumps;
+  }
+
+  if ( (handle = open (filename,O_RDONLY | O_BINARY)) == -1)
+  {
+    I_Printf (" couldn't open %s\n",filename);
+    return;
+  }
+
+  I_Printf (" adding %s",filename);
+  startlump = numlumps;
+  wadfile ++;
+
+  if (strcmpi (filename+strlen(filename)-3 , "wad" ) )
+  {
+    // single lump file
+    fileinfo = &singleinfo;
+    singleinfo.filepos = 0;
+    singleinfo.size = LONG(filelength(handle));
+    ExtractFileBase (filename, singleinfo.name);
+    numlumps++;
+  }
+  else 
+  {
+    // WAD file
+    read (handle, &header, sizeof(header));
+    if (strncmp(header.identification,"IWAD",4))
     {
-	filename++;
-	reloadname = filename;
-	reloadlump = numlumps;
+       // Homebrew levels?
+       if (strncmp(header.identification,"PWAD",4))
+       {
+          I_Error ("Wad file %s doesn't have IWAD or PWAD id\n", filename);
+       }
+       
+       // ???modifiedgame = true;		
     }
-		
-    if ( (handle = open (filename,O_RDONLY | O_BINARY)) == -1)
+    header.numlumps = LONG(header.numlumps);
+    header.infotableofs = LONG(header.infotableofs);
+    length = header.numlumps*sizeof(filelump_t);
+    fileinfo = alloca (length);
+    lseek (handle, header.infotableofs, SEEK_SET);
+    read (handle, fileinfo, length);
+    numlumps += header.numlumps;
+  }
+
+  
+  // Fill in lumpinfo
+  lumpinfo = realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
+
+  if (!lumpinfo)
+    I_Error ("Couldn't realloc lumpinfo");
+
+  lump_p = &lumpinfo[startlump];
+
+  storehandle = reloadname ? -1 : handle;
+
+  for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
+  {
+    lump_p->handle = storehandle;
+    lump_p->position = LONG(fileinfo->filepos);
+    lump_p->size = LONG(fileinfo->size);
+    lump_p->wadfile = wadfile;
+    strncpy (lump_p->name, fileinfo->name, 8);
+
+    if (!strncmp(lump_p->name, "PNAMES", 8)) pnames = i;
+    else if (!strncmp(lump_p->name, "TEXTURE1", 8)) texture1 = i;
+    else if (!strncmp(lump_p->name, "TEXTURE2", 8)) texture2 = i;
+    // -KM- 1998/11/25 Load radius triggers.
+    else if (!strncmp(lump_p->name, "RSCRIPT", 8))
+      RAD_LoadScript(NULL, i);
+    // -KM- 1998/12/16 Load DDF file from wad.
+    else
     {
-	I_Printf (" couldn't open %s\n",filename);
-	return;
+      for (j = 0; j < sizeof(DDF_Readers)/sizeof(DDF_Readers[0]); j++)
+      {
+        if (!strncmp(lump_p->name, DDF_Readers[j].name, 8))
+        {
+          DDF_Readers[j].lump = i;
+          break;
+        }
+      }
     }
 
-    I_Printf (" adding %s",filename);
-    startlump = numlumps;
-    wadfile ++;
-	
-    if (strcmpi (filename+strlen(filename)-3 , "wad" ) )
+    if (group_sprites)
     {
-	// single lump file
-	fileinfo = &singleinfo;
-	singleinfo.filepos = 0;
-	singleinfo.size = LONG(filelength(handle));
-	ExtractFileBase (filename, singleinfo.name);
-	numlumps++;
+      sprite_lists += (W_IsS_START(lump_p->name));
+      sprite_lists += (W_IsS_END(lump_p->name));
     }
-    else 
+    if (group_flats)
     {
-	// WAD file
-	read (handle, &header, sizeof(header));
-	if (strncmp(header.identification,"IWAD",4))
-	{
-	    // Homebrew levels?
-	    if (strncmp(header.identification,"PWAD",4))
-	    {
-		I_Error ("Wad file %s doesn't have IWAD "
-			 "or PWAD id\n", filename);
-	    }
-	    
-	    // ???modifiedgame = true;		
-	}
-	header.numlumps = LONG(header.numlumps);
-	header.infotableofs = LONG(header.infotableofs);
-	length = header.numlumps*sizeof(filelump_t);
-	fileinfo = alloca (length);
-	lseek (handle, header.infotableofs, SEEK_SET);
-	read (handle, fileinfo, length);
-	numlumps += header.numlumps;
+      flat_lists += (W_IsF_START(lump_p->name));
+      flat_lists += (W_IsF_END(lump_p->name));
     }
-
-    
-    // Fill in lumpinfo
-    lumpinfo = realloc (lumpinfo, numlumps*sizeof(lumpinfo_t));
-
-    if (!lumpinfo)
-	I_Error ("Couldn't realloc lumpinfo");
-
-    lump_p = &lumpinfo[startlump];
-	
-    storehandle = reloadname ? -1 : handle;
-	
-    for (i=startlump ; i<numlumps ; i++,lump_p++, fileinfo++)
+    if (group_patches)
     {
-	lump_p->handle = storehandle;
-	lump_p->position = LONG(fileinfo->filepos);
-	lump_p->size = LONG(fileinfo->size);
-        lump_p->wadfile = wadfile;
-	strncpy (lump_p->name, fileinfo->name, 8);
-
-        // 98-7-10 KM Improve gamemission detection
-        if (!strncmp(lump_p->name, "MAP", 3) && !lump_p->size)
-        {
-          mission = 999; // both missions
-        }
-        else if ((lump_p->name[0] == 'E') && (lump_p->name[2] == 'M') && !lump_p->size)
-        {
-          mission = 999;
-        }
-        else if (!strncmp(lump_p->name, "PNAMES", 8)) pnames = i;
-        else if (!strncmp(lump_p->name, "TEXTURE1", 8)) texture1 = i;
-        else if (!strncmp(lump_p->name, "TEXTURE2", 8)) texture2 = i;
-        // -KM- 1998/11/25 Load radius triggers.
-        else if (!strncmp(lump_p->name, "RSCRIPT", 8))
-          RAD_LoadScript(NULL, i);
-        // -KM- 1998/12/16 Load DDF file from wad.
-        else
-        {
-          for (j = 0; j < sizeof(DDF_Readers)/sizeof(DDF_Readers[0]); j++)
-          {
-            if (!strncmp(lump_p->name, DDF_Readers[j].name, 8))
-            {
-              char *data;
-              data = Z_Malloc(lump_p->size+1, PU_STATIC, NULL);
-              W_ReadLump (i, data);
-              data[lump_p->size] = 0;
-              DDF_Readers[j].func(data, lump_p->size);
-            }
-          }
-        }
-
-        if (group_sprites)
-        {
-          sprite_lists += (W_IsS_START(lump_p->name));
-          sprite_lists += (W_IsS_END(lump_p->name));
-        }
-        if (group_flats)
-        {
-          flat_lists += (W_IsF_START(lump_p->name));
-          flat_lists += (W_IsF_END(lump_p->name));
-        }
-        if (group_patches)
-        {
-          patch_lists += (W_IsP_START(lump_p->name));
-          patch_lists += (W_IsP_END(lump_p->name));
-        }
+      patch_lists += (W_IsP_START(lump_p->name));
+      patch_lists += (W_IsP_END(lump_p->name));
     }
-	
-    if (reloadname)
-      close (handle);
+  }
 
-    RegisterTexLumps(mission, pnames, texture1, texture2);
-    I_Printf("\n");
+  if (reloadname)
+    close (handle);
+
+  // -KM- 1999/01/31 Load lumps in correct order.
+  for (j = 0; j < sizeof(DDF_Readers)/sizeof(DDF_Readers[0]); j++)
+  {
+    if (DDF_Readers[j].lump >= 0)
+    {
+      char *data;
+      data = Z_Malloc(W_LumpLength(DDF_Readers[j].lump)+1, PU_STATIC, NULL);
+      W_ReadLump (DDF_Readers[j].lump, data);
+      data[W_LumpLength(DDF_Readers[j].lump)] = 0;
+      DDF_Readers[j].func(data, W_LumpLength(DDF_Readers[j].lump));
+      Z_Free(data);
+    }
+  }
+
+  RegisterTexLumps(pnames, texture1, texture2);
+  I_Printf("\n");
 }
 
 int *W_GetList(char *name, int *num)

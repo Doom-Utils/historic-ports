@@ -21,8 +21,6 @@
 #define MAXBOB	      0x100000
 #define JUMPHEIGHT    player->mo->info->jumpheight
 #define JUMPBREATHER  1*TICRATE   // -ACB- 1998/08/09 Gap before next jump
-#define LOOKUPLIMIT   32768
-#define LOOKDOWNLIMIT -32768
 
 boolean		onground;
 
@@ -248,6 +246,8 @@ void P_DeathThink (player_t* player)
     else if (player->damagecount)
 	player->damagecount--;
 	
+    if (deathmatch >= 3 && player->mo->movecount < player->mo->info->respawntime)
+      return;
 
     if (player->cmd.buttons & BT_USE)
 	player->playerstate = PST_REBORN;
@@ -340,49 +340,6 @@ void P_PlayerThink (player_t* player)
         if (newweapon != player->readyweapon
             && newweapon != wp_none)
           player->pendingweapon = newweapon;
-    /*
-        newchoice = wp_none;
-
-        if (newweaponone == player->readyweapon)
-        {
-         if (player->weaponowned[newweapontwo])
-           newchoice = newweapontwo;
-        }
-    	else if (newweapontwo == player->readyweapon)
-        {
-         if (player->weaponowned[newweaponone])
-           newchoice = newweaponone;
-        }
-        else
-        {
-         if (player->weaponowned[newweaponone])
-           newchoice = newweaponone;
-         else if (player->weaponowned[newweapontwo])
-           newchoice = newweapontwo;
-        }
-
-        // None of the below with the correct sprite.
-        if (newchoice==wp_supershotgun)
-        {
-          if (W_CheckNumForName("SHT2A0")<0)
-            newchoice = wp_none;
-        }
-
-        if (newchoice==wp_plasma)
-        {
-          if (W_CheckNumForName("PLASA0")<0)
-            newchoice = wp_none;
-        }
-
-        if (newchoice==wp_bfg)
-        {
-          if (W_CheckNumForName("BFUGA0")<0)
-            newchoice = wp_none;
-        }
-
-        if (newchoice != wp_none)
-          player->pendingweapon = newchoice;
-      */
     }
     
     // check for use
@@ -421,7 +378,7 @@ void P_PlayerThink (player_t* player)
     //
     if (gameflags.freelook && (cmd->extbuttons & EBT_VERTLOOK))
     {
-      player->deltaviewz += (cmd->vertangle<<8);
+      player->deltaviewz += (cmd->vertangle*256);
 
       if (player->deltaviewz > LOOKUPLIMIT)
         player->deltaviewz = LOOKUPLIMIT;

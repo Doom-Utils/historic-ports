@@ -7,6 +7,7 @@
 //
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include "dm_defs.h"
 #include "dm_type.h"
 #include "ddf_locl.h"
@@ -56,20 +57,9 @@ bastard_sfx_t bastard_sfx[] =
   { 0, "boscub" },
   { 0, "pldeth" },
   { 0, "pdiehi" },
-//  { 0, "sawup" },
-//  { 0, "sawidl" },
-//  { 0, "punch" },
-//  { 0, "sawful" },
-//  { 0, "sawhit" },
   { 0, "shotgn" },
-//  { 0, "bfg" },
-//  { 0, "dshtgn" },
-//  { 0, "dbopn" },
-//  { 0, "dbload" },
-//  { 0, "dbcls" },
   { 0, "barexp" },
   { 0, "sgcock" },
-//  { 0, "chgun" },
   { 0, "jpmove" },
   { 0, "jpidle" },
   { 0, "jprise" },
@@ -117,6 +107,7 @@ void DDF_ReadSFX(void* data, int size)
    sfx.message = NULL;
    sfx.memfile = data;
    sfx.memsize = size;
+   sfx.filename = NULL;
  }
 
  sfx.DDF_MainCheckName     = DDF_DummyFunction;
@@ -157,6 +148,9 @@ int strncasecmpwild(const char* s1, const char* s2, int n)
      &&(s2[i] != '?'))
       break;
   }
+  // -KM- 1999/01/29 If strings are equal return equal.
+  if (i == n )
+    return 0;
   if (s1[i] == '?' || s2[i] == '?')
     return 0;
   return s1[i] - s2[i];

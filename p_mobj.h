@@ -189,7 +189,11 @@ typedef enum
     // in death match mode (e.g. key cards).
     MF_NOTDMATCH    	= 0x2000000,
 
-    MF_STEALTH          = 0x4000000
+    MF_STEALTH          = 0x4000000,
+
+    // Used so bots know they have picked up their
+    // target item.
+    MF_JUSTPICKEDUP     = 0x8000000
 
 } mobjflag_t;
 
@@ -239,7 +243,11 @@ typedef enum
     // use as a target.
     EF_DUMMYMOBJ      = 2048,
 
-    EF_NORESURRECT    = 4096
+    // Archvile cannot resurrect this monster
+    EF_NORESURRECT    = 4096,
+
+    // Object bounces
+    EF_BOUNCE         = 8192
 
 }
 mobjextendedflag_t;
@@ -287,6 +295,7 @@ typedef struct mobj_s
   // This is the current speed of the object.
   // if fastparm, it is already calculated.
   fixed_t speed;
+  int fuse;
 
   // If == validcount, already checked.
   int validcount;
@@ -332,6 +341,7 @@ typedef struct mobj_s
 
   // if exists, we are supporting this object
   struct mobj_s* supportobj;
+  int side;
     
   // DOSDoom Specifics
   byte playxtra;                      //-jc- Colours for players 5-8

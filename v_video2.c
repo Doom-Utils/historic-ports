@@ -12,7 +12,7 @@
 #include "dm_state.h"
 
 #include "d_main.h"
-#include "i_alleg.h"
+#include "i_allegv.h"
 #include "i_system.h"
 #include "r_local.h"
 #include "m_bbox.h"
@@ -529,25 +529,31 @@ void V_Init16 (void)
 // Darkens the background screen in menus etc...
 //
 // -ES- 1998/08/17 Darkens screen to 22/32 (about 70%) of RGB values
+// -KM- 1998/01/29 Fixed for 15 bpp displays. Goes 2 pixels at a time.
 //
 void V_DarkenScreen16(int scrn)
 {
-  short *lineptr;
-  int i,j,c;
+  unsigned long *pixel;
+  int i;
+  unsigned long c1, c2;
+  unsigned long p;
 
   redrawsbar=true;
-  lineptr=(short *)screens[scrn];
-  for (i=0;i<SCREENHEIGHT;i++)
+  pixel = (unsigned long *) screens[scrn];
+  for (i=SCREENWIDTH*SCREENHEIGHT/2; i--;)
   {
-    for (j=0;j<SCREENWIDTH;j++)
-    {
-      c = lineptr[j];
-      lineptr[j] =
-       ((((((c>>_rgb_r_shift_16)&0x1F)*11)>>4) << _rgb_r_shift_16) |
-        (((((c>>_rgb_g_shift_16)&0x3F)*11)>>4) << _rgb_g_shift_16) |
-        (((((c>>_rgb_b_shift_16)&0x1F)*11)>>4) << _rgb_b_shift_16));
-    }
-    lineptr+=SCREENWIDTH;
+    p = *pixel;
+    c1 = col2rgb16[44][p & 0xFF][0] + col2rgb16[44][(p >> 8) & 0xFF][1];
+    p >>= 16;
+    c2 = col2rgb16[44][p & 0xFF][0] + col2rgb16[44][(p >> 8) & 0xFF][1];
+    c1 &= hicolortransmask3;
+    c2 &= hicolortransmask3;
+    c1 |= c1 >> 16;
+    c2 |= c2 >> 16;
+    c1 >>= hicolortransshift;
+    c2 >>= hicolortransshift;
+
+    *pixel++ = ((c2 & 0xFFFF) << 16) | (c1 & 0xFFFF);
   }
 }
 

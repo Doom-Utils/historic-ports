@@ -38,7 +38,7 @@
 
 #define PARSERV       10                    // Radius Trigger Parser Version
 #define PARSERVFIX    10
-#define NUMTICS       35
+#define NUMTICS       TICRATE
 #define MAXSTRLEN     160
 #define MINMAP        1
 #define MINEPS        1
@@ -504,8 +504,8 @@ void RAD_DoRadiTrigger(player_t *p)
            // Step through the list
            for (;t;t=t->next) {
              mobj_t  *mo;
-
-             mo=P_MobjCreateObject(t->x,t->y,ONFLOORZ,specials[MOBJ_RESPAWNFOG]);
+         		
+             mo=P_MobjCreateObject(t->x,t->y,ONFLOORZ,t->thingid->respawneffect);
              S_StartSound(mo, sfx_itmbk);
              mo=P_MobjCreateObject(t->x,t->y,ONFLOORZ,t->thingid);
 
@@ -532,7 +532,7 @@ void RAD_DoRadiTrigger(player_t *p)
         // Damage the player(s)
         if (radscr->damage!=NULL) {
            int i;
-           for (i=0;i<MAXPLAYERS;i++) {
+           for (i=0;i<maxplayers;i++) {
                if (!playeringame[i]) continue;
                if (RAD_WithinRadius(&players[i],radscr)) {
                   P_DamageMobj(players[i].mo, NULL, NULL,radscr->damage->damageamount);
@@ -543,7 +543,7 @@ void RAD_DoRadiTrigger(player_t *p)
         // Heal the player(s)
         if (radscr->heal!=NULL) {
            int i;
-           for (i=0;i<MAXPLAYERS;i++) {
+           for (i=0;i<maxplayers;i++) {
                if (!playeringame[i]) continue;
                if (RAD_WithinRadius(&players[i],radscr)) {
                   if (players[i].health>radscr->heal->limit)
@@ -563,7 +563,7 @@ void RAD_DoRadiTrigger(player_t *p)
         // Armor for player(s)
         if (radscr->armor!=NULL) {
            int i;
-           for (i=0;i<MAXPLAYERS;i++) {
+           for (i=0;i<maxplayers;i++) {
                if (!playeringame[i]) continue;
                if (RAD_WithinRadius(&players[i],radscr)) {
                   if (players[i].armorpoints>radscr->armor->limit)
@@ -712,9 +712,9 @@ int ENDRADcheck=0;         // Determine whether the code blocks are started
                            // and terminated.
 int hashloc=0;             // Location within hash table
 
-void RAD_SetParseError(int errno)
+void RAD_SetParseError(int error)
 {
-     ErrorCode=errno;
+     ErrorCode=error;
      ParseStatusFail=true;
 }
 

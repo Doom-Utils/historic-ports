@@ -5,15 +5,137 @@ NOTES:
 Suggested changes to Allegro:
   Boost sound volume:mixer.c:185
 	 mix_vol_table[j][i] = (i-128) * j * 768 / MIX_VOLUME_LEVELS / mix_voices;
-  Disable detection of default.cfg in current directory:digmid.c:467
-/*
-   replace_filename(path, __crt0_argv[0], "", sizeof(path));
-   if (try_patch_location(path, dir, file))
-      return TRUE;
-*/
-  Fix Joystick:allegro.h:641
-			      ((joy[0].stick[1].axis[1].d1) ? 4 :       \
-				 ((joy[0].stick[1].axis[1].d2) ? 2 :    \
+  Disable detection of default.cfg in current directory:digmid.c:416
+   {
+     char path[256];
+     replace_filename(path, __crt0_argv[0], "", sizeof(path));
+     if (strcmp(where, path))
+     {
+       /* could it be a directory containing default.cfg? */
+       append_filename(dir, where, "default.cfg", 256);
+       if (file_exists(dir, FA_RDONLY | FA_ARCH, NULL)) {
+          append_filename(dir, where, "", 256);
+          strcpy(file, "default.cfg");
+          return TRUE;
+       }
+     }
+   }
+  Fix BCD 1.2:bcd.c:457  If someone has v1.3 please send it to me
+    tracks = calloc(num_tracks+1, sizeof(Track));
+----------------------------------------------------------------------------------------------------------------------------
+29-01-99
+----------------------------------------------------------------------------------------------------------------------------
+Changed all MAXINT to INT_MAX, MININT to INT_MIN etc. since that is what is defined
+ by limits.h, which is more portable.
+Fixed Network play.
+Close the debug file on exit.
+The debug file name is different.  Each debug file gives a different name, debug0.txt,
+ debug1.txt, debug2.txt ...
+-skill uses the correct numbers: 1 - easiest, not 0.
+Removed conio.h from the list of headers for ddf, unused.
+Merged all types of things (scenery, items, and creatures) into one file.  This means
+ that all commands are available for all types.
+Merged thing types into attacks, so all thing commands are available for attack
+ projectiles.
+Added the player_attack flag to attacks.  This means that accuracy is not affected
+ by a target's invisibility.
+Added (on request) option for autoaim disable.  Options are Off (no auto aiming)/On
+ (auto aiming)/mlook (mlook will change to view the target)
+Improved lines.ddf scrolling.  Scrolling can take place in any direction, through
+ use of x speed and y speed instead of direction and speed. (Retained compatibility)
+Fixed bugs in DDF:
+ games.filename is not initialised to NULL.
+ defines work.
+ numeric accepts hex (and octal) as well as decimal
+Created a p_action.h file.  This is the header for ddf_main.c.  To add action pointers,
+ you only have to edit p_action.c to add the code, and p_action.h to add the ddf names.
+Removed stacks of commented out bits of code.
+Externalised everything still in the exe (blood and bullet puffs) except for the
+ MAP30 brain.  The only reason I can't externalise this is making that wall fill
+ with explosions when it dies.
+Added the bounce flag for mobjs.  Mobjs with this flag bounce of walls. (Like balls
+ and grenades.)  Also bounce on floor.
+Found code that wasn't being called in dstrings.c.  Removed dstrings.c.  Relevant
+ code is in ddf_main.c: chat macros, gamma messages
+Added things to mobj:
+ lifespan, gib, and side.
+Changed backpack weapon info to use weapon names.
+Fixed strncasecmpwild
+Added Clipsize to weapons.
+Remove dstrings.c from project
+Added rangecheck to vertangle
+G_DeathMatchSpawnPlayer will use more than 20 spawn spots.
+The spawn code can spawn more than 8 players! The only thing left now is to
+ dynamicly allocate anything based on MAXPLAYERS, and we have removed the limit
+ on players! Pity network code's max is 128... :-)
+Updated hacked code from allegro from v3.1: mus_midi.c i_alleg.h i_allgdj.h
+ Sent message to Shawn, this code will not be necessary when the next version of
+ allegro comes out. :-)
+-forcevga comes into effect before memory is allocated for screens.
+Added #defines to music code: NOMIDI, NOMP3, NOMOD, NOCD to disable midi, mp3, mod, and
+ cd music.
+Reduced redundancy in i_net.c
+Fixed pitch shift in i_sound.c, removed steptable (unused)
+Added some comments to i_sound.c
+Fixed swapstereo in i_sound.c.
+If numlock is on, pad-5 selects rocket launcher.  This was a 'feature' of regular
+ doom, and someone asked for it.  If numlock is off, pad-5 acts as it used to in
+ DOSDoom. (I use it for jump.)
+Zone memory now allocates based on available free memory.  Gives a low memory warning.
+-noirq param gets tics from clock instead of interrupt.  This allows DOSDoom to run
+ in background win95 windows.
+On exit and quit, the debug file is closed.  Errors are printed to the debugfile.
+Removed I_Textattr, I_ClrScr, and I_Window
+Added Bilinear filtering spanfunc by Vitek Kavan, optimised by Erik
+Reorginised I_CheckCPU: -UseC bypasses check since check_cpu crashes on 386s.
+Added low resolution column drawers for slow computers.  (Like low detail on DOOM.)
+Externalised cheat codes to default.ldf
+Externalised quit sounds to default.ldf
+Externalised quit messages to default.ldf
+Removed m_swap.c from the project, inlined byte swap functions in m_swap.h
+Made a makefile that works
+Added P_ActMakeActiveSound.
+Added 'sides.'  Objects on the same side don't attack each other.  0 is neutral.
+ side is a binary value, so side 6 is an alliance between sides 4 + 2.  Players on
+ the same side should not get frags for killing their own side.
+SmartProjectiles will now also calculate how high to throw objects without MF_NOGRAVITY
+ (grenades.)
+Object spawning should now explode spawns against walls instead of removing them.
+Fixed Skullfly for nightmare mode.
+Stopped skulls being able to move stationary objects like pillars.
+Added CheckBlood action which stops blood from disappearing in blood mode.
+Added CheckMoving action which returns an object to it's spawn state when not moving
+ (for player objs)
+Fixed high speed objects.  Old max speed was 30, is now 100.  Can be increased by
+ changing the define, 100 is pretty quick
+Sphere attack does more damage.  Distance from explosion point was not taking into
+ account the target's radius in the z axis.
+PIT_CheckBlocking Line fixed
+Added fuse (and lifespan) for grenades
+EV_Teleport searches only the sector, not the entire map.
+Fixed Autofire weapons.  Semiauto weapons work now.
+Fixed savegames, yay.
+Fixed pwads that replace textures, but use id's PNAMES or TEXTURE1
+Swapped around R_PointToAngle and R_PointToAngle2 so that R_PointToAngle always works.
+Added Doppler shifts to the sound code. :-)
+Removed P_Random in S_StartSound.  Otherwise opening a menu will desync net + demo games
+V_DarkenScreen8 does pixels 4 at a time, and V_DarkenScreen16 works properly for both
+ 15 an 16 bits per pixel displays.
+DDF lumps in a wad file are always loaded in the correct order now.
+If malloc of Zone memory fails, error is generated instead of warning.
+Dynamic allocation of sound channels in i_sound.c: Allows more than 16 sound channels
+ (Allegro max is 64...)
+Wrote a null network driver for testing net code on one machine.
+ASM optimisation in MP3 code has rotted. Don't use -DARCH_i586 when compiling libamp.
+Why have I done so much for portability?  I have a win32 port, using cygwin and
+ WinAlleg.  Differences from DOS version: No cd music, no midi music, -forcevga runs
+ in a window (desktop must be in 256 colour mode) no asm drawing funcs, can't have
+ mp3 and mus music in the same session (use -mp3 to enable mp3 music, disable mus
+ music.) You can still use mp3 music without -mp3, it just sounds crap. No network
+ play.
+Fixed makefile.  make makes dos version, make clean cleans everything but exes,
+ make win32 makes win32 port.
+
 ----------------------------------------------------------------------------------------------------------------------------
 23-12-98
 ----------------------------------------------------------------------------------------------------------------------------

@@ -17,7 +17,10 @@
 void resinit_r_draw_c8(void);
 
 void R_DrawColumn8_CVersion(void);// C Version
-void R_DrawColumn8_KM (void);      // C Version, optimised by KM for GCC
+void R_DrawColumn8_MIP (void);    // Mipmap version
+void R_DrawColumn8_KM (void);     // Smooth version
+void R_DrawColumn8_BLF (void);    // Smooth version
+void R_DrawColumn8_LowRes (void); // C Low Res version
 void R_DrawColumn8_id(void);      // id's original
 void R_DrawColumn8_id_Erik(void); // improved id's original
 void R_DrawColumn8_Pentium(void); // Optimised for Pentium
@@ -33,8 +36,11 @@ void R_DrawTranslatedColumn8 (void);
 void R_DrawTranslucentTranslatedColumn8 (void);
 
 void R_DrawSpan8_CVersion (void); // C Version
+void R_DrawSpan8_MIP (void);      // Mipmap version
+void R_DrawSpan8_LowRes (void);   // Low resolution
 void R_DrawSpan8_MMX (void);      // MMX asm version
-void R_DrawSpan8_KM (void);       // id's original
+void R_DrawSpan8_KM (void);       // Interpolated
+void R_DrawSpan8_BLF (void);      // Bilinear Filtering
 void R_DrawSpan8_id (void);       // id's original
 void R_DrawSpan8_id_Erik (void);  // improved id's original
 void R_DrawSpan8_Rasem (void);    // Rasem's

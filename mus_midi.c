@@ -7,11 +7,9 @@
  *            \/_/\/_/\/____/\/____/\/____/\/___L\ \/_/ \/___/
  *                                           /\____/
  *                                           \_/__/
- *      By Shawn Hargreaves,
- *      1 Salisbury Road,
- *      Market Drayton,
- *      Shropshire,
- *      England, TF9 1AJ.
+ *      By Shawn Hargreaves
+ *      shawn@talula.demon.co.uk
+ *      http://www.talula.demon.co.uk/allegro/
  *
  *      The core MIDI file player.
  *
@@ -20,13 +18,12 @@
  *      See readme.txt for copyright information.
  */
 
-
+#ifndef NOMIDI
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
 
-//#include "allegro.h"
 #include "i_alleg.h"
 #include "m_swap.h"
 
@@ -134,110 +131,27 @@ void lock_midi(MIDI *midi)
 {
    int c;
 
-   _go32_dpmi_lock_data(midi, sizeof(MIDI));
+   LOCK_DATA(midi, sizeof(MIDI));
 
    for (c=0; c<MIDI_TRACKS; c++)
       if (midi->track[c].data)
-	 _go32_dpmi_lock_data(midi->track[c].data, midi->track[c].len);
-}
-
-
-
-/* load_midi:
- *  Loads a standard MIDI file, returning a pointer to a MIDI structure,
- *  or NULL on error. 
- */
-MIDI *load_midi(char *filename)
-{
-   int c;
-   char buf[256];
-   long data;
-   PACKFILE *fp;
-   MIDI *midi;
-   int num_tracks;
-
-   fp = pack_fopen(filename, F_READ);        /* open the file */
-   if (!fp)
-      return NULL;
-
-   midi = malloc(sizeof(MIDI));              /* get some memory */
-   if (!midi) {
-      pack_fclose(fp);
-      return NULL;
-   }
-
-   for (c=0; c<MIDI_TRACKS; c++) {
-      midi->track[c].data = NULL;
-      midi->track[c].len = 0;
-   }
-
-   pack_fread(buf, 4, fp);                   /* read midi header */
-   if (memcmp(buf, "MThd", 4))
-      goto err;
-
-   pack_mgetl(fp);                           /* skip header chunk length */
-
-   data = pack_mgetw(fp);                    /* MIDI file type */
-   if ((data != 0) && (data != 1))
-      goto err;
-
-   num_tracks = pack_mgetw(fp);              /* number of tracks */
-   if ((num_tracks < 1) || (num_tracks > MIDI_TRACKS))
-      goto err;
-
-   data = pack_mgetw(fp);                    /* beat divisions */
-   midi->divisions = ABS(data);
-
-   for (c=0; c<num_tracks; c++) {            /* read each track */
-      pack_fread(buf, 4, fp);                /* read track header */
-      if (memcmp(buf, "MTrk", 4))
-	 goto err;
-
-      data = pack_mgetl(fp);                 /* length of track chunk */
-      midi->track[c].len = data;
-
-      midi->track[c].data = malloc(data);    /* allocate memory */
-      if (!midi->track[c].data)
-	 goto err;
-					     /* finally, read track data */
-      if (pack_fread(midi->track[c].data, data, fp) != data)
-	 goto err;
-   }
-
-   pack_fclose(fp);
-   lock_midi(midi);
-   return midi;
-
-   /* oh dear... */
-   err:
-   pack_fclose(fp);
-   destroy_midi(midi);
-   return NULL;
+	 LOCK_DATA(midi->track[c].data, midi->track[c].len);
 }
 
 // These macros convert big endian to little endian and back
-// They will only work on a 486+
 static inline int SWAPL(int x)
 {
- __asm__("bswapl %0"
-	 : "=r" (x) /* Outputs */
-	 : "0" (x)  /* Inputs */
-	 );
- return x;
+    return
+	(x>>24)
+	| ((x>>8) & 0xff00)
+	| ((x<<8) & 0xff0000)
+	| (x<<24);
 }
-
+  
 static inline short SWAPS(short x)
 {
- int y = x & 0xffff;
- y <<= 8;
- __asm__("bswapl %0"
-	 : "=r" (y) /* Outputs */
-	 : "0" (y)  /* Inputs */
-	 );
- y >>= 8;
- return (short) y;
+    return (x>>8) | (x<<8);
 }
-
 // This is Allegro's MIDI *load_midi(char *filename) hacked to
 // read data directly from memory, which is more appropriate
 // to this situation
@@ -312,6 +226,80 @@ MIDI *load_midi_data(char *dat)
 }
 
 
+/* load_midi:
+ *  Loads a standard MIDI file, returning a pointer to a MIDI structure,
+ *  or NULL on error. 
+ */
+MIDI *load_midi(char *filename)
+{
+   int c;
+   char buf[256];
+   long data;
+   PACKFILE *fp;
+   MIDI *midi;
+   int num_tracks;
+
+   fp = pack_fopen(filename, F_READ);        /* open the file */
+   if (!fp)
+      return NULL;
+
+   midi = malloc(sizeof(MIDI));              /* get some memory */
+   if (!midi) {
+      pack_fclose(fp);
+      return NULL;
+   }
+
+   for (c=0; c<MIDI_TRACKS; c++) {
+      midi->track[c].data = NULL;
+      midi->track[c].len = 0;
+   }
+
+   pack_fread(buf, 4, fp);                   /* read midi header */
+   if (memcmp(buf, "MThd", 4))
+      goto err;
+
+   pack_mgetl(fp);                           /* skip header chunk length */
+
+   data = pack_mgetw(fp);                    /* MIDI file type */
+   if ((data != 0) && (data != 1))
+      goto err;
+
+   num_tracks = pack_mgetw(fp);              /* number of tracks */
+   if ((num_tracks < 1) || (num_tracks > MIDI_TRACKS))
+      goto err;
+
+   data = pack_mgetw(fp);                    /* beat divisions */
+   midi->divisions = ABS(data);
+
+   for (c=0; c<num_tracks; c++) {            /* read each track */
+      pack_fread(buf, 4, fp);                /* read track header */
+      if (memcmp(buf, "MTrk", 4))
+	 goto err;
+
+      data = pack_mgetl(fp);                 /* length of track chunk */
+      midi->track[c].len = data;
+
+      midi->track[c].data = malloc(data);    /* allocate memory */
+      if (!midi->track[c].data)
+	 goto err;
+					     /* finally, read track data */
+      if (pack_fread(midi->track[c].data, data, fp) != data)
+	 goto err;
+   }
+
+   pack_fclose(fp);
+   lock_midi(midi);
+   return midi;
+
+   /* oh dear... */
+   err:
+   pack_fclose(fp);
+   destroy_midi(midi);
+   return NULL;
+}
+
+
+
 /* destroy_midi:
  *  Frees the memory being used by a MIDI file.
  */
@@ -325,11 +313,11 @@ void destroy_midi(MIDI *midi)
    if (midi) {
       for (c=0; c<MIDI_TRACKS; c++) {
 	 if (midi->track[c].data) {
-	    _unlock_dpmi_data(midi->track[c].data, midi->track[c].len);
+	    UNLOCK_DATA(midi->track[c].data, midi->track[c].len);
 	    free(midi->track[c].data);
 	 }
       }
-      _unlock_dpmi_data(midi, sizeof(MIDI));
+      UNLOCK_DATA(midi, sizeof(MIDI));
       free(midi);
    }
 }
@@ -358,6 +346,7 @@ static unsigned long parse_var_len(unsigned char **data)
 }
 
 static END_OF_FUNCTION(parse_var_len);
+
 
 
 
@@ -1310,7 +1299,11 @@ int play_midi(MIDI *midi, int loop)
    }
    else {
       midifile = NULL;
-      midi_pos = -1;
+
+      if (midi_pos > 0)
+	 midi_pos = -midi_pos;
+      else if (midi_pos == 0)
+	 midi_pos = -1;
    }
 
    return 0;
@@ -1597,10 +1590,14 @@ static void midi_lock_mem()
 /* midi_constructor:
  *  Register my functions with the code in sound.c.
  */
+#ifdef __GNUC__
+/* alternatively called from allegro_init */
 static void midi_constructor() __attribute__ ((constructor));
-static void midi_constructor()
+static
+#endif
+void midi_constructor()
 {
    _midi_init = midi_init;
    _midi_exit = midi_exit;
 }
-
+#endif

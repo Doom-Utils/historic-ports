@@ -7,11 +7,11 @@
 //
 
 // For struct defines and function prototypes
+// For timer routines
+#include <allegro.h>
+
 #include "i_music.h"
 #include "mus_mod.h"
-
-// For timer routines
-#include "i_alleg.h"
 
 // -----------  Local Variables  --------------
 

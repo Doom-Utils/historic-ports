@@ -24,9 +24,7 @@
 #define __SOUNDS__
 
 #include <stdio.h>    //to avoid a warning
-#ifdef DJGPP
-#include "i_alleg.h"  //because sfxinfo_struct now has a SAMPLE*
-#endif
+#include <allegro.h>  //because sfxinfo_struct now has a SAMPLE*
 
 #include "dm_type.h"
 
@@ -62,11 +60,7 @@ struct sfxinfo_struct
     boolean     stereo;
 
     // sound data
-    #ifdef DJGPP
     SAMPLE*	data;
-    #else
-    void*       data;
-    #endif
 
     // this is checked every second to see if sound
     // can be thrown out (if 0, then decrement, if -1,

@@ -73,7 +73,20 @@ typedef struct
 
 } doomdata_t;
 
-
+typedef struct
+{
+    unsigned            checksum;
+    byte		retransmitfrom;
+    byte		starttic;
+    byte		player;
+    byte		numtics;
+    byte                version;
+    byte                skill;
+    byte                deathmatch;
+    byte                drone;
+    gameflags_t         setupflags;
+    char                startmap[0];
+} setupdata_t;
 
 
 typedef struct
@@ -138,6 +151,8 @@ void D_QuitNetGame (void);
 //? how many ticks to run?
 void TryRunTics (void);
 
+// Sends a setup packet to sync settings globally.
+void D_SendSetupPacket(int flags);
 
 #endif
 

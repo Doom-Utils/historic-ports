@@ -58,7 +58,9 @@ typedef enum
     PST_DEAD,
 
     // Ready to restart/respawn???
-    PST_REBORN		
+    PST_REBORN,
+
+    PST_BOT
 
 } playerstate_t;
 
@@ -121,7 +123,9 @@ typedef struct player_s
     boolean		backpack;
     
     // Frags, kills of other players.
-    int			frags[MAXPLAYERS];
+//    int			frags[MAXPLAYERS];
+    int                 frags;
+    int                 totalfrags;
     weapontype_t	readyweapon;
     
     // Is wp_nochange if not changing.
@@ -197,7 +201,9 @@ typedef struct
     int		sitems;
     int		ssecret;
     int		stime; 
-    int		frags[MAXPLAYERS];
+//    int		frags[MAXPLAYERS];
+    int		frags;
+    int         totalfrags;
     int		score;	// current score on entry, modified on return
   
 } wbplayerstruct_t;
@@ -224,7 +230,8 @@ typedef struct
     // index of this player in game
     int		pnum;	
 
-    wbplayerstruct_t	plyr[MAXPLAYERS];
+//    wbplayerstruct_t	plyr[MAXPLAYERS];
+    wbplayerstruct_t*	plyr;
 
 } wbstartstruct_t;
 

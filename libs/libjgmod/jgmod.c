@@ -52,7 +52,6 @@ int main(int argc, char **argv)
         }
 
     allegro_init();
-    i_love_bill = TRUE;
     install_timer();
     install_keyboard();
     text_mode (0);

@@ -13,7 +13,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -222,6 +221,7 @@ void DDF_ReadGames(void *data, int size)
     games.message = NULL;
     games.memfile = data;
     games.memsize = size;
+    games.filename = NULL;
   }
   games.DDF_MainCheckName     = DDF_GameCheckName;
   games.DDF_MainCheckCmd      = DDF_MainCheckCommand;

@@ -790,7 +790,7 @@ void A_BrainExplode (mobj_t* mo)
 
 void A_BrainDie (mobj_t*  mo)
 {
-    G_ExitLevel (35);
+    G_ExitLevel (TICRATE);
 }
 
 void A_BrainSpit (mobj_t* object)

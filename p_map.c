@@ -131,7 +131,6 @@ boolean P_TeleportMove (mobj_t* thing, fixed_t x, fixed_t y)
   xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS)>>MAPBLOCKSHIFT;
   yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS)>>MAPBLOCKSHIFT;
   yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS)>>MAPBLOCKSHIFT;
-
   for (bx=xl ; bx<=xh ; bx++)
     for (by=yl ; by<=yh ; by++)
       if (!P_BlockThingsIterator(bx,by,PIT_StompThing))
@@ -182,12 +181,12 @@ static boolean PIT_CheckLine (line_t* ld)
     // so two special lines that are only 8 pixels apart
     // could be crossed in either order.
     
+    // -ACB- 1998/08/24 if the line is not one sided, we'll need the linedef
+    ceilingline = ld;
+
     if (!ld->backsector)
       return false;		// one sided line
 
-    // -ACB- 1998/08/24 if the line is not one sided, we'll need the linedef
-    ceilingline = ld;
-		
     if (!(tmthing->flags & MF_MISSILE))
     {
       if (ld->flags & ML_BLOCKING)
@@ -648,7 +647,7 @@ boolean PTR_SlideTraverse (intercept_t* in)
   // check if it can fit in the space
   if (!openrange < slidemo->height)
   {
-      // Check slide mobj is not to high
+      // Check slide mobj is not too high
       if (!opentop - slidemo->z < slidemo->height)
       {
           // Check slide mobj can step over
@@ -1006,7 +1005,8 @@ static boolean PTR_ShootTraverse (intercept_t* in)
     //y = shootthing->y + FixedMul(dist, finesine[shootangle]);
 
     // Spawn bullet puffs.
-    P_SpawnPuff (x, y, z);
+    if (bulletpuff)
+      P_SpawnPuff (x, y, z, bulletpuff);
 	
     // don't go any farther
     return false;
@@ -1045,9 +1045,11 @@ static boolean PTR_ShootTraverse (intercept_t* in)
   // Spawn bullet puffs or blood spots,
   // depending on target type.
   if (in->d.thing->flags & MF_NOBLOOD)
-    P_SpawnPuff (x,y,z);
-  else
-    P_SpawnBlood (x,y,z, la_damage, shootangle);
+  {
+    if (bulletpuff)
+      P_SpawnPuff (x,y,z, bulletpuff);
+  } else
+    P_SpawnBlood (x,y,z, la_damage, shootangle, in->d.thing->info->blood);
 
   if (la_damage)
     P_DamageMobj (th, shootthing, shootthing, la_damage);
@@ -1186,12 +1188,27 @@ mobj_t* P_MapTargetAutoAim(mobj_t* source, angle_t angle, fixed_t distance)
     
   attackrange = distance;
   linetarget = NULL;
-	
-  P_PathTraverse (source->x, source->y, x2, y2,
-                    PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse);		
+
+  // -KM- 1999/01/31 Autoaim is an option.
+  if (!source->player || gameflags.autoaim)
+    P_PathTraverse (source->x, source->y, x2, y2,
+                      PT_ADDLINES|PT_ADDTHINGS, PTR_AimTraverse);
+
   if (linetarget)
+  {
+    // -KM- 1999/01/31 Look at the thing you aimed at.  Is sometimes
+    //  useful, sometimes annoying :-)
+    if (source->player && gameflags.autoaim == AA_MLOOK)
+    {
+      source->player->deltaviewz = FixedDiv(linetarget->z - source->z,
+        P_AproxDistance(source->x - linetarget->x, source->y - linetarget->y));
+      if (source->player->deltaviewz > LOOKUPLIMIT)
+        source->player->deltaviewz = LOOKUPLIMIT;
+      if (source->player->deltaviewz < LOOKDOWNLIMIT)
+        source->player->deltaviewz = LOOKDOWNLIMIT;
+    }
     return linetarget;
-  else
+  } else
     return P_MapTargetTheory(source);
 }
 
@@ -1335,10 +1352,11 @@ boolean PIT_SphereAttack (mobj_t* thing)
 		
     dx = abs(thing->x - bombspot->x) - thing->radius;
     dy = abs(thing->y - bombspot->y) - thing->radius;
-    dz = abs(thing->z + thing->height/2 - bombspot->z);
+    // -KM- 1999/01/31 Use thing->height/2
+    dz = abs(thing->z + thing->height/2 - bombspot->z) - thing->height/2;
 
-    hdist = P_AproxDistance(dx, dy);
-    dist = P_AproxDistance(hdist, dz);
+    hdist = P_AproxDistance(dx>0?dx:0, dy>0?dy:0);
+    dist = P_AproxDistance(hdist, dz>0?dz:0);
 
     dist >>= FRACBITS;
 
@@ -1447,8 +1465,7 @@ boolean PIT_ChangeSector (mobj_t*	thing)
     // crunch bodies to giblets
     if (thing->health <= 0)
     {
-        /* P_SetMobjState(thing,thing->info->gibbedstate) - DDF Here we come */
-	P_SetMobjState (thing, S_GIBS);
+	P_SetMobjState (thing, thing->info->gib->spawnstate);
 	thing->flags &= ~MF_SOLID; // just been crushed, isn't solid.
 	thing->height = 0;
 	thing->radius = 0;
@@ -1475,7 +1492,7 @@ boolean PIT_ChangeSector (mobj_t*	thing)
 	// spray blood in a random direction
 	mo = P_MobjCreateObject (thing->x, thing->y,
 			             thing->z + thing->height/2, 
-                               specials[MOBJ_BLOOD]);
+                               thing->info->blood);
 	
 	mo->momx = (P_Random() - P_Random ())<<12;
 	mo->momy = (P_Random() - P_Random ())<<12;
@@ -1627,9 +1644,11 @@ static int mt2; // spawn object top
 
 static boolean PIT_CheckBlockingLine (line_t *line)
 {
-  if (tmbbox[BOXRIGHT] <= line->bbox[BOXLEFT] &&
-        tmbbox[BOXLEFT] >= line->bbox[BOXRIGHT] &&
-         tmbbox[BOXTOP] <= line->bbox[BOXBOTTOM] &&
+  // -KM- 1999/01/31 Changed &&s to ||s.  This condition actually does something
+  //  now.
+  if (tmbbox[BOXRIGHT] <= line->bbox[BOXLEFT] ||
+        tmbbox[BOXLEFT] >= line->bbox[BOXRIGHT] ||
+         tmbbox[BOXTOP] <= line->bbox[BOXBOTTOM] ||
           tmbbox[BOXBOTTOM] >= line->bbox[BOXTOP])
   {
     return true; // no possible contact made between the respective bounding boxes.
@@ -1639,8 +1658,12 @@ static boolean PIT_CheckBlockingLine (line_t *line)
   if (P_PointOnLineSide(mx1,my1,line) == P_PointOnLineSide(mx2,my2,line))
     return true;
 
+  // -KM- 1999/01/31 Save ceilingline for bounce.
   if (!missile && (line->flags & (ML_BLOCKING|ML_BLOCKMONSTERS)))
+  {
+    ceilingline = line;
     return false;
+  }
 
   if (line->flags & ML_TWOSIDED)
   {
@@ -1652,7 +1675,7 @@ static boolean PIT_CheckBlockingLine (line_t *line)
       return true; // two sided line with no restriction
     }
   }
-
+  ceilingline = line;
   return false; // stop checking, objects are on different sides of a blocking line
 }
 
@@ -1674,7 +1697,7 @@ boolean P_MapCheckBlockingLine(mobj_t* thing, mobj_t* spawnthing)
   mx2 = spawnthing->x;
   my2 = spawnthing->y;
   mb2 = spawnthing->z;
-  mt2 = spawnthing->z + spawnthing->info->height;
+  mt2 = spawnthing->z + spawnthing->height;
   missile = (spawnthing->flags & MF_MISSILE);
 
   tmbbox[BOXLEFT]   = mx1<mx2 ? mx1 : mx2;

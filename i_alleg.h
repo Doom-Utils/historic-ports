@@ -7,11 +7,9 @@
  *            \/_/\/_/\/____/\/____/\/____/\/___L\ \/_/ \/___/
  *                                           /\____/
  *                                           \_/__/
- *      By Shawn Hargreaves,
- *      1 Salisbury Road,
- *      Market Drayton,
- *      Shropshire,
- *      England, TF9 1AJ.
+ *      By Shawn Hargreaves
+ *      shawn@talula.demon.co.uk
+ *      http://www.talula.demon.co.uk/allegro/
  *
  *      Some definitions for internal use by the library code.
  *      This should not be included by user programs.
@@ -25,7 +23,7 @@
 
 #include "allegro.h"
 
-#include "i_algdj.h"
+#include "i_allgdj.h"
 
 
 /* flag for how many times we have been initialised */
@@ -49,6 +47,10 @@ __INLINE__ void _grow_scratch_mem(int size)
 /* list of functions to call at program cleanup */
 void _add_exit_func(void (*func)());
 void _remove_exit_func(void (*func)());
+
+
+/* reads a translation file into memory */
+void _load_config_text();
 
 
 /* various bits of mouse stuff */
@@ -75,18 +77,7 @@ void _stub_bank_switch_end();
 
 
 /* stuff for setting up bitmaps */
-typedef struct _GFX_MODE_INFO
-{
-   int w, h;
-   int bpp;
-   int bios_num;
-   int bios_int;
-   int (*setter)(int w, int h, int bpp);
-}
-_GFX_MODE_INFO;
-
 void _check_gfx_virginity();
-BITMAP *_gfx_mode_set_helper(int w, int h, int v_w, int v_h, int color_depth, GFX_DRIVER *driver, int (*detect)(), _GFX_MODE_INFO *mode_list, void (*set_width)(int w, int bpp), int align);
 BITMAP *_make_bitmap(int w, int h, unsigned long addr, GFX_DRIVER *driver, int color_depth, int bpl);
 void _sort_out_virtual_width(int *width, GFX_DRIVER *driver);
 
@@ -101,6 +92,8 @@ extern int _textmode;
 #define BYTES_PER_PIXEL(bpp)     (((int)(bpp) + 7) / 8)
 
 int _color_load_depth(int depth);
+
+extern int _color_conv;
 
 BITMAP *_fixup_loaded_bitmap(BITMAP *bmp, PALETTE pal, int bpp);
 
@@ -213,8 +206,6 @@ __INLINE__ void _write_hpp(int value)
 }
 
 
-int _test_vga_register(int port, int index, int mask);
-int _test_register(int port, int mask);
 void _set_vga_virtual_width(int old_width, int new_width);
 
 
@@ -285,8 +276,6 @@ void _linear_clear_to_color16(struct BITMAP *bitmap, int color);
 
 #endif
 
-/* -ACB- 1998/08/21 Not needed
-
 #ifdef ALLEGRO_COLOR24
 
 int  _linear_getpixel24(struct BITMAP *bmp, int x, int y);
@@ -335,7 +324,7 @@ void _linear_blit_backward32(struct BITMAP *source, struct BITMAP *dest, int sou
 void _linear_masked_blit32(struct BITMAP *source, struct BITMAP *dest, int source_x, int source_y, int dest_x, int dest_y, int width, int height);
 void _linear_clear_to_color32(struct BITMAP *bitmap, int color);
 
-#endif                    */
+#endif
 
 int  _x_getpixel(struct BITMAP *bmp, int x, int y);
 void _x_putpixel(struct BITMAP *bmp, int x, int y, int color);
@@ -365,6 +354,21 @@ void _x_clear_to_color(struct BITMAP *bitmap, int color);
 void _do_stretch(BITMAP *source, BITMAP *dest, void *drawer, int sx, fixed sy, fixed syd, int dx, int dy, int dh, int color_depth);
 
 
+/* number of fractional bits used by the polygon rasteriser */
+#define POLYGON_FIX_SHIFT     18
+
+
+/* bitfield specifying which polygon attributes need interpolating */
+#define INTERP_FLAT           1
+#define INTERP_1COL           2
+#define INTERP_3COL           4
+#define INTERP_FIX_UV         8
+#define INTERP_Z              16
+#define INTERP_FLOAT_UV       32
+#define OPT_FLOAT_UV_TO_FIX   64
+#define COLOR_TO_RGB          128
+
+
 /* information for polygon scanline fillers */
 typedef struct POLYGON_SEGMENT
 {
@@ -379,29 +383,127 @@ typedef struct POLYGON_SEGMENT
 } POLYGON_SEGMENT;
 
 
+/* an active polygon edge */
+typedef struct POLYGON_EDGE 
+{
+   int top;                         /* top y position */
+   int bottom;                      /* bottom y position */
+   fixed x, dx;                     /* fixed point x position and gradient */
+   fixed w;                         /* width of line segment */
+   POLYGON_SEGMENT dat;             /* texture/gouraud information */
+   struct POLYGON_EDGE *prev;       /* doubly linked list */
+   struct POLYGON_EDGE *next;
+} POLYGON_EDGE;
+
+
+/* prototype for the scanline filler functions */
+typedef void (*SCANLINE_FILLER)(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+
+/* polygon helper functions */
+extern SCANLINE_FILLER _optim_alternative_drawer;
+POLYGON_EDGE *_add_edge(POLYGON_EDGE *list, POLYGON_EDGE *edge, int sort_by_x);
+POLYGON_EDGE *_remove_edge(POLYGON_EDGE *list, POLYGON_EDGE *edge);
+void _fill_3d_edge_structure(POLYGON_EDGE *edge, V3D *v1, V3D *v2, int flags, BITMAP *bmp);
+void _fill_3d_edge_structure_f(POLYGON_EDGE *edge, V3D_f *v1, V3D_f *v2, int flags, BITMAP *bmp);
+SCANLINE_FILLER _get_scanline_filler(int type, int *flags, POLYGON_SEGMENT *info, BITMAP *texture, BITMAP *bmp);
+void _clip_polygon_segment(POLYGON_SEGMENT *info, int gap, int flags);
+
+
 /* polygon scanline filler functions */
-void _poly_scanline_flat(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_gcol(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_grgb(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_atex(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_ptex(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_atex_mask(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_ptex_mask(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_atex_lit(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_ptex_lit(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_flat16(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_gcol8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_grgb8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit8(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb8x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb15x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit15x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit15x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit15x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit15x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_ptex_lit15d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit15d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb16(unsigned long addr, int w, POLYGON_SEGMENT *info);
 void _poly_scanline_atex16(unsigned long addr, int w, POLYGON_SEGMENT *info);
 void _poly_scanline_ptex16(unsigned long addr, int w, POLYGON_SEGMENT *info);
 void _poly_scanline_atex_mask16(unsigned long addr, int w, POLYGON_SEGMENT *info);
 void _poly_scanline_ptex_mask16(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_atex_mask15(unsigned long addr, int w, POLYGON_SEGMENT *info);
-void _poly_scanline_ptex_mask15(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit16(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit16(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit16(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit16(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb16x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit16x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit16x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit16x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit16x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_ptex_lit16d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit16d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit24(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb24x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit24x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit24x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit24x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit24x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_ptex_lit24d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit24d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit32(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_grgb32x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_lit32x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_lit32x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_atex_mask_lit32x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit32x(unsigned long addr, int w, POLYGON_SEGMENT *info);
+
+void _poly_scanline_ptex_lit32d(unsigned long addr, int w, POLYGON_SEGMENT *info);
+void _poly_scanline_ptex_mask_lit32d(unsigned long addr, int w, POLYGON_SEGMENT *info);
 
 
 /* sound lib stuff */
 extern int _digi_volume;
 extern int _midi_volume;
 extern int _flip_pan; 
+extern int _sound_hq;
 
 extern int (*_midi_init)();
 extern void (*_midi_exit)();
@@ -446,7 +548,7 @@ extern PHYS_VOICE _phys_voice[DIGI_VOICES];
 
 
 #define MIXER_DEF_SFX               8
-#define MIXER_MAX_SFX               32
+#define MIXER_MAX_SFX               64
 
 int _mixer_init(int bufsize, int freq, int stereo, int is16bit, int *voices);
 void _mixer_exit();

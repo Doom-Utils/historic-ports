@@ -32,7 +32,7 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 #include "w_wad.h"
 
 #include "m_cheat.h"
-#include "i_alleg.h"
+#include "i_allegv.h"
 #include "i_system.h"
 #include "m_argv.h"
 
@@ -289,8 +289,8 @@ static int markpointnum = 0; // next point to be assigned
 static int followplayer = 1; // specifies whether to follow the player around
 
 //static unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-static unsigned char cheat_amap_seq[] = { 'i','d','d','t', 0xff };
-cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
+//static unsigned char cheat_amap_seq[] = { 'i','d','d','t', 0xff };
+cheatseq_t cheat_amap = { 0, 0 };
 
 static boolean stopped = true;
 
@@ -322,9 +322,9 @@ void AM_getIslope (mline_t* ml, islope_t* is)
 
     dy = ml->a.y - ml->b.y;
     dx = ml->b.x - ml->a.x;
-    if (!dy) is->islp = (dx<0?-MAXINT:MAXINT);
+    if (!dy) is->islp = (dx<0?INT_MIN:INT_MAX);
     else is->islp = FixedDiv(dx, dy);
-    if (!dx) is->slp = (dy<0?-MAXINT:MAXINT);
+    if (!dx) is->slp = (dy<0?INT_MIN:INT_MAX);
     else is->slp = FixedDiv(dy, dx);
 
 }
@@ -400,8 +400,8 @@ void AM_findMinMaxBoundaries(void)
     fixed_t a;
     fixed_t b;
 
-    min_x = min_y =  MAXINT;
-    max_x = max_y = -MAXINT;
+    min_x = min_y = INT_MAX;
+    max_x = max_y = INT_MIN;
   
     for (i=0;i<numvertexes;i++)
     {
@@ -439,7 +439,7 @@ void AM_changeWindowLoc(void)
     if (m_paninc.x || m_paninc.y)
     {
 	followplayer = 0;
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = INT_MAX;
     }
 
     m_x += m_paninc.x;
@@ -474,7 +474,7 @@ void AM_initVariables(void)
       automapactive=2;
     fb = screens[0];
 
-    f_oldloc.x = MAXINT;
+    f_oldloc.x = INT_MAX;
     amclock = 0;
     lightlev = 0;
 
@@ -487,7 +487,7 @@ void AM_initVariables(void)
 
     // find player to center on initially
     if (!playeringame[pnum = consoleplayer])
-	for (pnum=0;pnum<MAXPLAYERS;pnum++)
+	for (pnum=0;pnum<maxplayers;pnum++)
 	    if (playeringame[pnum])
 		break;
   
@@ -547,7 +547,10 @@ void AM_clearMarks(void)
 //
 void AM_LevelInit(void)
 {
-    leveljuststarted = 0;
+    if (!cheat_amap.sequence)
+      cheat_amap.sequence = M_ConvertCheat(DDF_LanguageLookup("iddt"));
+
+   leveljuststarted = 0;
 
     f_x = f_y = 0;
     f_w = finit_width;
@@ -690,7 +693,7 @@ boolean AM_Responder ( event_t*	ev )
 	    break;
 	  case AM_FOLLOWKEY:
 	    followplayer = !followplayer;
-	    f_oldloc.x = MAXINT;
+	    f_oldloc.x = INT_MAX;
             // -ACB- 1998/08/10 Use DDF Lang Reference
             if (followplayer)
               plr->message = DDF_LanguageLookup("AutoMapFollowOn");
@@ -1136,7 +1139,7 @@ AM_drawFline16
 	d = ay - ax/2;
 	while (1)
 	{
-       tempbuffer[(y)*f_w+(x)]=palette_color[color];
+            tempbuffer[(y)*f_w+(x)]=palette_color[color];
 	    if (x == fl->b.x) return;
 	    if (d>=0)
 	    {
@@ -1152,7 +1155,7 @@ AM_drawFline16
 	d = ax - ay/2;
 	while (1)
 	{
-       tempbuffer[(y)*f_w+(x)]=palette_color[color];
+            tempbuffer[(y)*f_w+(x)]=palette_color[color];
 	    if (y == fl->b.y) return;
 	    if (d >= 0)
 	    {
@@ -1415,7 +1418,7 @@ void AM_drawPlayers(void)
 	return;
     }
 
-    for (i=0;i<MAXPLAYERS;i++)
+    for (i=0;i<maxplayers;i++)
     {
 	their_color++;
 	p = &players[i];

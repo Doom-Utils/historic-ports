@@ -20,7 +20,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -38,36 +37,12 @@ void DDF_MobjGetBpArmour(char *info, int commandref);
 void DDF_MobjGetBpKeys(char *info, int commandref);
 void DDF_MobjGetBpWeapon(char *info, int commandref);
 
-boolean backpackreq = false; // used for checking if we create backpackinfo
+extern commandlist_t *thingcommands;
 
-// -KM- 1998/10/29 SFX nums changed to sfx_t
-commandlist_t itemcommands[] =
- {{"MAPNUMBER"          , DDF_MainGetNumeric,      &buffermobj.doomednum},
-  {"RADIUS"             , DDF_MainGetFixed,        &buffermobj.radius},
-  {"HEIGHT"             , DDF_MainGetFixed,        &buffermobj.height},
-  {"PICKUP SOUND"       , DDF_MainLookupSound,       &buffermobj.activesound},
-  {"AMBIENT SOUND"      , DDF_MainLookupSound,       &buffermobj.seesound},
-  {"BENEFIT TYPE"       , DDF_MobjGetItemType,     &buffermobj.benefittype},
-  {"BENEFIT AMOUNT"     , DDF_MainGetNumeric,      &buffermobj.benefitamount},
-  {"BENEFIT LIMIT"      , DDF_MainGetNumeric,      &buffermobj.limit},
-  {"BACKPACK AMMO"      , DDF_MobjGetBpAmmo,       NULL},
-  {"BACKPACK AMMOLIMIT" , DDF_MobjGetBpAmmoLimit,  NULL},
-  {"BACKPACK ARMOUR"    , DDF_MobjGetBpArmour,     NULL},
-  {"BACKPACK KEYS"      , DDF_MobjGetBpKeys,       NULL},
-  {"BACKPACK WEAPONS"   , DDF_MobjGetBpWeapon,     NULL},
-  {"RESPAWN TIME"       , DDF_MainGetTime,         &buffermobj.respawntime},
-  {"PALETTE REMAP"      , DDF_MainGetNumeric,      &buffermobj.palremap},
-  {"PICKUP MESSAGE"     , DDF_MainReferenceString, &buffermobj.message},
-  {"SPECIAL"            , DDF_MainGetSpecial,      NULL},
-  {"STATES"             , DDF_MainLoadStates,      &buffermobj.spawnstate},
-  {"DEATHSTATE"         , DDF_MainLoadStates,      &buffermobj.deathstate},
-  {"TRANSLUCENCY"       , DDF_MainGetFixed,        &buffermobj.invisibility},
-  {COMMAND_TERMINATOR   , NULL,                    NULL}};
+boolean backpackreq = false; // used for checking if we create backpackinfo
 
 char *itemtype[NUMOFBENEFITS] =
 {
-//  "AMMO TYPE",
-
   "KEY BLUECARD",  "KEY REDCARD",  "KEY YELLOWCARD",
   "KEY BLUESKULL", "KEY REDSKULL", "KEY YELLOWSKULL",
 
@@ -75,75 +50,7 @@ char *itemtype[NUMOFBENEFITS] =
   "POWERUP BACKPACK",     "POWERUP BERSERK",      "POWERUP HEALTH",
   "POWERUP HEALTHARMOUR", "POWERUP INVULNERABLE", "POWERUP JETPACK",
   "POWERUP LIGHTGOGGLES", "POWERUP NIGHTVISION",  "POWERUP PARTINVIS",
-
-// -KM- 1998/11/25 Weapons are handled differently.
-/*  "WEAPON TYPE0", "WEAPON TYPE1", "WEAPON TYPE2", "WEAPON TYPE3",
-  "WEAPON TYPE4", "WEAPON TYPE5", "WEAPON TYPE6", "WEAPON TYPE7",
-  "WEAPON TYPE8", "WEAPON TYPE9", "WEAPON TYPE10","WEAPON TYPE11",
-  "WEAPON TYPE12","WEAPON TYPE13","WEAPON TYPE14" */
 };
-
-commandlist_t scenecommands[] =
- {{"MAPNUMBER"          , DDF_MainGetNumeric,      &buffermobj.doomednum},
-  {"RADIUS"             , DDF_MainGetFixed,        &buffermobj.radius},
-  {"HEIGHT"             , DDF_MainGetFixed,        &buffermobj.height},
-  {"MASS"               , DDF_MainGetNumeric,      &buffermobj.mass},
-  {"PALETTE REMAP"      , DDF_MainGetNumeric,      &buffermobj.palremap},
-  {"PAINCHANCE"         , DDF_MainGetNumeric,      &buffermobj.painchance},
-  {"SPAWNHEALTH"        , DDF_MainGetNumeric,      &buffermobj.spawnhealth},
-  {"EXPLOSION DAMAGE"   , DDF_MainGetNumeric,      &buffermobj.damage},
-  {"DAMAGE MULTI"       , DDF_MainGetNumeric,      &buffermobj.damagemulti},
-  {"DAMAGE RANGE"       , DDF_MainGetNumeric,      &buffermobj.damagerange},
-  {"AMBIENT SOUND"      , DDF_MainLookupSound,     &buffermobj.seesound},
-  {"DEATH SOUND"        , DDF_MainLookupSound,     &buffermobj.deathsound},
-  {"SPECIAL"            , DDF_MainGetSpecial,      NULL},
-  {"STATES"             , DDF_MainLoadStates,      &buffermobj.spawnstate},
-  {"PAINSTATES"         , DDF_MainLoadStates,      &buffermobj.painstate},
-  {"DEATHSTATES"        , DDF_MainLoadStates,      &buffermobj.deathstate},
-  {"OVERKILLSTATES"     , DDF_MainLoadStates,      &buffermobj.xdeathstate},
-  {"TRANSLUCENCY"       , DDF_MainGetFixed,        &buffermobj.invisibility},
-  {COMMAND_TERMINATOR   , NULL,                    NULL}};
-
-// -KM- 1998/11/25 Added castorder, the order they appear in the Doom cast.
-commandlist_t creaturecommands[] =
- {{"MAPNUMBER"          , DDF_MainGetNumeric,      &buffermobj.doomednum},
-  {"RADIUS"             , DDF_MainGetFixed,        &buffermobj.radius},
-  {"HEIGHT"             , DDF_MainGetFixed,        &buffermobj.height},
-  {"MASS"               , DDF_MainGetNumeric,      &buffermobj.mass},
-  {"SPEED"              , DDF_MainGetFixed,        &buffermobj.speed},
-  {"REACTION TIME"      , DDF_MainGetTime,         &buffermobj.reactiontime},
-  {"JUMP HEIGHT"        , DDF_MainGetFixed,        &buffermobj.jumpheight},
-  {"MAX FALL"           , DDF_MainGetFixed,        &buffermobj.maxfall},
-  {"PAINCHANCE"         , DDF_MainGetNumeric,      &buffermobj.painchance},
-  {"SPAWNHEALTH"        , DDF_MainGetNumeric,      &buffermobj.spawnhealth},
-  {"MINATTACK CHANCE"   , DDF_MainGetNumeric,      &buffermobj.minatkchance},
-  {"PALETTE REMAP"      , DDF_MainGetNumeric,      &buffermobj.palremap},
-  {"ACTIVE SOUND"       , DDF_MainLookupSound,       &buffermobj.activesound},
-  {"DEATH SOUND"        , DDF_MainLookupSound,       &buffermobj.deathsound},
-  {"PAIN SOUND"         , DDF_MainLookupSound,       &buffermobj.painsound},
-  {"SIGHTING SOUND"     , DDF_MainLookupSound,       &buffermobj.seesound},
-  {"STARTCOMBAT SOUND"  , DDF_MainLookupSound,       &buffermobj.attacksound},
-  {"WALK SOUND"         , DDF_MainLookupSound,       &buffermobj.walksound},
-  {"SPECIAL"            , DDF_MainGetSpecial,      NULL},
-  {"SPAWN STATES"       , DDF_MainLoadStates,      &buffermobj.spawnstate},
-  {"CHASING STATES"     , DDF_MainLoadStates,      &buffermobj.seestate},
-  {"PAINSTATES"         , DDF_MainLoadStates,      &buffermobj.painstate},
-  {"DEATHSTATES"        , DDF_MainLoadStates,      &buffermobj.deathstate},
-  {"OVERKILLSTATES"     , DDF_MainLoadStates,      &buffermobj.xdeathstate},
-  {"RESPAWN STATES"     , DDF_MainLoadStates,      &buffermobj.raisestate},
-  {"RESURRECT STATES"   , DDF_MainLoadStates,      &buffermobj.resstate},
-  {"MISSILE STATES"     , DDF_MainLoadStates,      &buffermobj.missilestate},
-  {"MELEE STATES"       , DDF_MainLoadStates,      &buffermobj.meleestate},
-  {"MEANDER STATES"     , DDF_MainLoadStates,      &buffermobj.meanderstate},
-  {"CLOSE ATTACK"       , DDF_MainRefAttack,       &buffermobj.closecombat},
-  {"RANGE ATTACK"       , DDF_MainRefAttack,       &buffermobj.rangeattack},
-  {"SPARE ATTACK"       , DDF_MainRefAttack,       &buffermobj.spareattack},
-  {"DROPITEM"           , DDF_MainGetString,       &buffermobj.dropitem},
-  {"CASTORDER"          , DDF_MainGetNumeric,      &buffermobj.castorder},
-  {"TRANSLUCENCY"       , DDF_MainGetFixed,        &buffermobj.invisibility},
-  {"FAST"               , DDF_MainGetFixed,        &buffermobj.fast},
-  {COMMAND_TERMINATOR   , NULL,                    NULL}};
-
 //
 // DDF_MobjLookup
 //
@@ -165,7 +72,7 @@ mobjinfo_t* DDF_MobjLookup(const char* refname)
   }
 
   if (refinfo == NULL)
-    I_Error("DDF_MobjLookup: %s does not exist",refname);
+    I_Error("DDF_MobjLookup: '%s' does not exist",refname);
 
   return refinfo;
 }
@@ -424,7 +331,9 @@ void DDF_MobjGetBpWeapon(char *info, int commandref)
 {
   int i;
 
-  i = atoi(info); // straight conversion, no messin'
+  i = DDF_WeaponGetType(info);
+  if (i == -1)
+    i = atoi(info);
 
   if (!buffpack.weapons)
   {
@@ -440,14 +349,7 @@ void DDF_MobjGetBpWeapon(char *info, int commandref)
   backpackreq = true; // we need to create backpackinfo when we make a mobjinfo entry
 }
 
-//
-// DDF_MobjCreateItem
-//
-// Places the mobj info in the mobjinfo table (suprisingly enough)
-//
-// -ACB- 1998/09/14 Added Backpack Linked List (Savegame purposes).
-//
-void DDF_MobjCreateItem(void)
+void DDF_MobjCreateThing(void)
 {
   int i;
   backpack_t* backpack;
@@ -457,8 +359,6 @@ void DDF_MobjCreateItem(void)
   mobjinfo_t* next;
 
   DDF_MobjCheckStates();
-
-//  buffermobj.flags |= MF_SPECIAL;
 
   entry = mobjinfohead;
 
@@ -539,176 +439,48 @@ void DDF_MobjCreateItem(void)
 
   // -KM- 1998/11/25 Transluc changed.
   buffermobj.invisibility = VISIBLE;
+  buffermobj.respawntime = 12*TICRATE;
+  buffermobj.fast = FRACUNIT;
+
+  backpackreq = false;
+}
+
+void DDF_ReadThings(void* data, int size)
+{
+  readinfo_t things;
+
+  memset (&buffermobj,0,sizeof(mobjinfo_t)); // clear the buffer mobj
+  memset (&buffpack,0,sizeof(backpack_t));   // clear the buffer backpack
+
+  // -KM- 1998/11/25 Transluc changed.
+  buffermobj.invisibility = VISIBLE;
+  buffermobj.respawntime = 12*TICRATE;
   buffermobj.fast = FRACUNIT;
 
   backpackreq = false;
 
-}
-void DDF_ReadItems(void* data, int size)
-{
-  readinfo_t items;
-
   if (!data)
   {
-    items.message               = "DDF_InitItems";
-    items.filename              = "Items.ddf";
-    items.memfile = NULL;
+    things.message               = "DDF_InitThings";
+    things.filename              = "things.ddf";
+    things.memfile = NULL;
   } else {
-    items.message = NULL;
-    items.memfile = data;
-    items.memsize = size;
+    things.message = NULL;
+    things.memfile = data;
+    things.memsize = size;
+    things.filename = NULL;
   }
-  items.DDF_MainCheckName     = DDF_MainMobjCheckName;
-  items.DDF_MainCheckCmd      = DDF_MainCheckCommand;
-  items.DDF_MainCreateEntry   = DDF_MobjCreateItem;
-  items.DDF_MainFinishingCode = DDF_MobjCreateItem;
-  items.cmdlist               = itemcommands;
+  things.DDF_MainCheckName     = DDF_MainMobjCheckName;
+  things.DDF_MainCheckCmd      = DDF_MainCheckCommand;
+  things.DDF_MainCreateEntry   = DDF_MobjCreateThing;
+  things.DDF_MainFinishingCode = DDF_MobjCreateThing;
+  things.cmdlist               = thingcommands;
  
-  DDF_MainReadFile(&items);
-}
-void DDF_MobjItemInit()
-{
-  DDF_ReadItems(NULL, 0);
+  DDF_MainReadFile(&things);
 }
 
-//
-// DDF_MobjCreateScenery
-// Places the mobj info in the mobjinfo table (suprisingly enough)
-//
-void DDF_MobjCreateScenery(void)
+void DDF_MobjInit()
 {
-  mobjinfo_t* entry;
-  mobjinfo_t* newentry;
-  mobjinfo_t* next;
-
-  DDF_MobjCheckStates();
-
-  entry = mobjinfohead;
-
-  while (entry->next != bufferreplacemobj)
-    entry = entry->next;
-
-  if (bufferreplacemobj)
-  {
-    newentry = bufferreplacemobj;
-    next = bufferreplacemobj->next;
-  } else {
-    newentry = malloc(sizeof(mobjinfo_t));
-  
-    if (newentry == NULL)
-      I_Error("\n\tDDF_MobjCreateScenery: Malloc failed\n");
-  
-    entry->next = newentry;
-    next = NULL;
-  }
-
-  memcpy(newentry,&buffermobj,sizeof(mobjinfo_t));
-  newentry->next = next;
-
-  if (!newentry->mass)
-   newentry->mass = 100;     
-
-  if (!newentry->spawnhealth)
-   newentry->spawnhealth = 1000;
-
-  memset (&buffermobj,0,sizeof(mobjinfo_t)); // clear the buffer mobj
-
-  buffermobj.invisibility = VISIBLE;
-  buffermobj.fast = FRACUNIT;
-}
-
-void DDF_ReadScenery(void *data, int size)
-{
-  readinfo_t scenery;
-
-  if (!data)
-  {
-    scenery.message               = "DDF_InitScenery";
-    scenery.filename              = "Scenery.ddf";
-    scenery.memfile = NULL;
-  } else {
-    scenery.message = NULL;
-    scenery.memfile = data;
-    scenery.memsize = size;
-  }
-  scenery.DDF_MainCheckName     = DDF_MainMobjCheckName;
-  scenery.DDF_MainCheckCmd      = DDF_MainCheckCommand;
-  scenery.DDF_MainCreateEntry   = DDF_MobjCreateScenery;
-  scenery.DDF_MainFinishingCode = DDF_MobjCreateScenery;
-  scenery.cmdlist               = scenecommands;
- 
-  DDF_MainReadFile(&scenery);
-}
-
-//
-// DDF_MobjSceneInit
-//
-void DDF_MobjSceneInit()
-{
-  DDF_ReadScenery(NULL, 0);
-}
-
-void DDF_MobjCreateCreature()
-{
-  mobjinfo_t* entry;
-  mobjinfo_t* newentry;
-  mobjinfo_t* next;
-
-  DDF_MobjCheckStates();
-
-  entry = mobjinfohead;
-
-  while (entry->next != bufferreplacemobj)
-    entry = entry->next;
-
-  if (bufferreplacemobj)
-  {
-    newentry = bufferreplacemobj;
-    next = bufferreplacemobj->next;
-  } else {
-    newentry = malloc(sizeof(mobjinfo_t));
-  
-    if (newentry == NULL)
-      I_Error("\n\tDDF_MobjCreateCreature: Malloc failed\n");
-
-    entry->next = newentry;
-    next = NULL;
-  }
-
-  memcpy(newentry,&buffermobj,sizeof(mobjinfo_t));
-  newentry->next = next;
-
-  memset (&buffermobj,0,sizeof(mobjinfo_t)); // clear the buffer mobj
-
-  buffermobj.invisibility = VISIBLE;
-  buffermobj.fast = FRACUNIT;
-}
-
-void DDF_ReadCreatures(void* data, int size)
-{
-  readinfo_t creatures;
-
-  if (!data)
-  {
-    creatures.message               = "DDF_InitCreatures";
-    creatures.filename              = "creature.ddf";
-    creatures.memfile = NULL;
-  } else {
-    creatures.message = NULL;
-    creatures.memfile = data;
-    creatures.memsize = size;
-  }
-  creatures.DDF_MainCheckName     = DDF_MainMobjCheckName;
-  creatures.DDF_MainCheckCmd      = DDF_MainCheckCommand;
-  creatures.DDF_MainCreateEntry   = DDF_MobjCreateCreature;
-  creatures.DDF_MainFinishingCode = DDF_MobjCreateCreature;
-  creatures.cmdlist               = creaturecommands;
- 
-  DDF_MainReadFile(&creatures);
-}
-
-void DDF_MobjCreatureInit()
-{
-  DDF_ReadCreatures(NULL, 0);
+  DDF_ReadThings(NULL, 0);
 }
 

@@ -93,7 +93,8 @@ byte*		rejectmatrix;
 int		max_deathmatch_starts = 10;
 mapthing_t*	deathmatchstarts;
 mapthing_t*	deathmatch_p;
-mapthing_t	playerstarts[MAXPLAYERS];
+//mapthing_t	playerstarts[MAXPLAYERS];
+mapthing_t*	playerstarts;
 
 
 
@@ -737,6 +738,8 @@ void P_GroupLines (void)
 	// set the degenmobj_t to the middle of the bounding box
 	sector->soundorg.x = (bbox[BOXRIGHT]+bbox[BOXLEFT])/2;
 	sector->soundorg.y = (bbox[BOXTOP]+bbox[BOXBOTTOM])/2;
+        // -KM- 1999/01/31 Identify dummy mobjs for Doppler.
+        sector->soundorg.thinker.function.acv = NULL;
 		
 	// adjust bounding box to map blocks
 	block = (bbox[BOXTOP]-bmaporgy+MAXRADIUS)>>MAPBLOCKSHIFT;
@@ -776,7 +779,7 @@ void P_SetupLevel (skill_t skill, int autotag)
 
   wminfo.partime = currentmap->partime;
 
-  for (i=0 ; i<MAXPLAYERS ; i++)
+  for (i=0 ; i<maxplayers ; i++)
     players[i].killcount = players[i].secretcount = players[i].itemcount = 0;
 
   // Initial height of PointOfView
@@ -821,7 +824,7 @@ void P_SetupLevel (skill_t skill, int autotag)
   // if deathmatch, randomly spawn the active players
   if (deathmatch)
   {
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<maxplayers ; i++)
     {
       if (playeringame[i])
       {
@@ -850,6 +853,7 @@ void P_Init (void)
 {
     deathmatchstarts =
        Z_Malloc(sizeof(mapthing_t) * max_deathmatch_starts, PU_STATIC, NULL);
+    playerstarts = Z_Malloc(maxplayers*sizeof(*playerstarts), PU_STATIC, NULL);
     P_InitSwitchList ();
     P_InitPicAnims ();
     R_InitSprites (sprnames);

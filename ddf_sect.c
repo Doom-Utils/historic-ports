@@ -16,7 +16,6 @@
 #include "z_zone.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -179,13 +178,14 @@ void DDF_ReadSectors(void *data, int size)
    
   if (!data)
   {
-    sects.message               = "DDF_InitSpecialSects";
+    sects.message               = "DDF_InitSpecialSectors";
     sects.filename              = "sectors.ddf";
     sects.memfile = NULL;
   } else {
     sects.message = NULL;
     sects.memfile = data;
     sects.memsize = size;
+    sects.filename = NULL;
   }
   sects.DDF_MainCheckName     = DDF_SectCheckNum;
   sects.DDF_MainCheckCmd      = DDF_MainCheckCommand;

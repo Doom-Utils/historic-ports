@@ -10,17 +10,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef __DJGPP__
-#ifndef __BEOS__
-#include <sys/uio.h>
-#endif
+#ifndef DJGPP
+#define _go32_dpmi_lock_data(d, p)
 #endif
 
-#ifndef __DJGPP__
-#include <sys/socket.h>
-#else
 #include "audioalg.h"
-#endif
 #include <errno.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -37,9 +31,9 @@
 #include "layer3.h"
 #include "position.h"
 #include "rtbuf.h"
-#include "transform.h"
-#include "controldata.h"
-#include "guicontrol.h"
+#include "transfor.h"
+#include "controld.h"
+#include "guicontr.h"
 
 #include "libamp.h"
 #include <allegro.h>
@@ -317,7 +311,7 @@ int install_amp(void)
 
   LOCK_FUNCTION(amp_interrupt);
 
-  install_timer();
+//  install_timer();
   install_int_ex(amp_interrupt, BPS_TO_TIMER(280));
 
   is_installed=TRUE;

@@ -20,7 +20,8 @@
 #include <pc.h>
 #include <go32.h>
 #include <dpmi.h>
-#include "i_alleg.h"
+
+#include <allegro.h>
 
 #include "dm_defs.h"
 #include "m_misc.h"
@@ -47,14 +48,14 @@ void I_CalibrateJoystick(int ch);
 #endif
 #include "i_system.h"
 
-#define BGCOLOR		4
-#define FGCOLOR		0xf
+#define BGCOLOR         4
+#define FGCOLOR         0xf
 
 int     mb_used = 10;
 
 char oldkeystate[128];
 volatile int mselapsed=0;
-int mousepresent;
+int mousepresent = -1;
 
 cputype_t cpu;
 
@@ -86,6 +87,7 @@ extern int usemouse;
 //
 
 // Extended keys that can be used in menus
+// -ES- 1999/03/28 Added Enter on numeric keypad
 #define USABLE_EXTKEY(i)      \
         (  (i==0x48)          \
          ||(i==0x50)          \
@@ -93,6 +95,7 @@ extern int usemouse;
          ||(i==0x4d)          \
          ||(i==0x0e)          \
          ||(i==0x2a)          \
+         ||(i==KEY_ENTER)     \
          ||(i==KEY_RCONTROL)  \
          ||(i==KEY_ALTGR)     \
          ||(i==KEY_PGUP)      \
@@ -123,6 +126,9 @@ int I_ScanCode2DoomCode (int a)
     case KEY_DEL:      return KEYD_DELETE;
     case KEY_PRTSCR:   return KEYD_PRTSCR;  // -MH- 1998/08/18 Added "Print Screen"
   }
+
+  if ((key_shifts & KB_NUMLOCK_FLAG) && (a == KEY_5_PAD))
+      return '5';
 
   if (a>=0x100)
     return a;
@@ -174,7 +180,17 @@ void I_Tactile (int on, int off, int total)
   on = off = total = 0;
 }
 
-ticcmd_t emptycmd;
+static ticcmd_t emptycmd = {
+ 0, // vertangle
+ 0, // upwardmove
+ 0, // forwardmove
+ 0, // sidemove
+ 0, // angleturn
+ 0, // consistancy
+ 0, // chatchar
+ 0, // buttons
+ 0  // extbuttons
+ };
 
 ticcmd_t* I_BaseTiccmd(void)
 {
@@ -297,68 +313,99 @@ static void Mouse_Event(boolean enabled)
  lastbuttons=buttons;
 }
 
+static int CountAxis(int joynum)
+{
+  int sticks;
+  int axis = 0;
+  for (sticks = 0; sticks < joy[joynum].num_sticks; sticks++)
+     axis += joy[joynum].stick[sticks].num_axis;
+
+  return axis;
+}
+
 // -KM- 1998/09/01 Handles Joystick.  Hat support added
 static void Joystick_Event(boolean enabled)
 {
-  static int oldbuttons=0;
-  int buttons = 0;
+  static boolean* oldbuttons = NULL;
+  static int numButtons = -1;
+
+  static int*     axis = NULL;
+  static int numAxis = -1;
+  int i, a, s;
   event_t event;
 
   if (enabled)
   {
+    if (numButtons != joy[0].num_buttons)
+    {
+      oldbuttons = Z_ReMalloc(oldbuttons, sizeof(boolean) * joy[0].num_buttons);
+      numButtons = joy[0].num_buttons;
+      memset (oldbuttons, false, sizeof(boolean) * numButtons);
+    }
+
+    i = CountAxis(0);
+    if (numAxis != i)
+    {
+      char name[32];
+      numAxis = i;
+      axis = Z_ReMalloc(axis, sizeof(int) * numAxis);
+      for (i = 0; i < numAxis-2; i++)
+      {
+         sprintf(name, "MiscAxis%d", i+1);
+         axis[i] = get_config_int("Joystick", name, AXIS_DISABLE);
+      }
+    }
+
     poll_joystick();
     event.type=ev_analogue;
   
     event.data1=joy_xaxis;
-    event.data2=abs(joy_x) < 4 ? 0 : joy_x;
+    event.data2=abs(joy_x) <= 8 ? 0 : joy_x;
   
     event.data3=joy_yaxis;
-    event.data4=abs(joy_y) < 4 ? 0 : joy_y;
+    event.data4=abs(joy_y) <= 8 ? 0 : joy_y;
   
     D_PostEvent(&event);
-  
+
+    a = 0;
+    for (s = 1; s < joy[0].num_sticks; s++)
+    {
+      for (i = 0; i < joy[0].stick[s].num_axis; i++)
+      {
+         event.type = ev_analogue;
+         event.data1 = axis[a++];
+         event.data2 =
+           abs(joy[0].stick[s].axis[i].pos) <= 8 ? 0 : joy[0].stick[s].axis[i].pos;
+         event.data3 = AXIS_DISABLE;
+         event.data4 = 0;
+         if (joy[0].stick[s].flags & JOYFLAG_UNSIGNED)
+           event.data2 -= 128;
+
+         D_PostEvent(&event);
+      }
+    }
+
     //now, do buttons
     // -KM- 1998/12/16 Do all 8 buttons.
-    if (joy_b1) buttons|=1;
-    if (joy_b2) buttons|=2;
-    if (joy_b3) buttons|=4;
-    if (joy_b4) buttons|=8;
-    if (joy_b5) buttons|=16;
-    if (joy_b6) buttons|=32;
-    if (joy_b7) buttons|=64;
-    if (joy_b8) buttons|=128;
-    // And hat switch
-    if      (joy_hat == JOY_HAT_LEFT ) buttons|=256;
-    else if (joy_hat == JOY_HAT_DOWN ) buttons|=512;
-    else if (joy_hat == JOY_HAT_RIGHT) buttons|=1024;
-    else if (joy_hat == JOY_HAT_UP   ) buttons|=2048;
-  }
-  if (buttons != oldbuttons)
-  {
-    int j=1, i;
-    for (i=0;i<12;i++)
+    for (i = 0; i < numButtons; i++)
     {
-      // Button press detected
-      if ((buttons & j) && !(oldbuttons & j))
-      {
-        event.type=ev_keydown;
-        event.data1=KEYD_JOY1+i;
-        D_PostEvent(&event);
-      }
+       if (joy[0].button[i].b && !oldbuttons[i])
+       {
+         event.type = ev_keydown;
+         event.data1 = KEYD_JOYBASE + i;
+         D_PostEvent(&event);
+       }
 
-      // Button released
-      if ((oldbuttons & j) && !(buttons & j))
-      {
-        event.type=ev_keyup;
-        event.data1=KEYD_JOY1+i;
-        D_PostEvent(&event);
-      }
+       if (!joy[0].button[i].b && oldbuttons[i])
+       {
+         event.type = ev_keyup;
+         event.data1 = KEYD_JOYBASE + i;
+         D_PostEvent(&event);
+       }
 
-      // Shift to next bit index
-      j <<= 1;
+       oldbuttons[i] = joy[0].button[i].b;
     }
   }
-  oldbuttons=buttons;
 }
 
 // -KM- 1998/09/01 Split joystick/mouse/keyboard into respective functions
@@ -378,17 +425,12 @@ void I_GetEvent()
 void I_StartTic()
 {
   I_GetEvent();
-  //i dont think i have to do anything else here
 }
-
-//int  I_GetHeapSize (void)
-//{
-//    return mb_used*1024*1024;
-//}
 
 // -KM- 1998/07/31 Implemented memory sizing based on available;
 //  instead of default value.
-byte* I_ZoneBase (int*	size)
+// -KM- 1999/01/31 Always use available memory.  Give a warning on low memory.
+byte* I_ZoneBase (int*  size)
 {
   static void *zonebase = NULL;
   int p, s = 1;
@@ -402,15 +444,14 @@ byte* I_ZoneBase (int*	size)
   tphys = mem.total_physical_pages * 4096;
   phys = mem.available_physical_pages * 4096;
   recom = phys - (8 * 1024 * 1024);
-  // Set minimum
-  recom = (recom < (4 * 1024 * 1024)) ? 4 * 1024 * 1024 : recom;
-  if ((recom < (10 * 1024 * 1024)) && (virt - tphys + phys))
-    recom = 10 * 1024 * 1024;
-#ifndef DEVELOPERS
-  // Cause large heapsizes seem to bomb.
-  if (recom > (10 * 1024 * 1024))
-    recom = 10 * 1024 * 1024;
-#else
+  // Set minimum 4 mb
+  if (recom < 0x400000)
+  {
+    I_Printf("  Warning: You are very low on memory. (%d/%d)\n", phys/0x100000, tphys/0x100000);
+    I_Printf("           We'll give it a shot anyway though and see how far we get.\n");
+    recom = 0x400000;
+  }
+#ifdef DEVELOPERS
   I_Printf ("  Memory: Physical %d/%d, Virtual %d, Recommended: %d\n", phys,tphys, virt, recom);
 #endif
   *size = recom;
@@ -443,36 +484,16 @@ void I_timer(void)
 END_OF_FUNCTION(I_timer);
 
 // -KM- (-ACB- It changes from my base, must be new) Joystick Config
+// -KM- 1999/01/31 Use Allegro keyboard routines as install_keyboard has
+//  been called.
 void I_CalibrateJoystick(int ch)
 {
-  const char *dirs[] = {"CENTRE", "LEFT", "DOWN", "RIGHT", "UP" };
   static int phase = 0;
-  static int hat_phase = 0;
   static char* message = NULL;
   static char* joy_centre = NULL;
-  static char* joy_tl = NULL;
-  static char* joy_br = NULL;
-  static char* joy_ht = NULL;   // use joy_ht instead of joy_hat -ACB-
-  static char* joy_t_max = NULL;
-  static char* joy_t_min = NULL;
 
   if (!joy_centre)
     joy_centre = DDF_LanguageLookup("JoystickCentre");
-
-  if (!joy_tl)
-    joy_tl = DDF_LanguageLookup("JoystickTL");
-
-  if (!joy_br)
-    joy_br = DDF_LanguageLookup("JoystickBR");
-
-  if (!joy_ht)
-    joy_ht = DDF_LanguageLookup("JoystickHAT");
-
-  if (!joy_t_max)
-    joy_t_max = DDF_LanguageLookup("JoyThrottleMAX");
-
-  if (!joy_t_min)
-    joy_t_min = DDF_LanguageLookup("JoyThrottleMIN");
 
   if (graphicsmode)
   {
@@ -484,126 +505,83 @@ void I_CalibrateJoystick(int ch)
      // -KM- 1998/07/31 Added escape functionality.
     if (ch == KEYD_ESCAPE)
     {
-      phase = hat_phase = 0;
+      phase = 0;
+      usejoystick = false;
       Z_ChangeTag(message, PU_CACHE);
       return;
     }
 
-
     switch (phase)
     {
       case 0:
-           // -KM- 1998/09/01 Prevent joystick doing stuff while yer trying to calibrate it.
-           usejoystick = false;
-           load_joystick_data(NULL);
-           strcpy(message, joy_centre);
-           break;
+        usejoystick = false;
+        remove_joystick();
+        strcpy(message, joy_centre);
+        phase = 1;
+        break;
       case 1:
-           initialise_joystick();
-           strcpy(message,  joy_tl);
-           break;
+        install_joystick(JOY_TYPE_AUTODETECT);
+        if (joy[0].flags & JOYFLAG_CALIBRATE)
+        {
+          sprintf(message, "%s\n\npress a key", calibrate_joystick_name(0));
+          phase = 2;
+          break;
+        }
+      case -1:
+        usejoystick = true;
+        Z_ChangeTag(message, PU_CACHE);
+        phase = 0;
+        return;
       case 2:
-           calibrate_joystick_tl();
-           strcpy(message,  joy_br);
-           break;
-      case 3:
-           calibrate_joystick_br();
-           if (joy_type == JOY_TYPE_FSPRO)
-           {
-              strcpy(message,  joy_t_min);
-              phase = 9;
-              break;
-           } else if (joy_type != JOY_TYPE_WINGEX)
-           {
-              strcpy(message, joy_centre);
-              phase = 11;
-              save_joystick_data(NULL);
-              break;
-           }
-           // -KM- 1998/07/31 Fixed bug.
-           phase = 4;
-      case 4:
-           sprintf(message, joy_ht, dirs[hat_phase]);
-           break;
-      case 5 ... 8:
-           calibrate_joystick_hat(hat_phase++);
-           sprintf(message, joy_ht, dirs[hat_phase]);
-           break;
-      case 9:
-           calibrate_joystick_hat(hat_phase);
-           hat_phase = phase = 0;
-           Z_ChangeTag(message, PU_CACHE);
-           usejoystick = true;
-           save_joystick_data(NULL);
-           return;
-      case 10:
-           calibrate_joystick_throttle_min();
-           strcpy(message,  joy_t_min);
-           break;
-      case 11:
-           calibrate_joystick_throttle_max();
-           save_joystick_data(NULL);
-      case 12:
-           usejoystick = true;
-      default:
-           phase = 0;
-           Z_ChangeTag(message, PU_CACHE);
-           return;
+        if (!calibrate_joystick(0))
+        {
+          if (joy[0].flags & JOYFLAG_CALIBRATE)
+            sprintf(message, "%s\n\npress a key", calibrate_joystick_name(0));
+          else
+          {
+            strcpy(message, joy_centre);
+            phase = -1;
+          }
+        } else
+          phase = -2;
+        break;
     }
-    phase++;
-    // -KM- 1998/07/31 Accept any key.
+
+    if (phase == -2)
+    {
+      phase = 0;
+      Z_ChangeTag(message, PU_CACHE);
+      return;
+    }
+
     M_StartMessage(message, I_CalibrateJoystick, false);
     return;
   } else {
-    int key = 0;
-    load_joystick_data(NULL);
-    I_Printf(DDF_LanguageLookup("JoystickCentreT"));
-    while (!kbhit() && !joy_b1 && !joy_b2) poll_joystick();
-    if (kbhit()) key = getch();
-    I_Printf("\n");
-    if (key == 27 || joy_b2) return;
-    initialise_joystick();
-
-    while (joy_b1) poll_joystick();
-    I_Printf(DDF_LanguageLookup("JoystickTLT"));
-    while (!kbhit() && !joy_b1) poll_joystick();
-    if (kbhit()) getch();
-    I_Printf("\n");
-    calibrate_joystick_tl();
-
-    while (joy_b1) poll_joystick();
-    I_Printf(DDF_LanguageLookup("JoystickBRT"));
-    while (!kbhit() && !joy_b1) poll_joystick();
-    if (kbhit()) getch();
-    I_Printf("\n");
-    calibrate_joystick_br();
-    if (joy_type == JOY_TYPE_FSPRO) {
-      while (joy_b1) poll_joystick();
-      I_Printf(DDF_LanguageLookup("JoyThrottleMIN"));
-      while (!kbhit() && !joy_b1) poll_joystick();
-      if (kbhit()) getch();
+    if (load_joystick_data(NULL))
+    {
+      clear_keybuf();
+      I_Printf(DDF_LanguageLookup("JoystickCentreT"));
+      while (!keypressed() && !joy_b1 && !joy_b2) poll_joystick();
+      install_joystick(JOY_TYPE_AUTODETECT);
+      clear_keybuf();
+      while (joy_b1 || joy_b2) poll_joystick();
       I_Printf("\n");
-      calibrate_joystick_throttle_min();
-
-      while (joy_b1) poll_joystick();
-      I_Printf(DDF_LanguageLookup("JoyThrottleMAX"));
-      while (!kbhit() && !joy_b1) poll_joystick();
-      if (kbhit()) getch();
-      I_Printf("\n");
-      calibrate_joystick_throttle_max();
-    } else if (joy_type == JOY_TYPE_WINGEX) {
-      int i;
-      char* hat_string = DDF_LanguageLookup("JoystickHATT");
-      for (i = 0; i < 5; i++) {
-        while (joy_b1) poll_joystick();
-        I_Printf(hat_string, dirs[i]);
-        while (!kbhit() && !joy_b1) poll_joystick();
-        if (kbhit()) getch();
+  
+      while (joy[0].flags & JOYFLAG_CALIBRATE)
+      {
+        I_Printf("%s and press a key", calibrate_joystick_name(0));
+        while (!keypressed() && !joy_b1 && !joy_b2) poll_joystick();
+        clear_keybuf();
+        while (joy_b1 || joy_b2) poll_joystick();
         I_Printf("\n");
-        calibrate_joystick_hat(i);
+        if (calibrate_joystick(0))
+        {
+          I_Printf("Error calibrating joystick.\n");
+          usejoystick = false;
+          return;
+        }
       }
     }
-    save_joystick_data(NULL);
   }
 }
 
@@ -615,6 +593,12 @@ void I_CalibrateJoystick(int ch)
 void I_Init (void)
 {
   allegro_init();
+
+  //init keyboard
+  // -KM- 1999/01/31 Init keyboard first
+  memset(oldkeystate,0,128);
+
+  install_keyboard();
 
   //init the joystick
   if (usejoystick)
@@ -631,23 +615,23 @@ void I_Init (void)
   i_love_bill = get_config_int("system", "i_love_bill", FALSE);
   i_love_bill |= (!M_CheckParm("-ihatebill"));
 
-  install_timer();
-
-  install_int_ex(I_timer,BPS_TO_TIMER(TICRATE));
+  // -KM- 1999/01/31 Added -noirq param.  Uses Chi's original
+  //  clock reader.  Means that DOSDoom will run in background
+  //  windows.
+  if (!M_CheckParm("-noirq"))
+  {
+    install_timer();
+  
+    install_int_ex(I_timer,BPS_TO_TIMER(TICRATE));
+  }
 
   //init the mouse
   mousepresent=install_mouse();
-
   if (mousepresent!=-1)
     show_mouse(NULL);
 
   if (M_CheckParm("-novert"))
     novert=1;
-
-  //init keyboard
-  memset(oldkeystate,0,128);
-
-  install_keyboard();
 
   if (M_CheckParm("-nosound"))
     nosound = true;
@@ -678,10 +662,19 @@ void I_Quit (void)
 
   remove_keyboard();
 
+  if (usejoystick)
+    save_joystick_data(NULL);
+
   if (mousepresent!=-1)
     remove_mouse();
 
   remove_timer();
+
+  // -KM- 1999/01/31 Close the debugfile
+#ifdef DEVELOPERS
+  if (debugfile)
+    fclose(debugfile);
+#endif
 
   // Throw the end text at the screen & exit - Kester
   puttext(1, 1, 80, 25, W_CacheLumpName("ENDOOM", PU_CACHE));
@@ -728,9 +721,9 @@ int I_GetTime (void)
   }
 }
 
-byte*	I_AllocLow(int length)
+byte*   I_AllocLow(int length)
 {
-    byte*	mem;
+    byte*       mem;
         
     mem = (byte *)malloc (length);
     memset (mem,0,length);
@@ -743,7 +736,7 @@ byte*	I_AllocLow(int length)
 //
 void I_Error (char *error, ...)
 {
-    va_list	argptr;
+    va_list     argptr;
 
     // Shutdown. Here might be other errors.
     if (demorecording)
@@ -764,10 +757,25 @@ void I_Error (char *error, ...)
     // Message last, so it actually prints on the screen
     va_start (argptr,error);
     fprintf (stdout, "\n");
-    vfprintf (stdout,error,argptr);
+    vfprintf (stdout, error, argptr);
     fprintf (stdout, "\n");
+    // -KM- 1999/01/31 Print the error to the debugfile
+#ifdef DEVELOPERS
+    if (debugfile)
+    {
+      fprintf(debugfile, "\n");
+      vfprintf(debugfile, error, argptr);
+      fprintf(debugfile, "\n");
+    }
+#endif
     va_end (argptr);
     fflush( stdout );
+
+    // -KM- 1999/01/31 Close the debugfile
+#ifdef DEVELOPERS
+    if (debugfile)
+      fclose(debugfile);
+#endif
 
     exit(-1);
 }
@@ -776,7 +784,7 @@ static char         msgbuf[512];
 void I_Printf (char *message, ...)
 {
     va_list      argptr;
-    char	*string = msgbuf;
+    char        *string = msgbuf;
     va_start (argptr, message);
 
     // Print the message into a text string
@@ -805,23 +813,6 @@ void I_Printf (char *message, ...)
     va_end (argptr);
 }
 
-void I_Window(int left, int top, int right, int bottom)
-{
-  window(left, top, right, bottom);
-}
-      
-void
-I_TextAttr(int attr)
-{
-  textattr(attr);
-}
-      
-void
-I_ClrScr(void)
-{
-  clrscr();
-}
-
 // -KM- 1998/10/29 Use all of screen, not just first 25 rows.
 void I_PutTitle(char *title)
 {
@@ -840,12 +831,12 @@ void I_PutTitle(char *title)
       memcpy(&string[centre], dosdoom, strlen(dosdoom));
 
       // Print the title
-      I_TextAttr(0x07);
-      I_ClrScr();
-      I_TextAttr((BGCOLOR << 4) + FGCOLOR);
+      textattr(0x07);
+      clrscr();
+      textattr((BGCOLOR << 4) + FGCOLOR);
       I_Printf ("%s\n",string);
-      I_TextAttr(0x07);
-      I_Window(1, 2, 80, ScreenRows());
+      textattr(0x07);
+      window(1, 2, 80, ScreenRows());
 }
 
 //
@@ -858,32 +849,40 @@ void I_PutTitle(char *title)
 // -ES- 1998/08/13 Some minor changes
 // -ES- 1998/12/18 Added some new routines
 
-col_func RDC8_C_KM   ={"KM",         R_DrawColumn8_KM,       false, NULL};
-col_func RDC8_id2    ={"id2",        R_DrawColumn8_id_Erik,  false, &RDC8_C_KM};
+col_func RDC8_C_Lo   ={"LoRes",      R_DrawColumn8_LowRes,   false, NULL};
+col_func RDC8_C_KM   ={"KM",         R_DrawColumn8_KM,       false, &RDC8_C_Lo};
+col_func RDC8_C_BLF  ={"BLF",        R_DrawColumn8_BLF,      false, &RDC8_C_KM};
+col_func RDC8_C_MIP  ={"MIP",        R_DrawColumn8_MIP,      false, &RDC8_C_BLF};
+col_func RDC8_id2    ={"id2",        R_DrawColumn8_id_Erik,  false, &RDC8_C_MIP};
 col_func RDC8_id     ={"id",         R_DrawColumn8_id,       false, &RDC8_id2};
 col_func RDC8_Pentium={"Pentium",    R_DrawColumn8_Pentium,  false, &RDC8_id};
 col_func RDC8_K6     ={"K6",         R_DrawColumn8_K6_MMX,   true,  &RDC8_Pentium};
 col_func RDC8_Old    ={"Old",        R_DrawColumn8_NOMMX,    false, &RDC8_K6};
 col_func RDC8_Rasem  ={"Rasem",      R_DrawColumn8_Rasem,    false, &RDC8_Old};
 col_func RDC8_C      ={"C",          R_DrawColumn8_CVersion, false, &RDC8_Rasem};
-col_func *RDC8_Head = &RDC8_C;
+col_func *RDC8_Head  = &RDC8_C;
 
-col_func RDC16_C_KM   ={"KM",        R_DrawColumn16_KM,      false, NULL};
-col_func RDC16_Old   ={"Old",        R_DrawColumn16_Old,     false, &RDC16_C_KM};
+col_func RDC16_C_KM  ={"KM",         R_DrawColumn16_KM,      false, NULL};
+col_func RDC16_C_BLF ={"BLF",        R_DrawColumn16_BLF,     false, &RDC16_C_KM};
+col_func RDC16_Old   ={"Old",        R_DrawColumn16_Old,     false, &RDC16_C_BLF};
 col_func RDC16_Rasem ={"Rasem",      R_DrawColumn16_Rasem,   false, &RDC16_Old};
 col_func RDC16_C     ={"C",          R_DrawColumn16_CVersion,false, &RDC16_Rasem};
 col_func *RDC16_Head = &RDC16_C;
 
-span_func RDS8_KM     ={"KM",         R_DrawSpan8_KM,         false, NULL};
-span_func RDS8_id2    ={"id2",        R_DrawSpan8_id_Erik,    false, &RDS8_KM};
+span_func RDS8_C_Lo   ={"LoRes",      R_DrawSpan8_LowRes,     false, NULL};
+span_func RDS8_C_KM   ={"KM",         R_DrawSpan8_KM,         false, &RDS8_C_Lo};
+span_func RDS8_C_BLF  ={"BLF",        R_DrawSpan8_BLF,        false, &RDS8_C_KM};
+span_func RDS8_C_MIP  ={"MIP",        R_DrawSpan8_MIP,        false, &RDS8_C_BLF};
+span_func RDS8_id2    ={"id2",        R_DrawSpan8_id_Erik,    false, &RDS8_C_MIP};
 span_func RDS8_id     ={"id",         R_DrawSpan8_id,         false, &RDS8_id2};
 span_func RDS8_MMX    ={"MMX",        R_DrawSpan8_MMX,        true,  &RDS8_id};
 span_func RDS8_Rasem  ={"Rasem",      R_DrawSpan8_Rasem,      false, &RDS8_MMX};
 span_func RDS8_C      ={"C",          R_DrawSpan8_CVersion,   false, &RDS8_Rasem};
 span_func *RDS8_Head = &RDS8_C;
 
-span_func RDS16_KM    ={"KM",         R_DrawSpan16_KM,        false, NULL};
-span_func RDS16_Rasem ={"Rasem",      R_DrawSpan16_Rasem,     false, &RDS16_KM};
+span_func RDS16_C_KM  ={"KM",         R_DrawSpan16_KM,        false, NULL};
+span_func RDS16_C_BLF ={"BLF",        R_DrawSpan16_BLF,       false, &RDS16_C_KM};
+span_func RDS16_Rasem ={"Rasem",      R_DrawSpan16_Rasem,     false, &RDS16_C_BLF};
 span_func RDS16_C     ={"C",          R_DrawSpan16_CVersion,  false, &RDS16_Rasem};
 span_func *RDS16_Head = &RDS16_C;
 
@@ -908,16 +907,15 @@ cpumodel_t cpu_new  = {"Unknown new CPU",&RDC8_Rasem,  &RDC16_Rasem, &RDS8_Rasem
 
 void I_CheckCPU()
 {
- check_cpu();
-
- cpu.fpu   = cpu_fpu;
- // -KM- 1998/11/25 Allegro can handle mmx now, don't need to disable.
- cpu.mmx = cpu_mmx;
  cpu.model = &cpu_c; // Default: C versions of everything
-
-#ifdef DJGPP
  if (!M_CheckParm("-UseC"))
  {
+   check_cpu();
+
+   cpu.fpu   = cpu_fpu;
+   // -KM- 1998/11/25 Allegro can handle mmx now, don't need to disable.
+   cpu.mmx = cpu_mmx;
+
    switch (cpu_family)
    {
     case 3: // 386 detected
@@ -964,20 +962,28 @@ void I_CheckCPU()
        }
 
    }
+
+   I_Printf ("CPU Detected: %s ",cpu.model->name);
+  
+   if (cpu.mmx || cpu.fpu || cpu_3dnow)
+   {
+     I_Printf("with ");
+  
+     if (cpu.mmx)
+       I_Printf("MMX,");
+     if (cpu_3dnow)
+       I_Printf("3dNow!,");
+     if (cpu.fpu)
+       I_Printf("FPU");
+  
+     I_Printf(" Present");
+   }
+  
+   if (cpu_cpuid)
+     I_Printf(" - CPUID: %s",cpu_vendor);
+  
+   I_Printf("\n");
  }
-#endif
-
- I_Printf ("CPU Detected: %s ",cpu.model->name);
-
- if (cpu.mmx)
-   I_Printf("with MMX & FPU Present");
- else if (cpu.fpu)
-   I_Printf("with FPU Present");
-
- if (cpu_cpuid != NULL)
-   I_Printf(" - CPUID: %s",cpu_vendor);
-
- I_Printf("\n");
 }
 
 

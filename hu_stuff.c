@@ -27,6 +27,7 @@
 #include "dstrings.h"
 #include "lu_sound.h"
 #include "i_system.h"
+#include "i_allegv.h"
 #include "m_misc.h"
 
 #include "rad_trig.h"
@@ -50,7 +51,8 @@
 
 char*	chat_macros[10];
 
-char*	player_names[MAXPLAYERS];
+//char*	player_names[MAXPLAYERS];
+char**	player_names;
 
 
 char			chat_char; // remove later.
@@ -60,8 +62,10 @@ static player_t*	plr;
 static hu_textline_t	w_title;
 static hu_itext_t	w_chat;
 static boolean		always_off = false;
-static char		chat_dest[MAXPLAYERS];
-static hu_itext_t       w_inputbuffer[MAXPLAYERS];
+//static char		chat_dest[MAXPLAYERS];
+//static hu_itext_t       w_inputbuffer[MAXPLAYERS];
+static char*		chat_dest;
+static hu_itext_t*      w_inputbuffer;
 
 boolean			message_dontfuckwithme;
 static boolean		message_on;
@@ -231,10 +235,9 @@ void HU_Init(void)
     int         lump;
     char	buffer[9];
 
-//    if (language==french)
-//	shiftxform = french_shiftxform;
-//    else
-	shiftxform = english_shiftxform;
+    chat_dest = Z_Malloc(maxplayers*sizeof(*chat_dest), PU_STATIC, NULL);
+    w_inputbuffer = Z_Malloc(maxplayers*sizeof(*w_inputbuffer), PU_STATIC, NULL);
+    shiftxform = english_shiftxform;
 
     // load the heads-up font
     j = HU_FONTSTART;
@@ -315,7 +318,7 @@ void HU_Start(void)
 		    HU_FONTSTART, &chat_on);
 
     // create the inputbuffer widgets
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<maxplayers ; i++)
 	HUlib_initIText(&w_inputbuffer[i], 0, 0, 0, 0, &always_off);
 
     headsupactive = true;
@@ -496,7 +499,7 @@ void HU_Ticker(void)
     // check for incoming chat characters
     if (netgame)
     {
-	for (i=0 ; i<MAXPLAYERS; i++)
+	for (i=0 ; i<maxplayers; i++)
 	{
 	    if (!playeringame[i])
 		continue;
@@ -575,7 +578,8 @@ char HU_dequeueChatChar(void)
     return c;
 }
 
-    char		destination_keys[MAXPLAYERS];/* =
+char*		destination_keys;
+/*char		destination_keys[maxplayers+1] =
     {
 	HUSTR_KEYGREEN,
 	HUSTR_KEYINDIGO,
@@ -599,7 +603,7 @@ boolean HU_Responder(event_t *ev)
     static int		num_nobrainers = 0;
 
     numplayers = 0;
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<maxplayers ; i++)
 	numplayers += playeringame[i];
 
     if (ev->data1 == KEYD_RSHIFT)
@@ -632,7 +636,7 @@ boolean HU_Responder(event_t *ev)
 	}
 	else if (netgame && numplayers > 2)
 	{
-	    for (i=0; i<MAXPLAYERS ; i++)
+	    for (i=0; i<maxplayers ; i++)
 	    {
 		if (ev->data1 == destination_keys[i])
 		{

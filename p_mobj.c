@@ -42,6 +42,7 @@ void P_SpawnMapThing (mapthing_t* mthing);
 // Holds the players real Z location, so the missile when teleported to
 // a different height sector stay relative to it.
 fixed_t realplayerz=0; //-jc-
+mobjinfo_t* bulletpuff = NULL;
 
 //
 // P_SetMobjState
@@ -109,6 +110,8 @@ void P_XYMovement (mobj_t* mo)
     player_t*	player;
     fixed_t	xmove;
     fixed_t	ymove;
+    fixed_t     xstep;
+    fixed_t     ystep;
 			
     if (!mo->momx && !mo->momy)
     {
@@ -134,29 +137,61 @@ void P_XYMovement (mobj_t* mo)
     xmove = mo->momx;
     ymove = mo->momy;
 
+    // -KM- 1999/01/31 For fast mobjs, break down
+    //  the move into steps of max 10 for collision purposes.
+    // Calculate the number of steps we must take
+    xstep = abs(xmove/10);
+    ystep = abs(ymove/10);
+    // If more than one...
+    if (xstep > FRACUNIT || ystep > FRACUNIT)
+    {
+      // Do it in the most number of steps.
+      if (xstep > ystep)
+      {
+        // Calculate the size of each step
+        ystep = FixedDiv(ymove, xstep);
+        if (xmove < 0)
+          xstep = -STEPMOVE;
+        else
+          xstep = STEPMOVE;
+      } else {
+        xstep = FixedDiv(xmove, ystep);
+        if (ymove < 0)
+          ystep = -STEPMOVE;
+        else
+          ystep = STEPMOVE;
+      }
+    } else {
+      xstep = xmove;
+      ystep = ymove;
+    }
+
     // Keep attempting moves until object has lost all momentum.
     do
     {
         // if movement is more than half that of the maximum, attempt the move
         // in two halves or move.
-	if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2)
-	{
-	    ptryx = mo->x + xmove/2;
-	    ptryy = mo->y + ymove/2;
-	    xmove >>= 1;
-	    ymove >>= 1;
-	}
-	else
-	{
-	    ptryx = mo->x + xmove;
-	    ptryy = mo->y + ymove;
-	    xmove = ymove = 0;
-	}
-		
+        if (abs(xmove) > abs(xstep))
+        {
+            ptryx = mo->x + xstep;
+            xmove -= xstep;
+        } else {
+            ptryx = mo->x + xmove;
+            xmove = 0;
+        }
+
+        if (abs(ymove) > abs(ystep))
+        {
+            ptryy = mo->y + ystep;
+            ymove -= ystep;
+        } else {
+            ptryy = mo->y + ymove;
+            ymove = 0;
+        }
+
 	if (!P_TryMove (mo, ptryx, ptryy)) // unable to complete desired move
 	{
-            /* if (mo->info->extendedflags & EF_SLIDEMOVE) DDF Here we come! */
-	   if (mo->player) // try to slide along it
+           if (mo->info->flags & MF_SLIDE)
 	   {
 	     P_SlideMove (mo);
 	   }
@@ -180,8 +215,28 @@ void P_XYMovement (mobj_t* mo)
                   P_MobjRemoveMissile(mo); // New Procedure -ACB- 1998/07/30
                 return;
 	    }
-            else
-              mo->momx = mo->momy = 0;
+            // -KM- 1999/01/31 Bouncy objects (grenades)
+            else if (mo->info->extendedflags & EF_BOUNCE)
+            {
+              fixed_t speed;
+              speed = P_AproxDistance(mo->momx, mo->momy);
+
+              if (ceilingline)
+              {
+                angle_t angle;
+                angle_t moangle;
+                angle = R_PointToAngle2(ceilingline->v1->x, ceilingline->v1->y,
+                                        ceilingline->v2->x, ceilingline->v2->y);
+                moangle = R_PointToAngle2(0, 0, mo->momx, mo->momy);
+                angle = (2*angle - moangle);
+                angle >>= ANGLETOFINESHIFT;
+                mo->momx = FixedMul(finecosine[angle], speed/2);
+                mo->momy = FixedMul(  finesine[angle], speed/2);
+              } else
+                mo->momx = mo->momy = 0;
+              xmove = ymove = 0;
+            } else
+              xmove = ymove = mo->momx = mo->momy = 0;
 	}
     }
     while (xmove || ymove);
@@ -220,25 +275,11 @@ void P_XYMovement (mobj_t* mo)
 	}
     }
 
-    if (mo->momx > -STOPSPEED && mo->momx < STOPSPEED && mo->momy > -STOPSPEED
-	&& mo->momy < STOPSPEED &&
-        (!player || (player->cmd.forwardmove==0 && player->cmd.sidemove==0)))
-    {
-	// if in a walking frame, stop moving
-        // -KM- 1998/12/16 Use info->spawnstate instead of S_PLAY_RUN1 etc
-	if ( player&&(unsigned)((player->mo->state - states)- player->mo->info->seestate) < 4)
-	    P_SetMobjState (player->mo, player->mo->info->spawnstate);
-	
-	mo->momx = 0;
-	mo->momy = 0;
-    }
-    else
-    {
-        // -KM- 1998/12/16 Added viscosity so you can't get stuck in mid air in a
-        //   no gravity sector.
-	mo->momx = FixedMul (mo->momx, FixedMul(mo->subsector->sector->friction, FRACUNIT - mo->subsector->sector->viscosity));
-	mo->momy = FixedMul (mo->momy, FixedMul(mo->subsector->sector->friction, FRACUNIT - mo->subsector->sector->viscosity));
-    }
+    // -KM- 1999/01/31 Stop speed is handled in p_action.c
+    // -KM- 1998/12/16 Added viscosity so you can't get stuck in mid air in a
+    //   no gravity sector.
+    mo->momx = FixedMul (mo->momx, FixedMul(mo->subsector->sector->friction, FRACUNIT - mo->subsector->sector->viscosity));
+    mo->momy = FixedMul (mo->momy, FixedMul(mo->subsector->sector->friction, FRACUNIT - mo->subsector->sector->viscosity));
 }
 
 //
@@ -298,7 +339,11 @@ void P_ZMovement (mobj_t* mo)
       if (mo->info->maxfall && mo->momz < FixedMul(-gravity, mo->info->maxfall))
           P_DamageMobj(mo, NULL, NULL, -mo->momz - FixedMul(gravity, mo->info->maxfall));
 
-      mo->momz = 0;
+      // -KM- 1999/01/31 Bouncy bouncy...
+      if (mo->info->extendedflags & EF_BOUNCE)
+        mo->momz = -mo->momz / 2;
+      else
+        mo->momz = 0;
     }
 
     mo->z = mo->floorz;
@@ -326,15 +371,21 @@ void P_ZMovement (mobj_t* mo)
 
   if (mo->z + mo->height > mo->ceilingz)
   {
-    // hit the ceiling
-    if (mo->momz > 0)
-      mo->momz = 0;
-
     mo->z = mo->ceilingz - mo->height;
 
     if (mo->flags & MF_SKULLFLY)
       mo->momz = -mo->momz; // the skull slammed into something
 	
+    // hit the ceiling
+    if (mo->momz > 0)
+    {
+      // -KM- 1999/01/31 More bouncing.
+      if (mo->info->extendedflags & EF_BOUNCE)
+        mo->momz = -mo->momz/3;
+      else
+        mo->momz = 0;
+    }
+
     if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
     {
       // if the ceiling is sky, don't explode missile -ACB- 1998/07/31
@@ -385,13 +436,13 @@ void P_TeleportRespawn (mobj_t* mobj)
   // temp fix for teleport flash...
   mo = P_MobjCreateObject (mobj->x,mobj->y,
                             mobj->subsector->sector->floorheight,
-                             DDF_MobjLookup("TELEPORT FLASH"));
+                             mobj->info->respawneffect);
 
   // spawn a teleport fog at the new spot
   ss = R_PointInSubsector (x,y);
 
   // temp fix for teleport flash...
-  mo=P_MobjCreateObject(x,y,ss->sector->floorheight,DDF_MobjLookup("TELEPORT FLASH"));
+  mo=P_MobjCreateObject(x,y,ss->sector->floorheight,mobj->info->respawneffect);
 
   // spawn the new monster
   mthing = &mobj->spawnpoint;
@@ -429,8 +480,6 @@ void P_TeleportRespawn (mobj_t* mobj)
 //
 void P_ResurrectRespawn (mobj_t* object)
 {
-  int oldradius;
-  int oldheight;
   fixed_t x;
   fixed_t y;
   mobjinfo_t* info;
@@ -444,27 +493,17 @@ void P_ResurrectRespawn (mobj_t* object)
   if (!object->info->raisestate)
     return; // cannot raise the unraisable
 
-  // restore objects original height
-  oldradius = object->radius;
-  oldheight = object->height;
-  object->radius = info->radius;
-  object->height = info->height;
-
   // something is occupying it's position?
   // restore original height is position occupied
   if (!P_CheckPosition (object, x, y) )
-  {
-    object->radius = oldradius;
-    object->height = oldheight;
     return;
-  }
 
-  if (object->state == &states[S_GIBS])
-  {
-    object->radius = oldradius;
-    object->height = oldheight;
+  if (object->state == &states[object->info->gib->spawnstate])
     return; // don't respawn gibs
-  }
+
+  // restore objects original height
+  object->radius = info->radius;
+  object->height = info->height;
 
   // Resurrect monster
   S_StartSound (object, sfx_slop);
@@ -491,19 +530,12 @@ void P_ResurrectRespawn (mobj_t* object)
 //
 void P_MobjThinker (mobj_t* mobj)
 {
-  int tics = 1;
-  // -KM- 1998/12/16 Allow for fastparm.
-  if (gameflags.fastparm)
-  {
-    tics = mobj->fasttics;
-    mobj->fasttics += mobj->info->fast;
-    tics = (mobj->fasttics - tics)>>FRACBITS;
-  }
-  while (tics--)
-  {
-    mobj->invisibility = (34*mobj->invisibility + mobj->deltainvis)/35;
-
-
+    mobj->invisibility = ((TICRATE-1)*mobj->invisibility + mobj->deltainvis)/35;
+    if (mobj->fuse >= 0)
+    {
+      if (!--mobj->fuse)
+        P_ExplodeMissile(mobj);
+    }
     // momentum movement
     if (mobj->momx || mobj->momy || (mobj->flags&MF_SKULLFLY) )
     {
@@ -553,7 +585,7 @@ void P_MobjThinker (mobj_t* mobj)
       // object will try to respawn. So after 12 seconds the object will
       // try to respawn.
       //
-      if (mobj->movecount < 12*TICRATE)
+      if (mobj->movecount < mobj->info->respawntime)
         return;
   
       // if the first 5 bits of leveltime are on, don't respawn now...ok?
@@ -571,7 +603,6 @@ void P_MobjThinker (mobj_t* mobj)
       else if (gameflags.respawnsetting == RS_TELEPORT)
         P_TeleportRespawn(mobj);
     }
-  }
 }
 
 //
@@ -600,6 +631,8 @@ mobj_t* P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
   mobj->flags = info->flags;
   mobj->health = info->spawnhealth;
   mobj->speed = info->speed;
+  mobj->fuse = info->fuse;
+  mobj->side = info->side;
   if (gameflags.fastparm)
     mobj->speed = FixedMul(mobj->speed,info->fast);
 
@@ -611,7 +644,7 @@ mobj_t* P_SpawnMobj (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
   if (gameskill != sk_nightmare)
     mobj->reactiontime = info->reactiontime;
     
-  mobj->lastlook = P_Random () % MAXPLAYERS;
+  mobj->lastlook = P_Random () % maxplayers;
 
   //
   // do not set the state with P_SetMobjState,
@@ -755,7 +788,8 @@ void P_RemoveMobj (mobj_t* mobj)
 //  between levels.
 //
 // -KM- 1998/12/21 Cleaned this up a bit.
-void P_SpawnPlayer (mapthing_t* mthing)
+// -KM- 1999/01/31 Removed all those nasty cases for doomednum (1/4001)
+void P_SpawnPlayer (int consolep, mapthing_t* mthing)
 {
     player_t*           p;
     fixed_t             x;
@@ -766,16 +800,21 @@ void P_SpawnPlayer (mapthing_t* mthing)
     mobjinfo_t*         objtype;
 
     int                 i;
-    int                 consolep; 
 
-    consolep=(mthing->type>4000 && mthing->type<4005) ? mthing->type-3996:mthing->type-1;
+    // -KM- 1998/11/25 This is in preperation for skins.  The creatures.ddf
+    //   will hold player start objects, sprite will be taken for skin.
+    objtype = mobjinfohead;
+
+    // -ACB- 1998/08/06 use linked list table
+    while (objtype && (consolep != objtype->playernum-1))
+      objtype = objtype->next;
 
     // not playing?
     //-jc-
     if (!playeringame[consolep])
       return;
 
-    p =&players[consolep];
+    p = &players[consolep];
 
     if (p->playerstate == PST_REBORN)
     {
@@ -786,19 +825,7 @@ void P_SpawnPlayer (mapthing_t* mthing)
     y = mthing->y << FRACBITS;
     z = ONFLOORZ;
 
-    // -KM- 1998/11/25 This is in preperation for skins.  The creatures.ddf
-    //   will hold player start objects, sprite will be taken for skin.
-    objtype = mobjinfohead;
-
-    // -ACB- 1998/08/06 use linked list table
-    while ((objtype != NULL) && (mthing->type != objtype->doomednum))
-      objtype = objtype->next;
-
-    mobj = P_MobjCreateObject(x,y,z, objtype/*specials[MOBJ_PLAYER]*/);
-
-    // set color translations for player sprites
-//    if (mthing->type > 1)
-//      mobj->playxtra = consolep;
+    mobj = P_MobjCreateObject(x,y,z, objtype);
 
     mobj->angle = ANG45 * (mthing->angle/45);
     mobj->player = p;
@@ -838,6 +865,10 @@ void P_SpawnPlayer (mapthing_t* mthing)
       mobj->flags |= MF_NOCLIP;
       mobj->flags &= ~(MF_SHOOTABLE|MF_SOLID);
     }
+
+    // Don't get stuck spawned in things: telefrag them.
+    if (deathmatch >= 3)
+      P_TeleportMove(mobj, mobj->x, mobj->y);
 }
 
 
@@ -855,8 +886,24 @@ void P_SpawnMapThing (mapthing_t* mthing)
     fixed_t		y;
     fixed_t		z;
 		
+    objtype = mobjinfohead;
+
+    // -ACB- 1998/08/06 use linked list table
+    while ((objtype != NULL) && (mthing->type != objtype->doomednum))
+      objtype = objtype->next;
+
+    // MOBJTYPE not found, don't crash out: JDS Compliance.
+    // -ACB- 1998/07/21
+    if (objtype==NULL)
+    {
+	Debug_Printf ("Unknown type %i at (%i, %i)\n",
+		                      mthing->type, mthing->x, mthing->y);
+        return;
+    }
+		
+    // -KM- 1999/01/31 Use playernum property.
     // count deathmatch start positions
-    if (mthing->type == 11)
+    if (objtype->playernum < 0)
     {
 	if (deathmatch_p == &deathmatchstarts[max_deathmatch_starts])
         {
@@ -874,17 +921,13 @@ void P_SpawnMapThing (mapthing_t* mthing)
 	
     // check for players specially
     //-jc-
-    if ((mthing->type >4000 && mthing->type <4005) ||
-        (mthing->type >0 && mthing->type <5))
+    if (objtype->playernum > 0)
     {
-        // save spots for respawning in network games
-       if (mthing->type>4000 && mthing->type<4005)
-         playerstarts[(mthing->type-4001)+4] = *mthing;
-       else
-         playerstarts[mthing->type-1] = *mthing;
+       // save spots for respawning in network games
+       playerstarts[objtype->playernum-1] = *mthing;
 
        if (!deathmatch)
-         P_SpawnPlayer (mthing);
+         P_SpawnPlayer (objtype->playernum-1, mthing);
 
        return;
     }
@@ -903,23 +946,6 @@ void P_SpawnMapThing (mapthing_t* mthing)
     if (!(mthing->options & bit) )
 	return;
 
-    objtype = mobjinfohead;
-
-    // -ACB- 1998/08/06 use linked list table
-    while ((objtype != NULL) && (mthing->type != objtype->doomednum))
-      objtype = objtype->next;
-
-    // MOBJTYPE not found, don't crash out: JDS Compliance.
-    // -ACB- 1998/07/21
-    if (objtype==NULL)
-    {
-#ifdef DEVELOPERS
-	Debug_Printf ("Unknown type %i at (%i, %i)\n",
-		                      mthing->type, mthing->x, mthing->y);
-#endif
-        return;
-    }
-		
     // don't spawn keycards and players in deathmatch
     if (deathmatch && objtype->flags & MF_NOTDMATCH)
       return;
@@ -929,7 +955,6 @@ void P_SpawnMapThing (mapthing_t* mthing)
     if (gameflags.nomonsters && (objtype->doomednum==3006 || (objtype->flags & MF_COUNTKILL)))
 	return;
 
-    
     // spawn it
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
@@ -966,22 +991,18 @@ void P_SpawnMapThing (mapthing_t* mthing)
 //
 extern fixed_t attackrange;
 
-void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
+void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z, mobjinfo_t* puff)
 {
     mobj_t*	th;
 	
     z += ((P_Random()-P_Random())<<10);
 
     // -ACB- 1998/08/06 Specials table for non-negotiables....
-    th = P_MobjCreateObject(x,y,z,specials[MOBJ_PUFF]);
+    th = P_MobjCreateObject(x,y,z,puff);
     th->momz = FRACUNIT;
     th->tics -= P_Random()&3;
 
     if (th->tics < 1) th->tics = 1;
-	
-    // don't make punches spark on the wall
-    if (attackrange == MELEERANGE)
-      P_SetMobjState (th, S_PUFF3);
 }
 
 
@@ -990,7 +1011,8 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 // P_SpawnBlood
 //
 // -KM- 1998/11/25 Made more violent. :-)
-void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle)
+// -KM- 1999/01/31 Different blood objects for different mobjs.
+void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle, mobjinfo_t* blood)
 {
     mobj_t*	th;
     int i;
@@ -1001,7 +1023,7 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle)
     {
       z += ((P_Random()-P_Random())<<10);
   
-      th = P_MobjCreateObject(x,y,z, specials[MOBJ_BLOOD]);
+      th = P_MobjCreateObject(x,y,z, blood);
   
       th->momz = FRACUNIT*2+FRACUNIT*i/6;
       th->momx = FixedMul(i * 2*FRACUNIT/6, finecosine[angle>>ANGLETOFINESHIFT]);
@@ -1011,10 +1033,11 @@ void P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage, angle_t angle)
   
       if (th->tics < 1) th->tics = 1;
   		
-      if (damage <= 12 && damage >= 9)
-        P_SetMobjState (th,S_BLOOD2);
-      else if (damage < 9)
-        P_SetMobjState (th,S_BLOOD3);
+
+      if (damage <= 12)
+        P_SetMobjState (th,th->state->nextstate);
+      if (damage < 9)
+        P_SetMobjState (th,th->state->nextstate);
 
       angle += ((P_Random()-P_Random())*0xB60B60);
     }
@@ -1151,6 +1174,7 @@ void P_SpawnPlayerMissile (mobj_t* source, mobjtype_t type)
 // when the item-in-the-que has a time of zero is it respawned.
 //
 // -ACB- 1998/07/30 Procedure written.
+// -KM- 1999/01/31 Custom respawn fog.
 //
 void P_MobjItemRespawn(void)
 {
@@ -1169,7 +1193,7 @@ void P_MobjItemRespawn(void)
     return;
 
   // only respawn items in deathmatch or if itemrespawn
-  if ((deathmatch != 2)&&(!gameflags.itemrespawn))
+  if ((deathmatch == 1) || (!gameflags.itemrespawn))
     return;
 
   currentitem = itemquehead; // lets start from the beginning....
@@ -1186,10 +1210,7 @@ void P_MobjItemRespawn(void)
       // spawn a teleport fog at the new spot
       ss=R_PointInSubsector(x, y);
 
-      // -ACB- 1998/08/06 Specials table for non-negotiables....
-      mo=P_MobjCreateObject(x, y, ss->sector->floorheight, specials[MOBJ_RESPAWNFOG]);
-
-      S_StartSound (mo, sfx_itmbk);
+//      S_StartSound (mo, sfx_itmbk);
 
       // -ACB- 1998/08/06 Cycle through the linked mobjinfo list....
       objtype = mobjinfohead;
@@ -1202,6 +1223,9 @@ void P_MobjItemRespawn(void)
         I_Error("P_MobjItemRespawn: No such item type!");
         return; // shouldn't happen.
       }
+
+      // -ACB- 1998/08/06 Specials table for non-negotiables....
+      mo=P_MobjCreateObject(x, y, ss->sector->floorheight, objtype->respawneffect);
 
       if (objtype->flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
@@ -1317,6 +1341,8 @@ mobj_t* P_MobjCreateObject (fixed_t x, fixed_t y, fixed_t z, mobjinfo_t *type)
   mobj->flags = type->flags;
   mobj->health = type->spawnhealth;
   mobj->speed = type->speed;
+  mobj->fuse = type->fuse;
+  mobj->side = type->side;
   if (gameflags.fastparm)
     mobj->speed = FixedMul(mobj->speed,type->fast);
 
@@ -1329,7 +1355,7 @@ mobj_t* P_MobjCreateObject (fixed_t x, fixed_t y, fixed_t z, mobjinfo_t *type)
   if (gameskill != sk_nightmare)
     mobj->reactiontime = type->reactiontime;
     
-  mobj->lastlook = P_Random () % MAXPLAYERS;
+  mobj->lastlook = P_Random () % maxplayers;
 
   //
   // Do not set the state with P_SetMobjState,

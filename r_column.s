@@ -1,4 +1,3 @@
-.comm _centery,4
 .comm _dc_colormap,4
 .comm _dc_x,4
 .comm _dc_yl,4
@@ -18,6 +17,8 @@ _pixelcount:
 _loopcount:
 .long 0x00000000
 .text
+
+// -ES- 1999/03/19 Removed centery subtractions
 
 //
 // id's code. Probably optimal for 486.
@@ -52,7 +53,7 @@ rdc8ioffs1: // rdc8idone
         
         movl _dc_iscale,%ecx
         
-        movl _centery,%eax
+        xorl %eax,%eax
         subl %ebp,%eax
         imull	%ecx
         movl _dc_texturemid,%ebp
@@ -170,7 +171,7 @@ rdc8eoffs1: // rdc8edone
         
         movl _dc_iscale,%ecx
         
-        movl _centery,%eax
+        xorl %eax,%eax
         subl %ebp,%eax
         imull	%ecx
         movl _dc_texturemid,%ebp
@@ -289,7 +290,6 @@ _R_DrawColumn8_NOMMX:
 	addl (%edi,%eax,4),%esi
 	movl _dc_iscale,%edi
 	movl %edx,%eax
-	subl _centery,%eax
 	imull %edi,%eax
 	movl _dc_texturemid,%ecx
 	addl %eax,%ecx
@@ -341,7 +341,6 @@ _R_DrawColumn8_Rasem:
 	movl (%eax,%edx,4),%eax
 	movl _dc_iscale,%ebp
 	addl %eax,%esi
-        subl _centery,%edi
         imull %ebp,%edi
         addl _dc_texturemid,%edi
         .align 2,0x90
@@ -392,7 +391,6 @@ _R_DrawColumn8_Pentium:
         movl _columnofs, %edi
 	addl (%edi,%edx,4),%ecx // dest pixel at (%ecx)
 	movl _dc_iscale,%esi
-	subl _centery,%eax
 	imull %esi,%eax
 	movl _dc_texturemid,%edi
 	addl %eax,%edi          // texture index in edi
@@ -413,7 +411,6 @@ rdc8pmany:			// draw >1 pixel
 .globl rdc8pwidth5
 rdc8pwidth5:  // DeadBeef = -2*SCREENWIDTH
         movl _dc_iscale,%edx	// edx = fracstep
-	subl _centery,%eax
 	imull %edx,%eax
    	shll $9, %edx           // fixme: Should get 7.25 fix as input
 	movl _dc_texturemid,%ecx
@@ -506,7 +503,6 @@ rdc8moffs1:
         movl _columnofs, %edi
 	addl (%edi,%eax,4),%ecx  // dest pixel at (%ecx)
 	movl _dc_iscale,%esi
-	subl _centery,%edx
 	imull %esi,%edx
 	movl _dc_texturemid,%edi
 	addl %edx,%edi         // texture index in edi
@@ -529,7 +525,6 @@ rdc8mmany:			 // draw >1 pixel
 .globl rdc8mwidth3
 rdc8mwidth3:  // DeadBeef = -2*SCREENWIDTH
         movl _dc_iscale,%ecx	 // ecx = fracstep
-	subl _centery,%edx
 	imull %ecx,%edx
    	shll $9, %ecx           // fixme: Should get 7.25 fix as input
 	movl _dc_texturemid,%eax
@@ -635,7 +630,6 @@ _R_DrawColumn16_Old:
 	addl (%edi,%eax,4),%esi
 	movl _dc_iscale,%edi
 	movl %edx,%eax
-	subl _centery,%eax
 	imull %edi,%eax
 	movl _dc_texturemid,%ecx
 	addl %eax,%ecx
@@ -686,7 +680,6 @@ _R_DrawColumn16_Rasem:
         movl (%ecx,%ebx,4),%esi
 	addl (%eax,%edx,4),%esi
 	movl _dc_iscale,%ebp
-        subl _centery,%ebx
         movl _dc_colormap,%eax
         imull %ebp,%ebx
         .byte 0x2e

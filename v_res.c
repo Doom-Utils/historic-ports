@@ -14,6 +14,7 @@
 
 #include "am_map.h"
 #include "i_video.h"
+#include "i_allegv.h"
 #include "i_system.h"
 #include "m_argv.h"
 #include "m_fixed.h"
@@ -37,7 +38,7 @@ byte* screens[7] = {0, 0, 0, 0, 0, 0, 0};  // screens[5] and screens[6] are the
 int usegamma;
 //int transluc=1;
 
-fixed_t	DX, DY, DXI, DYI, DY2, DYI2, SCALEDWIDTH, SCALEDHEIGHT, X_OFFSET, Y_OFFSET;
+fixed_t DX, DY, DXI, DYI, DY2, DYI2, SCALEDWIDTH, SCALEDHEIGHT, X_OFFSET, Y_OFFSET;
 
 fixed_t BASEYCENTER;
 
@@ -158,10 +159,10 @@ int ds_x2;
 
 lighttable_t* ds_colormap;
 
-fixed_t	ds_xfrac;
-fixed_t	ds_yfrac;
-fixed_t	ds_xstep;
-fixed_t	ds_ystep;
+fixed_t ds_xfrac;
+fixed_t ds_yfrac;
+fixed_t ds_xstep;
+fixed_t ds_ystep;
 
 // start of a 64*64 tile image 
 byte* ds_source;
@@ -191,13 +192,13 @@ int fuzzoffset[]=
 }; 
 
 //
-// align_r_draw8
+// align_r_draw
 //
 // -ES- 1998/08/14 aligns some asm inner loops
 // -ACB- 1998/08/15 Made the I_Printf into Debug_Printf 
 // -ES- 1998/09/11 Made some of the Debug_Printfs into File_Printf
 //
-// align_loop: Helper macro for use in align_r_draw8 ONLY. Parameters:
+// align_loop: Helper macro for use in align_r_draw ONLY. Parameters:
 // loop_lbl: Loop's label name.
 // endfunc: Unused function occupying at least 31 bytes, placed immediately
 // after the function containing the loop
@@ -252,53 +253,96 @@ File_Printf(", done\n");
 
 void align_r_draw(void)
 {
+#ifdef DJGPP
   char *start;
   long dist;
   char *new_start;
   char *end_func;
   char *to;
   char *from;
+  static boolean firsttime = 1;
+  int loops_to_align=0;
   int i;
 
-  align_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
-  set_jmpdest("rdc8moffs1","rdc8mdone");
-  set_jmpdest("rdc8moffs2","rdc8mdone");
+  // -ES- 1999/03/07 This is getting time-critical, so we only align what we need to align
+  if (firsttime) // The first time we have to align all the routines
+  {
+    loops_to_align=-1;
+    firsttime=0;
+  } else // Otherwise we just align the ones we use
+  {
+    if (cpu.RDC->func == R_DrawColumn8_K6_MMX)
+      loops_to_align |= 0x1;
+    if (cpu.RDC->func == R_DrawColumn8_id_Erik)
+      loops_to_align |= 0x2;
+    if (cpu.RDC->func == R_DrawColumn8_id)
+      loops_to_align |= 0x4;
+    if (cpu.RDS->func == R_DrawSpan8_MMX)
+      loops_to_align |= 0x8;
+    if (cpu.RDS->func == R_DrawSpan8_id_Erik)
+      loops_to_align |= 0x10;
+    if (cpu.RDS->func == R_DrawSpan8_id)
+      loops_to_align |= 0x20;
+  }
 
-  align_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
-  set_jmpdest("rdc8eoffs1","rdc8edone");
-  set_jmpdest("rdc8eoffs2","rdc8eloop");
-  set_jmpdest("rdc8eoffs3","rdc8echecklast");
-  set_address("rdc8epatcher1","rdc8epatch1-4");
-  set_address("rdc8epatcher2","rdc8epatch2-4");
-  set_address("rdc8epatcher3","rdc8epatch3-4");
-  set_address("rdc8epatcher4","rdc8epatch4-4");
+  if (loops_to_align & 0x1)
+  {
+    align_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
+    set_jmpdest("rdc8moffs1","rdc8mdone");
+    set_jmpdest("rdc8moffs2","rdc8mdone");
+  }
 
-  // -ES- 1998/08/20 Fixed id alignment
-  align_loop("rdc8iloop","R_DrawColumn8_id_end",0);
-  set_jmpdest("rdc8ioffs1","rdc8idone");
-  set_jmpdest("rdc8ioffs2","rdc8iloop");
-  set_jmpdest("rdc8ioffs3","rdc8ichecklast");
-  set_address("rdc8ipatcher1","rdc8ipatch1-4");
-  set_address("rdc8ipatcher2","rdc8ipatch2-4");
+  if (loops_to_align & 0x2)
+  {
+    align_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
+    set_jmpdest("rdc8eoffs1","rdc8edone");
+    set_jmpdest("rdc8eoffs2","rdc8eloop");
+    set_jmpdest("rdc8eoffs3","rdc8echecklast");
+    set_address("rdc8epatcher1","rdc8epatch1-4");
+    set_address("rdc8epatcher2","rdc8epatch2-4");
+    set_address("rdc8epatcher3","rdc8epatch3-4");
+    set_address("rdc8epatcher4","rdc8epatch4-4");
+  }
 
-  align_loop("rds8mloop","R_DrawSpan8MMX_end",16);
-  set_jmpdest("rds8moffs1","rds8mdone");
+  if (loops_to_align & 0x4)
+  {
+    // -ES- 1998/08/20 Fixed id alignment
+    align_loop("rdc8iloop","R_DrawColumn8_id_end",0);
+    set_jmpdest("rdc8ioffs1","rdc8idone");
+    set_jmpdest("rdc8ioffs2","rdc8iloop");
+    set_jmpdest("rdc8ioffs3","rdc8ichecklast");
+    set_address("rdc8ipatcher1","rdc8ipatch1-4");
+    set_address("rdc8ipatcher2","rdc8ipatch2-4");
+  }
 
-  align_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
-  set_jmpdest("rds8eoffs1","rds8edone");
-  set_jmpdest("rds8eoffs2","rds8eloop");
-  set_jmpdest("rds8eoffs3","rds8echecklast");
-  set_address("rds8epatcher1","rds8epatch1-4");
-  set_address("rds8epatcher2","rds8epatch2-4");
-  set_address("rds8epatcher3","rds8epatch3-4");
-  set_address("rds8epatcher4","rds8epatch4-4");
+  if (loops_to_align & 0x8)
+  {
+    align_loop("rds8mloop","R_DrawSpan8MMX_end",16);
+    set_jmpdest("rds8moffs1","rds8mdone");
+  }
 
-  align_loop("rds8iloop","R_DrawSpan8_id_end",0);
-  set_jmpdest("rds8ioffs1","rds8idone");
-  set_jmpdest("rds8ioffs2","rds8iloop");
-  set_jmpdest("rds8ioffs3","rds8ichecklast");
-  set_address("rds8ipatcher1","rds8ipatch1-4");
-  set_address("rds8ipatcher2","rds8ipatch2-4");
+  if (loops_to_align & 0x10)
+  {
+    align_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
+    set_jmpdest("rds8eoffs1","rds8edone");
+    set_jmpdest("rds8eoffs2","rds8eloop");
+    set_jmpdest("rds8eoffs3","rds8echecklast");
+    set_address("rds8epatcher1","rds8epatch1-4");
+    set_address("rds8epatcher2","rds8epatch2-4");
+    set_address("rds8epatcher3","rds8epatch3-4");
+    set_address("rds8epatcher4","rds8epatch4-4");
+  }
+
+  if (loops_to_align & 0x20)
+  {
+    align_loop("rds8iloop","R_DrawSpan8_id_end",0);
+    set_jmpdest("rds8ioffs1","rds8idone");
+    set_jmpdest("rds8ioffs2","rds8iloop");
+    set_jmpdest("rds8ioffs3","rds8ichecklast");
+    set_address("rds8ipatcher1","rds8ipatch1-4");
+    set_address("rds8ipatcher2","rds8ipatch2-4");
+  }
+#endif
 }
 
 //
@@ -323,69 +367,128 @@ dist=0;\
 File_Printf(", done\n");
 void unalign_r_draw(void)
 {
+#ifdef DJGPP
   char *start;
   long dist;
   char *new_start;
   char *end_func;
   char *to;
   char *from;
+  int loops_to_unalign=0;
   int i;
 
-  unalign_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
-  set_jmpdest("rdc8moffs1","rdc8mdone");
-  set_jmpdest("rdc8moffs2","rdc8mdone");
+  // -ES- 1999/03/07 This is getting a bit time-critical, so we only align the routines we need to align
+  if (cpu.RDC->func == R_DrawColumn8_K6_MMX)
+    loops_to_unalign |= 0x1;
+  if (cpu.RDC->func == R_DrawColumn8_id_Erik)
+    loops_to_unalign |= 0x2;
+  if (cpu.RDC->func == R_DrawColumn8_id)
+    loops_to_unalign |= 0x4;
+  if (cpu.RDS->func == R_DrawSpan8_MMX)
+    loops_to_unalign |= 0x8;
+  if (cpu.RDS->func == R_DrawSpan8_id_Erik)
+    loops_to_unalign |= 0x10;
+  if (cpu.RDS->func == R_DrawSpan8_id)
+    loops_to_unalign |= 0x20;
 
-  unalign_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
-  set_jmpdest("rdc8eoffs1","rdc8edone");
-  set_jmpdest("rdc8eoffs2","rdc8eloop");
-  set_jmpdest("rdc8eoffs3","rdc8echecklast");
-  set_address("rdc8epatcher1","rdc8epatch1-4");
-  set_address("rdc8epatcher2","rdc8epatch2-4");
-  set_address("rdc8epatcher3","rdc8epatch3-4");
-  set_address("rdc8epatcher4","rdc8epatch4-4");
+  if (loops_to_unalign & 0x1)
+  {
+    unalign_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
+    set_jmpdest("rdc8moffs1","rdc8mdone");
+    set_jmpdest("rdc8moffs2","rdc8mdone");
+  }
 
-  // -ES- 1998/08/20 Fixed alignment of id routines
-  unalign_loop("rdc8iloop","R_DrawColumn8_id_end",0);
-  set_jmpdest("rdc8ioffs1","rdc8idone");
-  set_jmpdest("rdc8ioffs2","rdc8iloop");
-  set_jmpdest("rdc8ioffs3","rdc8ichecklast");
-  set_address("rdc8ipatcher1","rdc8ipatch1-4");
-  set_address("rdc8ipatcher2","rdc8ipatch2-4");
+  if (loops_to_unalign & 0x2)
+  {
+    unalign_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
+    set_jmpdest("rdc8eoffs1","rdc8edone");
+    set_jmpdest("rdc8eoffs2","rdc8eloop");
+    set_jmpdest("rdc8eoffs3","rdc8echecklast");
+    set_address("rdc8epatcher1","rdc8epatch1-4");
+    set_address("rdc8epatcher2","rdc8epatch2-4");
+    set_address("rdc8epatcher3","rdc8epatch3-4");
+    set_address("rdc8epatcher4","rdc8epatch4-4");
+  }
 
-  unalign_loop("rds8mloop","R_DrawSpan8MMX_end",16);
-  set_jmpdest("rds8moffs1","rds8mdone");
+  if (loops_to_unalign & 0x4)
+  {
+    // -ES- 1998/08/20 Fixed alignment of id routines
+    unalign_loop("rdc8iloop","R_DrawColumn8_id_end",0);
+    set_jmpdest("rdc8ioffs1","rdc8idone");
+    set_jmpdest("rdc8ioffs2","rdc8iloop");
+    set_jmpdest("rdc8ioffs3","rdc8ichecklast");
+    set_address("rdc8ipatcher1","rdc8ipatch1-4");
+    set_address("rdc8ipatcher2","rdc8ipatch2-4");
+  }
 
-  unalign_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
-  set_jmpdest("rds8eoffs1","rds8edone");
-  set_jmpdest("rds8eoffs2","rds8eloop");
-  set_jmpdest("rds8eoffs3","rds8echecklast");
-  set_address("rds8epatcher1","rds8epatch1-4");
-  set_address("rds8epatcher2","rds8epatch2-4");
-  set_address("rds8epatcher3","rds8epatch3-4");
-  set_address("rds8epatcher4","rds8epatch4-4");
+  if (loops_to_unalign & 0x8)
+  {
+    unalign_loop("rds8mloop","R_DrawSpan8MMX_end",16);
+    set_jmpdest("rds8moffs1","rds8mdone");
+  }
 
-  unalign_loop("rds8iloop","R_DrawSpan8_id_end",0);
-  set_jmpdest("rds8ioffs1","rds8idone");
-  set_jmpdest("rds8ioffs2","rds8iloop");
-  set_jmpdest("rds8ioffs3","rds8ichecklast");
-  set_address("rds8ipatcher1","rds8ipatch1-4");
-  set_address("rds8ipatcher2","rds8ipatch2-4");
+  if (loops_to_unalign & 0x10)
+  {
+    unalign_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
+    set_jmpdest("rds8eoffs1","rds8edone");
+    set_jmpdest("rds8eoffs2","rds8eloop");
+    set_jmpdest("rds8eoffs3","rds8echecklast");
+    set_address("rds8epatcher1","rds8epatch1-4");
+    set_address("rds8epatcher2","rds8epatch2-4");
+    set_address("rds8epatcher3","rds8epatch3-4");
+    set_address("rds8epatcher4","rds8epatch4-4");
+  }
+
+  if (loops_to_unalign & 0x20)
+  {
+    unalign_loop("rds8iloop","R_DrawSpan8_id_end",0);
+    set_jmpdest("rds8ioffs1","rds8idone");
+    set_jmpdest("rds8ioffs2","rds8iloop");
+    set_jmpdest("rds8ioffs3","rds8ichecklast");
+    set_address("rds8ipatcher1","rds8ipatch1-4");
+    set_address("rds8ipatcher2","rds8ipatch2-4");
+  }
+#endif
 }
 
 static void multires_setres(void)
 {
   int i;
+  fixed_t s1, s2;
 
   // -ES- 1998/08/20 Moved away resolution autodetection to V_MultiResInit
   weirdaspect=(SCREENHEIGHT<<FRACBITS)/SCREENWIDTH;
 
-  if ((weirdaspect != 40960) && (weirdaspect != 49152))
-  {
-    I_Printf("Warning: Bad aspect ratio - may look awful\n");
-  }
+  // -ES- 1999/03/04 Removed weird aspect ratio warning - bad ratios don't look awful anymore :-)
+
+  s1 = SCREENWIDTH*FRACUNIT/320;
+  s2 = SCREENHEIGHT*FRACUNIT/200;
+
+  if (s2 < s1)
+    s1 = s2;
 
   SCALEDWIDTH = (SCREENWIDTH-(SCREENWIDTH%320));
   SCALEDHEIGHT = 200*(SCALEDWIDTH/320);
+
+  // -KM- 1999/01/31 Add specific check for this: resolutions such as 640x350
+  //  used to fail.
+  if (SCALEDHEIGHT > SCREENHEIGHT)
+  {
+    SCALEDHEIGHT = (SCREENHEIGHT-(SCREENHEIGHT%200));
+    SCALEDWIDTH = 320*(SCALEDHEIGHT/200);
+  }
+
+  // -ES- 1999/03/29 Allow very low resolutions
+  if (SCALEDWIDTH<320 || SCALEDHEIGHT<200)
+  {
+    SCALEDWIDTH=SCREENWIDTH;
+    SCALEDHEIGHT=SCREENHEIGHT;
+    X_OFFSET=Y_OFFSET=0;
+  } else
+  {
+    X_OFFSET = (SCREENWIDTH - SCALEDWIDTH) / (2 * (SCALEDWIDTH / 320) );
+    Y_OFFSET = (SCREENHEIGHT - SCALEDHEIGHT) / (2 * (SCALEDHEIGHT / 200) );
+  }
 
   //
   // Weapon Centering
@@ -393,12 +496,8 @@ static void multires_setres(void)
   //
   // Moved here from a #define in r_things.c  -ACB- 1998/08/04
   //
-  BASEYCENTER = (FixedMul(weirdaspect, -200<<FRACBITS)+(225<<FRACBITS))-(FRACUNIT/2);
-  SCALEDWIDTH = (SCREENWIDTH-(SCREENWIDTH%320));
-  SCALEDHEIGHT = 200*(SCALEDWIDTH/320);
-
-  X_OFFSET = (SCREENWIDTH - SCALEDWIDTH) / (2 * (SCALEDWIDTH / 320) );
-  Y_OFFSET = (SCREENHEIGHT - SCALEDHEIGHT) / (2 * (SCALEDHEIGHT / 200) );
+  // -ES- 1999/03/04 Better psprite scaling
+  BASEYCENTER = 100*FRACUNIT;
 
   // -KM- 1998/07/31 Cosmetic indenting
   I_Printf("  Scaled Resolution: %d x %d\n",SCALEDWIDTH,SCALEDHEIGHT);
@@ -442,31 +541,31 @@ struct VideoFunc_s
   void (*V_Init) (void);
   
   void (*V_CopyRect)
-  ( int		srcx,
-    int		srcy,
-    int		srcscrn,
-    int		width,
-    int		height,
-    int		destx,
-    int		desty,
-    int		destscrn );
+  ( int         srcx,
+    int         srcy,
+    int         srcscrn,
+    int         width,
+    int         height,
+    int         destx,
+    int         desty,
+    int         destscrn );
   
   
-  void (*V_DrawPatch) ( int x, int y, int	scrn, patch_t* patch);
-  void (*V_DrawPatchDirect) ( int	x, int y, int scrn, patch_t* patch );
-  void (*V_DrawPatchFlipped) ( int x, int	y, int scrn, patch_t* patch );
+  void (*V_DrawPatch) ( int x, int y, int       scrn, patch_t* patch);
+  void (*V_DrawPatchDirect) ( int       x, int y, int scrn, patch_t* patch );
+  void (*V_DrawPatchFlipped) ( int x, int       y, int scrn, patch_t* patch );
   void (*V_DrawPatchShrink) ( int x, int y, int scrn, patch_t* patch );
-  void (*V_DrawPatchTrans) ( int x, int y, int index ,int	scrn, patch_t* patch );
+  void (*V_DrawPatchTrans) ( int x, int y, int index ,int       scrn, patch_t* patch );
   
-  void (*V_DrawPatchInDirect) ( int x, int y, int scrn, patch_t*	patch );
+  void (*V_DrawPatchInDirect) ( int x, int y, int scrn, patch_t*        patch );
   void (*V_DrawPatchInDirectFlipped) ( int x, int y, int scrn, patch_t* patch );
-  void (*V_DrawPatchInDirectTrans) ( int x, int y, int index, int	scrn, patch_t* patch );
+  void (*V_DrawPatchInDirectTrans) ( int x, int y, int index, int       scrn, patch_t* patch );
   
   // Draw a linear block of pixels into the view buffer.
-  void (*V_DrawBlock) ( int x, int y, int	scrn, int width, int height, byte* src );
+  void (*V_DrawBlock) ( int x, int y, int       scrn, int width, int height, byte* src );
   
   // Reads a linear block of pixels into the view buffer.
-  void (*V_GetBlock) ( int x, int	y, int scrn, int width, int height, byte* dest );
+  void (*V_GetBlock) ( int x, int       y, int scrn, int width, int height, byte* dest );
   
   void (*V_MarkRect) ( int x, int y, int width, int height );
   
@@ -482,7 +581,7 @@ struct VideoFunc_s
   void (*R_DrawTranslatedColumn) (void);
   void (*R_DrawTranslucentTranslatedColumn) (void);
   
-  void (*R_VideoErase) ( unsigned	ofs, int count );
+  void (*R_VideoErase) ( unsigned       ofs, int count );
   
   void (*R_DrawSpan) (void);
   
@@ -706,6 +805,15 @@ void V_MultiResInit(void)
   // -ES- 1998/08/20 Moved some autodetect stuff here
   I_AutodetectBPP();
   I_GetResolution();
+
+  // -KM- 1999/01/31 Forcevga actually forces 320x200x256c VGA.
+  forcevga = M_CheckParm("-forcevga");
+  if (forcevga)
+  {
+    SCREENWIDTH = 320;
+    SCREENHEIGHT = 200;
+    BPP = 1;
+  }
 
   // -KM- 1998/07/31 Nice cosmetic change...
   I_Printf("  Resolution: %d x %d x %dc\n",SCREENWIDTH,SCREENHEIGHT,1<<(BPP*8));

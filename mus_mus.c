@@ -7,10 +7,14 @@
 //
 
 // For struct defines and function prototypes
+#include <allegro.h>
 #include "i_music.h"
 #include "mus_mus.h"
 #include "m_swap.h"
+
+#ifdef DJGPP
 #include "i_alleg.h"
+#endif
 
 // For midi drivers and timer routines
 //#include "allegro.h"
@@ -223,7 +227,8 @@ int MUS_HandleEvent(struct MUShandle_s *handle)
   if ((handle->playControl & (PLAY | PAUSE)) != PLAY) return MUS_TIC_SPEED;
 
   // Do all events; until last event bit set
-  do { 
+  do
+  {
 	 
     // Store the last_event bit for comparison later
     lastevent |= MUSDATA[DP] & 0x80;

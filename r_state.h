@@ -15,7 +15,7 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Refresh/render internal state variables (global).
+//      Refresh/render internal state variables (global).
 //
 //-----------------------------------------------------------------------------
 
@@ -41,96 +41,113 @@
 //
 
 // needed for texture pegging
-extern fixed_t*		textureheight;
+extern fixed_t*         textureheight;
 
 // needed for pre rendering (fracs)
-extern fixed_t*		spritewidth;
+extern fixed_t*         spritewidth;
 
-extern fixed_t*		spriteoffset;
-extern fixed_t*		spritetopoffset;
+extern fixed_t*         spriteoffset;
+extern fixed_t*         spritetopoffset;
 
-extern lighttable_t*	colormaps;
+extern lighttable_t*    colormaps;
 
 // -ES- 1998/08/20 Added these two
 extern lighttable_t     *colormaps8, *colormaps16;
 extern int numcolourmaps;
 
-extern int		viewwidth;
-extern int		scaledviewwidth;
-extern int		viewheight;
+extern int              viewwidth;
+extern int              scaledviewwidth;
+extern int              viewheight;
 
 
 // for global animation
-extern int*		flatlist;
-extern int*		flattranslation;	
-extern int*		texturetranslation;	
+extern int*             flatlist;
+extern int*             flattranslation;        
+extern int*             texturetranslation;     
 
 
 // Sprite....
-extern int*		spritelist;
-extern int		numspritelumps;
+extern int*             spritelist;
+extern int              numspritelumps;
 
 
 
 //
 // Lookup tables for map data.
 //
-extern int		numsprites;
-extern spritedef_t*	sprites;
+extern int              numsprites;
+extern spritedef_t*     sprites;
 
-extern int		numvertexes;
-extern vertex_t*	vertexes;
+extern int              numvertexes;
+extern vertex_t*        vertexes;
 
-extern int		numsegs;
-extern seg_t*		segs;
+extern int              numsegs;
+extern seg_t*           segs;
 
-extern int		numsectors;
-extern sector_t*	sectors;
+extern int              numsectors;
+extern sector_t*        sectors;
 
-extern int		numsubsectors;
-extern subsector_t*	subsectors;
+extern int              numsubsectors;
+extern subsector_t*     subsectors;
 
-extern int		numnodes;
-extern node_t*		nodes;
+extern int              numnodes;
+extern node_t*          nodes;
 
-extern int		numlines;
-extern line_t*		lines;
+extern int              numlines;
+extern line_t*          lines;
 
-extern int		numsides;
-extern side_t*		sides;
+extern int              numsides;
+extern side_t*          sides;
 
 
 //
 // POV data.
 //
-extern fixed_t		viewx;
-extern fixed_t		viewy;
-extern fixed_t		viewz;
+extern fixed_t          viewx;
+extern fixed_t          viewy;
+extern fixed_t          viewz;
 
-extern angle_t		viewangle;
-extern player_t*	viewplayer;
+extern angle_t          viewangle;
+extern player_t*        viewplayer;
 
 
-// ?
-extern angle_t		clipangle;
+// -ES- 1999/03/20 Added these.
+// Angles that are used for linedef clipping.
+// Nearly the same as leftangle/rightangle, but slightly rounded to fit
+// viewangletox lookups, and converted to BAM format.
+extern angle_t leftclipangle, rightclipangle; // angles used for clipping
+extern angle_t clipscope; // the scope of the clipped area (leftclipangle-rightclipangle)
 
-extern int		viewangletox[FINEANGLES/2];
-extern angle_t		*xtoviewangle;
-//extern fixed_t		finetangent[FINEANGLES/2];
+extern angle_t topangle, bottomangle, // the most extreme angles of the view
+               rightangle, leftangle;
+extern fixed_t topslope, bottomslope, // tangents for the angles
+               rightslope, leftslope;
 
-extern fixed_t		rw_distance;
-extern angle_t		rw_normalangle;
+// -ES- 1999/03/02 Added these.
+extern angle_t          FIELDOFVIEW; // Number of FINEANGLES in viewwidth wide window
+
+// Unit scale is used at distance distunit
+extern fixed_t          x_distunit;
+extern fixed_t          y_distunit;
+// the x and y distunit used by original doom, used for lighting calc
+#define ORIG_DISTUNIT (FRACUNIT*160)
+
+extern int              viewangletox[FINEANGLES/2];
+extern angle_t          *xtoviewangle;
+
+extern fixed_t          rw_distance;
+extern angle_t          rw_normalangle;
 
 
 
 // angle to line origin
-extern int		rw_angle1;
+extern int              rw_angle1;
 
 // Segs count?
-extern int		sscount;
+extern int              sscount;
 
-extern int		floorplane;
-extern int		ceilingplane;
+extern int              floorplane;
+extern int              ceilingplane;
 
 
 #endif

@@ -147,8 +147,8 @@ RHIDE_CONFIG_DIRS_Linux=. $(RHIDE_SHARE) $(HOME) /usr/local/share/rhide\
 RHIDE_CONFIG_DIRS=$(RHIDE_CONFIG_DIRS_$(RHIDE_OS))
 INCLUDE_DIRS=
 LIB_DIRS=
-C_DEBUG_FLAGS=-g
-C_OPT_FLAGS=-O3 -ffast-math -fomit-frame-pointer
+C_DEBUG_FLAGS=
+C_OPT_FLAGS=-O3 -ffast-math
 C_WARN_FLAGS=-Wall
 C_C_LANG_FLAGS=
 C_CXX_LANG_FLAGS=
@@ -157,11 +157,12 @@ C_F_LANG_FLAGS=
 C_ADA_LANG_FLAGS=
 LIBS=
 LD_EXTRA_FLAGS=
-C_EXTRA_FLAGS=
+C_EXTRA_FLAGS=$(OPTIMISATION_FLAGS) $(DEFINES) $(DEBUGFLAGS)
 LOCAL_OPT=$(subst ___~~~___, ,$(subst $(notdir $<)___,,$(filter $(notdir\
 	$<)___%,$(LOCAL_OPTIONS))))
-OBJFILES=audioalg.o audiolib.o getbits.o getdata.o huffman.o layer2.o\
-	layer3.o misc2.o position.o transfor.o
+OBJFILES=obj/audioalg.o obj/audiolib.o obj/getbits.o obj/getdata.o\
+	obj/huffman.o obj/layer2.o obj/layer3.o obj/misc2.o obj/position.o\
+	obj/transfor.o
 LIBRARIES=
 SOURCE_NAME=$<
 OUTFILE=$@
@@ -235,50 +236,54 @@ PROJECT_ITEMS=audioalg.c audiolib.c getbits.c getdata.c huffman.c layer2.c\
 	$(RHIDE_COMPILE.adb.o)
 all:: libamp.a
 DEPS_0=\
-		c:/files/project/djgpp/libamp/audioalg.o\
-		c:/files/project/djgpp/libamp/audiolib.o\
-		c:/files/project/djgpp/libamp/getbits.o\
-		c:/files/project/djgpp/libamp/getdata.o\
-		c:/files/project/djgpp/libamp/huffman.o\
-		c:/files/project/djgpp/libamp/layer2.o\
-		c:/files/project/djgpp/libamp/layer3.o\
-		c:/files/project/djgpp/libamp/misc2.o\
-		c:/files/project/djgpp/libamp/position.o\
-		c:/files/project/djgpp/libamp/transfor.o
+		obj/audioalg.o\
+		obj/audiolib.o\
+		obj/getbits.o\
+		obj/getdata.o\
+		obj/huffman.o\
+		obj/layer2.o\
+		obj/layer3.o\
+		obj/misc2.o\
+		obj/position.o\
+		obj/transfor.o
 NO_LINK=
 LINK_FILES=$(filter-out $(NO_LINK),$(DEPS_0))
 libamp.a:: $(DEPS_0)
 	$(RHIDE_COMPILE_ARCHIVE)
 DEPS_1=audioalg.c
-audioalg.o:: $(DEPS_1)
+obj/audioalg.o:: $(DEPS_1)
 	$(RHIDE_COMPILE.c.o)
 DEPS_2=audiolib.c
-audiolib.o:: $(DEPS_2)
+obj/audiolib.o:: $(DEPS_2)
 	$(RHIDE_COMPILE.c.o)
 DEPS_3=getbits.c
-getbits.o:: $(DEPS_3)
+obj/getbits.o:: $(DEPS_3)
 	$(RHIDE_COMPILE.c.o)
 DEPS_4=getdata.c
-getdata.o:: $(DEPS_4)
+obj/getdata.o:: $(DEPS_4)
 	$(RHIDE_COMPILE.c.o)
 DEPS_5=huffman.c
-huffman.o:: $(DEPS_5)
+obj/huffman.o:: $(DEPS_5)
 	$(RHIDE_COMPILE.c.o)
 DEPS_6=layer2.c
-layer2.o:: $(DEPS_6)
+obj/layer2.o:: $(DEPS_6)
 	$(RHIDE_COMPILE.c.o)
 DEPS_7=layer3.c
-layer3.o:: $(DEPS_7)
+obj/layer3.o:: $(DEPS_7)
 	$(RHIDE_COMPILE.c.o)
 DEPS_8=misc2.c
-misc2.o:: $(DEPS_8)
+obj/misc2.o:: $(DEPS_8)
 	$(RHIDE_COMPILE.c.o)
 DEPS_9=position.c
-position.o:: $(DEPS_9)
+obj/position.o:: $(DEPS_9)
 	$(RHIDE_COMPILE.c.o)
 DEPS_10=transfor.c
-transfor.o:: $(DEPS_10)
+obj/transfor.o:: $(DEPS_10)
 	$(RHIDE_COMPILE.c.o)
+
+clean: force
+	rm -f libamp.a
+	rm -f obj/*.o
 
 force::
 

@@ -1,4 +1,4 @@
-//  
+//
 // DOSDoom Finale Code on Game Completion
 //
 // Based on the Doom Source Code
@@ -14,6 +14,7 @@
 
 // Functions.
 #include "i_system.h"
+#include "i_allegv.h"
 #include "m_swap.h"
 #include "z_zone.h"
 #include "v_res.h"
@@ -29,8 +30,8 @@
 #include "r_state.h"
 #include "f_finale.h"
 
-#include "ddf_locl.h"
 #include "ddf_main.h"
+#include "p_action.h"
 
 typedef enum
 {
@@ -91,112 +92,6 @@ void	F_CastDrawer (void);
 void F_StartFinale (finale_t* f, gameaction_t newaction)
 {
     int i;
-    // Okay - IWAD dependend stuff.
-    // This has been changed severly, and
-    //  some stuff might have changed in the process.
-    /* switch ( gamemission )
-    {
-
-      // DOOM 1 - E1, E3 or E4, but each nine missions
-      case doom:
-      {
-	S_ChangeMusic(mus_victor, true);
-	
-	//switch (gameepisode)
-	//{
-	//  case 1:
-	    finaleflat = "FLOOR4_8";
-	    finaletext = e1text;
-	//    break;
-	//  case 2:
-	//    finaleflat = "SFLR6_1";
-	//    finaletext = e2text;
-	//    break;
-	//  case 3:
-	//    finaleflat = "MFLR8_4";
-	//    finaletext = e3text;
-	//    break;
-        //  case 4:
-	//    finaleflat = "MFLR8_3";
-	//    finaletext = e4text;
-	    break;
-	  default:
-	    // Ouch.
-	    break;
-	}
-	break;
-      }
-      
-      // DOOM II and missions packs with E1, M34
-      case doom2:
-      case pack_plut:
-      case pack_tnt:
-      {
-	  S_ChangeMusic(mus_read_m, true);
-
-	  //switch (gamemap)
-	  //{
-	  //  case 6:
-	      finaleflat = "SLIME16";
-          //    switch (gamemission) {
-          //      case doom2:
-              finaletext = c1text; break;
-                case pack_plut: finaletext = p1text; break;
-                case pack_tnt:  finaletext = t1text; break;
-                case doom: case none:}
-	      break;
-	    case 11:
-	      finaleflat = "RROCK14";
-              switch (gamemission) {
-                case doom2:     finaletext = c2text; break;
-                case pack_plut: finaletext = p2text; break;
-                case pack_tnt:  finaletext = t2text; break;
-                case doom: case none:}
-	      break;
-	    case 20:
-	      finaleflat = "RROCK07";
-              switch (gamemission) {
-                case doom2:     finaletext = c3text; break;
-                case pack_plut: finaletext = p3text; break;
-                case pack_tnt:  finaletext = t3text; break;
-                case doom: case none:}
-	      break;
-	    case 30:
-	      finaleflat = "RROCK17";
-              switch (gamemission) {
-                case doom2:     finaletext = c4text; break;
-                case pack_plut: finaletext = p4text; break;
-                case pack_tnt:  finaletext = t4text; break;
-                case doom: case none:}
-	      break;
-	    case 15:
-	      finaleflat = "RROCK13";
-              switch (gamemission) {
-                case doom2:     finaletext = c5text; break;
-                case pack_plut: finaletext = p5text; break;
-                case pack_tnt:  finaletext = t5text; break;
-                case doom: case none:}
-	      break;
-	    case 31:
-	      finaleflat = "RROCK19";
-              switch (gamemission) {
-                case doom2:     finaletext = c6text; break;
-                case pack_plut: finaletext = p6text; break;
-                case pack_tnt:  finaletext = t6text; break;
-                case doom: case none:}
-	      break;
-	    default:
-	      // Ouch.
-	      break;
-	  }
-	  break;
-      }	                                 */
-
-   
-      // Indeterminate.
-      //default:
-        //	break;
-//   }
     finalestage = f_text;
     finalecount = 0;
     gameaction = ga_nothing;
@@ -205,7 +100,7 @@ void F_StartFinale (finale_t* f, gameaction_t newaction)
     finale = f;
     newgameaction = newaction;
     picnum = 0;
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    for (i=0 ; i<maxplayers ; i++)
 	players[i].cmd.buttons = 0;
     F_Ticker();
 }
@@ -230,10 +125,8 @@ void F_Ticker (void)
     int         fstage = finalestage;
     
     // check for skipping
-    //if ((gamemission != doom) && (finalecount > 50))
-    //{
-    // go on to the next level
-    for (i=0 ; i<MAXPLAYERS ; i++)
+    // If a player presses a key, advance
+    for (i=0 ; i<maxplayers ; i++)
     {
 	if (players[i].cmd.buttons)
         {
@@ -245,12 +138,10 @@ void F_Ticker (void)
     }
 				
     // -KM- 1998/12/16 Don't accelerate final stage.
-    if ((i < MAXPLAYERS) && (newgameaction != ga_nothing))
+    if ((i < maxplayers) && (newgameaction != ga_nothing))
     {
         finalestage++;
         finalecount = 0;
-	//if (gamemap == 30)
-	//  F_StartCast ();
     }
 
     switch (finalestage)
@@ -330,6 +221,9 @@ void F_Ticker (void)
              finalestage = fstage;
            break;
     }
+
+    if (finalestage != fstage && finalestage != f_end)
+      wipegamestate = -1;
 
     // advance animation
     finalecount++;
@@ -487,44 +381,12 @@ void F_CastTicker (void)
     else
     {
 	// just advance to next state in animation
-//	if (caststate == &states[S_PLAY_ATK1])
-//	    goto stopattack;	// Oh, gross hack!
 	st = caststate->nextstate;
 	caststate = &states[st];
 	castframes++;
         casttics = caststate->tics;
 	
-	// sound hacks....
-	/* switch (st)
-	{
-	  case S_PLAY_ATK1:	sfx = sfx_dshtgn; break;
-	  case S_POSS_ATK2:	sfx = sfx_pistol; break;
-	  case S_SPOS_ATK2:	sfx = sfx_shotgn; break;
-	  case S_VILE_ATK2:	sfx = sfx_vilatk; break;
-	  case S_SKEL_FIST2:	sfx = sfx_skeswg; break;
-	  case S_SKEL_FIST4:	sfx = sfx_skepch; break;
-	  case S_SKEL_MISS2:	sfx = sfx_skeatk; break;
-	  case S_FATT_ATK8:
-	  case S_FATT_ATK5:
-	  case S_FATT_ATK2:	sfx = sfx_firsht; break;
-	  case S_CPOS_ATK2:
-	  case S_CPOS_ATK3:
-	  case S_CPOS_ATK4:	sfx = sfx_shotgn; break;
-	  case S_TROO_ATK3:	sfx = sfx_claw; break;
-	  case S_SARG_ATK2:	sfx = sfx_sgtatk; break;
-	  case S_BOSS_ATK2:
-	  case S_BOS2_ATK2:
-	  case S_HEAD_ATK2:	sfx = sfx_firsht; break;
-	  case S_SKULL_ATK2:	sfx = sfx_sklatk; break;
-	  case S_SPID_ATK2:
-	  case S_SPID_ATK3:	sfx = sfx_shotgn; break;
-	  case S_BSPI_ATK2:	sfx = sfx_plasma; break;
-	  case S_CYBER_ATK2:
-	  case S_CYBER_ATK4:
-	  case S_CYBER_ATK6:	sfx = sfx_rlaunc; break;
-	  case S_PAIN_ATK3:	sfx = sfx_sklatk; break;
-	  default: sfx = 0; break;
-	}  */
+        // Yuk, handles sounds
         if (caststate->action.acp1 == P_ActMakeCloseAttemptSound)
            sfx = castorder->closecombat->initsound;
         else if (caststate->action.acp1 == P_ActMakeRangeAttemptSound)
@@ -602,7 +464,6 @@ void F_CastTicker (void)
 	if (castframes == 36
 	    ||	caststate == &states[castorder->seestate] )
 	{
-//	  stopattack:
 	    castattacking = false;
 	    castframes = 0;
 	    caststate = &states[castorder->seestate];

@@ -51,46 +51,48 @@
 
 #include "m_misc.h"
 
+#include "r_main.h"
+
 //
 // M_DrawText
 // Returns the final X coordinate
 // HU_Init must have been called to init the font
 //
-extern patch_t*		hu_font[HU_FONTSIZE];
+extern patch_t*         hu_font[HU_FONTSIZE];
 
 int
 M_DrawText
-( int		x,
-  int		y,
-  boolean	direct,
-  char*		string )
+( int           x,
+  int           y,
+  boolean       direct,
+  char*         string )
 {
-    int 	c = 0;
-    int		w;
+    int         c = 0;
+    int         w;
 
     while (*string)
     {
         if (c < 128)
-	  c = toupper(*string);
+          c = toupper(*string);
         else
           c = *string;
 
         c -= HU_FONTSTART;
-	string++;
-	if (c < 0 || c> HU_FONTSIZE)
-	{
-	    x += 4;
-	    continue;
-	}
-		
-	w = SHORT (hu_font[c]->width);
-	if (x+w > SCREENWIDTH)
-	    break;
-	if (direct)
-	    V_DrawPatchDirect(x, y, 0, hu_font[c]);
-	else
-	    V_DrawPatch(x, y, 0, hu_font[c]);
-	x+=w;
+        string++;
+        if (c < 0 || c> HU_FONTSIZE)
+        {
+            x += 4;
+            continue;
+        }
+                
+        w = SHORT (hu_font[c]->width);
+        if (x+w > SCREENWIDTH)
+            break;
+        if (direct)
+            V_DrawPatchDirect(x, y, 0, hu_font[c]);
+        else
+            V_DrawPatch(x, y, 0, hu_font[c]);
+        x+=w;
     }
 
     return x;
@@ -108,20 +110,20 @@ M_DrawText
 
 boolean M_WriteFile (char const* name, void* source, int length)
 {
-    int		handle;
-    int		count;
-	
+    int         handle;
+    int         count;
+        
     handle = open ( name, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
 
     if (handle == -1)
-	return false;
+        return false;
 
     count = write (handle, source, length);
     close (handle);
-	
+        
     if (count < length)
-	return false;
-		
+        return false;
+                
     return true;
 }
 
@@ -131,23 +133,23 @@ boolean M_WriteFile (char const* name, void* source, int length)
 //
 int M_ReadFile (char const* name, byte** buffer)
 {
-    int	handle, count, length;
-    struct stat	fileinfo;
-    byte		*buf;
-	
+    int handle, count, length;
+    struct stat fileinfo;
+    byte                *buf;
+        
     handle = open (name, O_RDONLY | O_BINARY, 0666);
     if (handle == -1)
-	I_Error ("Couldn't read file %s", name);
+        I_Error ("Couldn't read file %s", name);
     if (fstat (handle,&fileinfo) == -1)
-	I_Error ("Couldn't read file %s", name);
+        I_Error ("Couldn't read file %s", name);
     length = fileinfo.st_size;
     buf = Z_Malloc (length, PU_STATIC, NULL);
     count = read (handle, buf, length);
     close (handle);
-	
+        
     if (count < length)
-	I_Error ("Couldn't read file %s", name);
-		
+        I_Error ("Couldn't read file %s", name);
+                
     *buffer = buf;
     return length;
 }
@@ -156,40 +158,43 @@ int M_ReadFile (char const* name, byte** buffer)
 //
 // DEFAULTS
 //
-int		usemouse;
-int		usejoystick;
+int             usemouse;
+int             usejoystick;
 
-extern int	viewwidth;
-extern int	viewheight;
+int             cfgnormalfov;
+int             cfgzoomedfov;
 
-extern int	mouseSensitivity;
+extern int      viewwidth;
+extern int      viewheight;
 
-extern int	detailLevel;
+extern int      mouseSensitivity;
 
-extern int	screenblocks;
+extern int      detailLevel;
 
-extern int	darken_screen;
+extern int      screenblocks;
 
-extern int	showMessages;
+extern int      darken_screen;
+
+extern int      showMessages;
 
 // -KM- 1998/07/21 Save the blood setting
 extern boolean blood;
 
 // machine-independent sound params
-int	numChannels;
+extern int      numChannels;
 
 int showmessages;
 
 #ifdef LINUX
-char*		mousetype;
-char*		mousedev;
-char*		videoInterface;
-char*		vid_path;
+char*           mousetype;
+char*           mousedev;
+char*           videoInterface;
+char*           vid_path;
 #endif
 
-extern char*	chat_macros[];
+extern char*    chat_macros[];
 
-default_t	defaults[] =
+default_t       defaults[] =
 {
     {"mouse_sensitivity",&mouseSensitivity, 5},
     {"sfx_volume",&snd_SfxVolume, 8},
@@ -205,6 +210,8 @@ default_t	defaults[] =
     {"key_lookup",&key_lookup, KEYD_PGUP},
     {"key_lookdown",&key_lookdown, KEYD_PGDN},
     {"key_lookcenter",&key_lookcenter,KEYD_HOME},
+    // -ES- 1999/03/28 Zoom Key
+    {"key_zoom",&key_zoom,KEYD_TILDE},
     {"key_strafeleft",&key_strafeleft, ','},
     {"key_straferight",&key_straferight, '.'},
 
@@ -242,6 +249,7 @@ default_t	defaults[] =
 //    {"lessaccuratezom",&lessaccuratezom,1},
     {"grav",&settingflags.grav,8},
     {"true3dgameplay",(int *) &settingflags.true3dgameplay,0},
+    {"autoaim",(int *) &settingflags.autoaim, 1},
     {"missileteleport",&missileteleport,0}, 
     {"teleportdelay",&teleportdelay,0},     
     // -KM- 1998/07/21 Save the blood setting
@@ -276,6 +284,9 @@ default_t	defaults[] =
 
     {"screenblocks",&screenblocks, 9},
     {"detaillevel",&detailLevel, 0},
+    // -ES- 1999/03/30 Added fov stuff.
+    {"fieldofview",&cfgnormalfov, 90},
+    {"zoomedfieldofview",&cfgzoomedfov, 10},
     {"vsync",&retrace, 0},
     {"screenwidth", &SCREENWIDTH, 320},
     {"screenheight",&SCREENHEIGHT, 200},
@@ -284,6 +295,7 @@ default_t	defaults[] =
     {"darken_screen",&darken_screen, 1},
 
     {"snd_channels",&numChannels, 3},
+    {"cdaudio",(int*)&cdaudio, 0},
 
     {"showmessages",&showmessages, 1},
 
@@ -302,8 +314,8 @@ default_t	defaults[] =
 
 };
 
-int	numdefaults;
-char*	defaultfile;
+int     numdefaults;
+char*   defaultfile;
 
 
 //
@@ -311,10 +323,10 @@ char*	defaultfile;
 //
 void M_SaveDefaults (void)
 {
-  int		i;
-  int		v;
-  FILE*	f;
-	
+  int           i;
+  int           v;
+  FILE* f;
+        
   // Don't want to save settings in a network game: might not
   // be ours.
   if (netgame)
@@ -323,7 +335,7 @@ void M_SaveDefaults (void)
   f = fopen (defaultfile, "w");
   if (!f)
     return; // can't write the file, but don't complain
-		
+                
   for (i=0 ; i<numdefaults ; i++)
     {
     if ((defaults[i].defaultvalue > -0xfff
@@ -341,7 +353,7 @@ void M_SaveDefaults (void)
                * (char **) (defaults[i].location));
       }
     }
-	
+        
   fclose (f);
 }
 
@@ -349,61 +361,61 @@ void M_SaveDefaults (void)
 //
 // M_LoadDefaults
 //
-extern byte	scantokey[128];
+extern byte     scantokey[128];
 
 void M_LoadDefaults (void)
 {
-    int		i;
-    int		len;
-    FILE*	f;
-    char	def[80];
-    char	strparm[100];
-    char*	newstring = 0;
-    int		parm;
-    boolean	isstring;
+    int         i;
+    int         len;
+    FILE*       f;
+    char        def[80];
+    char        strparm[100];
+    char*       newstring = 0;
+    int         parm;
+    boolean     isstring;
     
     // set everything to base values
     numdefaults = sizeof(defaults)/sizeof(defaults[0]);
     for (i=0 ; i<numdefaults ; i++)
-	*defaults[i].location = defaults[i].defaultvalue;
+        *defaults[i].location = defaults[i].defaultvalue;
     
     // check for a custom default file
     i = M_CheckParm ("-config");
     if (i && i<myargc-1)
     {
-	defaultfile = myargv[i+1];
-	I_Printf ("	default file: %s\n",defaultfile);
+        defaultfile = myargv[i+1];
+        I_Printf ("     default file: %s\n",defaultfile);
     }
     else
-	defaultfile = basedefault;
+        defaultfile = basedefault;
     
     // read the file in, overriding any set defaults
     f = fopen (defaultfile, "r");
     if (f)
     {
-	while (!feof(f))
-	{
-	    isstring = false;
-	    if (fscanf (f, "%79s %[^\n]\n", def, strparm) == 2)
-	    {
-		if (strparm[0] == '"')
-		{
-		    // get a string default
-		    isstring = true;
-		    len = strlen(strparm);
-		    newstring = (char *) malloc(len);
-		    strparm[len-1] = 0;
-		    strcpy(newstring, strparm+1);
-		}
-		else if (strparm[0] == '0' && strparm[1] == 'x')
-		    sscanf(strparm+2, "%x", &parm);
-		else
-		    sscanf(strparm, "%i", &parm);
-		for (i=0 ; i<numdefaults ; i++)
+        while (!feof(f))
+        {
+            isstring = false;
+            if (fscanf (f, "%79s %[^\n]\n", def, strparm) == 2)
+            {
+                if (strparm[0] == '"')
+                {
+                    // get a string default
+                    isstring = true;
+                    len = strlen(strparm);
+                    newstring = (char *) malloc(len);
+                    strparm[len-1] = 0;
+                    strcpy(newstring, strparm+1);
+                }
+                else if (strparm[0] == '0' && strparm[1] == 'x')
+                    sscanf(strparm+2, "%x", &parm);
+                else
+                    sscanf(strparm, "%i", &parm);
+                for (i=0 ; i<numdefaults ; i++)
                     {
-		    if (!strcmp(def, defaults[i].name))
-		      {
-			if (!isstring)
+                    if (!strcmp(def, defaults[i].name))
+                      {
+                        if (!isstring)
                           {
                           if (memcmp(defaults[i].name,"key_",4)!=0)
                             {
@@ -412,14 +424,14 @@ void M_LoadDefaults (void)
                           else
                             {
                             if (parm!=0)
-    			      *defaults[i].location = I_ScanCode2DoomCode(parm);
+                              *defaults[i].location = I_ScanCode2DoomCode(parm);
                             }
                           }
-			else
-			    *defaults[i].location =
-				(int) newstring;
-			break;
-		      }
+                        else
+                            *defaults[i].location =
+                                (int) newstring;
+                        break;
+                      }
                     if (def[0]=='o')
                       if (!strcmp(def+1,defaults[i].name))
                         if (!isstring)
@@ -427,10 +439,10 @@ void M_LoadDefaults (void)
                             if (parm!=0)
                               *defaults[i].location|= I_ScanCode2DoomCode(parm)<<16;
                     }
-	    }
-	}
-		
-	fclose (f);
+            }
+        }
+                
+        fclose (f);
    detailLevel=0;
     }
 }
@@ -443,28 +455,28 @@ void M_LoadDefaults (void)
 
 typedef struct
 {
-    char		manufacturer;
-    char		version;
-    char		encoding;
-    char		bits_per_pixel;
+    char                manufacturer;
+    char                version;
+    char                encoding;
+    char                bits_per_pixel;
 
-    unsigned short	xmin;
-    unsigned short	ymin;
-    unsigned short	xmax;
-    unsigned short	ymax;
+    unsigned short      xmin;
+    unsigned short      ymin;
+    unsigned short      xmax;
+    unsigned short      ymax;
     
-    unsigned short	hres;
-    unsigned short	vres;
+    unsigned short      hres;
+    unsigned short      vres;
 
-    unsigned char	palette[48];
+    unsigned char       palette[48];
     
-    char		reserved;
-    char		color_planes;
-    unsigned short	bytes_per_line;
-    unsigned short	palette_type;
+    char                reserved;
+    char                color_planes;
+    unsigned short      bytes_per_line;
+    unsigned short      palette_type;
     
-    char		filler[58];
-    unsigned char	data;		// unbounded
+    char                filler[58];
+    unsigned char       data;           // unbounded
 } pcx_t;
 
 
@@ -473,23 +485,23 @@ typedef struct
 //
 void
 WritePCXfile
-( char*		filename,
-  byte*		data,
-  int		width,
-  int		height,
-  byte*		palette )
+( char*         filename,
+  byte*         data,
+  int           width,
+  int           height,
+  byte*         palette )
 {
-    int		i;
-    int		length;
-    pcx_t*	pcx;
-    byte*	pack;
-	
+    int         i;
+    int         length;
+    pcx_t*      pcx;
+    byte*       pack;
+        
     pcx = Z_Malloc (width*height*2+1000, PU_STATIC, NULL);
 
-    pcx->manufacturer = 0x0a;		// PCX id
-    pcx->version = 5;			// 256 color
-    pcx->encoding = 1;			// uncompressed
-    pcx->bits_per_pixel = 8;		// 256 color
+    pcx->manufacturer = 0x0a;           // PCX id
+    pcx->version = 5;                   // 256 color
+    pcx->encoding = 1;                  // uncompressed
+    pcx->bits_per_pixel = 8;            // 256 color
     pcx->xmin = 0;
     pcx->ymin = 0;
     pcx->xmax = SHORT(width-1);
@@ -497,30 +509,30 @@ WritePCXfile
     pcx->hres = SHORT(width);
     pcx->vres = SHORT(height);
     memset (pcx->palette,0,sizeof(pcx->palette));
-    pcx->color_planes = 1;		// chunky image
+    pcx->color_planes = 1;              // chunky image
     pcx->bytes_per_line = SHORT(width);
-    pcx->palette_type = SHORT(2);	// not a grey scale
+    pcx->palette_type = SHORT(2);       // not a grey scale
     memset (pcx->filler,0,sizeof(pcx->filler));
 
 
     // pack the image
     pack = &pcx->data;
-	
+        
     for (i=0 ; i<width*height ; i++)
     {
-	if ( (*data & 0xc0) != 0xc0)
-	    *pack++ = *data++;
-	else
-	{
-	    *pack++ = 0xc1;
-	    *pack++ = *data++;
-	}
+        if ( (*data & 0xc0) != 0xc0)
+            *pack++ = *data++;
+        else
+        {
+            *pack++ = 0xc1;
+            *pack++ = *data++;
+        }
     }
     
     // write the palette
-    *pack++ = 0x0c;	// palette ID byte
+    *pack++ = 0x0c;     // palette ID byte
     for (i=0 ; i<768 ; i++)
-	*pack++ = *palette++;
+        *pack++ = *palette++;
     
     // write output file
     length = pack - (byte *)pcx;
@@ -535,25 +547,25 @@ WritePCXfile
 //
 void M_ScreenShot (void)
 {
-    static int		i = 0;
+    static int          i = 0;
 
     // 25-6-98 KM Allow for 10000 screen shots.
-    char	lbmname[13];
+    char        lbmname[13];
     static char *nopcx = NULL;
 
 #ifdef DJGPP
     BITMAP *tempbitmap;
     PALETTE temppal;
 #else
-    byte*	linear;
+    byte*       linear;
 #endif
     
     for (; i<10000 ; i++)
     {
     // find a file name to save it to
         sprintf(lbmname, "DOOM%04d.pcx", i);
-	if (access(lbmname,0) == -1)
-	    break;	// file doesn't exist
+        if (access(lbmname,0) == -1)
+            break;      // file doesn't exist
     }
     if (i==10000)
     {
@@ -567,7 +579,7 @@ void M_ScreenShot (void)
                    "Couldn't create a PCX\n\n%s",
                      DDF_LanguageLookup("PressAKey")); // -ACB- LanguageLookup Used
         }
-	M_StartMessage (nopcx, NULL, false);
+        M_StartMessage (nopcx, NULL, false);
         return;
     }
 #ifdef DJGPP
@@ -582,10 +594,10 @@ void M_ScreenShot (void)
 
     // save the pcx file
     WritePCXfile (lbmname, linear,
-		  SCREENWIDTH, SCREENHEIGHT,
-		  W_CacheLumpName ("PLAYPAL",PU_CACHE));
+                  SCREENWIDTH, SCREENHEIGHT,
+                  W_CacheLumpName ("PLAYPAL",PU_CACHE));
 #endif
-		  
+                  
     players[consoleplayer].message = "screen shot";
 }
 

@@ -2,6 +2,16 @@
 /* Written by Ove Kaaven <ovek@arcticnet.no> */
 /* Improvements are very welcome */
 
+#ifdef __CYGWIN__
+#define WIN32_LEAN_AND_MEAN
+
+#define BITMAP WIN_BITMAP
+#include <windows.h>
+#undef BITMAP
+#undef RGB
+
+#include <winalleg.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,6 +19,9 @@
 #include "libamp.h"
 
 //#define GFX
+#ifdef __CYGWIN__
+#include "c:/kester/cygnus/allegro/examples/gfxprint.h"
+#endif
 
 char file[80];
 
@@ -213,21 +226,61 @@ DIALOG tracker[]={
 };
 
 #endif
+#ifdef __CYGWIN__
+#define main __gf_wrapper_main_func
+
+int WINAPI WinMain (
+	HINSTANCE hInst, 
+	HINSTANCE hPrev, 
+	LPSTR lpCmdLine, 
+	int nCmdShow)
+{
+	if (WinAllegro_Init (hInst) == 0) {
+		int result;
+		result = main (WinAllegro_GetArgc(), WinAllegro_GetArgv());
+		allegro_exit();
+		WinAllegro_Exit();
+		return result;
+	} else {
+		WinAllegro_Exit();
+		MessageBox (
+			NULL,
+			"WinAllegro initialisation failed."
+			"For more information look in allegro.log",
+			"WinAllegro Error",
+			MB_ICONASTERISK | MB_OK
+		);
+		return -1;
+	}
+}
+
+#endif
+
+static int exitflag = 0;
 
 int main(int argc,char**argv)
 {
+ int i;
+ int detect;
  allegro_init();
- i_love_bill = TRUE;
+ if ((detect = midi_directx.detect(0)))
+    detect = midi_directx.init(0, 0);
  if (install_sound(DIGI_AUTODETECT,MIDI_NONE,NULL)) {
   printf("Unable to install Allegro sound driver\n");
   return(1);
  }
-#ifdef GFX
+    midi_driver = &midi_directx;
+    midi_card = MIDI_DIRECTX;
  install_keyboard();
- install_mouse();
  install_timer();
+#ifdef GFX
+ install_mouse();
 #endif
  install_amp();
+#ifdef __CYGWIN__
+ set_gfx_mode(GFX_DIRECTXWIN,640,400,0,0);
+ init_gfx_printf();
+#endif
 #ifdef GFX
  set_gfx_mode(GFX_AUTODETECT,320,200,0,0);
  set_palette(desktop_palette);
@@ -256,11 +309,19 @@ int main(int argc,char**argv)
   unload_amp();
   if (!file_select("Select MP3 file",file,"MP3")) return(1);
 #else
-  while (amp_decode()>=0);
-  break;
+  printf("%dkbps/%dHz ", amp_bitrate, amp_samprat);
+  printf("MPEG-%d Layer %d, %s\n", amp_mpg_ver, amp_layer, amp_stereo?"STEREO":"MONO");
+  while (!keypressed() && amp_decode() == 1)
+  {
+#ifdef __CYGWIN__
+//      acquire_screen();
+//      release_screen();
 #endif
- }
+  }
+#endif
+ exitflag = 1;
  unload_amp();
  return(0);
+ }
 }
 

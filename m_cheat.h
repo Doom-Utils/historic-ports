@@ -23,8 +23,15 @@ typedef struct
     
 } cheatseq_t;
 
+static inline char* M_ConvertCheat(char* cheat)
+{
+  cheat[strlen(cheat)] = 0xff;
+  return cheat;
+}
+
 int M_CheckCheat(cheatseq_t* cht, char key);
 void M_GetCheatParam(cheatseq_t* cht, char* buffer);
 boolean M_CheatResponder (event_t* ev);
+void M_CheatInit(void);
 
 #endif

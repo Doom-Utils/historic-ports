@@ -13,7 +13,6 @@
 #include "p_spec.h"
 
 #include <ctype.h>
-#include <conio.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -74,6 +73,7 @@ void DDF_ReadAnims(void *data, int size)
     anims.memfile = data;
     anims.memsize = size;
     anims.message = NULL;
+    anims.filename = NULL;
   }
   anims.DDF_MainCheckName     = DDF_DummyFunction;
   anims.DDF_MainCheckCmd      = DDF_MainCheckCommand;

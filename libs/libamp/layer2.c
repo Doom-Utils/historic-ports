@@ -9,7 +9,7 @@
 #include "amp.h"
 #include "audio.h"
 #include "getbits.h"
-#include "transform.h"
+#include "transfor.h"
 
 #define LAYER2
 #include "layer2.h"

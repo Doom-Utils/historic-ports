@@ -25,7 +25,7 @@ void V_InitResolution(void);
 //
 //start with v_video.h
 //
-#define CENTERY			(SCREENHEIGHT/2)
+#define CENTERY                 (SCREENHEIGHT/2)
 
 // Screen 0 is the screen updated by I_Update screen.
 // Screen 1 is an extra buffer.
@@ -37,7 +37,7 @@ extern int usegamma;
 // -ES- 1998/08/20 Moved fuzz stuff here
 extern int FUZZTABLE;
 
-#define FUZZOFF	1
+#define FUZZOFF 1
 extern int fuzzoffset[];
 extern int fuzzpos;
 
@@ -45,100 +45,100 @@ extern void (*V_Init) (void);
 
 extern void
 (*V_CopyRect)
-( int		srcx,
-  int		srcy,
-  int		srcscrn,
-  int		width,
-  int		height,
-  int		destx,
-  int		desty,
-  int		destscrn );
+( int           srcx,
+  int           srcy,
+  int           srcscrn,
+  int           width,
+  int           height,
+  int           destx,
+  int           desty,
+  int           destscrn );
 
 extern void
 (*V_DrawPatch)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch);
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch);
 
 extern void
 (*V_DrawPatchFlipped)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	);
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch   );
 
 extern void
 (*V_DrawPatchDirect)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch );
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch );
 
 extern void  //stretches to fill screen
 (*V_DrawPatchInDirect)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch );
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch );
 
 extern void  //stretches to fill screen
 (*V_DrawPatchInDirectFlipped)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch );
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch );
 
 extern void
 (*V_DrawPatchTrans)
-( int		x,
-  int		y,
+( int           x,
+  int           y,
   int           index,
-  int		scrn,
-  patch_t*	patch);
+  int           scrn,
+  patch_t*      patch);
 
 extern void  //stretches bitmap to full screen
 (*V_DrawPatchInDirectTrans)
-( int		x,
-  int		y,
+( int           x,
+  int           y,
   int           index,
-  int		scrn,
-  patch_t*	patch );
+  int           scrn,
+  patch_t*      patch );
 
 
 extern void
 (*V_DrawPatchShrink)
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch );
+( int           x,
+  int           y,
+  int           scrn,
+  patch_t*      patch );
 
 // Draw a linear block of pixels into the view buffer.
 extern void
 (*V_DrawBlock)
-( int		x,
-  int		y,
-  int		scrn,
-  int		width,
-  int		height,
-  byte*		src );
+( int           x,
+  int           y,
+  int           scrn,
+  int           width,
+  int           height,
+  byte*         src );
 
 // Reads a linear block of pixels into the view buffer.
 extern void
 (*V_GetBlock)
-( int		x,
-  int		y,
-  int		scrn,
-  int		width,
-  int		height,
-  byte*		dest );
+( int           x,
+  int           y,
+  int           scrn,
+  int           width,
+  int           height,
+  byte*         dest );
 
 extern void
 (*V_MarkRect)
-( int		x,
-  int		y,
-  int		width,
-  int		height );
+( int           x,
+  int           y,
+  int           width,
+  int           height );
 
 extern void (*V_DarkenScreen)(int scrn);
 
@@ -148,53 +148,58 @@ extern void (*V_TextureBackScreen)(char *flatname);
 // now with r_draw.h
 //
 
-extern lighttable_t*	dc_colormap;
-extern int		dc_x;
-extern int		dc_yl;
-extern int		dc_yh;
-extern fixed_t		dc_iscale;
-extern fixed_t		dc_texturemid;
+extern lighttable_t*    dc_colormap;
+extern int              dc_x;
+extern int              dc_yl;
+extern int              dc_yh;
+extern fixed_t          dc_iscale;
+extern fixed_t          dc_texturemid;
 extern fixed_t          dc_translucency;
 
 // first pixel in a column
-extern byte*		dc_source;		
+extern byte*            dc_source;              
 
-extern byte**		ylookup;
-extern int*		columnofs;
+#ifdef SMOOTHING
+extern fixed_t dc_xfrac;
+extern byte*            dc_source2;
+#endif
+
+extern byte**           ylookup;
+extern int*             columnofs;
 
 extern void (*resinit_r_draw_c)(void);
 
 // The span blitting interface.
 // Hook in assembler or system specific BLT
 //  here.
-extern void 	(*R_DrawColumn) (void);
+extern void     (*R_DrawColumn) (void);
 
 // The Spectre/Invisibility effect.
-extern void 	(*R_DrawFuzzColumn) (void);
+extern void     (*R_DrawFuzzColumn) (void);
 
 extern void (*R_DrawTranslucentColumn) (void);
 
 extern void (*R_DrawTranslatedColumn) (void);
 extern void (*R_DrawTranslucentTranslatedColumn) (void);
 
-extern void (*R_VideoErase) ( unsigned ofs, int	count );
+extern void (*R_VideoErase) ( unsigned ofs, int count );
 
-extern int		ds_y;
-extern int		ds_x1;
-extern int		ds_x2;
+extern int              ds_y;
+extern int              ds_x1;
+extern int              ds_x2;
 
-extern lighttable_t*	ds_colormap;
+extern lighttable_t*    ds_colormap;
 
-extern fixed_t		ds_xfrac;
-extern fixed_t		ds_yfrac;
-extern fixed_t		ds_xstep;
-extern fixed_t		ds_ystep;
+extern fixed_t          ds_xfrac;
+extern fixed_t          ds_yfrac;
+extern fixed_t          ds_xstep;
+extern fixed_t          ds_ystep;
 
 // start of a 64*64 tile image
-extern byte*		ds_source;		
+extern byte*            ds_source;              
 
-extern byte*		translationtables;
-extern byte*		dc_translation;
+extern byte*            translationtables;
+extern byte*            dc_translation;
 
 // Span blitting for rows, floor/ceiling.
 // No Sepctre effect needed.

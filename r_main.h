@@ -45,17 +45,24 @@ extern int		viewwindowy;
 
 
 
-extern int		centerx;
-extern int		centery;
+// the x and y coords of the focus
+// -ES- 1999/03/19 Renamed center to focus
+extern int		focusx;
+extern int		focusy;
 
-extern fixed_t		centerxfrac;
-extern fixed_t		centeryfrac;
-extern fixed_t		projection;
+extern fixed_t		focusxfrac;
+extern fixed_t		focusyfrac;
 
 extern int		validcount;
 
 extern int		linecount;
 
+// -ES- 1999/03/29 Added these
+extern fixed_t normalfov,zoomedfov;
+extern boolean viewiszoomed;
+
+extern boolean setsizeneeded;
+extern boolean changeresneeded; // -ES- 1998/08/20
 
 //
 // Lighting LUT.
@@ -155,14 +162,26 @@ R_AddPointToBox
 // REFRESH - the actual rendering functions.
 //
 
-// Called by G_Drawer.
+// Called by R_Render.
 void R_RenderPlayerView (player_t *player);
+
+// Renders the view for the next frame.
+extern void R_Render (void);
 
 // Called by startup code.
 void R_Init (void);
 
 // -ES- 1998/09/11 Added these prototypes.
 void R_SetViewSize (int	 blocks, int detail);
+
+// Changes Field of View to the specified angle.
+void R_SetFOV(angle_t fov);
+
+// Changes the FOV variables that the zoom key toggles between.
+void R_SetNormalFOV(angle_t newfov);
+void R_SetZoomedFOV(angle_t newfov);
+
+// call this to change the resolution before the next frame.
 void R_ChangeResolution (int width, int height, int bpp);
 
 

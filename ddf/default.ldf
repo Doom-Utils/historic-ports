@@ -182,14 +182,14 @@ TALKTOSELF3="You scare yourself";
 TALKTOSELF4="You start to rave";
 TALKTOSELF5="You've lost it...";
 
-PlayerOneName="Green: ";
-PlayerTwoName="Indigo: ";
-PlayerThreeName="Brown: ";
-PlayerFourName="Red: ";
-PlayerFiveName="Gold: ";
-PlayerSixName="Blue: ";
-PlayerSevenName="DkBlue: ";
-PlayerEightName="Pink: ";
+Player1Name="Green: ";
+Player2Name="Indigo: ";
+Player3Name="Brown: ";
+Player4Name="Red: ";
+Player5Name="Gold: ";
+Player6Name="Blue: ";
+Player7Name="DkBlue: ";
+Player8Name="Pink: ";
 
 AutoMapFollowOn="Follow Mode ON";
 AutoMapFollowOff="Follow Mode OFF";
@@ -287,7 +287,7 @@ Episode4Text="the spider mastermind must have sent forth\n"
 "its legions of hellspawn before your\n"
 "final confrontation with that terrible\n"
 "beast from hell.  but you stepped forward\n"
-"and brought forth eternal damnation and\n"\
+"and brought forth eternal damnation and\n"
 "suffering upon the horde as a true hero\n"
 "would in the face of something so evil.\n"
 "\n"
@@ -425,6 +425,87 @@ Blood="Enables extra gore mode...";
 True3d="Enables jumping over things, flight etc...";
 
 ChangeRes="Sets Screen resolution, hicolour mode";
+
+QuitMsg1="please don't leave, there's more\ndemons to toast!";
+QuitMsg2="let's beat it -- this is turning\ninto a bloodbath!";
+QuitMsg3="i wouldn't leave if i were you.\ndos is much worse.";
+QuitMsg4="you're trying to say you like dos\nbetter than me, right?";
+QuitMsg5="don't leave yet -- there's a\ndemon around that corner!";
+QuitMsg6="ya know, next time you come in here\ni'm gonna toast ya.";
+QuitMsg7="go ahead and leave. see if i care.";
+QuitMsg8="you want to quit?\nthen, thou hast lost an eighth!";
+QuitMsg9="don't go now, there's a \ndimensional shambler waiting\nat the dos prompt!";
+QuitMsg10="get outta here and go back\nto your boring programs.";
+QuitMsg11="if i were your boss, i'd \n deathmatch ya in a minute!";
+QuitMsg12="look, bud. you leave now\nand you forfeit your body count!";
+QuitMsg13="just leave. when you come\nback, i'll be waiting with a bat.";
+QuitMsg14="you're lucky i don't smack\nyou for thinking about leaving.";
+
+QuitMsg15="don't quit now! we're \nstill spending your money!";
+
+QuitMsg16="THIS IS NO MESSAGE!\nPage intentionally left blank.";
+
+QuitSnd1="pldeth";
+QuitSnd2="dmpain";
+QuitSnd3="popain";
+QuitSnd4="slop";
+QuitSnd5="telept";
+QuitSnd6="posit1";
+QuitSnd7="posit3";
+QuitSnd8="sgtatk";
+QuitSnd9="vilact";
+QuitSnd10="getpow";
+QuitSnd11="boscub";
+QuitSnd12="slop";
+QuitSnd13="skeswg";
+QuitSnd14="kntdth";
+QuitSnd15="bspact";
+QuitSnd16="sgtatk";
+
+ChatKeys="gibr";
+
+iddt="iddt";
+idmus="idmus";
+iddqd="iddqd";
+idkfa="idkfa";
+idfa="idfa";
+idspispopd="idspispopd";
+idclip="idclip";
+idbehold1="idbeholdv";
+idbehold2="idbeholds";
+idbehold3="idbeholdi";
+idbehold4="idbeholdr";
+idbehold5="idbeholda";
+idbehold6="idbeholdl";
+idbehold7="idbeholdj";
+idbehold8="idbeholdn";
+idbehold9="idbehold";
+idchoppers="idchoppers";
+idclev="idclev";
+idmypos="idmypos";
+cdnext="cdnext";
+cdprev="cdprev";
+idkillall="idkillall";
+idinfo="idinfo";
+idsuicide="idsuicide";
+idunlock="idunlock";
+idloaded="idloaded";
+idtakeall="idtakeall";
+idgive0="idgive";
+idgive1="idgive1";
+idgive2="idgive2";
+idgive3="idgive3";
+idgive4="idgive4";
+idgive5="idgive5";
+idgive6="idgive6";
+idgive7="idgive7";
+idgive8="idgive8";
+idgive9="idgive9";
+idgive10="idgive10";
+idbot="idbot";
+BotSpawn="Death Bot Spawn Detected...";
+
+
 { DOSDoom Turkish Language Definition File }
 
 [TURKISH]
@@ -640,6 +721,115 @@ LevelQ = "Level Change!\n"
 MusicQ = "Music Change!\n"
 	"Enter Music Name:\n"
 	"\n";
+
+Episode1Text="Efferin evladim bu harukulade oyunu\n"
+     "bitiremedin.Geberdin gittin......\n"
+     "Peki ya simdi noolacak??'Gencligine yazýk\n"
+     "Ama bi dakka.. Olayýmýz burada bitmiyor..Daha\n"
+     "bu bir baslangic....Seni daha ne bolumler\n"
+     "bekliyor! Yapman gereken tek sey Sukru TUNCA'dan\n"
+     "yeni bolumleri istemek\n"
+     "\n"
+     "Bunu yapmak icin pantera@mail.org'a mail\n"
+     "at.Yeni Dehset bolumler seni bekliyor..\n"
+     "Sunuda unutmaki butun oyunlar TURKCE.\n"
+     "Firmamizin bazi oyunlari: Wolfenstein\n"
+     "Zork I,Kiro Fighters,Doom II,Descent\n"
+     "BY SUKRU TUNCA (HacX-Zoft©)\n"
+     "                 HacX-Zoftware!\n";
+
+Episode2Text="You've done it! The hideous cyber-\n"
+     "demon lord that ruled the lost Deimos\n"
+     "moon base has been slain and you\n"
+     "are triumphant! But ... where are\n"
+     "you? You clamber to the edge of the\n"
+     "moon and look down to see the awful\n"
+     "truth.\n"
+     "\n"
+     "Deimos floats above Hell itself!\n"
+     "You've never heard of anyone escaping\n"
+     "from Hell, but you'll make the bastards\n"
+     "sorry they ever heard of you! Quickly,\n"
+     "you rappel down to  the surface of\n"
+     "Hell.\n"
+     "\n"
+     "Now, it's on to the final chapter of\n"
+     "DOOM! -- Inferno.";
+
+Episode3Text="The loathsome spiderdemon that\n"
+     "masterminded the invasion of the moon\n"
+     "bases and caused so much death has had\n"
+     "its ass kicked for all time.\n"
+     "\n"
+     "A hidden doorway opens and you enter.\n"
+     "You've proven too tough for Hell to\n"
+     "contain, and now Hell at last plays\n"
+     "fair -- for you emerge from the door\n"
+     "to see the green fields of Earth!\n"
+     "Home at last.\n"
+     "\n"
+     "You wonder what's been happening on\n"
+     "Earth while you were battling evil\n"
+     "unleashed. It's good that no Hell-\n"
+     "spawn could have come through that\n"
+     "door with you ...";
+
+Episode4Text="the spider mastermind must have sent forth\n"
+     "its legions of hellspawn before your\n"
+     "final confrontation with that terrible\n"
+     "beast from hell.  but you stepped forward\n"
+     "and brought forth eternal damnation and\n"
+     "suffering upon the horde as a true hero\n"
+     "would in the face of something so evil.\n"
+     "\n"
+     "besides, someone was gonna pay for what\n"
+     "happened to daisy, your pet rabbit.\n"
+     "\n"
+     "but now, you see spread before you more\n"
+     "potential pain and gibbitude as a nation\n"
+     "of demons run amok among our cities.\n"
+     "\n"
+     "next stop, hell on earth!";
+
+E1M1Desc="E1M1: Sukru TUNCA";
+E1M2Desc="E1M2: Nukleer Santral";
+E1M3Desc="E1M3: Aliaga Rafineri";
+E1M4Desc="E1M4: Kontrol Odasi";
+E1M5Desc="E1M5: Kerhane";
+E1M6Desc="E1M6: Sukru TUNCA";
+E1M7Desc="E1M7: Pantera";
+E1M8Desc="E1M8: Hacker's Revenge";
+E1M9Desc="E1M9: Asker Ocagi";
+
+E2M1Desc="E2M1: Tepecik Sokaklari";
+E2M2Desc="E2M2: Izmir'in Kavaklari";
+E2M3Desc="E2M3: Rafineri";
+E2M4Desc="E2M4: Sepultura";
+E2M5Desc="E2M5: Metal Militia";
+E2M6Desc="E2M6: Brother's Of Metal";
+E2M7Desc="E2M7: K.S.K.";
+E2M8Desc="E2M8: Alsancak";
+E2M9Desc="E2M9: LONG LIVE HEAVY METAL";
+
+E3M1Desc="E3M1: Sukru TUNCA";
+E3M2Desc="E3M2: Muradiye";
+E3M3Desc="E3M3: Horozkoy";
+E3M4Desc="E3M4: Laleli";
+E3M5Desc="E3M5: AptesHane";
+E3M6Desc="E3M6: Manowar";
+E3M7Desc="E3M7: Lingo Lingo Siseler";
+E3M8Desc="E3M8: Kaf-Sin-Kaf";
+E3M9Desc="E3M9: Metallica";
+
+E4M1Desc="E4M1: Fasulya";
+E4M2Desc="E4M2: Kuru Fasulya";
+E4M3Desc="E4M3: Yas Fasulya";
+E4M4Desc="E4M4: Fasulyanin Faydalari";
+E4M5Desc="E4M5: Fasulyanin Zararlari";
+E4M6Desc="E4M6: Cok Fasulye yiyene Noolur?";
+E4M7Desc="E4M7: Az Fasulya yiyene Noolur?";
+E4M8Desc="E4M8: Hay Senin Fasulyana";
+E4M9Desc="E4M9: Fear Of The Dark";
 
 Level7Text = "YOU HAVE ENTERED DEEPLY INTO THE INFESTED\n"
 	"STARPORT. BUT SOMETHING IS WRONG. THE\n"
@@ -1009,6 +1199,114 @@ MusicQ = "Music Change!\n"
 	"\n"
 	"";
 
+Episode1Text="APRES AVOIR VAINCU LES GROS MECHANTS\n"
+     "ET NETTOYE LA BASE LUNAIRE, VOUS AVEZ\n"
+     "GAGNE, NON? PAS VRAI? OU EST DONC VOTRE\n"
+     " RECOMPENSE ET VOTRE BILLET DE\n"
+     "RETOUR? QU'EST-QUE CA VEUT DIRE?CEN'EST PAS LA FIN ESPEREE!\n"
+     "\n"
+     "CA SENT LA VIANDE PUTREFIEE, MAIS\n"
+     "ON DIRAIT LA BASE DEIMOS. VOUS ETES\n"
+     "APPAREMMENT BLOQUE AUX PORTES DE L'ENFER.\n"
+     "LA SEULE ISSUE EST DE L'AUTRE COTE.\n"
+     "\n"
+     "POUR VIVRE LA SUITE DE DOOM, JOUEZ\n"
+     "A 'AUX PORTES DE L'ENFER' ET A\n"
+     "L'EPISODE SUIVANT, 'L'ENFER'!\n";
+
+Episode2Text="VOUS AVEZ REUSSI. L'INFAME DEMON\n"
+     "QUI CONTROLAIT LA BASE LUNAIRE DE\n"
+     "DEIMOS EST MORT, ET VOUS AVEZ\n"
+     "TRIOMPHE! MAIS... OU ETES-VOUS?\n"
+     "VOUS GRIMPEZ JUSQU'AU BORD DE LA\n"
+     "LUNE ET VOUS DECOUVREZ L'ATROCE\n"
+     "VERITE.\n"
+     "\n"
+     "DEIMOS EST AU-DESSUS DE L'ENFER!\n"
+     "VOUS SAVEZ QUE PERSONNE NE S'EN\n"
+     "EST JAMAIS ECHAPPE, MAIS CES FUMIERS\n"
+     "VONT REGRETTER DE VOUS AVOIR CONNU!\n"
+     "VOUS REDESCENDEZ RAPIDEMENT VERS\n"
+     "LA SURFACE DE L'ENFER.\n"
+     "\n"
+     "VOICI MAINTENANT LE CHAPITRE FINAL DE\n"
+     "DOOM! -- L'ENFER.";
+
+Episode3Text="LE DEMON ARACHNEEN ET REPUGNANT\n"
+     "QUI A DIRIGE L'INVASION DES BASES\n"
+     "LUNAIRES ET SEME LA MORT VIENT DE SE\n"
+     "FAIRE PULVERISER UNE FOIS POUR TOUTES.\n"
+     "\n"
+     "UNE PORTE SECRETE S'OUVRE. VOUS ENTREZ.\n"
+     "VOUS AVEZ PROUVE QUE VOUS POUVIEZ\n"
+     "RESISTER AUX HORREURS DE L'ENFER.\n"
+     "IL SAIT ETRE BEAU JOUEUR, ET LORSQUE\n"
+     "VOUS SORTEZ, VOUS REVOYEZ LES VERTES\n"
+     "PRAIRIES DE LA TERRE, VOTRE PLANETE.\n"
+     "\n"
+     "VOUS VOUS DEMANDEZ CE QUI S'EST PASSE\n"
+     "SUR TERRE PENDANT QUE VOUS AVEZ\n"
+     "COMBATTU LE DEMON. HEUREUSEMENT,\n"
+     "AUCUN GERME DU MAL N'A FRANCHI\n"
+     "CETTE PORTE AVEC VOUS...";
+
+Episode4Text="the spider mastermind must have sent forth\n"
+     "its legions of hellspawn before your\n"
+     "final confrontation with that terrible\n"
+     "beast from hell.  but you stepped forward\n"
+     "and brought forth eternal damnation and\n"
+     "suffering upon the horde as a true hero\n"
+     "would in the face of something so evil.\n"
+     "\n"
+     "besides, someone was gonna pay for what\n"
+     "happened to daisy, your pet rabbit.\n"
+     "\n"
+     "but now, you see spread before you more\n"
+     "potential pain and gibbitude as a nation\n"
+     "of demons run amok among our cities.\n"
+     "\n"
+     "next stop, hell on earth!";
+
+E1M1Desc="E1M1: HANGAR";
+E1M2Desc="E1M2: USINE NUCLEAIRE ";
+E1M3Desc="E1M3: RAFFINERIE DE TOXINES ";
+E1M4Desc="E1M4: CENTRE DE CONTROLE ";
+E1M5Desc="E1M5: LABORATOIRE PHOBOS ";
+E1M6Desc="E1M6: TRAITEMENT CENTRAL ";
+E1M7Desc="E1M7: CENTRE INFORMATIQUE ";
+E1M8Desc="E1M8: ANOMALIE PHOBOS ";
+E1M9Desc="E1M9: BASE MILITAIRE ";
+
+E2M1Desc="E2M1: ANOMALIE DEIMOS ";
+E2M2Desc="E2M2: ZONE DE CONFINEMENT ";
+E2M3Desc="E2M3: RAFFINERIE";
+E2M4Desc="E2M4: LABORATOIRE DEIMOS ";
+E2M5Desc="E2M5: CENTRE DE CONTROLE ";
+E2M6Desc="E2M6: HALLS DES DAMNES ";
+E2M7Desc="E2M7: CUVES DE REPRODUCTION ";
+E2M8Desc="E2M8: TOUR DE BABEL ";
+E2M9Desc="E2M9: FORTERESSE DU MYSTERE ";
+
+E3M1Desc="E3M1: DONJON DE L'ENFER ";
+E3M2Desc="E3M2: BOURBIER DU DESESPOIR ";
+E3M3Desc="E3M3: PANDEMONIUM";
+E3M4Desc="E3M4: MAISON DE LA DOULEUR ";
+E3M5Desc="E3M5: CATHEDRALE PROFANE ";
+E3M6Desc="E3M6: MONT EREBUS";
+E3M7Desc="E3M7: LIMBES";
+E3M8Desc="E3M8: DIS";
+E3M9Desc="E3M9: CLAPIERS";
+
+E4M1Desc="E4M1: Hell Beneath";
+E4M2Desc="E4M2: Perfect Hatred";
+E4M3Desc="E4M3: Sever The Wicked";
+E4M4Desc="E4M4: Unruly Evil";
+E4M5Desc="E4M5: They Will Repent";
+E4M6Desc="E4M6: Against Thee Wickedly";
+E4M7Desc="E4M7: And Hell Followed";
+E4M8Desc="E4M8: Unto The Cruel";
+E4M9Desc="E4M9: Fear";
+
 Level7Text = "VOUS ETES AU PLUS PROFOND DE L'ASTROPORT\n"
 	"INFESTE DE MONSTRES, MAIS QUELQUE CHOSE\n"
 	"NE VA PAS. ILS ONT APPORTE LEUR PROPRE\n"
@@ -1328,6 +1626,115 @@ MusicQ = "Music Change!\n"
 	"\n"
 	"";
 
+Episode1Text="Una vez que has vencido a los malos y\n"
+     "limpiado la base lunar supones que\n"
+     "ganaste, o no? Oh no? Donde esta\n"
+     "tu gorda recompensa y tu boleto a casa? Que\n"
+     "rayos es esto? No se suponia que\n"
+     "debia terminar de esta forma!\n"
+     "\n"
+     "Esto apesta como carne podrida, pero parece\n"
+     "como la base perdida de Deimos.  Parece que\n"
+     "estas atrapado en Las Playas del Infierno.\n"
+     "La unica forma de salir es a traves de ellas.\n"
+     "\n"
+     "Para continuar la experiencia de DOOM, juega\n"
+     "Las Playas del Infierno y su sorprendente\n"
+     "sequela, Inferno!\n";
+
+Episode2Text="Lo has hecho! El horrible se¤or\n"
+     "cyber-demonio que goberno la perdida base\n"
+     "lunar de Deimos ha sido eliminado y tu eres\n"
+     "el triunfador! Pero ... Donde estas?\n"
+     "Escalas al la orilla de la\n"
+     "luna y ves hacia abajo para ver la espantosa\n"
+     "realidad.\n"
+     "\n"
+     "Deimos flota encima del infierno!\n"
+     "Nunca has oido de alguien que haya esacapado\n"
+     "del infierno, pero haras que los bastardos\n"
+     "sientan haber oido de ti! Rapidamente,\n"
+     "bajas a rapel hasta la superficie del\n"
+     "Infierno.\n"
+     "\n"
+     "Ahora, estas en el capitulo final de\n"
+     "DOOM! -- Inferno.";
+
+Episode3Text="La repugnate ara¤a-demonio que\n"
+     "comando la invasion de la bases\n"
+     "lunares y causo tanta muerte ha recibido\n"
+     "una patada en su culo para siempre.\n"
+     "\n"
+     "Un pasaje secreto se abre y entras.\n"
+     "Has probado ser demasiado rudo para el\n"
+     "infierno, y ahora el infierno al fin juega\n"
+     "justo -- por fin emerges de la puerta\n"
+     "para ver los verdes campos de la tierra!\n"
+     "Hogar al fin.\n"
+     "\n"
+     "Piensas que habra estado pasando en\n"
+     "la tierra mientras peleabas con las\n"
+     "fuerzas del mal. Es bueno que ninguna\n"
+     "reencarnacion infernal haya atravezado\n"
+     "la puerta contigo ...";
+
+Episode4Text="la ara¤a mente maestra debe ser enviada delante\n"
+     "de sus legiones infernales antes de tu\n"
+     "confrontacion final con esa terrible\n"
+     "bestia del infierno.  Pero tu das un paso\n"
+     "y traes delante una maldicion eterna y\n"
+     "sufriendo ante la horda como un verdadero heroe\n"
+     "en la cara de algo tan siniestro.\n"
+     "\n"
+     "Ademas, alguien va a pagar por lo que le\n"
+     "paso a daisy, tu conejita.\n"
+     "\n"
+     "pero ahora, ves una propagacion de\n"
+     "potencial dolor y una nacion de\n"
+     "demonios corriendo en nuestras ciudades.\n"
+     "\n"
+     "siguiente parada, infierno en la tierra!";
+
+E1M1Desc="E1M1: Hangar";
+E1M2Desc="E1M2: Planta Nuclear";
+E1M3Desc="E1M3: Refineria de Toxinas";
+E1M4Desc="E1M4: Control de Comando";
+E1M5Desc="E1M5: Laboratorio de Phobos";
+E1M6Desc="E1M6: Procesadora Central";
+E1M7Desc="E1M7: Estacion Computarizada";
+E1M8Desc="E1M8: Anomalia de Phobos";
+E1M9Desc="E1M9: Base Militar";
+
+E2M1Desc="E2M1: Anomalia de Deimos";
+E2M2Desc="E2M2: Area de Contencion";
+E2M3Desc="E2M3: Refineria";
+E2M4Desc="E2M4: Laboratorio de Deimos";
+E2M5Desc="E2M5: Centro de Comando";
+E2M6Desc="E2M6: Pasillos de los Malditos";
+E2M7Desc="E2M7: Probetas de Reproduccion";
+E2M8Desc="E2M8: Torre de Babel";
+E2M9Desc="E2M9: Fortaleza del Misterio";
+
+E3M1Desc="E3M1: Infierno Mantenido";
+E3M2Desc="E3M2: Pantano de la Desesperacion";
+E3M3Desc="E3M3: Pandemonium";
+E3M4Desc="E3M4: Casa del Dolor";
+E3M5Desc="E3M5: Catedral Profana";
+E3M6Desc="E3M6: Monte Erebus";
+E3M7Desc="E3M7: Limbo";
+E3M8Desc="E3M8: Dis";
+E3M9Desc="E3M9: Consejeros";
+
+E4M1Desc="E4M1: Infierno Indigno";
+E4M2Desc="E4M2: Aborrecimiento Perfecto";
+E4M3Desc="E4M3: Separa lo Perverso";
+E4M4Desc="E4M4: Mal Indomito";
+E4M5Desc="E4M5: Ellos se Arrepentiran";
+E4M6Desc="E4M6: Contra la Perversion";
+E4M7Desc="E4M7: Y el infierno siguio";
+E4M8Desc="E4M8: Hasta Lo Cruel";
+E4M9Desc="E4M9: Miedo";
+
 Level7Text = "HAS ENTRADO EN LAS PROFUNDIDAES INFESTADAS DEL\n"
 	"PUERTO ESTELAR. PERO ALGO ESTA MAL. LOS\n"
 	"MONSTRUOS HAN TRAIDO SU PROPIA REALIDAD\n"
@@ -1476,7 +1883,7 @@ ModeSelErr = "Unable to Initialise\n"
 =======================================================
 }
 
-[LANGUAGE REFS] 
+[Swedish]
 DevelopmentMode="Development Mode is enabled.";
 PressKey="Tryck p† valfri tangent.";
 PressYorN="Tryck Y eller N";
@@ -1673,6 +2080,116 @@ MusicQ = "Byter l†t!\n"
 	"Skriv in namnet p† den nya l†ten:\n"
 	"\n"
 	"";
+
+Episode1Text="N r du v l har d”dat alla dom stora bovarna\n"
+     "och rensat rent p† m†nbasen  r du f”rmodad\n"
+     "att vinna,  r du inte det?  r du inte det? Var\n"
+     " r din feta bel”ning och biljett hem? Vad\n"
+     "i helvete  r det h r? Det  r inte menat att\n"
+     "sluta p† det h r s ttet!\n"
+     "\n"
+     "Det stinker som ruttet k”tt, men ser ut\n"
+     "som den f”rlorade Deimos basen.  Ser ut som\n"
+     "du  r fast p† helvettets strand.\n"
+     "Den enda v gen ut  r rakt igenom.\n"
+     "\n"
+     "F”r att forts tta DOOM upplevelsen, spela\n"
+     "The Shores of Hell och dess f”rbluffande\n"
+     "forts ttning, Inferno!\n";
+
+Episode2Text="Du har gjort det! Den ot cka cyber-\n"
+     "demon lorden som styrde p† den f”rlorade\n"
+     "Deimos m†nbasen har blivit dr pt och du\n"
+     "firar! Men ... var  r du?\n"
+     "Du kl ttrar till kanten av m†nen\n"
+     "och ser ner f”r att se den hemska\n"
+     "sanningen.\n"
+     "\n"
+     "Deimos sv var ”ver sj lvaste Helvetet!\n"
+     "Du har aldrig h”rt om n†gon som lyckats fly\n"
+     "fr†n Helvetet, men du ska f† dom j vlarna\n"
+     "att †ngra att dom n†gonsin fick h”ra om dig!\n"
+     "Snabbt, kutar du ner till ytan av\n"
+     "Helvetet.\n"
+     "\n"
+     "Nu,  r det det sista kapitlet av\n"
+     "DOOM! -- Inferno.";
+
+Episode3Text="Den vidriga spindeldemonen som\n"
+     "ledde invasionen till m†nbaserna\n"
+     "och orsakade s† mycket d”d har f†tt\n"
+     "sitt arsle sparkat en sista g†ng.\n"
+     "\n"
+     "En g”md port ”ppnas och du kliver in.\n"
+     "Du har bevisat att du  r f”r tuff f”r\n"
+     "helvetet att beh†lla, och nu spelar\n"
+     "Helvetet  ntligen r ttvist -- du dyker\n"
+     "upp ur d”rren f”r att se Jordens gr”na\n"
+     "f lt!  ntligen hemma.\n"
+     "\n"
+     "Du undrar vad som har h nt p† Jorden\n"
+     "undertiden du har slagits mot de onda.\n"
+     "Det  r bra att inget Helvettesyngel\n"
+     "skulle ha kunnat komma igenom d”rren\n"
+     "tillsammans med dig...";
+
+Episode4Text="Ledar spindeln m†ste ha sent sina\n"
+     "trupper av Helvetesavkommor innan din\n"
+     "sista konfrontation med den f”rskr ckliga\n"
+     "besten fr†n Helvetet.  Men du steg fram†t\n"
+     "och tog med dig evig f”rd”melse och\n"
+     "lidande †t horden som en sann hj lte\n"
+     "skulle ha gjort i ansiktet p† n†got s†\n"
+     "elakt.\n"
+     "\n"
+     " nd†, n†gon skulle f† betala f”r vad\n"
+     "som h nde daisy, din favorit kanin.\n"
+     "\n"
+     "men nu, ser du brett framf”r din mer\n"
+     "m”jliga sm rta och gibbitude som en nation\n"
+     "av demoner som l”per amok i v†ra st der.\n"
+     "\n"
+     "n sta h†llplats, hell on earth!";
+
+E1M1Desc="E1M1: Hangar";
+E1M2Desc="E1M2: Nuclear Plant";
+E1M3Desc="E1M3: Toxin Refinery";
+E1M4Desc="E1M4: Command Control";
+E1M5Desc="E1M5: Phobos Lab";
+E1M6Desc="E1M6: Central Processing";
+E1M7Desc="E1M7: Computer Station";
+E1M8Desc="E1M8: Phobos Anomaly";
+E1M9Desc="E1M9: Military Base";
+
+E2M1Desc="E2M1: Deimos Anomaly";
+E2M2Desc="E2M2: Containment Area";
+E2M3Desc="E2M3: Refinery";
+E2M4Desc="E2M4: Deimos Lab";
+E2M5Desc="E2M5: Command Center";
+E2M6Desc="E2M6: Halls of the Damned";
+E2M7Desc="E2M7: Spawning Vats";
+E2M8Desc="E2M8: Tower of Babel";
+E2M9Desc="E2M9: Fortress of Mystery";
+
+E3M1Desc="E3M1: Hell Keep";
+E3M2Desc="E3M2: Slough of Despair";
+E3M3Desc="E3M3: Pandemonium";
+E3M4Desc="E3M4: House of Pain";
+E3M5Desc="E3M5: Unholy Cathedral";
+E3M6Desc="E3M6: Mt. Erebus";
+E3M7Desc="E3M7: Limbo";
+E3M8Desc="E3M8: Dis";
+E3M9Desc="E3M9: Warrens";
+
+E4M1Desc="E4M1: Hell Beneath";
+E4M2Desc="E4M2: Perfect Hatred";
+E4M3Desc="E4M3: Sever The Wicked";
+E4M4Desc="E4M4: Unruly Evil";
+E4M5Desc="E4M5: They Will Repent";
+E4M6Desc="E4M6: Against Thee Wickedly";
+E4M7Desc="E4M7: And Hell Followed";
+E4M8Desc="E4M8: Unto The Cruel";
+E4M9Desc="E4M9: Fear";
 
 Level7Text=
 "DU HAR STIGIT DJUPT IN I DEN ANGRIPNA\n"
@@ -2021,6 +2538,116 @@ MusicQ = "Music Change!\n"
 	"Enter Music Name:\n"
 	"\n"
 	"";
+Episode1Text="Nu je de grote slechterikken verslagen\n"
+     "en de maanbasis gereinigd hebt, zou je\n"
+     "gewonnen moeten hebben, toch? Waar is\n"
+     "dan je vette beloning en je ticket naar\n"
+     "huis? Wat is dit verdorie? Zo mag het\n"
+     "toch niet aflopen!\n"
+     "\n"
+     "Het stinkt naar rottend vlees, maar\n"
+     "lijkt op de verloren Deimos basis. Het\n"
+     "lijkt wel of je vastzit op de Shores of\n"
+     "Hell. De enige uitweg is er doorheen!\n"
+     "\n"
+     "Om de Doom ervaring voort te zetten,\n"
+     "speel The Shores of Hell en zijn\n"
+     "geweldige vervolg Inferno!\n";
+
+Episode2Text="Het is je gelukt! De vreselijke cyber-\n"
+     "demon lord die over de verloren Deimos\n"
+     "maanbasis regeerde is geslacht en jij\n"
+     "bent de overwinnaar! Maar ... waar ben\n"
+     "je? Je klautert naar de rand van de\n"
+     "maan en kijkt naar beneden om de ver-\n"
+     "schrikkelijke waarheid te aanschouwen.\n"
+     "\n"
+     "Deimos drijft boven de hel!\n"
+     "Nog nooit is het iemand gelukt uit de\n"
+     "hel te ontsnappen, maar jij zal ervoor\n"
+     "zorgen dat men het zal berouwen ooit van\n"
+     "jou gehoord te hebben! Snel daal je af\n"
+     "naar het oppervlak van de hel\n"
+     "\n"
+     "Nu is het tijd voor het laatste hoofd-\n"
+     "stuk van DOOM! -- Inferno.";
+
+Episode3Text="De walgelijke spiderdemon die de\n"
+     "invasie van de maanbases geleid had\n"
+     "en zoveel dood en verderf zaaide\n"
+     "zal voor eeuwig die trap onder zijn\n"
+     "kont blijven voelen.\n"
+     "Een verborgen deur opent zich en\n"
+     "jij gaat naar binnen. Je bent te\n"
+     "taai voor de hel gebleken en nu is\n"
+     "de hel uiteindelijk eerlijk -- achter\n"
+     "de deur zul je de groene velden van\n"
+     "de aarde weer kunnen zien\n"
+     "Eindelijk thuis.\n"
+     "Je vraagt je af wat er is gebeurd\n"
+     "op aarde terwijl jij het kwaad aan\n"
+     "het bestrijden was. Het is maar goed\n"
+     "dat geen hellegebroed met je door die\n"
+     "deur heeft kunnen komen ...";
+
+Episode4Text="de spider mastermind moet zijn legioenen\n"
+     "van hellegebroed voor zich uit hebben\n"
+     "gestuurd voordat je dat verschrikkelijke\n"
+     "beest uit de hel uiteindelijk ontmoette.\n"
+     "maar jij ging gewoon door en zaaide voor\n"
+     "eeuwig dood en verderf onder de horden,\n"
+     "zoals het een held betaamt bij iets dat zo\n"
+     "slecht is.\n"
+     "\n"
+     "daarnaast, iemand moest toch boeten voor\n"
+     "wat er gebeurd is met daisy, je konijn.\n"
+     "\n"
+     "maar nu zie je nog meer pijn en ellende\n"
+     "opdoemen, want een natie van demonen is\n"
+     "onze steden onveilig aan het maken.\n"
+     "\n"
+     "volgende halte, hell on earth!";
+
+E1M1Desc="E1M1: Hangar";
+E1M2Desc="E1M2: Nuclear Plant";
+E1M3Desc="E1M3: Toxin Refinery";
+E1M4Desc="E1M4: Command Control";
+E1M5Desc="E1M5: Phobos Lab";
+E1M6Desc="E1M6: Central Processing";
+E1M7Desc="E1M7: Computer Station";
+E1M8Desc="E1M8: Phobos Anomaly";
+E1M9Desc="E1M9: Military Base";
+
+E2M1Desc="E2M1: Deimos Anomaly";
+E2M2Desc="E2M2: Containment Area";
+E2M3Desc="E2M3: Refinery";
+E2M4Desc="E2M4: Deimos Lab";
+E2M5Desc="E2M5: Command Center";
+E2M6Desc="E2M6: Halls of the Damned";
+E2M7Desc="E2M7: Spawning Vats";
+E2M8Desc="E2M8: Tower of Babel";
+E2M9Desc="E2M9: Fortress of Mystery";
+
+E3M1Desc="E3M1: Hell Keep";
+E3M2Desc="E3M2: Slough of Despair";
+E3M3Desc="E3M3: Pandemonium";
+E3M4Desc="E3M4: House of Pain";
+E3M5Desc="E3M5: Unholy Cathedral";
+E3M6Desc="E3M6: Mt. Erebus";
+E3M7Desc="E3M7: Limbo";
+E3M8Desc="E3M8: Dis";
+E3M9Desc="E3M9: Warrens";
+
+E4M1Desc="E4M1: Hell Beneath";
+E4M2Desc="E4M2: Perfect Hatred";
+E4M3Desc="E4M3: Sever The Wicked";
+E4M4Desc="E4M4: Unruly Evil";
+E4M5Desc="E4M5: They Will Repent";
+E4M6Desc="E4M6: Against Thee Wickedly";
+E4M7Desc="E4M7: And Hell Followed";
+E4M8Desc="E4M8: Unto The Cruel";
+E4M9Desc="E4M9: Fear";
+
 
 Level7Text = "JE BENT DIEP DOORGEDRONGEN IN DE BEZETTE\n"
 	"RUIMTEBASIS. MAAR ER KLOPT IETS NIET. DE\n"
@@ -2377,6 +3004,111 @@ MusicQ = "Musikwechsel!\n"
 	"Bitte Levelnamen eingeben:\n"
 	"\n"
 	"";
+
+Episode1Text="Nun, da Sie die ganzen Schweine\n"
+     "erledigt und die MondBasis gereinigt\n"
+     "haben, wo ist der verdammte Gewinn? Wo\n"
+     "ist die Belohnung, und das Ticket nach\n"
+     "Hause? Was zum Teufel ist das? So soll\n"
+     "es nicht enden!\n"
+     "\n"
+     "Es stinkt wie verrottetes Fleisch,\n"
+     "sieht aber aus wie die Lost Deimons\n"
+     "Base. Sie stecken auf den Shores of Hell\n"
+     "fest. Es gibt nur einen Ausweg - Durch!\n"
+     "\n"
+     "Um das DOOM Erlebnis fortzusetzen,\n"
+     "spielen Sie The Shores of Hell und die\n"
+     "groáartige Folge, Inferno!\n";
+
+Episode2Text="Sie haben es vollbracht! Der riesige\n"
+     "Cyber Demon Lord, der die Lost Deimos\n"
+     "MondBasis regiert hat wurde vernichtet!\n"
+     "Sie triumphieren! Aber... wo sind\n"
+     "Sie? Sie erklimmen den Rand des Mondes\n"
+     "und blicken herunter, um die schreck-\n"
+     "liche Wahrheit zu sehen.\n"
+     "\n"
+     "Monster nehmen alles ein!\n"
+     "Noch niemals hat jemand die Hoelle\n"
+     "wieder verlassen, aber Sie werden es\n"
+     "den Bastarden zeigen! So schnell wie\n"
+     "es geht klettern Sie auf die Oberflaecheder Hoelle.\n"
+     "\n"
+     "Nun liegt es am letzten Kapitel von\n"
+     "DOOM -- Inferno.";
+
+Episode3Text="Der verhaáte Spinnen Daemon,\n"
+     "der die ganze Invasion auf die Erde\n"
+     "angefuehrt, und so viel Tod und Zerstoerungzu verantworten hat, ist endlich tot.\n"
+     "\n"
+     "Sie betreten eine versteckte Tuer, die\n"
+     "sich vor Ihnen oeffnet. Sie haben\n"
+     "gesiegt. In der Ferne koennen Sie\n"
+     "die gruenen Felder der Erde erkennen.\n"
+     "Sie treten den Heimweg an...\n"
+     "Endlich zuhause.\n"
+     "\n"
+     "Sie fragen sich, was sich auf der\n"
+     "Erde wohl alles veraendert hat,\n"
+     "waehrend Sie das Uebel bekaempften.\n"
+     "Es ist gut, das nichts mit ihnen\n"
+     "durch die Tuer kommen konnte ...";
+
+Episode4Text="Der Spinnen Daemon muá seine Legionen\n"
+     "der Hoelle vor ihrer letzten Konfron-tation ausgesendet haben.\n"
+     "Aber Sie liefen weiter, und brachten\n"
+     "ewige Verdammnis und Leiden ueber die\n"
+     "Menschen, im Gesicht des Boesen...\n"
+     "\n"
+     "Nebenbei, jemand wird fuer das, was\n"
+     "ihrem Hasen Daisy passiert ist bueáen!\n"
+     "\n"
+     "Aber nun beeilen Sie sich lieber, und\n"
+     "baendigen die Horde Daemonen, die in\n"
+     "unseren Staedten Amok laufen...\n"
+     "\n"
+     "Naechster Stop, Hell on Earth!";
+
+E1M1Desc="E1M1: Hangar";
+E1M2Desc="E1M2: Nuclear Plant";
+E1M3Desc="E1M3: Toxin Refinery";
+E1M4Desc="E1M4: Command Control";
+E1M5Desc="E1M5: Phobos Lab";
+E1M6Desc="E1M6: Central Processing";
+E1M7Desc="E1M7: Computer Station";
+E1M8Desc="E1M8: Phobos Anomaly";
+E1M9Desc="E1M9: Military Base";
+
+E2M1Desc="E2M1: Deimos Anomaly";
+E2M2Desc="E2M2: Containment Area";
+E2M3Desc="E2M3: Refinery";
+E2M4Desc="E2M4: Deimos Lab";
+E2M5Desc="E2M5: Command Center";
+E2M6Desc="E2M6: Halls of the Damned";
+E2M7Desc="E2M7: Spawning Vats";
+E2M8Desc="E2M8: Tower of Babel";
+E2M9Desc="E2M9: Fortress of Mystery";
+
+E3M1Desc="E3M1: Hell Keep";
+E3M2Desc="E3M2: Slough of Despair";
+E3M3Desc="E3M3: Pandemonium";
+E3M4Desc="E3M4: House of Pain";
+E3M5Desc="E3M5: Unholy Cathedral";
+E3M6Desc="E3M6: Mt. Erebus";
+E3M7Desc="E3M7: Limbo";
+E3M8Desc="E3M8: Dis";
+E3M9Desc="E3M9: Warrens";
+
+E4M1Desc="E4M1: Hell Beneath";
+E4M2Desc="E4M2: Perfect Hatred";
+E4M3Desc="E4M3: Sever The Wicked";
+E4M4Desc="E4M4: Unruly Evil";
+E4M5Desc="E4M5: They Will Repent";
+E4M6Desc="E4M6: Against Thee Wickedly";
+E4M7Desc="E4M7: And Hell Followed";
+E4M8Desc="E4M8: Unto The Cruel";
+E4M9Desc="E4M9: Fear";
 
 Level7Text = "SIE SIND TIEF IN DEN BEFALLENEN FLUG\n"
 	"HAFEN EINGEDRUNGEN. ABER ETWAS IST FALSCH.\n"

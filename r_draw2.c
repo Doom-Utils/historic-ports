@@ -11,10 +11,11 @@
 //
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "dm_defs.h"
 #include "dm_state.h"
-#include "i_alleg.h"
+#include "i_allegv.h"
 #include "i_system.h"
 #include "r_draw2.h" // -ES- 1998/08/05 Include Header
 #include "r_local.h"
@@ -45,6 +46,103 @@ int scaledviewwidth;
 // just for profiling
 int dccount;
 
+/*
+Here are the necessary changes, written for 0.60 (not 0.64 as I told before).
+If you find my code ugly, than it's not miracle coz I'm Delphi/Pascal/Asm
+programmer and this routine was my first and last experiment with AT&T syntax,
+thanx god for FPC and NASM, I don't have to use it anymore, even in the Linux
+world. The routine is based on look-up table ;-), The BLF_Init routine must
+be called during the start-up. If you think it is not a complete nonsense,
+check it w/ your column routine, it should look great. The precision
+of the filtration can be raised by enlarging the table, but it really slows 
+things down, I plan to check it's behavior using 3Dnow PREFETCH instruction,
+it should help. - Vitek Kavan
+*/
+
+// -ES- 1999/01/10 Improved the algorithm a bit: Improved the accuracy
+// and decreased the table size from 4 M to 52 K.
+
+// -ES- 1999/01/10 Improved the algorithm a bit: Improved the accuracy
+// and decreased the table size from 4 M to 52 K.
+
+#define BLFshift 2 // Detail level. High detail levels look better, but
+                   // consume more memory. For each detail increase by one,
+                   // the BLF table needs approx. four times as much memory.
+#define BLFsz (1<<BLFshift)
+#define BLFmax (BLFsz-1)
+
+typedef unsigned long BLF16LUT[256]; // Table with 256 longs containing translucency table-style fix-point RGBs.
+
+static BLF16LUT *BLFTab[BLFsz][BLFsz]; // Totally 8*8*2 BLF16LUTs
+
+static void BLF_Init16 (void)
+{
+  static boolean firsttime = true;
+
+  unsigned int i;
+  unsigned int r,g,b,x,y,xy;
+  BLF16LUT *BLFBuf; // Array of all the used BLF16LUTs
+  int BLFCheck[4*BLFsz*BLFsz]; // Stores which index to BLFBuf a certain x*y should use (x and y are 31.1 fix point)
+  int count=0;
+
+  if (!firsttime)
+    return;
+  firsttime = false;
+
+  I_Printf("BLF_Init: Init Bilinear Filtering");
+
+  // Init BLFCheck
+  for (x=0; x<4*BLFsz*BLFsz; x++)
+    BLFCheck[x]=-1;
+  for (x=1; x<2*BLFsz; x+=2)
+    for (y=1; y<2*BLFsz; y+=2)
+      if (BLFCheck[x*y] == -1)
+      {
+        BLFCheck[x*y] = count;
+        count++;
+      }
+
+  // Allocate the memory if it isn't already allocated. Use 32-byte alignment.
+  BLFBuf = BLFTab[0][0];
+  if (!BLFBuf)
+  {
+    BLFBuf = malloc(count*2*sizeof(BLF16LUT)+31); // allocate memory
+    if (BLFBuf==NULL)
+      I_Error("Out of memory!");
+    BLFBuf = (BLF16LUT*) (((long)BLFBuf+31) & ~31); // align
+  }
+
+  for (x=0; x<BLFsz; x++)
+    for (y=0; y<BLFsz; y++)
+      BLFTab[x][y] = &BLFBuf[2*BLFCheck[(2*x+1) * (2*y+1)]];
+
+  for (xy=0; xy<4*BLFsz*BLFsz; xy++)
+    if (BLFCheck[xy] != -1)
+    {
+      for (i=0; i<256; i++)
+      {
+        // Low byte of RGB triplet
+        g = (i & 0xE0) >> 5;
+        b =  i & 0x1F;
+   
+        g =  (( g * xy ) << 5) >> (2 + 2*BLFshift);
+        b =  (( b * xy ) << 5) >> (2 + 2*BLFshift);
+        (&BLFBuf[2*BLFCheck[xy]])[0][i] = (g << 21) + b;
+
+        // High byte of RGB triplet
+        r = ((i<<8) & 0xF800) >> 11;
+        g = ((i<<8) & 0x0700) >> 5;
+
+        r =  (( r * xy ) << 6) >> (2 + 2*BLFshift);
+        g =  (( g * xy ) << 5) >> (2 + 2*BLFshift);
+        (&BLFBuf[2*BLFCheck[xy]])[1][i] = (r << 10) + (g << 21);
+      }
+    }
+  I_Printf("\n");
+}
+
+//-----------------------------------------------------------
+
 void resinit_r_draw_c16(void)
 {
   int i;
@@ -59,10 +157,14 @@ void resinit_r_draw_c16(void)
   }
   fuzzpos=0;
 
+#ifdef DJGPP
 #define set_screenwidth(val, lbl) asm("movl %0," lbl "-4":: "r" (val) : "memory")
   set_screenwidth(2*SCREENWIDTH,  "rdc16owidth1");
   set_screenwidth(2*SCREENWIDTH,  "rdc16owidth2");
 #undef set_screenwidth
+#endif
+  if (R_DrawSpan == R_DrawSpan16_BLF || R_DrawColumn == R_DrawColumn16_BLF)
+    BLF_Init16();
 }
 
 //
@@ -100,7 +202,7 @@ void R_DrawColumn16_CVersion (void)
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Inner loop that does the actual texture mapping, e.g. a DDA-lile scaling.
   tempcolormap=(short *)(dc_colormap);
@@ -147,11 +249,11 @@ void R_DrawColumn16_KM (void)
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Inner loop that does the actual texture mapping, e.g. a DDA-lile scaling.
   tempcolormap=(unsigned short *)(dc_colormap);
-  if (fracstep > 0x12000)
+  if (fracstep > 0x20000)
   {
     do
     {
@@ -171,9 +273,8 @@ void R_DrawColumn16_KM (void)
     unsigned long level[4];
     unsigned long c;
     int i;
-    extern fixed_t dc_xfrac;
-    extern byte* dc_source2;
 
+    frac -= FRACUNIT/2;
     dc_xfrac &= 0xffff;
     do
     {
@@ -201,6 +302,85 @@ void R_DrawColumn16_KM (void)
       frac += fracstep;
     } while (--count);
   }
+#endif
+}
+
+// -ES- 1999/03/29 Added This
+void R_DrawColumn16_BLF (void)
+{
+#ifndef SMOOTHING
+  R_DrawColumn16_CVersion();
+#else
+  int count;
+  short* dest;
+  unsigned short* tempcolormap;
+  fixed_t yfrac;
+  fixed_t ystep;
+  unsigned long col1, col2, col3, col4;
+  unsigned long x1,x2,y1,y2;
+
+  if (dc_iscale > 0x20000)
+    R_DrawColumn16_CVersion();
+
+  count = dc_yh - dc_yl+1;
+
+  // Zero length, column does not exceed a pixel.
+  if (count <= 0)
+    return;
+                                 
+#ifdef DEVELOPERS 
+  if ((unsigned)dc_x >= SCREENWIDTH || dc_yl < 0 || dc_yh >= SCREENHEIGHT)
+    I_Error ("R_DrawColumn16_CVersion: %i to %i at %i", dc_yl, dc_yh, dc_x);
+#endif 
+
+  // Framebuffer destination address.
+  // Use ylookup LUT to avoid multiply with ScreenWidth.
+  dest = (short *)(ylookup[dc_yl] + columnofs[dc_x]);
+
+  // Determine scaling, which is the only mapping to be done.
+  ystep = dc_iscale;
+  yfrac = dc_texturemid + dc_yl*ystep - FRACUNIT/2;
+
+  tempcolormap=(unsigned short *)(dc_colormap);
+
+  dc_xfrac &= 0xffff;
+  x1 = (dc_xfrac >> (16-BLFshift));
+  x2 = BLFmax - x1;
+
+  // Inner loop that does the actual texture mapping, e.g. a DDA-lile scaling.
+  do
+  {
+    col1 = tempcolormap[dc_source[  (yfrac>>FRACBITS)&127]];
+    col2 = tempcolormap[dc_source2[ (yfrac>>FRACBITS)&127]];
+    col3 = tempcolormap[dc_source[ ((yfrac>>FRACBITS)+1)&127]];
+    col4 = tempcolormap[dc_source2[((yfrac>>FRACBITS)+1)&127]];
+
+    // Get the texture sub-coordinates
+    y1 = (yfrac >> (16-BLFshift)) & BLFmax;
+    y2 = BLFmax - y1;
+
+    col1 = BLFTab[x2][y2][0][col1&0xff]
+         + BLFTab[x2][y2][1][col1 >> 8]
+         + BLFTab[x1][y2][0][col2&0xff]
+         + BLFTab[x1][y2][1][col2 >> 8]
+         + BLFTab[x2][y1][0][col3&0xff]
+         + BLFTab[x2][y1][1][col3 >> 8]
+         + BLFTab[x1][y1][0][col4&0xff]
+         + BLFTab[x1][y1][1][col4 >> 8];
+
+    // Convert to usable RGB
+    col1 &= 0xFC1F03E0;
+    col1 |= col1>>16;
+    col1 >>= 5;
+
+    // Store pixel
+    *dest = col1;
+
+    // Next step
+    dest += SCREENWIDTH;
+    yfrac += ystep;
+  } while (--count);
+
 #endif
 }
 
@@ -248,7 +428,7 @@ void R_DrawFuzzColumn16 (void)
 
   // Looks familiar.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Looks like an attempt at dithering, using the colormap #6 (of 0-31, a bit
   // brighter than average).
@@ -292,15 +472,18 @@ void R_DrawTranslucentColumn16 ()
   fixed_t fglevel, bglevel;
   unsigned long c,fg,bg;        // current colour
 
-  fglevel = dc_translucency;
 #if FADER
   if (dc_translucency == 0x8000)
     fglevel = abs(256-(leveltime & 0x1ff)) << 8;
 #endif
+/*
   fglevel = fglevel&~0x3ff;
   bglevel = FRACUNIT-fglevel;
   fglevel >>= 10;
   bglevel >>= 10;
+*/
+  fglevel = (dc_translucency + 1023) / 1040;
+  bglevel = 64 - fglevel;
 
   count = dc_yh - dc_yl+1;
 
@@ -322,7 +505,7 @@ void R_DrawTranslucentColumn16 ()
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   //
   // Inner loop that does the actual texture mapping,
@@ -382,7 +565,7 @@ void R_DrawTranslatedColumn16 (void)
 
   // Looks familiar.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   // Here we do an additional index re-mapping.
   tempcolormap=(short *)dc_colormap;
@@ -436,7 +619,7 @@ void R_DrawTranslucentTranslatedColumn16 ()
 
   // Determine scaling, which is the only mapping to be done.
   fracstep = dc_iscale;
-  frac = dc_texturemid + (dc_yl-centery)*fracstep;
+  frac = dc_texturemid + dc_yl*fracstep;
 
   //
   // Inner loop that does the actual texture mapping,
@@ -620,6 +803,8 @@ void R_DrawSpan16_KM (void)
     unsigned long c;    // current colour
     int i;
 
+    xfrac -= FRACUNIT/2;
+    yfrac -= FRACUNIT/2;
     do
     {
       spot[0] =((yfrac>>16)&63)*64 + ((xfrac>>16)&63);
@@ -651,6 +836,67 @@ void R_DrawSpan16_KM (void)
     while (count--);
   }
 } 
+
+//------------------------------------------------------------
+// Bilinear Filtering by Vitek Kavan vit.kavan@usa.net
+// -ES- 1999/01/10 Improved the algorithm
+
+void R_DrawSpan16_BLF (void)
+{
+    int                 count;
+    unsigned long col1, col2, col3, col4;
+    unsigned long x1,x2,y1,y2;
+    short* dest = (short *)(ylookup[ds_y] + columnofs[ds_x1]);
+    unsigned short *tempcolormap = (short*)ds_colormap;
+    unsigned long xfrac = ds_xfrac - FRACUNIT/2;
+    unsigned long yfrac = ds_yfrac - FRACUNIT/2;
+
+    // We do not check for zero spans here?
+    count = ds_x2 - ds_x1;
+
+    do
+    {
+      // Get the texture coordinates
+      y1 = ((yfrac>>10)&(63*64));
+      x1 = ((xfrac>>16)&63);
+      y2 = (y1+64)&(63*64);
+      x2 = (x1+1)&63;
+
+      // Get the colours of the four corners
+      col1 = tempcolormap[ds_source[y1+x1]];
+      col2 = tempcolormap[ds_source[y1+x2]];
+      col3 = tempcolormap[ds_source[y2+x1]];
+      col4 = tempcolormap[ds_source[y2+x2]];
+
+      // Get the texture sub-coordinates
+      x1 = (xfrac >> (16-BLFshift)) & BLFmax;
+      y1 = (yfrac >> (16-BLFshift)) & BLFmax;
+      x2 = BLFmax - x1;
+      y2 = BLFmax - y1;
+
+      // Get the fixed-point RGB value
+      col1 = BLFTab[x2][y2][0][col1&0xff]
+           + BLFTab[x2][y2][1][col1 >> 8]
+           + BLFTab[x1][y2][0][col2&0xff]
+           + BLFTab[x1][y2][1][col2 >> 8]
+           + BLFTab[x2][y1][0][col3&0xff]
+           + BLFTab[x2][y1][1][col3 >> 8]
+           + BLFTab[x1][y1][0][col4&0xff]
+           + BLFTab[x1][y1][1][col4 >> 8];
+
+      // Convert to usable RGB
+      col1 &= 0xFC1F03E0;
+      col1 |= col1>>16;
+      col1 >>= 5;
+
+      // Store pixel
+      *dest++ = col1;
+
+      // Next step
+      xfrac += ds_xstep;
+      yfrac += ds_ystep;
+    } while (count--);
+}
 
 //
 // R_InitBuffer16

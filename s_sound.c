@@ -26,8 +26,8 @@
 
 #include "dm_state.h"
 
-
-// Purpose?
+// -KM- 1999/01/31 VSOUND, the speed of sound. Guessed at 500.
+#define VSOUND                    (500<<16)
 
 #define S_MAX_VOLUME            15
 #define S_MIN_VOLUME		0
@@ -62,15 +62,21 @@ extern int snd_DesiredSfxDevice;
 extern unsigned char rndtable[];
 static int srndindex = 0;
 
-boolean nosound = false;
+// If true, sound system is disabled/not working.
+// Changed to false if sound init ok.
+boolean nosound = true;
 
 typedef struct
 {
     // sound information (if null, channel avail.)
-    sfxinfo_t*  sfxinfo;
+    sfxinfo_t*      sfxinfo;
 
     // origin of sound
-    mobj_t*       origin;
+    mobj_t*         origin;
+
+    // pitch sound was started at
+    // -KM- 1999/01/31 Record for Doppler shift.
+    int             pitch;
 
     // handle of the sound being played
     int             handle;
@@ -208,7 +214,42 @@ void S_Start(void)
   nextcleanup = gametic + 15;
 }       
 
+//
+// Calculates the Doppler Shift to apply due to two moving objects
+// Doppler shift: f = f0 * VSOUND / (VSOUND - v)
+//   where f is the observed frequency
+//         f0 is the emitted frequency
+//         VSOUND is the speed of sound
+//         v is the relative velocity (objects moving away have a negative velocity)
+//
+// -KM- 1999/01/31
+//
+static inline fixed_t S_DopplerShift(mobj_t* listener, mobj_t* source)
+{
+  // The objects' speed relative to each other
+  fixed_t speed;
+  // Angle between the two objects
+  angle_t angle;
+  angle_t sangle, langle;
+  // Angle between angle and an object's angle
+  angle_t incidence;
 
+  angle = R_PointToAngle2(listener->x, listener->y, source->x, source->y);
+
+  langle = R_PointToAngle2(0, 0, listener->momx, listener->momy);
+
+  incidence = (langle - angle) >> ANGLETOFINESHIFT;
+  speed = FixedMul(P_AproxDistance(listener->momx, listener->momy), finecosine[incidence]);
+
+  if (source->thinker.function.acv)
+  {
+    sangle = R_PointToAngle2(0, 0, source->momx, source->momy);
+    incidence = (sangle - angle) >> ANGLETOFINESHIFT;
+    speed += FixedMul(P_AproxDistance(source->momx, source->momy), finecosine[incidence]);
+  }
+
+  return FixedDiv(VSOUND, VSOUND - speed);
+}
 
 //
 // S_StartSoundAtVolume
@@ -254,6 +295,8 @@ int S_StartSoundAtVolume (mobj_t* origin, int sfx_id, int volume)
     priority = NORM_PRIORITY;
   }
 
+  pitch += ((rndtable[srndindex++] - 128) / 3) + 872;
+  srndindex &= 255;
 
   if (origin && sfx->looping)
      looping = true;
@@ -266,7 +309,7 @@ int S_StartSoundAtVolume (mobj_t* origin, int sfx_id, int volume)
 			     &volume,
 			     &sep,
 			     &pitch);
-	
+
     if ( origin->x == players[consoleplayer].mo->x
 	 && origin->y == players[consoleplayer].mo->y)
     {   
@@ -284,35 +327,18 @@ int S_StartSoundAtVolume (mobj_t* origin, int sfx_id, int volume)
     volume *= 17;
   }
   
-  // hacks to vary the sfx pitches
-  /*
-  if (sfx_id >= DDF_LookupSound("sawup")
-      && sfx_id <= DDF_LookupSound("sawhit"))
-  {     
-    pitch += 8 - (M_Random()&15);
-  }
-  else if (sfx_id != DDF_LookupSound("itemup")
-	   && sfx_id != DDF_LookupSound("tink"))
-  {
-    pitch += 16 - (M_Random()&31);
-  } */
-
-  pitch += (rndtable[srndindex++] - 128) / 3;
-  srndindex &= 255;
-
-  // kill old sound
-//  if (origin)  S_StopSound(origin);
-
   // try to find a channel
   cnum = S_getChannel(origin, sfx);
   
   if (cnum<0)
     return -1;
 
+  channels[cnum].pitch = pitch;
+  if (origin && origin != players[consoleplayer].mo)
+    pitch = (pitch * S_DopplerShift(players[consoleplayer].mo, origin)) >> 16;
+
   //
-  // This is supposed to handle the loading/caching.
-  // For some odd reason, the caching is done nearly
-  //  each time the sound is needed?
+  // This handles the loading/caching.
   //
   
   // get lumpnum if necessary
@@ -337,7 +363,7 @@ int S_StartSoundAtVolume (mobj_t* origin, int sfx_id, int volume)
 				       /*sfx->data,*/
 				       volume,
 				       sep,
-				       pitch + 872,
+				       pitch,
 				       priority,
                                        looping);
   return cnum;
@@ -345,6 +371,7 @@ int S_StartSoundAtVolume (mobj_t* origin, int sfx_id, int volume)
 
 int S_StartSound(mobj_t* origin, sfx_t* sound_id)
 {
+  int rnd;
   if (nosound) return -1;
   // -KM- 1998/11/25 Fixed this, added origin check
   if (!sound_id)
@@ -353,7 +380,11 @@ int S_StartSound(mobj_t* origin, sfx_t* sound_id)
       S_StopSound(origin);
     return -1;
   }
-  return S_StartSoundAtVolume(origin, sound_id->sounds[P_Random()%sound_id->num],
+  // -KM- 1999/01/31 Using P_Random here means demos and net games get out of
+  //  sync.
+  rnd = rndtable[srndindex++];
+  srndindex &= 255;
+  return S_StartSoundAtVolume(origin, sound_id->sounds[rnd%sound_id->num],
                               snd_SfxVolume);
 }
 
@@ -398,7 +429,6 @@ void S_ResumeSound(void)
     }
 }
 
-
 //
 // Updates music & sounds
 //
@@ -414,26 +444,24 @@ void S_UpdateSounds(mobj_t* listener)
     channel_t*  c;
     
   if (nosound) return;
-#ifdef DJGPP
-    // Clean up unused data.
-    // This is currently not done for 16bit (sounds cached static).
-    // DOS 8bit remains.  Note, I may try and implement SFX caching
-    // again. - Kester
-    if (gametic > nextcleanup)
-    {
-        int i;
-	for (i=1 ; i<numsfx ; i++)
-	{
-            if (S_sfx[i].link) continue;
-	    if (!S_sfx[i].usefulness)
-	    {
- 		    --S_sfx[i].usefulness;
-                    I_DeCacheSFX(i);
-            }
-	}
-	nextcleanup = gametic + 15;
-    }
-#endif
+  // Clean up unused data.
+  // This is currently not done for 16bit (sounds cached static).
+  // DOS 8bit remains.  Note, I may try and implement SFX caching
+  // again. - Kester
+  if (gametic > nextcleanup)
+  {
+      int i;
+      for (i=1 ; i<numsfx ; i++)
+      {
+          if (S_sfx[i].link) continue;
+          if (!S_sfx[i].usefulness)
+          {
+	    --S_sfx[i].usefulness;
+                  I_DeCacheSFX(i);
+          }
+      }
+      nextcleanup = gametic + 15;
+  }
     for (cnum=0 ; cnum<numChannels ; cnum++)
     {
 	c = &channels[cnum];
@@ -445,12 +473,11 @@ void S_UpdateSounds(mobj_t* listener)
 	    {
 		// initialize parameters
 		volume = snd_SfxVolume;
-		pitch = NORM_PITCH;
+		pitch = c->pitch;
 		sep = NORM_SEP;
 
 		if (sfx->link)
 		{
-		    pitch = sfx->pitch;
 		    volume += sfx->volume;
 		    if (volume < 1)
 		    {
@@ -473,12 +500,14 @@ void S_UpdateSounds(mobj_t* listener)
 						  &sep,
 						  &pitch);
 		    
+                    pitch = (pitch * S_DopplerShift(listener, c->origin)) >> 16;
+
 		    if (!audible)
 		    {
 			S_StopChannel(cnum);
 		    }
 		    else
-			I_UpdateSoundParams(c->handle, volume, sep, pitch + 872);
+			I_UpdateSoundParams(c->handle, volume, sep, pitch);
 		}
 	    }
 	    else

@@ -7,7 +7,7 @@
 #include <stdio.h>
 #endif
 
-static AUDIOSTREAM *audio = 0, *newaudio;
+static AUDIOSTREAM *audio = 0, *newaudio = NULL;
 static char *buffer;
 static int instereo, newstereo;
 static int stream_size, newstream_size;
@@ -16,10 +16,19 @@ static int going = FALSE;
 // Allegro WIP doesn't need two channels
 // Seperates stereo signals into two channels.  There better be
 // enough space...
+#ifdef __CYGWIN__
+void DownMixStereo(long *source, short *dest, int count)
+{
+  while (count--)
+  {
+    *dest++ = (*source++ ^ 0x8000) & 0xFFFF;
+  }
+}
+#endif
 int SeperateStereo(long *source, long *dest, int count)
 {
   while (count--) {
-    *dest = (*source) + 0x80008000;
+    *dest = (*source) ^ 0x80008000;
     dest++; source++;
   }
   return 0;
@@ -27,16 +36,16 @@ int SeperateStereo(long *source, long *dest, int count)
 END_OF_FUNCTION(SeperateStereo);
 
 // Simulates a stereo signal from a mono signal
-int SeperateMono(long *source, long *dest, int count)
+int SeperateMono(unsigned long *source, unsigned long *dest, int count)
 {
-  int left, right;
+  unsigned long left, right;
   count >>= 1;
   while (count--) {  
-    left = (*source) + 0x80008000;
+    left = (*source) ^ 0x80008000;
     right = ~left;
-    *dest = (left & 0xffff0000) + (right >> 16);
+    *dest = (left & 0xffff0000) | (right >> 16);
     dest ++;
-    *dest = (left << 16) + (right & 0xffff);
+    *dest = (left << 16) | (right & 0xffff);
     dest++; source++;
   }
   return 0;
@@ -51,13 +60,25 @@ int SignedFix(long *source, long *mono, int count)
 #endif
   count >>= 1;
   while (count--) {
-    *mono = (*source) + 0x80008000;
+    *mono = (*source) ^ 0x80008000;
     mono++; source++;
   }
   return 0;
 }
 END_OF_FUNCTION(SignedFix);
 
+#ifdef __CYGWIN__
+// Hack until WinAlleg is able to handle 16bit streams...
+// Mix data to 8 bit.
+static inline void DXFix(unsigned short* source, unsigned char* dest, int count)
+{
+  while (count--)
+  {
+    *dest++ = (*source) >> 8;
+    *source++ ^= 0x8000;
+  }
+}
+#endif
 int AudioStop(void)
 {
   if (audio) stop_audio_stream(audio);
@@ -99,6 +120,19 @@ int AudioDrainFinished(void)
   return 0;
 }
 
+#ifdef __CYGWIN__
+int AudioBufferWrite(void *data)
+{
+  if (instereo & 1)
+    DownMixStereo((long *) data, (short *) data, stream_size);
+  else
+    SignedFix((long *) data, (long *) data, stream_size);
+  DXFix((short*) data, buffer, stream_size);
+  free_audio_stream_buffer(audio);
+  return 0;
+}
+END_OF_FUNCTION(AudioBufferWrite);
+#else
 int AudioBufferWrite(void *data)
 {
   switch (instereo & 3) {
@@ -120,6 +154,7 @@ int AudioBufferWrite(void *data)
   return 0;
 }
 END_OF_FUNCTION(AudioBufferWrite);
+#endif
 
 int AudioSetVol(int vol)
 {
@@ -204,7 +239,11 @@ int AudioInit(int bufsize, int freq, int stereo, int volume)
   *_bufsize = bufsize;
   *_vol = volume;
 
+#ifdef __CYGWIN__
+  *_audio = play_audio_stream(bufsize, 8, FALSE, freq, volume, 128);
+#else
   *_audio = play_audio_stream(bufsize, 16, stereo? TRUE : FALSE, freq, volume, 128);
+#endif
   if (!(*_audio)) return -1;
   going = TRUE;
   return 0;

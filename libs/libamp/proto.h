@@ -1,4 +1,4 @@
-#ifndef __DJGPP__
+#if !defined (DJGPP) && !defined(__CYGWIN__)
 /* From: util.c */
 void die(char *, ...);
 void warn(char *, ...);

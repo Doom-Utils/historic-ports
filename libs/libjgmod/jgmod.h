@@ -25,10 +25,6 @@
 #define FALSE 0
 #endif
 
-#ifndef DJGPP
-#error Allegro can only be used with djgpp
-#endif
-
 #ifndef ALLEGRO_H
 #error JGMOD can only be used with Allegro
 #endif
@@ -48,6 +44,10 @@ extern "C" {
 #define JGMOD_SUB_VERSION   23
 #define JGMOD_VERSION_STR   "0.23"
 #define JGMOD_DATE_STR      "5 April 1998"
+
+#ifndef DJGPP
+#define _go32_dpmi_lock_data(d, p)
+#endif
 
 //-- Header ------------------------------------------------------------------
 typedef struct CHANNEL_INFO

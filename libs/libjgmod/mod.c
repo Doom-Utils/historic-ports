@@ -401,14 +401,14 @@ void destroy_mod (JGMOD *j)
 
     for (index=0; index < j->no_sample; index++)
         {
-        if (j->s + index)
-            {
+//        if (j->s[index])
+//            {
             if (j->s[index].data)
                 {
                 _unlock_dpmi_data (j->s[index].data, j->s[index].len * (j->s[index].bits / 8) );
-                free (j->s[index].data);
+//                free (j->s[index].data);
                 }
-            }
+//            }
         }
 
     _unlock_dpmi_data (j->s, sizeof (SAMPLE) * j->no_sample);
@@ -474,7 +474,7 @@ void lock_mod (JGMOD *j)
         lock_sample (j->s + index);
 }
 
-extern void _unlock_dpmi_data(void *address, int size); // Found in Allegro
+//extern void _unlock_dpmi_data(void *address, int size); // Found in Allegro
 void unlock_mod (JGMOD *j)
 {
     int index;

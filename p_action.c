@@ -52,6 +52,8 @@ void P_ActMeleeAttack(mobj_t *object);
 // for players
 //
 // TODO: Write a decent procedure.
+// -KM- 1999/01/31 Added sides. Still has to search every mobj on the
+//  map to find a target.  There must be a better way...
 //
 boolean P_ActLookForTargets(mobj_t* object)
 {
@@ -61,10 +63,24 @@ boolean P_ActLookForTargets(mobj_t* object)
 
   while (currmobj != NULL)
   {
-    if ((currmobj != object) &&
+
+    if ((currmobj->side & object->side) && !object->supportobj)
+    {
+      if (P_CheckSight(object, currmobj))
+      {
+        object->supportobj = currmobj;
+        if (object->info->meanderstate)
+          P_SetMobjState(object, object->info->meanderstate);
+        return true;
+      }
+    }
+    if ((((currmobj->target == object->supportobj || currmobj->target == object)
+        && currmobj->target)
+     || (object->side && !(currmobj->side & object->side)))
+     && ((currmobj != object) &&
           (currmobj != object->supportobj) &&
             (object->info != currmobj->info) &&
-              (object->supportobj != currmobj->supportobj))
+              (object->supportobj != currmobj->supportobj)) )
     {
       if ((currmobj->flags & MF_SHOOTABLE) && P_CheckSight(object, currmobj))
       {
@@ -455,6 +471,8 @@ void P_ActAlterVisibility (mobj_t *object)
   state_t* st;
   st = object->state;
   object->deltainvis = st->misc1;
+  if (st->misc2)
+    object->invisibility = st->misc2;
 }
 
 //
@@ -525,6 +543,24 @@ void P_ActMakeAmbientSoundRandom(mobj_t *object)
   }
 #endif
 
+}
+
+//
+// P_ActMakeActiveSound
+//
+// Just a sound generating procedure that cause the sound ref
+// in seesound to be generated.
+//
+// -KM- 1999/01/31
+void P_ActMakeActiveSound(mobj_t *object)
+{
+  if (object->info->activesound)
+    S_StartSound(object,object->info->activesound);
+
+#ifdef DEVELOPERS
+  else
+    Debug_Printf("%s has no ambient sound\n",object->info->name);
+#endif
 }
 
 //
@@ -796,7 +832,7 @@ mobj_t* P_ActLaunchProjectile(mobj_t* source, mobj_t* target, mobjinfo_t* type)
     // check for blocking lines between source and projectile
     if (P_MapCheckBlockingLine(source, projectile))
     {
-      P_RemoveMobj(projectile);
+      P_ActExplodeMissile (projectile);
       return NULL;
     }
   }
@@ -823,7 +859,6 @@ mobj_t* P_ActLaunchProjectile(mobj_t* source, mobj_t* target, mobjinfo_t* type)
   if (attack->accuracy != FRACUNIT)
     angle += (P_Random()-P_Random())*(FRACUNIT-attack->accuracy)*20;
 
-
   //
   // Now add the fact that the target may be difficult to spot and
   // make the projectile's target the same as the sources. Only
@@ -834,19 +869,25 @@ mobj_t* P_ActLaunchProjectile(mobj_t* source, mobj_t* target, mobjinfo_t* type)
   if (target->extendedflags & EF_DUMMYMOBJ)
   {
     projectile->extendedflags |= EF_NOTRACE;
+    projectile->target = NULL;
+    target->z += attack->height;
   }
   else
   {
     projectile->target = target;
     projectile->extendedflags |= EF_FIRSTCHECK;
 
-    if (target->flags & MF_SHADOW)
-      angle += (P_Random()-P_Random()) << 20;
-
-    if (target->invisibility != VISIBLE)
-      angle += (P_Random()-P_Random()) * ((VISIBLE-target->invisibility)>>10);
+    if (!attack->flags & AF_PLAYER)
+    {
+      if (target->flags & MF_SHADOW)
+        angle += (P_Random()-P_Random()) << 20;
+  
+      if (target->invisibility != VISIBLE)
+        angle += (P_Random()-P_Random()) * ((VISIBLE-target->invisibility)>>10);
+    }
   }
 
+  angle += source->state->misc1;
   projectile->angle = angle;
   angle >>= ANGLETOFINESHIFT;
   projectile->momx = FixedMul(finecosine[angle], projectile->speed);
@@ -860,7 +901,8 @@ mobj_t* P_ActLaunchProjectile(mobj_t* source, mobj_t* target, mobjinfo_t* type)
   if (distance < 1)
     distance = 1;
 
-  projectile->momz = FixedDiv(target->z + target->height / 2 - projz, distance);
+  projectile->momz = FixedDiv(target->z + 2 * target->height / 3 - projz, distance);
+  projectile->momz += source->state->misc2;
 
   P_ActCheckMissileSpawn (projectile);
 
@@ -920,11 +962,13 @@ mobj_t* P_ActLaunchSmartProjectile(mobj_t* source, mobj_t* target, mobjinfo_t* t
 
     spot.x = target->x + ((fixed_t) (mx * t * 65536.0));
     spot.y = target->y + ((fixed_t) (my * t * 65536.0));
-    spot.z = target->z + target->height/2;
+    // -KM- 1999/01/31 Calculate the target for grenades.
+    if (type->flags & MF_NOGRAVITY)
+      spot.z = target->z + 2*target->height/3 - source->currentattack->height;
+    else
+      spot.z = target->z - source->z + gameflags.grav * (4096.0 * t * t);
     spot.height = 0;
     spot.extendedflags = EF_DUMMYMOBJ;
-
-//    P_ActFaceTarget(source);
 
     projectile = P_ActLaunchProjectile(source, &spot, type);
     source->angle = projectile->angle;
@@ -1010,11 +1054,11 @@ void P_ActCreateSmokeTrail (mobj_t* projectile)
   z = projectile->z + 4*FRACUNIT;
 
   // spawn a puff of smoke behind the rocket
-  P_SpawnPuff (projectile->x, projectile->y, z);
+//  P_SpawnPuff (projectile->x, projectile->y, z);
         
   smoke = P_MobjCreateObject (projectile->x-projectile->momx,
                                 projectile->y-projectile->momy,
-                                  z, specials[MOBJ_SMOKE]);
+                                  z, projectile->currentattack->puff);
 
   smoke->momz = FRACUNIT;
   smoke->tics -= P_Random()&3;
@@ -1120,6 +1164,7 @@ void P_ActRandomHomingProjectile (mobj_t* projectile)
     }
   }
         
+  projectile->angle += projectile->state->misc1;
   exact = projectile->angle>>ANGLETOFINESHIFT;
   projectile->momx = FixedMul (projectile->speed, finecosine[exact]);
   projectile->momy = FixedMul (projectile->speed, finesine[exact]);
@@ -1139,6 +1184,8 @@ void P_ActRandomHomingProjectile (mobj_t* projectile)
     projectile->momz -= FRACUNIT/8;
   else
     projectile->momz += FRACUNIT/8;
+
+  projectile->momz += projectile->state->misc2;
 }
 
 //
@@ -1429,6 +1476,7 @@ void P_ActSprayAttack(mobj_t* mo)
                            linetarget->z + (linetarget->height>>2),
                            attack->projectile);
 	
+        m->target = mo->target;
 	// -KM- 1998/12/21 oops was
         // damage = ((P_Random()*attack->damagerange) + 1)*attack->damagemulti;
         // giving about 3000 damage per shot...
@@ -1718,7 +1766,11 @@ void P_ActObjectSpawning(mobj_t* object, angle_t angle)
   // Blocking line detected between object and spawnpoint?
   if (P_MapCheckBlockingLine(object, newobject))
   {
-    P_RemoveMobj(newobject);
+    // -KM- 1999/01/31 Explode objects over remove them.
+    if (attack->flags & AF_SPAWNREMOVEFAIL)
+      P_RemoveMobj (newobject);                        // remove
+    else
+      P_DamageMobj (newobject, object, object, 10000); // kill
     return;
   }
 
@@ -1738,6 +1790,8 @@ void P_ActObjectSpawning(mobj_t* object, angle_t angle)
                 
   newobject->target = object->target;
   newobject->playxtra = object->playxtra;
+  newobject->side = object->side;
+  newobject->supportobj = object;
   P_SetMobjState (newobject, attack->objinitstate);
 }
 
@@ -1772,8 +1826,9 @@ void P_ActSkullFlyAttack (mobj_t* object)
     return;
 
   speed = object->currentattack->speed*FRACUNIT;
+  // -KM- 1999/01/31 Fix skulls in nightmare mode
   if (gameflags.fastparm)
-    speed = FixedMul(speed, object->currentattack->projectile->fast);
+    speed = FixedMul(speed, object->info->fast);
   destination = object->target;
   object->flags |= MF_SKULLFLY;
   sound = object->currentattack->initsound;
@@ -1811,12 +1866,16 @@ void P_ActSlammedIntoObject(mobj_t *object, mobj_t* objecthit)
 
   if (objecthit != NULL)
   {
-    dmrange = object->currentattack->damagerange;
-    dmmulti = object->currentattack->damagemulti;
-
-    damage = ((P_Random()%dmrange+1)*dmmulti);
-
-    P_DamageMobj (objecthit, object, object, damage);
+    // -KM- 1999/01/31 Only hurt shootable objects...
+    if (objecthit->flags & MF_SHOOTABLE)
+    {
+      dmrange = object->currentattack->damagerange;
+      dmmulti = object->currentattack->damagemulti;
+  
+      damage = ((P_Random()%dmrange+1)*dmmulti);
+  
+      P_DamageMobj (objecthit, object, object, damage);
+    }
   }
 
   if (sound)
@@ -1855,9 +1914,10 @@ void P_ActAttack(mobj_t *object)
   attack = object->currentattack;
   target = object->target;
 
+  bulletpuff = object->currentattack->puff;
+
   switch(attack->attackstyle)
   {
-
     case ATK_CLOSECOMBAT:
     {
       // -KM- 1998/12/21 Use Line attack so bullet puffs are spawned.
@@ -1879,10 +1939,6 @@ void P_ActAttack(mobj_t *object)
 
       slope = P_AimLineAttack(object, object->angle, attack->range);
       P_LineAttack (object, object->angle, attack->range, slope, damage);
-//      P_DamageMobj (target, object, object, damage);
-      // -KM- 1998/11/25 Close combat spawns blood.
-//      P_SpawnBlood (target->x,target->y,target->z+attack->height, damage,
-//                    object->angle >= ANG180 ? object->angle - ANG180 : object->angle + ANG180);
       break;
     }
 
@@ -2091,17 +2147,15 @@ void P_ActSpareAttack(mobj_t* object)
   attacktype_t* attack;
 
 // -KM- 1998/11/25 Doesn't need a target: missiles sometimes don't.
-//  if (!object->target)
-//    return;
 
   attack = object->info->spareattack;
 
   if (attack)
   {
-    if (attack->flags & AF_FACETARGET)
+    if (attack->flags & AF_FACETARGET && object->target)
       P_ActFaceTarget(object);
 
-    if (attack->flags & AF_NEEDSIGHT)
+    if (attack->flags & AF_NEEDSIGHT && object->target)
     {
       if (!P_CheckSight (object, object->target))
         return;
@@ -2229,11 +2283,8 @@ void P_ActPlayerSupportLook (mobj_t* object)
 
   if (!object->supportobj)
   {
-    if (P_LookForPlayers(object,false))
+    if (P_ActLookForTargets(object))
     {
-      object->supportobj = object->target;
-      object->target = NULL;
-
       if (object->info->seesound)
       {
         if (object->info->extendedflags & EF_BOSSMAN)
@@ -2249,7 +2300,6 @@ void P_ActPlayerSupportLook (mobj_t* object)
   }
 
   P_SetMobjState(object, object->info->meanderstate);
-
 }
 
 //
@@ -2309,14 +2359,14 @@ void P_ActPlayerSupportMeander(mobj_t *object)
   // we have now meandered, now check for a support object, if we don't
   // look for one and return; else look for targets to take out, if we
   // find one, go for the chase.
-  if (!object->supportobj)
+/*  if (!object->supportobj)
   {
     P_ActPlayerSupportLook(object);
     return;
-  }
+  } */
 
-  if (P_ActLookForTargets(object))
-    P_SetMobjState (object, object->info->seestate);
+  P_ActLookForTargets(object);
+//    P_SetMobjState (object, object->info->seestate);
 }
 
 //
@@ -2365,16 +2415,16 @@ void P_ActStandardChase(mobj_t* object)
   {
     // -ACB- 1998/09/05 Support Object setup covered
     // Original Note: look for a new target
-    if (object->supportobj)
-    {
+//    if (object->supportobj)
+//    {
       if (P_ActLookForTargets(object))
         return;
-    }
-    else
-    {
-      if (P_LookForPlayers(object,true))
-        return;   // got a new target
-    }
+//    }
+//    else
+//    {
+//      if (P_LookForPlayers(object,true))
+//        return;   // got a new target
+//    }
 
     // -ACB- 1998/09/06 Target is not relevant: NULLify.
     object->target = NULL;
@@ -2431,16 +2481,16 @@ void P_ActStandardChase(mobj_t* object)
   // -ACB- 1998/09/05 Object->support->object check, go for new targets
   if (!P_CheckSight(object, object->target) && !object->threshold)
   {
-    if (object->supportobj)
-    {
+//    if (object->supportobj)
+//    {
       if (P_ActLookForTargets(object))
         return;
-    }
-    else
-    {
-      if (netgame && P_LookForPlayers(object,true))
-        return;   // got a new target
-    }
+//    }
+//    else
+//    {
+//      if (netgame && P_LookForPlayers(object,true))
+//        return;   // got a new target
+//    }
   }
     
   // chase towards player
@@ -2607,21 +2657,31 @@ void P_ActPlayerAttack (mobj_t* playerobj, attacktype_t* attack)
   P_ActAttack(playerobj);
 }
 
+// -KM- 1999/01/31 Part of the extra blood option, makes blood stick around...
+void P_ActCheckBlood(mobj_t* mo)
+{
+  if (gameflags.blood)
+    mo->tics = -1;
+}
 
+// -KM- 1999/01/31 Returns a player to spawnstate when not moving.
+void P_ActCheckMoving(mobj_t* mo)
+{
+  player_t* player = mo->player;
+  if (abs(mo->momx) < STOPSPEED && abs(mo->momy) < STOPSPEED)
+  {
+     if (player)
+     {
+       if (player->cmd.forwardmove || player->cmd.sidemove)
+         return;
+     }
+     mo->momx = mo->momy = 0;
+     P_SetMobjState(mo, mo->info->spawnstate);
+  }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void P_ActRandomJump(mobj_t* mo)
+{
+  if (P_Random() < mo->state->misc1)
+    P_SetMobjState(mo, mo->state - states + mo->state->misc2);
+}

@@ -201,9 +201,7 @@ void DDF_LevelInit(void);
 void DDF_LinedefInit(void);
 
 // DDF_MOBJ Code  (Moving Objects)
-void DDF_MobjCreatureInit(void);
-void DDF_MobjItemInit(void);
-void DDF_MobjSceneInit(void);
+void DDF_MobjInit(void);
 
 // DDF_SECT Code
 void DDF_SectorInit(void);
@@ -235,119 +233,6 @@ extern boolean terminated;
 extern boolean ddf_replace;
 
 extern framedest_t framedestlist[];
-
-// Action Routine pointers
-void A_Light0();
-void A_Light1();
-void A_Light2();
-
-void A_WeaponReady();
-void A_FireWeapon();
-void A_Lower();
-void A_Raise();
-void A_Punch();
-void A_ReFire();
-
-void A_FirePistol();
-
-void A_FireShotgun();
-
-void A_FireShotgun2();
-void A_CheckReload();
-void A_SFXWeapon1();
-void A_SFXWeapon2();
-void A_SFXWeapon3();
-
-void A_FireCGun();
-void A_GunFlash();
-
-void A_FireMissile();
-
-void A_FirePlasma();
-
-void A_BFGsound();
-void A_FireBFG();
-void A_BFGSpray();
-
-void A_Saw();
-
-// Generally needed for remaining things...
-void A_Explode();
-void A_Pain();
-void A_Scream();
-void A_PlayerScream();
-void A_XScream();
-void A_Fall();
-
-// Needed for the bossbrain.
-void A_BrainPain();
-void A_BrainScream();
-void A_BrainDie();
-void A_BrainAwake();
-void A_BrainSpit();
-void A_SpawnSound();
-void A_SpawnFly();
-void A_BrainExplode();
-
-// MISC
-void DDF_OldThingInit(void);
-
-// Visibility Actions
-void P_ActAlterTransluc();
-void P_ActAlterVisibility();
-void P_ActBecomeLessVisible();
-void P_ActBecomeMoreVisible();
-
-// Sound Actions
-void P_ActMakeAmbientSound();
-void P_ActMakeAmbientSoundRandom();
-void P_ActMakeCloseAttemptSound();
-void P_ActMakeDyingSound();
-void P_ActMakeOverKillSound();
-void P_ActMakePainSound();
-void P_ActMakeRangeAttemptSound();
-
-// Explosion Damage Actions
-void P_ActSetDamageExplosion();
-void P_ActVaryingDamageExplosion();
-
-// Stand-by / Looking Actions
-void P_ActStandardLook();
-void P_ActPlayerSupportLook();
-
-// Meander, aimless movement actions.
-void P_ActStandardMeander();
-void P_ActPlayerSupportMeander();
-
-// Chasing Actions
-void P_ActResurrectChase();
-void P_ActStandardChase();
-void P_ActWalkSoundChase();
-
-// Attacking Actions
-void P_ActComboAttack();
-void P_ActMeleeAttack();
-void P_ActRangeAttack();
-void P_ActSpareAttack();
-void P_ActRefireCheck();
-
-// Miscellanous
-void P_ActFaceTarget();
-void P_ActMakeIntoCorpse();
-void P_ActResetSpreadCount();
-
-// Projectiles
-void P_ActFixedHomingProjectile();
-void P_ActRandomHomingProjectile();
-void P_ActLaunchOrderedSpread();
-void P_ActLaunchRandomSpread();
-void P_ActCreateSmokeTrail();
-
-// Trackers
-void P_ActEffectTracker();
-void P_ActTrackerActive();
-void P_ActTrackerFollow();
-void P_ActTrackerStart();
 
 #endif // __DDF_LOCAL__
 

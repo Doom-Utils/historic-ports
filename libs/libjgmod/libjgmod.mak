@@ -147,8 +147,8 @@ RHIDE_CONFIG_DIRS_Linux=. $(RHIDE_SHARE) $(HOME) /usr/local/share/rhide\
 RHIDE_CONFIG_DIRS=$(RHIDE_CONFIG_DIRS_$(RHIDE_OS))
 INCLUDE_DIRS=
 LIB_DIRS=
-C_DEBUG_FLAGS=-g
-C_OPT_FLAGS=-O2 -ffast-math -fomit-frame-pointer
+C_DEBUG_FLAGS=
+C_OPT_FLAGS=-O3 -ffast-math
 C_WARN_FLAGS=-Wall
 C_C_LANG_FLAGS=
 C_CXX_LANG_FLAGS=
@@ -157,7 +157,7 @@ C_F_LANG_FLAGS=
 C_ADA_LANG_FLAGS=
 LIBS=
 LD_EXTRA_FLAGS=
-C_EXTRA_FLAGS=
+C_EXTRA_FLAGS=$(OPTIMISATION_FLAGS) $(DEFINES) $(DEBUGFLAGS)
 LOCAL_OPT=$(subst ___~~~___, ,$(subst $(notdir $<)___,,$(filter $(notdir\
 	$<)___%,$(LOCAL_OPTIONS))))
 OBJFILES=obj/data_mod.o obj/data_s3m.o obj/mod.o obj/player.o
@@ -233,10 +233,10 @@ PROJECT_ITEMS=data_mod.c data_s3m.c mod.c player.c
 	$(RHIDE_COMPILE.adb.o)
 all:: libjgmod.a
 DEPS_0=\
-		c:/files/project/djgpp/libjgmod/obj/data_mod.o\
-		c:/files/project/djgpp/libjgmod/obj/data_s3m.o\
-		c:/files/project/djgpp/libjgmod/obj/mod.o\
-		c:/files/project/djgpp/libjgmod/obj/player.o
+		obj/data_mod.o\
+		obj/data_s3m.o\
+		obj/mod.o\
+		obj/player.o
 NO_LINK=
 LINK_FILES=$(filter-out $(NO_LINK),$(DEPS_0))
 libjgmod.a:: $(DEPS_0)
@@ -253,6 +253,10 @@ obj/mod.o:: $(DEPS_3)
 DEPS_4=player.c
 obj/player.o:: $(DEPS_4)
 	$(RHIDE_COMPILE.c.o)
+
+clean: force
+	rm -f libjgmod.a
+	rm -f obj/*.o
 
 force::
 

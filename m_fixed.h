@@ -12,7 +12,7 @@
 #pragma interface
 #endif
 
-#include <values.h>
+#include <limits.h>
 
 //
 // Fixed point, 32bit as <-16bits . 16bits->
@@ -41,7 +41,7 @@ static inline fixed_t FixedDiv2 (fixed_t a, fixed_t b)
 static inline fixed_t FixedDiv (fixed_t a, fixed_t b )
 {
     if ( (abs(a)>>14) >= abs(b))
-	return (a^b)<0 ? MININT : MAXINT;
+	return (a^b)<0 ? INT_MIN : INT_MAX;
     return FixedDiv2 (a,b);
 }
 

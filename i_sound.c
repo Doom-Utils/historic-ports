@@ -8,7 +8,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <dos.h>
 #include <stdarg.h>
 
 #include <math.h>
@@ -21,14 +20,10 @@
 #include <sys/ioctl.h>
 
 //im using allegro sound code
-#include "i_alleg.h"
-
-#include <bcd.h>
-
+#include <allegro.h>
 
 #include "dm_defs.h"
 #include "d_debug.h"
-#include "i_alleg.h"
 #include "i_system.h"
 #include "i_sound.h"
 #include "m_argv.h"
@@ -36,30 +31,19 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-
 //allegro has 256 virtual voices
 #define VIRTUAL_VOICES 256
-#define NUM_CHANNELS 16
+#define NUM_CHANNELS numChannels
 #define SAMPLECOUNT 512
 
-// Pitch to stepping lookup
-static int             steptable[256];
-
-static int channelhandles[NUM_CHANNELS];
-static int channelstart[NUM_CHANNELS];
+static int* channelhandles;
+static int* channelstart;
 
 extern boolean swapstereo;
-
-/* static inline int absolute_freq(int freq, SAMPLE *spl)
-{
-   if (freq == 1000)
-      return spl->freq;
-   else
-      return (spl->freq * freq) / 1000;
-} -ACB- 1998/09/07 - Not used, remarked out to shut-up the compiler */
+extern int numChannels;
 
 typedef struct doomsfx_s {
-    	unsigned short flags __attribute__((packed));
+        unsigned short flags __attribute__((packed));
         unsigned short samplerate __attribute__((packed));
         unsigned long len __attribute__((packed));
         unsigned char  data[0] __attribute__((packed));
@@ -67,7 +51,6 @@ typedef struct doomsfx_s {
 
 //this function converts raw 11khz, 8-bit data to a SAMPLE* that allegro uses
 //it is need cuz allegro only loads samples from wavs and vocs
-//extern void lock_sample(SAMPLE *spl);
 static inline SAMPLE *raw2SAMPLE(
   void *rawdata,            // Array of sample data
   int len,                  // Length, in samples
@@ -91,15 +74,18 @@ static inline SAMPLE *raw2SAMPLE(
   return spl;
 }
 
+#ifdef DJGPP
+void _unlock_dpmi_data(void* p, size_t len);
+#endif
+
 inline void unlock_sample(SAMPLE *spl)
 {
- 	 _unlock_dpmi_data(spl->data, spl->len * spl->bits/8 * ((spl->stereo) ? 2 : 1));
+         _unlock_dpmi_data(spl->data, spl->len * spl->bits/8 * ((spl->stereo) ? 2 : 1));
          _unlock_dpmi_data(spl, sizeof(SAMPLE));
 }
+
 #define CACHEBIT 0x8000
 #define LOCKBIT  0x4000
-#define BITSBIT    0x0001
-#define STEREOBIT 0x0002
 
 //
 // This function loads the sound data from the WAD lump,
@@ -108,22 +94,27 @@ inline void unlock_sample(SAMPLE *spl)
 //
 SAMPLE*
 I_CacheSFX
-( int		sfxnum )
+( int           sfxnum )
 {
-    int			bits;
-    boolean		stereo;
-    SAMPLE		*spl;
-    doomsfx_t		*sfx;
+    int                 bits;
+    boolean             stereo;
+    SAMPLE              *spl;
+    doomsfx_t           *sfx;
 
+    // Find the lump num
     if (S_sfx[sfxnum].lumpnum < 0)
       S_sfx[sfxnum].lumpnum = I_GetSfxLumpNum(&S_sfx[sfxnum]);
 
+    // Cache the sound data
     sfx = (doomsfx_t *)W_CacheLumpNum( S_sfx[sfxnum].lumpnum, PU_SOUND );
 
-    bits = S_sfx[sfxnum].bits; //(sfx->flags & BITSBIT) ? 8 : 16;
-    stereo = S_sfx[sfxnum].stereo; //(sfx->flags & STEREOBIT) ? false : true;
+    // Set the bits and stereo
+    bits = S_sfx[sfxnum].bits;
+    stereo = S_sfx[sfxnum].stereo;
     Debug_Printf("%.8s, %d bits%s@ %d Hz, %ld samples flags: %d\n",
                  S_sfx[sfxnum].name, bits, stereo ? " stereo " : " mono ", sfx->samplerate, sfx->len, sfx->flags);
+
+    // Do a special check: some of Ultimate Doom's sounds are corrupted slightly
     if ((sfx->len * (bits / 8) * (stereo ? 2 : 1) + sizeof(doomsfx_t)) > W_LumpLength(S_sfx[sfxnum].lumpnum))
     {
       I_Printf("Warning! Sample '%.8s' has bad length! (%ld, should be %ld)\n", S_sfx[sfxnum].name, sfx->len,
@@ -131,13 +122,18 @@ I_CacheSFX
       sfx->len = (W_LumpLength(S_sfx[sfxnum].lumpnum) - sizeof(doomsfx_t)) / (bits / 8) / (stereo ? 2 : 1);
     }
 
-    // Return allocated padded data.
+    // If the sound was cached from mem, CACHEBIT will still be set.
+    // If the sound was reloaded from disk, CACHEBIT will be clear and we
+    //  allocate space for the allegro SAMPLE header
     if (!(sfx->flags & CACHEBIT)) {
       sfx = Z_ReMalloc(sfx, sfx->len * (bits / 8) * (stereo ? 2 : 1) + sizeof(doomsfx_t) + sizeof(SAMPLE));
       sfx->flags |= CACHEBIT; // Mark as in use.
     }
+    // Fills in the SAMPLE header
     spl = raw2SAMPLE(sfx->data, sfx->len, sfx->samplerate, bits, stereo);
 
+    // Sound data is used on interrupt, so must be locked in physical memory.
+    // Use LOCKBIT because only want one lock on it.
     if (!(sfx->flags & LOCKBIT)) {
       lock_sample(spl);
       sfx->flags |= LOCKBIT;
@@ -156,10 +152,15 @@ I_DeCacheSFX
   doomsfx_t* sfx;
 
   Debug_Printf("SFX Number %d '%s' decached from lump %d.\n", sfxnum, S_sfx[sfxnum].name, S_sfx[sfxnum].lumpnum);
+
+  // Fill in the lump number
   if (S_sfx[sfxnum].lumpnum < 0)
     S_sfx[sfxnum].lumpnum = I_GetSfxLumpNum(&S_sfx[sfxnum]);
+  // Set data from PU_SOUND to PU_CACHE
   sfx = (doomsfx_t *)W_CacheLumpNum( S_sfx[sfxnum].lumpnum, PU_CACHE );
 
+  // Unlock the sample in memory so if it is purged a hunk of locked memory
+  // is not left.
   if (sfx->flags & LOCKBIT) {
     unlock_sample(S_sfx[sfxnum].data);
     sfx->flags &= ~LOCKBIT;
@@ -195,49 +196,41 @@ addsfx
 
     // Loop all channels to find oldest SFX.
     for (i=0; (i<NUM_CHANNELS) && (channelhandles[i] >= 0); i++)
-      {
+    {
       if (channelstart[i] < oldest)
-	{
-	     oldestnum = i;
-	     oldest = channelstart[i];
-	}
+      {
+             oldestnum = i;
+             oldest = channelstart[i];
       }
+    }
 
-    // Tales from the cryptic.
     // If we found a channel, fine.
-    // If not, we simply overwrite the first one, 0.
-    // Probably only happens at startup.
+    // If not, we simply overwrite the oldest one.
+    // Note the oldest one used to mean the sound playing for
+    //  longest.  Now it is the volume, so the quietest sound
+    //  will be replaced.  Probably won't be missed.
     slot = (i == NUM_CHANNELS)? oldestnum : i;
-    if ((channelhandles[slot] >= 0) && 
-	I_SoundIsPlaying(channelhandles[slot]))
+
+    // If the sound is still playing it must be stopped
+    if ((channelhandles[slot] >= 0) && I_SoundIsPlaying(channelhandles[slot]))
       I_StopSound(channelhandles[slot]);
 
-    // Okay, in the less recent channel,
-    //  we will handle the new SFX.
-    // volume is adjusted to global volume
-    // Not done in allegro, because that effects
-    // Midi volume as well
-
+    // Record the volume
     channelstart[slot] = volume;
 
-    // Preserve sound SFX id,
-    //  e.g. for avoiding duplicates of chainsaw.
-    //channelids[slot] = sfxid;
-
-    
-    //this is where the sound actually gets played.  i kept the previous code
-    //because i dont want to risk breaking anything
-    //max num in vol seems to be 8, i mul by 28 and not 31 just to be safe
-    //               Data               Volume  Pan         Pitch Loop
+    // Start the sample
     rc = play_sample(S_sfx[sfxid].data, volume, seperation, step, looping);
 
     // Assign current handle number.
-    // Preserved so sounds could be stopped (unused).
+    // Check handle is valid (ie sound could be started)
     if (rc < 0) return rc;
+
+    // Generate a unique handle and save it.
+    // Handle: | 16 bits: sfxid | 16 bits: allegro handle |
     rc += sfxid << 16;
     channelhandles[slot] = rc;
     
-    // You tell me.
+    // Return the handle
     return rc;
 }
 
@@ -251,38 +244,19 @@ addsfx
 // version.
 // See soundserver initdata().
 //
-void I_SetChannels()
+// -KM- 1999/02/04 Allocate channels.
+void I_SetChannels(numchannels)
 {
-  // Init internal lookups (raw data, mixing buffer, channels).
-  // This function sets up internal lookups used during
-  //  the mixing process. 
-  int           i;
-    
-  int*  steptablemid = steptable + 128;
-  
-  // Okay, reset internal mixing channels to zero.
-  /*for (i=0; i<NUM_CHANNELS; i++)
-  {
-    channels[i] = 0;
-  }*/
-
-  // This table provides step widths for pitch parameters.
-  // I fail to see that this is currently used.
-  //for (i=-128 ; i<128 ; i++)
-    //steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
-  for (i=-128 ; i<128 ; i++)
-    steptablemid[i] = i * i * i / 4000 + 1000;
+  channelhandles = Z_Malloc(sizeof(int) * numchannels, PU_STATIC, NULL);
+  channelstart = Z_Malloc(sizeof(int) * numchannels, PU_STATIC, NULL);
+  memset(channelhandles, -1, sizeof(int) * numchannels);
+  memset(channelstart, 0, sizeof(int) * numchannels);
 }       
 
  
 void I_SetSfxVolume(int volume)
 {
-  // Identical to DOS.
-  // Basically, this should propagate
-  //  the menu/config file setting
-  //  to the state variable used in
-  //  the mixing.
-//  snd_SfxVolume = volume;
+  // Volume is handled in S_Sound.c
 }
 
 //
@@ -328,6 +302,8 @@ I_StartSound
     // Not much point in playing sound, is there...
     if (digi_card == DIGI_NONE) return -1;
 
+    if (swapstereo)
+      sep = 255 - sep;
     // Returns a handle
     id = addsfx( id, vol, pitch, sep, looping );
     if (id >= 0) voice_set_priority(id & 0xffff, 128 - priority);
@@ -347,11 +323,11 @@ void I_StopSound (int handle)
   if (handle >= 0) {
     for (i = NUM_CHANNELS; i--;) {
       if (channelhandles[i] == handle) {
-	channelhandles[i] = -1;
-	//channels[i] = 0;
+        channelhandles[i] = -1;
+        //channels[i] = 0;
         if (voice_check(handle & 0xffff) == S_sfx[handle >> 16].data)
           deallocate_voice(handle & 0xffff);
-	  //voice_stop(handle & 0xffff);
+          //voice_stop(handle & 0xffff);
       } /* if channelhandles[i] == handle */
     } /* for (i = num_channels; i--;) */
   } /* if handle >= 0 */
@@ -367,7 +343,7 @@ boolean I_SoundIsPlaying(int handle)
 
       // Find a channel with the same handle...
       for (i = NUM_CHANNELS; i--;)
-	if (channelhandles[i] == handle) break;
+        if (channelhandles[i] == handle) break;
       if (i < 0) return false;
 
       // If the sample hasn't been overwritten...
@@ -433,15 +409,18 @@ I_UpdateSoundParams
   int   sep,
   int   pitch)
 {
-
+  // -KM- 1999/01/31 Fixed swapstereo
+  if (swapstereo)
+    sep = 255 - sep;
   // Separation, that is, orientation/stereo.
   //  range is: 1 - 256 (Allegro : 0 - 255)
+  // -KM- 1999/01/31 Added ability for pitch to be changed once set.
+  //   (for Doppler effect.)
   if ((handle >= 0) && I_SoundIsPlaying(handle)) {
     voice_set_volume(handle & 0xffff, vol);
     voice_set_pan(handle & 0xffff, sep);
-//    voice_set_frequency(handle & 0xffff,
-//       absolute_freq(pitch,
-//       S_sfx[handle >> 16].data));
+    voice_set_frequency(handle & 0xffff,
+      (S_sfx[handle >> 16].data->freq * pitch) / 1000);
   }
 }
 
@@ -450,7 +429,7 @@ void I_ShutdownSound(void)
 {    
   // Wait till all pending sounds are finished.
   boolean done = false, i;
-  int exittic = I_GetTime() + 175;
+  int exittic = I_GetTime() + 70;
     
   // Stop all sounds from looping, else this function will never end.
   for ( i = NUM_CHANNELS; i--;)
@@ -492,31 +471,13 @@ I_InitSound()
     I_Printf( " Music : %s\n\r", midi_driver->desc);
   }
 
-  // Initialize external data (all sounds) at start, keep static.
-  I_Printf( "I_InitSound: ");
-  // Not much point in loading sounds if you don't have a sound card...
-  // If you don't have a sound card you probably have a 386 or something
-  // and want all the mem you can get :-)
-/*  if (digi_card != DIGI_NONE)
-    for (i = 1 ; i < numsfx; i++)
-    {
-        S_sfx[i].data = I_CacheSFX(i);
-    }*/
-
-  I_Printf( " pre-cached all sound data\n\r");
-  
-  // This table provides step widths for pitch parameters.
-/*  for (i=-128 ; i<128 ; i++)
-    steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
-*/
-  I_SetChannels();
+  I_SetChannels(numChannels);
 
   //music stuff
   I_InitMusic();
 
   if (M_CheckParm("-swapstereo"))
     swapstereo=true;
-
 
   // Finished initialization.
   I_Printf( "I_InitSound: sound module ready\n\r");
