@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: lprintf.c,v 1.3 1999/10/31 12:54:09 cphipps Exp $
+ * $Id: lprintf.c,v 1.4 2000/02/26 19:17:54 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -31,7 +31,7 @@
  *
  *-----------------------------------------------------------------------------*/
 
-static const char rcsid[] = "$Id: lprintf.c,v 1.3 1999/10/31 12:54:09 cphipps Exp $";
+static const char rcsid[] = "$Id: lprintf.c,v 1.4 2000/02/26 19:17:54 cph Exp $";
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -55,7 +55,7 @@ int lprintf(OutputLevels pri, const char *s, ...)
 
   va_list v;
   va_start(v,s);
-  vsprintf(msg,s,v);                      /* print message in buffer  */
+  vsnprintf(msg,sizeof(msg),s,v);         /* print message in buffer  */
   va_end(v);
 
   if (lvl&cons_output_mask)               /* mask output as specified */
@@ -80,7 +80,7 @@ void I_Error(const char *error, ...)
   char errmsg[MAX_MESSAGE_SIZE];
   va_list argptr;
   va_start(argptr,error);
-  vsprintf(errmsg,error,argptr);
+  vsnprintf(errmsg,sizeof(errmsg),error,argptr);
   va_end(argptr);
   fprintf(stderr,"%s\n",errmsg);
 
@@ -90,6 +90,9 @@ void I_Error(const char *error, ...)
 /*----------------------------------------------------------------------------
  *
  * $Log: lprintf.c,v $
+ * Revision 1.4  2000/02/26 19:17:54  cph
+ * Prevent buffer overflows
+ *
  * Revision 1.3  1999/10/31 12:54:09  cphipps
  * Moved I_Error to lprintf.c
  * Finished off C++ comments

@@ -1,13 +1,13 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: d_client.c,v 1.10 1999/11/01 17:12:28 cphipps Exp $
+ * $Id: d_client.c,v 1.11 2000/02/26 19:23:58 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
  *  Copyright (C) 1999 by
  *  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
- *   and Colin Phipps
+ *  Copyright (C) 1999-2000 by Colin Phipps
  *  
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -51,6 +51,8 @@
 
 #include "lprintf.h"
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 static boolean   server;
 static int       remotetic; // Tic expected from the remote
@@ -139,6 +141,7 @@ void D_CheckNetGame(void)
 
 boolean D_NetGetWad(const char* name)
 {
+#if defined(HAVE_WAIT_H)
   size_t psize = sizeof(packet_header_t) + strlen(name) + 500;
   packet_header_t *packet;
   boolean done = false;
@@ -158,28 +161,45 @@ boolean D_NetGetWad(const char* name)
   Z_Free(packet);
 
   if (!strcasecmp((void*)(packet+1), name)) {
+    pid_t pid;
+    int   rv;
     byte *p = (byte*)(packet+1) + strlen(name) + 1;
 
-    // Automatic wad file retrieval using wget (supports http and ftp, using URLs)
-    // Unix systems have all these commands handy, this kind of thing is easy
-    // Any windo$e port will have some awkward work replacing these.
-    char *buffer = Z_Malloc(100 + strlen(p) + strlen(name), PU_STATIC, NULL);
-
-    sprintf(buffer, "wget %s", p);
-    if (system(buffer)) 
-      lprintf(LO_WARN, "D_NetGetWad: \"%s\" failed\n", buffer);
-    else {
+    /* Automatic wad file retrieval using wget (supports http and ftp, using URLs)
+     * Unix systems have all these commands handy, this kind of thing is easy
+     * Any windo$e port will have some awkward work replacing these.
+     */
+    /* cph - caution here. This is data from an untrusted source. 
+     * Don't pass it via a shell. */
+    if ((pid = fork()) == -1)
+      perror("fork");
+    else if (!pid) {
+      /* Child chains to wget, does the download */
+      execlp("wget", "wget", p, NULL);
+    }
+    /* This is the parent, i.e. main LxDoom process */
+    wait(&rv);
+    if (!(done = !access(name, R_OK))) {
       if (!strcmp(p+strlen(p)-4, ".zip")) {
 	p = strrchr(p, '/')+1; 
-	sprintf(buffer, "unzip -aL %s %s", p, name);
-	system(buffer);
+	if ((pid = fork()) == -1)
+	  perror("fork");
+	else if (!pid) {
+	  /* Child executes decompressor */
+	  execlp("unzip", "unzip", p, name, NULL);
+	}
+	/* Parent waits for the file */
+	wait(&rv);
+	done = !!access(name, R_OK);
       }
-      /* Add more decompression protocols here is desired */
-      done = !access(name, R_OK);
+      /* Add more decompression protocols here as desired */
     }
     Z_Free(buffer);
   }
   return done;
+#else /* HAVE_WAIT_H */
+  return false;
+#endif
 }
 
 void NetUpdate(void)
@@ -391,6 +411,9 @@ void D_QuitNetGame (void)
 
 //
 // $Log: d_client.c,v $
+// Revision 1.11  2000/02/26 19:23:58  cph
+// Don't trust server path data, avoid system(3) calls with it
+//
 // Revision 1.10  1999/11/01 17:12:28  cphipps
 // Added i_main.h
 //

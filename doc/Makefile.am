@@ -2,14 +2,19 @@
 #
 # Makefile.am for LxDoom doc directory
 #
-# $Id: Makefile.am,v 1.2 1999/10/12 17:49:37 cphipps Exp $
+# $Id: Makefile.am,v 1.3 2000/03/16 20:14:08 cph Exp $
 #
 
+docdir=$(prefix)/share/doc
 man_MANS=lxdoom.6 boom.cfg.5 lxdoom-game-server.6
+doc_DATA=old-source-docs.tar.gz boom.txt boomref.txt
 EXTRA_DIST=old-source-docs.tar.gz boom.txt boomref.txt lxdoom.6 boom.cfg.5 lxdoom-game-server.6
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.3  2000/03/16 20:14:08  cph
+# Add docs to make install, add RPM building
+#
 # Revision 1.2  1999/10/12 17:49:37  cphipps
 # Remove doomlic.txt
 #

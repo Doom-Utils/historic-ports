@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_system.c,v 1.32 1999/10/31 15:38:07 cphipps Exp $
+ * $Id: l_system.c,v 1.33 2000/02/26 19:18:23 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -32,7 +32,7 @@
  */
 
 static const char
-rcsid[] = "$Id: l_system.c,v 1.32 1999/10/31 15:38:07 cphipps Exp $";
+rcsid[] = "$Id: l_system.c,v 1.33 2000/02/26 19:18:23 cph Exp $";
 
 #include <stdio.h>
 
@@ -106,7 +106,7 @@ unsigned long I_GetRandomTimeSeed(void)
  */
 const char* I_GetVersionString(char* buf, size_t sz)
 {
-  sprintf(buf,"LxDoom v%s (http://lxdoom.linuxgames.com/)",VERSION);
+  snprintf(buf,sz,"LxDoom v%s (http://lxdoom.linuxgames.com/)",VERSION);
   return buf;
 }
 
@@ -127,6 +127,9 @@ const char* I_SigString(char* buf, size_t sz, int signum)
 
 /********************************************************************************************
  * $Log: l_system.c,v $
+ * Revision 1.33  2000/02/26 19:18:23  cph
+ * Be safe with version message
+ *
  * Revision 1.32  1999/10/31 15:38:07  cphipps
  * Moved most of the LxDoom main program specific stuff to l_main.c
  * This file is now just for general system function wrappers, like

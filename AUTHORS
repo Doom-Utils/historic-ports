@@ -66,10 +66,6 @@ Various useful patches, like the colour ENDOOM code.
 Josh Parsons	josh@schlick.anu.edu.au
 Sent me the patches to use autoconf for configuring LxDoom.
 
-Frederic Oghdayan
-For useful feedback on LxDoom v1.0.1, and repeating his bug reports until I 
-believed them :-).
-
 Michael Heasley	
 Author of musserver, which helped me first add music support.
 
@@ -77,9 +73,19 @@ Rafael Reilova
 Took over the musserver program, made it much better, and mainly saved me 
 having to worry about it anymore :-).
 
-Steve Van Devender stevev@efn.org
+Steve Van Devender <stevev@efn.org>
 Found the bug causing slight noise at the start of sounds playing, and other
 patches.
+
+Barry Mead <bmead@surfree.com>
+Improvements to the mouse code.
+
+Mattias Kunkel <mattias@kunkel.freeservers.com>
+Made the lxdoom.spec file for creating LxDoom RPMs.
+
+Frederic Oghdayan
+For useful feedback on LxDoom v1.0.1, and repeating his bug reports until I 
+believed them :-).
 
 Vicente Aguilar	vicente@hal.dhis.org
 His handy patch convinced me to keep on with making LxDoom a nicer UNIX style 

@@ -1,14 +1,23 @@
 #
 # Top level automake Makefile.am for LxDoom
 #
-# $Id: Makefile.am,v 1.3 1999/10/12 17:48:37 cphipps Exp $
+# $Id: Makefile.am,v 1.4 2000/03/16 20:14:08 cph Exp $
 #
 
+docdir=$(prefix)/share/doc
 SUBDIRS = doc data src
-EXTRA_DIST = ChangeLog
+EXTRA_DIST = ChangeLog lxdoom.spec.in
+doc_DATA = ChangeLog README COPYING AUTHORS
+
+rpm:	lxdoom.spec dist
+	mv @PACKAGE@-@VERSION@.tar.gz /usr/src/redhat/SOURCES
+	rpm -bb lxdoom.spec
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.4  2000/03/16 20:14:08  cph
+# Add docs to make install, add RPM building
+#
 # Revision 1.3  1999/10/12 17:48:37  cphipps
 # Remove CREDITS
 #

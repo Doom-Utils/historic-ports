@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: i_video.h,v 1.9 2000/01/25 21:33:22 cphipps Exp $
+ * $Id: i_video.h,v 1.10 2000/03/16 13:27:29 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -72,15 +72,14 @@ void I_StartFrame (void);
 
 extern int use_vsync;  /* killough 2/8/98: controls whether vsync is called */
 
-#ifdef SECURE_UID
-uid_t stored_euid; /* UID that the SVGALib I_InitGraphics switches to before vga_init() */
-#endif
-
 #endif
 
 /*----------------------------------------------------------------------------
  *
  * $Log: i_video.h,v $
+ * Revision 1.10  2000/03/16 13:27:29  cph
+ * Clean up uid stuff
+ *
  * Revision 1.9  2000/01/25 21:33:22  cphipps
  * Fix security in case of being setuid
  *

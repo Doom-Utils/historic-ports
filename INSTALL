@@ -17,9 +17,9 @@ Basic Installation
      good doom levels to play when it's finished :-).
 
      This should work on all Linux systems, but systems that have a make
-     utility other than GNU make may have problems. E.g. for BSD systems,
-     you should install GNU make (gmake), and then use gmake instead of make
-     for these instructions.
+     utility other than GNU make may have problems. E.g. you might need to 
+     install GNU make, and then use it instead of make for these 
+     instructions. I have tested BSD pmake and it works fine.
 
   4. Type `make install-strip' as root, to install the programs, data files 
      and man pages for LxDoom.

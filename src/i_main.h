@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: i_main.h,v 1.2 1999/11/01 17:11:43 cphipps Exp $
+ * $Id: i_main.h,v 1.3 2000/03/16 13:27:29 cph Exp $
  *
  *  Parts of the Boom i_system.h and original linuxdoom i_system.h
  *
@@ -36,16 +36,25 @@
 #ifndef __I_MAIN__
 #define __I_MAIN__
 
+#include <unistd.h>
+
 void I_Init(void);
 void I_SafeExit(int rc);
 
 extern int broken_pipe;
 extern int (*I_GetTime)(void);
 
+#ifdef SECURE_UID
+extern uid_t stored_euid; /* UID that the SVGALib I_InitGraphics switches to before vga_init() */
+#endif
+
 #endif
 
 /*-----------------------------------------------------------------------------
  * $Log: i_main.h,v $
+ * Revision 1.3  2000/03/16 13:27:29  cph
+ * Clean up uid stuff
+ *
  * Revision 1.2  1999/11/01 17:11:43  cphipps
  * Added I_Init for d_main.c
  *

@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: g_game.c,v 1.34 1999/10/31 12:38:09 cphipps Exp $
+ * $Id: g_game.c,v 1.36 2000/03/17 20:50:30 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -34,7 +34,7 @@
  */
 
 static const char
-rcsid[] = "$Id: g_game.c,v 1.34 1999/10/31 12:38:09 cphipps Exp $";
+rcsid[] = "$Id: g_game.c,v 1.36 2000/03/17 20:50:30 cph Exp $";
 
 #include <stdarg.h>
 
@@ -463,12 +463,12 @@ void G_BuildTiccmd(ticcmd_t* cmd)
         dclicks2 = 0;
         dclickstate2 = 0;
       }
-
+  mousey = (mousey > 0) ? mousey : mousey / 6; /* mead desense backward moves. */
   forward += mousey;
   if (strafe)
-    side += mousex*2;
+    side += mousex / 4;       /* mead  Don't want to strafe as fast as turns.*/
   else
-    cmd->angleturn -= mousex*0x8;
+    cmd->angleturn -= mousex; /* mead now have enough dynamic range 2-10-00 */
 
   mousex = mousey = 0;
 
@@ -682,8 +682,15 @@ boolean G_Responder (event_t* ev)
       mousebuttons[0] = ev->data1 & 1;
       mousebuttons[1] = ev->data1 & 2;
       mousebuttons[2] = ev->data1 & 4;
-      mousex = (ev->data2*(mouseSensitivity_horiz*4))/10;  // killough
-      mousey = (ev->data3*(mouseSensitivity_vert*4))/10;
+      /*
+       * bmead@surfree.com
+       * Modified by Barry Mead after adding vastly more resolution
+       * to the Mouse Sensitivity Slider in the options menu 1-9-2000
+       * Removed the mouseSensitivity "*4" to allow more low end
+       * sensitivity resolution especially for lsdoom users.
+       */
+      mousex = (ev->data2*(mouseSensitivity_horiz))/10;  /* killough */
+      mousey = (ev->data3*(mouseSensitivity_vert))/10;  /*Mead rm *4 */
       return true;    // eat events
 
     case ev_joystick:
@@ -788,10 +795,9 @@ void G_Ticker (void)
           if ((netgame || demoplayback) && cmd->forwardmove > TURBOTHRESHOLD &&
               !(gametic&31) && ((gametic>>5)&3) == i )
             {
-              static char turbomessage[80];
-              extern char *player_names[];
-              sprintf (turbomessage, "%s is turbo!", player_names[i]);
-              players[consoleplayer].message = turbomessage;
+	      extern char *player_names[];
+	      /* cph - don't use sprintf, use doom_printf */
+              doom_printf ("%s is turbo!", player_names[i]);
             }
 
           if (netgame && !netdemo && !(gametic%ticdup) )
@@ -1407,7 +1413,7 @@ void G_DoLoadGame(void)
   int savegame_compatibility = forced_loadgame ? boom_compatibility /* Default to Boom v2.02 */
     : -1;
 
-  G_SaveGameName(name,savegameslot);
+  G_SaveGameName(name,sizeof(name),savegameslot);
 
   gameaction = ga_nothing;
 
@@ -1540,19 +1546,14 @@ void CheckSaveGame(size_t size)
            savegamesize += (size+1023) & ~1023)) + pos;
 }
 
-// killough 3/22/98: form savegame name in one location
-// (previously code was scattered around in multiple places)
+/* killough 3/22/98: form savegame name in one location
+ * (previously code was scattered around in multiple places)
+ * cph - Avoid possible buffer overflow problems by passing 
+ * size to this function and using snprintf */
 
-void G_SaveGameName(char *name, int slot)
+void G_SaveGameName(char *name, size_t size, int slot)
 {
-  // CPhipps - cdrom handling should be done elsewhere
-#ifdef DJGPP
-  // Ty 05/04/98 - use savegamename variable (see d_deh.c)
-  if (M_CheckParm("-cdrom"))
-    sprintf(name, "c:\\doomdata\\%s%d.dsg", savegamename, slot);
-  else
-#endif
-    sprintf (name, "%s/%s%d.dsg", basesavegame, savegamename, slot);
+  snprintf (name, size, "%s/%s%d.dsg", basesavegame, savegamename, slot);
 }
 
 void G_DoSaveGame (void)
@@ -1565,7 +1566,7 @@ void G_DoSaveGame (void)
   gameaction = ga_nothing; // cph - cancel savegame at top of this function, 
     // in case later problems cause a premature exit
 
-  G_SaveGameName(name,savegameslot);
+  G_SaveGameName(name,sizeof(name),savegameslot);
 
   description = savedescription;
 
@@ -2285,7 +2286,7 @@ void doom_printf(const char *s, ...)
   static char msg[MAX_MESSAGE_SIZE];
   va_list v;
   va_start(v,s);
-  vsprintf(msg,s,v);                  // print message in buffer
+  vsnprintf(msg,sizeof(msg),s,v);        /* print message in buffer */
   va_end(v);
   players[consoleplayer].message = msg;  // set new message
 }
@@ -2293,6 +2294,12 @@ void doom_printf(const char *s, ...)
 //----------------------------------------------------------------------------
 //
 // $Log: g_game.c,v $
+// Revision 1.36  2000/03/17 20:50:30  cph
+// Commit mead's improved mouse stuff
+//
+// Revision 1.35  2000/02/26 19:19:51  cph
+// Use doom_printf for turbo warnings; pass buffer size to G_SaveGameName
+//
 // Revision 1.34  1999/10/31 12:38:09  cphipps
 // Add include for i_main.h (for timer stuff)
 // Remove I_BaseTiccmd call, just zeroise new tics

@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_main.c,v 1.13 2000/01/25 21:33:22 cphipps Exp $
+ * $Id: l_main.c,v 1.14 2000/03/16 13:27:29 cph Exp $
  *
  *  Hybrid of the Boom i_main.c and original linuxdoom i_main.c
  *
@@ -35,7 +35,7 @@
  */
 
 static const char
-rcsid[] = "$Id: l_main.c,v 1.13 2000/01/25 21:33:22 cphipps Exp $";
+rcsid[] = "$Id: l_main.c,v 1.14 2000/03/16 13:27:29 cph Exp $";
 
 #include "doomdef.h"
 #include "m_argv.h"
@@ -314,6 +314,10 @@ void I_Quit (void)
   }
 }
 
+#ifdef SECURE_UID
+uid_t stored_euid = -1;
+#endif
+
 int main(int argc, const char * const * argv)
 {
 #ifdef SECURE_UID
@@ -375,6 +379,9 @@ int main(int argc, const char * const * argv)
 /*----------------------------------------------------------------------------
  *
  * $Log: l_main.c,v $
+ * Revision 1.14  2000/03/16 13:27:29  cph
+ * Clean up uid stuff
+ *
  * Revision 1.13  2000/01/25 21:33:22  cphipps
  * Fix security in case of being setuid
  *

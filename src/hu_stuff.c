@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: hu_stuff.c,v 1.10 1999/10/12 13:01:10 cphipps Exp $
+ * $Id: hu_stuff.c,v 1.11 2000/02/26 19:18:54 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -30,7 +30,7 @@
  */
 
 static const char
-rcsid[] = "$Id: hu_stuff.c,v 1.10 1999/10/12 13:01:10 cphipps Exp $";
+rcsid[] = "$Id: hu_stuff.c,v 1.11 2000/02/26 19:18:54 cph Exp $";
 
 // killough 5/3/98: remove unnecessary headers
 
@@ -618,46 +618,46 @@ void HU_Start(void)
     HUlib_addCharToTextLine(&w_coordz, *(s++));
 
   //jff 2/16/98 initialize ammo widget
-  sprintf(hud_ammostr,"AMM ");
+  strcpy(hud_ammostr,"AMM ");
   s = hud_ammostr;
   while (*s)
     HUlib_addCharToTextLine(&w_ammo, *(s++));
 
   //jff 2/16/98 initialize health widget
-  sprintf(hud_healthstr,"HEL ");
+  strcpy(hud_healthstr,"HEL ");
   s = hud_healthstr;
   while (*s)
     HUlib_addCharToTextLine(&w_health, *(s++));
 
   //jff 2/16/98 initialize armor widget
-  sprintf(hud_armorstr,"ARM ");
+  strcpy(hud_armorstr,"ARM ");
   s = hud_armorstr;
   while (*s)
     HUlib_addCharToTextLine(&w_armor, *(s++));
 
   //jff 2/17/98 initialize weapons widget
-  sprintf(hud_weapstr,"WEA ");
+  strcpy(hud_weapstr,"WEA ");
   s = hud_weapstr;
   while (*s)
     HUlib_addCharToTextLine(&w_weapon, *(s++));
 
   //jff 2/17/98 initialize keys widget
   if (!deathmatch) //jff 3/17/98 show frags in deathmatch mode
-    sprintf(hud_keysstr,"KEY ");
+    strcpy(hud_keysstr,"KEY ");
   else
-    sprintf(hud_keysstr,"FRG ");
+    strcpy(hud_keysstr,"FRG ");
   s = hud_keysstr;
   while (*s)
     HUlib_addCharToTextLine(&w_keys, *(s++));
 
   //jff 2/17/98 initialize graphic keys widget
-  sprintf(hud_gkeysstr," ");
+  strcpy(hud_gkeysstr," ");
   s = hud_gkeysstr;
   while (*s)
     HUlib_addCharToTextLine(&w_gkeys, *(s++));
 
   //jff 2/17/98 initialize kills/items/secret widget
-  sprintf(hud_monsecstr,"STS ");
+  strcpy(hud_monsecstr,"STS ");
   s = hud_monsecstr;
   while (*s)
     HUlib_addCharToTextLine(&w_monsec, *(s++));
@@ -1580,6 +1580,9 @@ boolean HU_Responder(event_t *ev)
 //----------------------------------------------------------------------------
 //
 // $Log: hu_stuff.c,v $
+// Revision 1.11  2000/02/26 19:18:54  cph
+// Do some s/sprintf/strcpy/g for neatness
+//
 // Revision 1.10  1999/10/12 13:01:10  cphipps
 // Changed header to GPL
 //

@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: m_menu.c,v 1.22 1999/10/27 12:01:11 cphipps Exp $
+ * $Id: m_menu.c,v 1.24 2000/03/17 20:50:30 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -34,7 +34,7 @@
  *-----------------------------------------------------------------------------*/
 
 static const char
-rcsid[] = "$Id: m_menu.c,v 1.22 1999/10/27 12:01:11 cphipps Exp $";
+rcsid[] = "$Id: m_menu.c,v 1.24 2000/03/17 20:50:30 cph Exp $";
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -878,7 +878,7 @@ void M_ReadSaveStrings(void)
     int handle;
     char name[PATH_MAX+1];    // killough 3/22/98
 
-    G_SaveGameName(name,i);    // killough 3/22/98
+    G_SaveGameName(name,sizeof(name),i);    // killough 3/22/98
     handle = open (name, O_RDONLY | 0, 0666);
     if (handle == -1)
       {
@@ -1230,17 +1230,17 @@ menu_t MouseDef =
 
 void M_DrawMouse(void)
   {
-  int mhmx,mvmx; //jff 4/3/98 clamp drawn position to 23 max
+  int mhmx,mvmx; /* jff 4/3/98 clamp drawn position    99max mead */
 
   // CPhipps - patch drawing updated
   V_DrawNamePatch(60, 38, 0, "M_MSENS", NULL, VPT_STRETCH);
 
   //jff 4/3/98 clamp horizontal sensitivity display
-  mhmx = mouseSensitivity_horiz>23? 23 : mouseSensitivity_horiz;
-  M_DrawThermo(MouseDef.x,MouseDef.y+LINEHEIGHT*(mouse_horiz+1),24,mhmx);
+  mhmx = mouseSensitivity_horiz>99? 99 : mouseSensitivity_horiz; /*mead*/
+  M_DrawThermo(MouseDef.x,MouseDef.y+LINEHEIGHT*(mouse_horiz+1),100,mhmx);
   //jff 4/3/98 clamp vertical sensitivity display
-  mvmx = mouseSensitivity_vert>23? 23 : mouseSensitivity_vert;
-  M_DrawThermo(MouseDef.x,MouseDef.y+LINEHEIGHT*(mouse_vert+1),24,mvmx);
+  mvmx = mouseSensitivity_vert>99? 99 : mouseSensitivity_vert; /*mead*/
+  M_DrawThermo(MouseDef.x,MouseDef.y+LINEHEIGHT*(mouse_vert+1),100,mvmx);
   }
 
 void M_ChangeSensitivity(int choice)
@@ -1279,8 +1279,8 @@ void M_Mouse(int choice, int *sens)
         --*sens;
       break;
     case 1:
-      if (*sens < 23)
-        ++*sens;
+      if (*sens < 99) 
+        ++*sens;              /*mead*/
       break;
       }
   }
@@ -1874,7 +1874,7 @@ static void M_DrawSetting(const setup_menu_t* s)
   // Is the item a YES/NO item?
 
   if (flags & S_YESNO) {
-    sprintf(menu_buffer,"%s",*(s->m_var1) ? "YES" : "NO");
+    strcpy(menu_buffer,*(s->m_var1) ? "YES" : "NO");
     M_DrawMenuString(x,y,color);
   }
 
@@ -4712,20 +4712,32 @@ void M_StopMessage(void)
 //
 void M_DrawThermo(int x,int y,int thermWidth,int thermDot )
   {
-  int xx;
-  int  i;
-
+  int          xx;
+  int           i;
+  /*
+   * Modification By Barry Mead to allow the Thermometer to have vastly 
+   * larger ranges. (the thermWidth parameter can now have a value as
+   * large as 200.      Modified 1-9-2000  Originally I used it to make
+   * the sensitivity range for the mouse better. It could however also
+   * be used to improve the dynamic range of music and sound affect 
+   * volume controls for example.
+   */
+  int horizScaler; //Used to allow more thermo range for mouse sensitivity. 
+  thermWidth = (thermWidth > 200) ? 200 : thermWidth; //Clamp to 200 max
+  horizScaler = (thermWidth > 23) ? (200 / thermWidth) : 8; //Dynamic range
   xx = x;
   V_DrawNamePatch(xx, y, 0, "M_THERML", NULL, VPT_STRETCH);
   xx += 8;
   for (i=0;i<thermWidth;i++)
     {
     V_DrawNamePatch(xx, y, 0, "M_THERMM", NULL, VPT_STRETCH);
-    xx += 8;
+    xx += horizScaler;
     }
 
+  xx += (8 - horizScaler); 	/* make the right end look even */
+
   V_DrawNamePatch(xx, y, 0, "M_THERMR", NULL, VPT_STRETCH);
-  V_DrawNamePatch((x+8) + thermDot*8, y, 0,"M_THERMO", NULL, VPT_STRETCH);
+  V_DrawNamePatch((x+8)+thermDot*horizScaler,y,0,"M_THERMO",NULL,VPT_STRETCH);
   }
 
 //
@@ -4933,6 +4945,12 @@ void M_Init (void)
 //----------------------------------------------------------------------------
 //
 // $Log: m_menu.c,v $
+// Revision 1.24  2000/03/17 20:50:30  cph
+// Commit mead's improved mouse stuff
+//
+// Revision 1.23  2000/02/26 19:17:27  cph
+// Pass buffer size to G_SaveGameName, minor tweaking
+//
 // Revision 1.22  1999/10/27 12:01:11  cphipps
 // Removed M_DrawBackground, point existing calls to new V_DrawBackground
 //

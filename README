@@ -1,21 +1,35 @@
-LxDoom v1.4.2
+LxDoom v1.4.3
 =============
 
 Doom is a 3d shoot'em'up game, written by id Software, first released in
 1993. 
 
 LxDoom is a version of Doom, designed to run on Linux either under XFree86 or 
-using SVGALib. Doom is a 3D game originally by id software.
+using SVGALib. It will also run under various Unix variants. Doom is a 3D 
+game originally by id software.
 
 LxDoom is based on Boom, a freely available port of Doom for DOS, written by 
 TeamTNT (http://www.teamtnt.com/).
 
-LxDoom is released and maintained by Colin Phipps (cph@lxdoom.linuxgames.com) 
-and I am eager for feedback! See the LxDoom home-page at 
-http://lxdoom.linuxgames.com/ for information about LxDoom, and the latest 
-news and new versions.
+LxDoom is released and maintained by Colin Phipps (that's me). See the 
+LxDoom home-page at http://lxdoom.linuxgames.com/ for information about 
+Doom and LxDoom.
+
+If you have comments, contributions, or bug reports about LxDoom, please 
+go to http://lxdoom.linuxgames.com/contact.html, which will direct 
+you to the right place to ask.
 
 LxDoom is free software - see the files AUTHORS and COPYING for details.
+
+Release Notes
+-------------
+
+If you have used older versions of LxDoom, you can remove the old doom wad
+references from /usr/local/games/wads. Also, save games and config files are
+now stored in ~/.lxdoom/
+
+You will also need to recalibrat your mouse sensitivity, since LxDoom v1.4.3 
+changes te sensitivity scale in order to give more fine control.
 
 Requirements
 ------------
@@ -30,10 +44,6 @@ Requirements
   those installed in order to compile LxDoom.
 
 See the file INSTALL for instructions for installing LxDoom.
-
-If you have used older versions of LxDoom, you can remove the old doom wad
-references from /usr/local/games/wads. Also, save games and config files are
-now stored in ~/.lxdoom/
 
 Features
 --------

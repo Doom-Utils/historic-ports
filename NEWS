@@ -1,6 +1,13 @@
 This file is a log of all the changes to LxDoom since v1.0.0.
 Note that LxDoom v0.* was a seperate line of development.
 
+* Changes v1.4.2 to v1.4.3
+- Improved mouse resolution, thanks to a patch from Barry Mead
+- Various robustness fixed to the networking code
+- Fixed various build problems
+  - gcc 2.7.2 compile problems fixed
+  - uid_t problems on odd systems should be fixed
+
 * Changes v1.4.1 to v1.4.2
 - Fixed various build problems, including
   - Networking not work on many systems

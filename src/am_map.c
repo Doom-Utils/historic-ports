@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: am_map.c,v 1.18 1999/12/22 19:46:40 cphipps Exp $
+ * $Id: am_map.c,v 1.19 2000/03/14 18:59:38 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -31,7 +31,7 @@
  */
 
 static const char rcsid[] =
-  "$Id: am_map.c,v 1.18 1999/12/22 19:46:40 cphipps Exp $";
+  "$Id: am_map.c,v 1.19 2000/03/14 18:59:38 cph Exp $";
 
 #include "doomstat.h"
 #include "st_stuff.h"
@@ -712,7 +712,7 @@ boolean AM_Responder
     else if (ch == key_map_mark)
     {
       // Ty 03/27/98 - *not* externalized     
-      sprintf(buffer, "%s %d", s_AMSTR_MARKEDSPOT, markpointnum);  
+      snprintf(buffer, sizeof(buffer), "%s %d", s_AMSTR_MARKEDSPOT, markpointnum);  
       plr->message = buffer;
       AM_addMark();
     }
@@ -1654,8 +1654,8 @@ void AM_drawMarks(void)
 
         if (fx >= f_x && fx < f_w - w && fy >= f_y && fy < f_h - h) {
 	  // cph - construct patch name and draw marker
-	  char namebuf[9];
-	  sprintf(namebuf, "AMMNUM%d", /* i */ d); // cph - Fix blunder, we want the digit here
+	  char namebuf[] = { 'A', 'M', 'M', 'N', 'U', 'M', '0'+d, 0 };
+	  
           V_DrawNamePatch(fx, fy, FB, namebuf, NULL, VPT_NONE);
 	}
         fx -= w-1;          // killough 2/22/98: 1 space backwards
@@ -1710,6 +1710,9 @@ void AM_Drawer (void)
 //----------------------------------------------------------------------------
 //
 // $Log: am_map.c,v $
+// Revision 1.19  2000/03/14 18:59:38  cph
+// Clean sprintfs out
+//
 // Revision 1.18  1999/12/22 19:46:40  cphipps
 // Fix rotation of automap marks
 //

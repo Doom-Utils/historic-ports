@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_video_x.c,v 1.27 1999/10/12 13:01:11 cphipps Exp $
+ * $Id: l_video_x.c,v 1.28 2000/03/17 20:50:30 cph Exp $
  *
  *  X11 display code for LxDoom. Based on the original linuxdoom i_video.c
  *  Copyright (C) 1993-1996 by id Software
@@ -29,7 +29,7 @@
  */
 
 static const char
-rcsid[] = "$Id: l_video_x.c,v 1.27 1999/10/12 13:01:11 cphipps Exp $";
+rcsid[] = "$Id: l_video_x.c,v 1.28 2000/03/17 20:50:30 cph Exp $";
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -385,20 +385,18 @@ static void I_VerifyPointerGrabState(void)
     }
     
     grabbed = true;
-    // Warp the pointer back to the middle of the window
-    //  or it could end up stuck on an edge
-#define POINTER_WARP_TRIGGER 100
-#ifdef POINTER_WARP_TRIGGER
-    // Only warping if needed
-    if (abs(newmouse.x - X_width/2) > POINTER_WARP_TRIGGER || 
-	abs(newmouse.y - X_height/2) > POINTER_WARP_TRIGGER) 
-#endif
+    /* Warp the pointer back to the middle of the window
+     * or it could end up stuck on an edge 
+     * Only warping if needed */
+    if (abs(newmouse.x - X_width/2) > (X_width/2 - 32) || 
+	    abs(newmouse.y - X_height/2) > (X_height/2 - 20)) 
     {
+      /*mead allow larger deltas by preserving pre-warp portion.*/
+      lastmouse.x = (X_width/2 -  (newmouse.x - lastmouse.x));
+      lastmouse.y = (X_height/2 - (newmouse.y - lastmouse.y));
+
       XWarpPointer( X_display, None, X_mainWindow,
 		    0, 0, 0, 0, X_width/2, X_height/2);
-      
-      lastmouse.x = X_width/2;
-      lastmouse.y = X_height/2;
     } else {
       lastmouse = newmouse;
     }
@@ -537,8 +535,8 @@ void I_StartTic (void)
 	| ((mask & Button3Mask) ? 4 : 0);
 #endif
       event.type  = ev_mouse;
-      event.data2 = (newmouse.x - lastmouse.x) << 2;
-      event.data3 = (lastmouse.y - newmouse.y) << 2;
+      event.data2 = (newmouse.x - lastmouse.x) << 5; /*mead: make lxdoom move */
+      event.data3 = (lastmouse.y - newmouse.y) << 5; /* more like lsdoom */
 
       D_PostEvent(&event);
     }
@@ -1312,6 +1310,9 @@ void I_InitGraphics(void)
 
 //
 // $Log: l_video_x.c,v $
+// Revision 1.28  2000/03/17 20:50:30  cph
+// Commit mead's improved mouse stuff
+//
 // Revision 1.27  1999/10/12 13:01:11  cphipps
 // Changed header to GPL
 //

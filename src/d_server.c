@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: d_server.c,v 1.10 2000/01/26 08:51:53 cphipps Exp $
+ * $Id: d_server.c,v 1.11 2000/02/26 19:21:00 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -65,7 +65,7 @@ void I_Error(const char *error, ...) // killough 3/20/98: add const
   char errmsg[1000];
   va_list argptr;
   va_start(argptr,error);
-  vsprintf(errmsg,error,argptr);
+  vsnprintf(errmsg,sizeof(errmsg),error,argptr);
   va_end(argptr);
   exit(-1);
 }
@@ -109,12 +109,7 @@ void sig_handler(int signum)
 
 void doexit(void)
 {
-  char buf[200];
   packet_header_t packet;
-
-  // Remove any stats file
-  sprintf(buf, "lxdoom-game-server-stats.%u", getpid());
-  unlink(buf);
 
   // Send "downed" packet
   packet.type = PKT_DOWN; 
@@ -428,31 +423,15 @@ int main(int argc, char** argv)
 	    }
 	  }
       }
-      { // Statistics reporting
-	static int counter = 0;
-	static int lastrecvdbytes, lastsentbytes;
-	int fh;
-
-	if (exectics && !(counter++%100)) {
-	  char buf[1000];
-	  sprintf(buf, "lxdoom-game-server-stats.%u", getpid());
-	  fh = open(buf, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	  sprintf(buf, "Players %d, tic %d\n\tSent\tReceived\n"
-		  "Now\t%d\t%d\nPer tic\t%d\t%d\n", 
-		  curplayers, exectics, 
-		  sentbytes - lastsentbytes, recvdbytes - lastrecvdbytes, 
-		  sentbytes/exectics, recvdbytes/exectics);
-	  write(fh, buf, strlen(buf));
-	  close(fh);
-	  lastrecvdbytes = recvdbytes; lastsentbytes = sentbytes;
-	}
-      }
     }
   }
 }
 
 //
 // $Log: d_server.c,v $
+// Revision 1.11  2000/02/26 19:21:00  cph
+// Remove server stats file; be safe with error message printing
+//
 // Revision 1.10  2000/01/26 08:51:53  cphipps
 // Fix random number seed (cures SIGBUS on Sparc, removes endianness ambiguity
 //

@@ -1967,3 +1967,41 @@ the non-blocking l_udp.c socket on Solaris, which was very helpful.
 More problematically, there were some SIGBUS's in d_client.c, for no clear
 reason (the patch replaces a function call with code that duplicates the
 function). More investigation required.
+
+Went through adding new code to make making lsdoom setuid root less unsafe. 
+It will only be used on Linux systems (since that's the only place lsdoom
+applies to).
+
+26/02/2000
+
+More portability work. uid_t isn't available in the headers for all
+linux-en. And don't use .dep files by default as pmake doesn't like them.
+
+Also went through cleaning up various security/reliability related things.
+Got rid of some sprintf's and static buffers. And made safe the wad download
+fork thing in d_client.c.
+
+14/03/2000
+
+Added RPM spec file to the CVS tree. I'm not sure whether I'll be making
+RPM's yet or not, but including the file is nice at least.
+
+16/03/2000
+
+Cleaned up the uid_t stuff somewhat. It should not have trouble compiling
+anymore.
+
+Added the rpm build to the root Makefile. Added the documentation to the 
+standard make install, which means it gets included in the RPM too. The 
+packaging seems excellent now.
+
+17/03/2000
+
+Merged Barry Mead's improved mouse code. It took me way too long to get 
+around to taking a real look at this, and it turned out my fears were largely 
+unjustified. The finer grain control can't be a bad thing, and I left 
+the movement clamping unchanged.
+
+Also sorted out the configure scripts way of deciding compiler optimisations. 
+Now it will add options for your system only if they are tested to work, 
+and they can be disabled by a configure option (which is used by the RPM).

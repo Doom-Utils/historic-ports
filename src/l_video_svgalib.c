@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_video_svgalib.c,v 1.22 2000/01/25 21:33:22 cphipps Exp $
+ * $Id: l_video_svgalib.c,v 1.23 2000/03/16 13:27:28 cph Exp $
  *
  *  SVGALib display code for LxDoom
  *  Copyright (C) 1999 by Colin Phipps, Gady Kozma
@@ -27,7 +27,7 @@
 
 #ifndef lint
 static const char 
-rcsid[] = "$Id: l_video_svgalib.c,v 1.22 2000/01/25 21:33:22 cphipps Exp $";
+rcsid[] = "$Id: l_video_svgalib.c,v 1.23 2000/03/16 13:27:28 cph Exp $";
 #endif /* lint */
 
 //#include <stdio.h>
@@ -51,6 +51,7 @@ rcsid[] = "$Id: l_video_svgalib.c,v 1.22 2000/01/25 21:33:22 cphipps Exp $";
 #include "d_main.h"
 #include "m_argv.h"
 #include "i_joy.h"
+#include "i_main.h"
 #include "w_wad.h"
 #include "lprintf.h"
 
@@ -427,8 +428,6 @@ void I_SetRes(unsigned int width, unsigned int height)
 #endif
 }
 
-uid_t stored_euid = -1;
-
 void I_InitGraphics(void)
 {
   const vga_modeinfo * pinfo;
@@ -516,6 +515,9 @@ void I_InitGraphics(void)
 
 // -------------------------------------------------------------
 // $Log: l_video_svgalib.c,v $
+// Revision 1.23  2000/03/16 13:27:28  cph
+// Clean up uid stuff
+//
 // Revision 1.22  2000/01/25 21:33:22  cphipps
 // Fix security in case of being setuid
 //

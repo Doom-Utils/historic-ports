@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: m_misc.c,v 1.42 1999/11/01 00:13:44 cphipps Exp $
+ * $Id: m_misc.c,v 1.43 2000/03/17 20:50:30 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -32,7 +32,7 @@
  *-----------------------------------------------------------------------------*/
 
 static const char
-rcsid[] = "$Id: m_misc.c,v 1.42 1999/11/01 00:13:44 cphipps Exp $";
+rcsid[] = "$Id: m_misc.c,v 1.43 2000/03/17 20:50:30 cph Exp $";
 
 #include "doomstat.h"
 #include "m_argv.h"
@@ -280,11 +280,11 @@ const default_t defaults[] =
   {"use_mouse",{&usemouse},{1},0,1,
    def_bool,ss_none}, // enables use of mouse with DOOM
   //jff 4/3/98 allow unlimited sensitivity
-  {"mouse_sensitivity_horiz",{&mouseSensitivity_horiz},{5},0,UL,
-   def_int,ss_none}, // adjust horizontal (x) mouse sensitivity // killough
+  {"mouse_sensitivity_horiz",{&mouseSensitivity_horiz},{10},0,UL,
+   def_int,ss_none}, /* adjust horizontal (x) mouse sensitivity killough/mead */
   //jff 4/3/98 allow unlimited sensitivity
-  {"mouse_sensitivity_vert",{&mouseSensitivity_vert},{5},0,UL,
-   def_int,ss_none}, // adjust vertical (y) mouse sensitivity // killough
+  {"mouse_sensitivity_vert",{&mouseSensitivity_vert},{10},0,UL,
+   def_int,ss_none}, /* adjust vertical (y) mouse sensitivity killough/mead */
   //jff 3/8/98 allow -1 in mouse bindings to disable mouse function
   {"mouseb_fire",{&mousebfire},{0},-1,MAX_MOUSEB,
    def_int,ss_keys}, // mouse button number to use for fire
@@ -1053,6 +1053,9 @@ void M_ScreenShot(void)
 //----------------------------------------------------------------------------
 //
 // $Log: m_misc.c,v $
+// Revision 1.43  2000/03/17 20:50:30  cph
+// Commit mead's improved mouse stuff
+//
 // Revision 1.42  1999/11/01 00:13:44  cphipps
 // Remove uint_t bizarreness
 //

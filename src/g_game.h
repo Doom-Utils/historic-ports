@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: g_game.h,v 1.11 1999/10/12 13:01:15 cphipps Exp $
+ * $Id: g_game.h,v 1.12 2000/02/26 19:19:52 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -63,7 +63,7 @@ void G_WorldDone(void);
 void G_Ticker(void);
 void G_ScreenShot(void);
 void G_ReloadDefaults(void);     // killough 3/1/98: loads game defaults
-void G_SaveGameName(char *,int); // killough 3/22/98: sets savegame filename
+void G_SaveGameName(char *, size_t, int); /* killough 3/22/98: sets savegame filename */
 void G_SetFastParms(int);        // killough 4/10/98: sets -fast parameters
 void G_DoNewGame(void);
 void G_DoReborn(int playernum);
@@ -179,6 +179,9 @@ extern char savedescription[SAVEDESCLEN];  // Description to save in savegame
 //----------------------------------------------------------------------------
 //
 // $Log: g_game.h,v $
+// Revision 1.12  2000/02/26 19:19:52  cph
+// Use doom_printf for turbo warnings; pass buffer size to G_SaveGameName
+//
 // Revision 1.11  1999/10/12 13:01:15  cphipps
 // Changed header to GPL
 //
