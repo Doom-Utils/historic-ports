@@ -87,6 +87,9 @@ CFLAGS=$(OPTFLAGS) -Wall -DNORMALUNIX -DSCOUW2 $(GAMEOPT)
 O=unixware2
 
 # not too sophisticated dependency
+# *** PID BEGIN ***
+# Added pr_process.o to dependency list, just below endtxt.o.
+# *** PID END ***
 OBJS=				\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
@@ -156,17 +159,22 @@ OBJS=				\
 		$(O)/sounds.o		\
 		$(O)/searchp.o		\
 		$(O)/endtxt.o		\
+		$(O)/pr_process.o	\
 		$(O)/usleep.o		\
 		$(O)/strcmp.o		\
 		$(ASMMOD)
 
+# *** PID BEGIN ***
+# Changed these to build programs called ps-*doom, to denote the
+# difference to the normal xdoom.
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_xshm.o \
-	-o $(O)/xdoom -L/usr/lib/X11 -lXext -lX11 -lsocket -lm
+	-o $(O)/ps-xdoom -L/usr/lib/X11 -lXext -lX11 -lsocket -lm
 
 $(O)/sxdoom:	$(OBJS) $(O)/i_video_sco.o
 	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_sco.o \
-	-o $(O)/sxdoom -lsocket -lm
+	-o $(O)/ps-sxdoom -lsocket -lm
+# *** PID END ***
 
 all:	 $(O)/xdoom $(O)/sxdoom
 

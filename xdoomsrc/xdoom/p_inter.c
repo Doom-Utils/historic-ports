@@ -6,6 +6,8 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1999 by Dennis Chao
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,7 +41,8 @@ rcsid[] = "$Id:$";
 #include "am_map.h"
 #include "p_local.h"
 #include "s_sound.h"
-
+#include "pr_process.h"
+ 
 #ifdef __GNUG__
 #pragma implementation "p_inter.h"
 #endif
@@ -622,6 +625,22 @@ void P_KillMobj(mobj_t *source, mobj_t *target)
     mobjtype_t	item;
     mobj_t	*mo;
 
+// *** PID BEGIN ***
+// The only time the delete flag is 'false' here is if we called
+// P_KillMobj() from cleanup_pid_list(). Skip the actual kill if
+// this mobj is not a pid monster or this routine was called from
+// cleanup_pid_list(). -- (If called from cleanup_pid_list(), the
+// process represented by this mobj is already dead; we're just
+// removing the monster from the game engine now.)
+    if (target->m_pid != 0 && target->m_del_from_pid_list == true) {
+       fprintf(stderr, "kill process %d\n", target->m_pid);
+       pr_kill(target->m_pid);
+
+       target->m_draw_pid_info = false; /* set to false so corpse
+                                           doesn't have pid      */
+    }
+// *** PID END ***
+
     target->flags &= ~(MF_SHOOTABLE | MF_FLOAT | MF_SKULLFLY);
 
     if (target->type != MT_SKULL)
@@ -687,6 +706,15 @@ void P_KillMobj(mobj_t *source, mobj_t *target)
 
     //	I_StartSound (&actor->r, actor->info->deathsound);
 
+// *** PID BEGIN ***
+// Don't drop anything if this was called from cleanup_pid_list().  Use
+// similar criteria as above to determine whether this was called from
+// that routine.
+    if (target->m_pid != 0 && target->m_del_from_pid_list == false) {
+       return;
+    }
+// *** PID END ***
+
     // Drop stuff.
     // This determines the kind of object spawned
     // during the death frame of a thing.
@@ -731,6 +759,38 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
     player_t	*player;
     fixed_t	thrust;
     int		temp;
+
+// *** PID BEGIN ***
+// gather info about what's damaging what:
+/*
+    fprintf(stderr, "************\n");
+    fprintf(stderr, "* target->type %d\n", target->type);
+if (inflictor != NULL )
+    fprintf(stderr, "* inflictor->type %d\n", inflictor->type);
+if (source != NULL )
+    fprintf(stderr, "* source->type %d\n", source->type);
+    fprintf(stderr, "* damage %d\n", damage);
+    fprintf(stderr, "************\n");
+*/
+
+// If the target is a pid monster, make it only take damage from
+// a player.  Keeps monsters (and environment) from killing off
+// processes when we don't want them to.
+// Note: If we 'return' in this case, the monster takes no damage, but
+// also doesn't target its attacker.  I like it better if the pid monsters
+// behave as if they are damaged.  Change the 'damage' statement back to the
+// 'return' statement if they should not even react to damage from others.
+    if (target->m_pid != 0) {
+       if (source && !source->player) {
+          damage = 0;
+//          return;
+       }
+       if (!source) {
+          damage = 0;
+//          return;
+       }
+    }
+// *** PID END ***
 
     if (!(target->flags & MF_SHOOTABLE))
 	return;	// shouldn't happen...
@@ -836,6 +896,30 @@ void P_DamageMobj(mobj_t *target, mobj_t *inflictor, mobj_t *source, int damage)
 	P_KillMobj(source, target);
 	return;
     }
+
+// *** PID BEGIN ***
+// Re-nice the process here, after the possible kill.
+
+// If this is a pid mobj...
+    if (target->m_pid != 0) {
+
+// Add a check to see if this is the first damage taken by
+// the pid monster.  If so, re-nice it.  Otherwise, don't re-nice.
+       if (target->health + damage == target->info->spawnhealth) {
+
+// Also check to see if there is any damage.  Earlier in the routine,
+// we ensure that pid monsters do not take damage (unless inflicted
+// by a player) by setting the damage to 0.  Before the following
+// condition was added, pid monsters were constantly re-niced as they
+// fought, because they always had their original health.
+// That behavior slowed things down a lot.
+          if (damage) {
+             fprintf(stderr, "renice process %d\n", target->m_pid);
+             pr_renice(target->m_pid);
+          }
+       }
+    }
+// *** PID END ***
 
     if ((P_Random() < target->info->painchance)
 	 && !(target->flags & MF_SKULLFLY))

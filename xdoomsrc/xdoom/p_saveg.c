@@ -7,6 +7,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +36,10 @@ rcsid[] = "$Id:$";
 #include "p_local.h"
 #include "doomstat.h"
 #include "r_state.h"
+// *** PID BEGIN ***
+// Need to include initialization functions.
+#include "pr_process.h"
+// *** PID END ***
 
 byte	*save_p;
 
@@ -224,11 +229,31 @@ void P_ArchiveThinkers(void)
     thinker_t		*th;
     mobj_t		*mobj;
 
+// *** PID BEGIN ***
+// Print status message.
+    fprintf(stderr, "***** save thinkers: *****\n");
+// *** PID END ***
+
     // save off the current thinkers
     for (th = thinkercap.next; th != &thinkercap; th = th->next)
     {
 	if (th->function.acp1 == (actionf_p1)P_MobjThinker)
 	{
+// *** PID BEGIN ***
+// Don't save pid monsters, as the process list will be different next
+// time someone restores the game.
+            mobj_t	*temp_mobj = NULL;
+            temp_mobj = Z_Malloc(sizeof(*mobj), PU_LEVEL, (void*)0);
+            memcpy(temp_mobj, th, sizeof(*mobj));
+            // if this is a pid mobj, print status msg and don't save
+            if ( temp_mobj->m_pid != 0 ){
+               fprintf(stderr, "   not saving pid %d\n", temp_mobj->m_pid);
+               Z_Free(temp_mobj);
+               continue;  // get next mobj, this one's a pid monster.
+            } 
+            Z_Free(temp_mobj);
+// *** PID END ***
+
 	    *save_p++ = tc_mobj;
 	    PADSAVEP();
 	    mobj = (mobj_t *)save_p;
@@ -258,6 +283,15 @@ void P_UnArchiveThinkers(void)
     thinker_t		*next;
     mobj_t		*mobj;
 
+// *** PID BEGIN ***
+// Print status message.
+    fprintf(stderr, "***** restore thinkers: *****\n");
+
+// Remove all pid monsters from the pid linked list before unallocating them.
+// Do this by calling cleanup_pid_list().
+    cleanup_pid_list(NULL);
+// *** PID END ***
+
     // remove all the current thinkers
     currentthinker = thinkercap.next;
     while (currentthinker != &thinkercap)
@@ -280,7 +314,13 @@ void P_UnArchiveThinkers(void)
 	switch (tclass)
 	{
 	  case tc_end:
-	    return; 	// end of list
+// *** PID BEGIN ***
+// We want to get to the statement after the while loop, so we have
+// to get to the end of the switch first.
+	    break;      // out of switch statement
+// old code:
+//	    return; 	// end of list
+// *** PID END ***
 
 	  case tc_mobj:
 	    PADSAVEP();
@@ -306,7 +346,25 @@ void P_UnArchiveThinkers(void)
 	  default:
 	    I_Error("Unknown tclass %i in savegame", tclass);
 	}
+// *** PID BEGIN ***
+// Check tclass again here (at the end of the switch stmt) to break
+// the while loop if we're at the end of the thinkers.
+       if ( tclass == tc_end ){
+          break;   // out of the while loop
+       }
+// *** PID END ***
+
     }
+
+// *** PID BEGIN ***
+// Now that all the thinkers are reloaded from the savegame, add the
+// pid monsters.  Also mark them for deletion next time cleanup_pid_list()
+// is called, unless they validate themselves through pr_check() in the
+// meantime.
+   pr_check();
+   cleanup_pid_list(NULL);
+// *** PID END ***
+
 }
 
 //

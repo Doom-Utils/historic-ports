@@ -6,6 +6,8 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1999 by Dennis Chao
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -290,6 +292,23 @@ typedef struct mobj_s
 
     // a linked list of sectors where this object appears
     struct msecnode_s		*touching_sectorlist;
+
+// *** PID BEGIN ***
+    // the process id (0 if not a process)
+    int                 m_pid;
+    char                m_pname[8];
+
+    // Need more variables for advanced process management:
+
+    // Pointers for a linked list of pid mobj's.
+    struct mobj_s	*npid;
+    struct mobj_s	*ppid;
+    // A flag to tell whether to draw the pid info and another to
+    // denote pending deletion from the pid mobj list.
+    boolean		m_draw_pid_info;
+    boolean		m_del_from_pid_list;
+// *** PID END ***
+
 } mobj_t;
 
 #endif

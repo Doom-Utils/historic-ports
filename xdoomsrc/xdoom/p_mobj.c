@@ -7,6 +7,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +31,10 @@
 static const char
 rcsid[] = "$Id:$";
 
+// *** PID BEGIN ***
+#include <string.h>
+// *** PID END ***
+
 #include "i_system.h"
 #include "z_zone.h"
 #include "m_argv.h"
@@ -45,7 +50,15 @@ rcsid[] = "$Id:$";
 extern msecnode_t	*sector_list;
 
 void G_PlayerReborn(int player);
-void P_SpawnMapThing(mapthing_ext_t *mthing);
+
+// *** PID BEGIN ***
+// Have this routine return a pointer to the pid mobj it creates.
+// Return NULL if nothing is created.
+// Also accept a parameter to tell if it is spawning a pid mobj.
+mobj_t *P_SpawnMapThing(mapthing_ext_t *mthing, boolean is_pid_mobj);
+// old code:
+//void P_SpawnMapThing(mapthing_ext_t *mthing);
+// *** PID END ***
 
 //
 // The Hexen things have TID's, which are similar to line tags. So
@@ -640,9 +653,24 @@ void P_RespawnSpecials(void)
     mapthing_ext_t	*mthing;
     int			i;
 
-    // only respawn items in deathmatch
-    if (deathmatch != 2)
+// *** PID BEGIN ***
+    // Don't respawn items if not in altdeath AND
+    // if -respawnitems wasn't given.
+    // Also don't respawn because of -respawnitems if we're in
+    // demo recording or playback; it messes up the timing.
+    if (deathmatch != 2 && ( !respawnitems ||
+                             demorecording ||
+                             demoplayback ||
+                             (gamestate == GS_DEMOSCREEN)
+                           )
+       )
 	return;
+
+// old code:
+//    // only respawn items in deathmatch
+//    if (deathmatch != 2)
+//	return;
+// *** PID END ***
 
     // nothing left to respawn?
     if (iquehead == iquetail)
@@ -752,7 +780,14 @@ void P_SpawnPlayer(mapthing_ext_t *mthing)
 // The fields of the mapthing should
 // already be in host byte order.
 //
-void P_SpawnMapThing(mapthing_ext_t *mthing)
+// *** PID BEGIN ***
+// Have this routine return a pointer to the pid mobj it creates.
+// Return NULL if nothing is created.
+// Also accept a parameter to tell if it is spawning a pid mobj.
+mobj_t *P_SpawnMapThing(mapthing_ext_t *mthing, boolean is_pid_mobj)
+// old code:
+//void P_SpawnMapThing(mapthing_ext_t *mthing)
+// *** PID END ***
 {
     int			i;
     int			bit;
@@ -769,7 +804,14 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
 	    memcpy(deathmatch_p, mthing, sizeof(*mthing));
 	    deathmatch_p++;
 	}
-	return;
+
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
     }
 
     // check for thing id 0, which is invalid
@@ -778,7 +820,13 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
     {
 	printf("P_SpawnMapThing: invalid type 0 at (%i, %i)\n",
 		mthing->x, mthing->y);
-	return;
+
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
     }
 
     // check for players specially
@@ -789,25 +837,60 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
 	if (!deathmatch)
 	    P_SpawnPlayer(mthing);
 
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
     }
 
     // check for apropriate skill level
     if (!netgame && (mthing->flags & 16))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
 
     if (netgame && altcoop && (mthing->flags & 16))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
+
 
     // new thing flags for XDoom/XDoomPlus
     if (!netgame && !(mthing->flags & MTF_SINGLE))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
 
     if (netgame && deathmatch && !(mthing->flags & MTF_DEATHMATCH))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
 
     if (netgame && !deathmatch && !(mthing->flags & MTF_COOPERATIVE))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
 
     if (gameskill == sk_baby)
 	bit = 1;
@@ -817,7 +900,13 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
 	bit = 1 << (gameskill - 1);
 
     if (!(mthing->flags & bit))
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+	return NULL;
+// old code:
+//	return;
+// *** PID END ***
+
 
     // find which type to spawn
     for (i = 0; i < NUMMOBJTYPES; i++)
@@ -835,20 +924,42 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
 	printf("P_SpawnMapThing: Unknown type %i at (%i, %i)\n",
 		 mthing->type,
 		 mthing->x, mthing->y);
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+       return NULL;
+// old code:
+//     return;
+// *** PID END ***
     }
 
     // don't spawn keycards and players in deathmatch
     if (deathmatch && mobjinfo[i].flags & MF_NOTDMATCH)
-	return;
+// *** PID BEGIN ***
+// Return NULL here.
+       return NULL;
+// old code:
+//     return;
 
-    // don't spawn any monsters if -nomonsters
-    if (nomonsters
-	&& (i == MT_SKULL
-	     || (mobjinfo[i].flags & MF_COUNTKILL)))
-    {
-	return;
-    }
+
+       // don't spawn any monsters if -nomonsters
+       // Don't affect pid mobj spawning.
+       if (nomonsters && !is_pid_mobj
+          && (i == MT_SKULL
+               || (mobjinfo[i].flags & MF_COUNTKILL)))
+       {
+          // Return NULL here.
+          return NULL;
+       }
+
+// old code:
+       // don't spawn any monsters if -nomonsters
+//       if (nomonsters
+//        && (i == MT_SKULL
+//             || (mobjinfo[i].flags & MF_COUNTKILL)))
+//       {
+//        return;
+//       }
+// *** PID END ***
 
     // spawn it
     x = mthing->x << FRACBITS;
@@ -880,6 +991,11 @@ void P_SpawnMapThing(mapthing_ext_t *mthing)
 
     // now link it into tid list
     P_AddMobjToList(mobj);
+
+// *** PID BEGIN ***
+// Return the mobj
+   return mobj;
+// *** PID END ***
 }
 
 //

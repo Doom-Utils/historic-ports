@@ -78,7 +78,7 @@ USLEEP=linux-x86/usleep.o
 #				assembler source module below.
 
 # Production
-GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DMUSSERV -DUSE_JOYSTICK
+GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DMUSSERV #-DUSE_JOYSTICK
 
 # Debugging
 #GAMEOPT=-DBUGFIXES -DPOLL_POINTER
@@ -95,11 +95,11 @@ CDMOD=cd_ioctl_linux.o		# use Linux ioctl() interface
 ASMMOD=$(O)/asmmod-x86.o	# use this on Intel x86
 
 # Joystick support module
-#JOYSTICK=			# use this if you don't want joystick support
-JOYSTICK=$(O)/i_ljoy.o		# Linux joystick support module
+JOYSTICK=			# use this if you don't want joystick support
+#JOYSTICK=$(O)/i_ljoy.o		# Linux joystick support module
 
 # Production, old GNU C 2.7
-#OPTFLAGS=-O3 -m486 -ffast-math -fomit-frame-pointer -DUSE_INLINE \
+OPTFLAGS=-O3 -m486 -ffast-math -fomit-frame-pointer -DUSE_INLINE \
 	-DUSE_ASMMOD
 
 # Debugging, old GNU C 2.7
@@ -109,14 +109,14 @@ JOYSTICK=$(O)/i_ljoy.o		# Linux joystick support module
 #OPTFLAGS=-O3 -m486 -pg -ffast-math -DUSE_INLINE -DUSE_ASMMOD
 
 # Production, EGCS
-OPTFLAGS=-O3 -mpentium -ffast-math -fomit-frame-pointer \
+#OPTFLAGS=-O3 -mpentium -ffast-math -fomit-frame-pointer \
 	-fexpensive-optimizations -DUSE_INLINE -DUSE_ASMMOD
 
 # Debugging, EGCS
 #OPTFLAGS=-g -mpentium -DUSE_ASMMOD -DRANGECHECK #-DINIT_MESSAGES
 
 # where your Glide include files are installed
-FEATUREFLAG=-I/usr/include/glide
+#FEATUREFLAG=-I/usr/include/glide
 
 CFLAGS=$(OPTFLAGS) -Wall -DNORMALUNIX -DLINUX $(THREADS) $(GAMEOPT) \
 	$(FEATUREFLAG)
@@ -131,6 +131,9 @@ XLIBS=-L/usr/X11R6/lib
 O=linux-x86
 
 # not too sophisticated dependency
+# *** PID BEGIN ***
+# Added pr_process.o to dependency list, just below endtxt.o.
+# *** PID END ***
 OBJS=				\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
@@ -201,20 +204,25 @@ OBJS=				\
 		$(O)/sounds.o		\
 		$(O)/searchp.o		\
 		$(O)/endtxt.o		\
+                $(O)/pr_process.o       \
 		$(USLEEP)		\
 		$(ASMMOD)
 
+# *** PID BEGIN ***
+# Changed these to build programs called ps-*doom, to denote the
+# difference to the normal xdoom.
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
-	-o $(O)/xdoom -lXext -lX11 -lm
+	-o $(O)/ps-xdoom -lXext -lX11 -lm
 
 $(O)/sxdoom:	$(OBJS) $(O)/i_video_vga.o
 	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_vga.o \
-	-o $(O)/sxdoom -lvga -lm
+	-o $(O)/ps-sxdoom -lvga -lm
 
 $(O)/glxdoom:	$(OBJS) $(O)/i_video_3dfx.o
 	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_3dfx.o \
-	-o $(O)/glxdoom -lvga -lglide2x -lm
+	-o $(O)/ps-glxdoom -lvga -lglide2x -lm
+# *** PID END ***
 
 all:	 $(O)/xdoom $(O)/sxdoom $(O)/glxdoom
 

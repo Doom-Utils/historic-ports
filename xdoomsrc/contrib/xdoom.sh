@@ -4,11 +4,20 @@
 # If you modified LDIR in the top level makefile, you need to modify
 # it here to the same directory too.
 #
-LDIR=/usr/local/games/xdoom
-#LDIR=/u/local/games/xdoom
+
+# *** PID BEGIN ***
+# Changed this to use a psdoom directory rather than xdoom.
+LDIR=/usr/local/games/psdoom
+# old code:
+#LDIR=/usr/local/games/xdoom
+# *** PID END ***
 
 [ "$DOOMWADDIR" ] || DOOMWADDIR=${LDIR}
 PATH=${LDIR}:${PATH}
 export DOOMWADDIR PATH
 
-exec ${LDIR}/xdoom $*
+# *** PID BEGIN ***
+exec ${LDIR}/ps-xdoom $*
+# old code:
+#exec ${LDIR}/xdoom $*
+# *** PID END ***

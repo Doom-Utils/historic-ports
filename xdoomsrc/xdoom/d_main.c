@@ -6,6 +6,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -70,6 +71,19 @@ rcsid[] = "$Id:$";
 #include "r_local.h"
 #include "d_main.h"
 #include "info.h"
+// *** PID BEGIN ***
+// Need the flags and routines
+#include "pr_process.h"
+
+boolean ps_level_loaded = false;
+boolean nopsmon;  // checkparm for -nopsmon
+boolean nopsact;  // checkparm for -nopsact
+boolean psallusers;  // checkparm for -psallusers
+
+// To automagically add psdoom1.wad and psdoom2.wad upon load.
+static char *psdoom1wad;
+static char *psdoom2wad;
+// *** PID END ***
 
 static char *xdoomwad;
 
@@ -90,6 +104,16 @@ char		*home;
 boolean		showkey;	// checkparm of -showkeysym
 boolean		devparm;	// started game with -devparm
 boolean         nomonsters;	// checkparm of -nomonsters
+// *** PID BEGIN ***
+// This makes a 'no monsters' that is persistant across new games
+// and level warps.
+boolean		nomonstersperiod; // checkparm of '-nomonsters.'
+
+// This makes items respawn as in -altdeath (ie. no dropped items,
+// no invis, no invun)
+boolean  respawnitems;  // checkparm of -respawnitems
+// *** PID END ***
+
 boolean         respawnparm;	// checkparm of -respawn
 boolean         fastparm;	// checkparm of -fast
 
@@ -510,6 +534,18 @@ void D_StartTitle(void)
 {
     gameaction = ga_nothing;
     demosequence = -1;
+// *** PID BEGIN ***
+// Print status message.
+    fprintf(stderr, "***** start title: *****\n");
+
+// Get rid of possible pid mobjs before starting any demos (this only
+// matters here if this routine is called because of EndGame from a
+// level where there were pid monsters).
+// Left-over pid mobjs were being cleared in the level setup for
+// the demo, and that was screwing up the demo timing.
+    cleanup_pid_list(NULL);
+// *** PID END ***
+
     D_AdvanceDemo();
 }
 
@@ -588,6 +624,16 @@ void IdentifyVersion(void)
     // XDoom resource PWAD
     xdoomwad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
     sprintf(xdoomwad, "%s/xdoom.wad", doomwaddir);
+
+// *** PID BEGIN ***
+// Custom process management level PWAD.  Replaces E1M1 in Doom 1.
+    psdoom1wad = malloc(strlen(doomwaddir) + 1 + 11 + 1);
+    sprintf(psdoom1wad, "%s/psdoom1.wad", doomwaddir);
+
+// Custom process management level PWAD.  Replaces MAP01 in Doom 2.
+    psdoom2wad = malloc(strlen(doomwaddir) + 1 + 11 + 1);
+    sprintf(psdoom2wad, "%s/psdoom2.wad", doomwaddir);
+// *** PID END ***
 
     home = getenv("HOME");
     if (!home)
@@ -796,19 +842,202 @@ void D_DoomMain(void)
 {
     int		p;
     char	file[256];
+// *** PID BEGIN ***
+    // Pointer to environment variable string to determine username.
+    char	*whoami = NULL;
+
+    // Value to check whether there were any userlist-related flags
+    // given on the command line.  Used to determine whether to
+    // set up default userlist parameters.
+    boolean	userlist_arg_given = false;
+// *** PID END ***
 
     FindResponseFile();
 
     IdentifyVersion();
 
     // add xdoom.wad with the extensions
-    if (!access(xdoomwad, R_OK))
+
+// *** PID BEGIN ***
+// Ok, this doesn't have to do with psdoom, but an abort message here
+// would be good if we can't find xdoom.wad.  If this weren't here,
+// the game crashes later on with a more obscure error message.
+    if (!access(xdoomwad, R_OK)) {
       D_AddFile(xdoomwad);
+    } else {
+      I_Error("Cannot load mandatory xdoom.wad\n");
+    }
+// old code:
+//    if (!access(xdoomwad, R_OK))
+//      D_AddFile(xdoomwad);
+
+// If the command-line flag to suppress auto-loading of custom
+// ps management levels is *not* there, load the appropriate level.
+   if ( !M_CheckParm("-nopslev") ) {
+
+// Add psdoom1.wad if this is registered (Doom 1) or retail (Ultimite Doom).
+// If we loaded it, set the flag to true so we can place the monsters in the
+// correct positions.
+       if ( gamemode == registered || gamemode == retail ){
+          if (!access(psdoom1wad, R_OK)) {
+            D_AddFile(psdoom1wad);
+            ps_level_loaded = true;
+          }
+       }
+
+// Add psdoom2.wad if this is commercial (Doom 2) and not an add-on pack.
+// If we loaded it, set the flag to true so we can place the monsters in the
+// correct positions.
+       if ( gamemode == commercial && gamemission == doom2 ) {
+          if (!access(psdoom2wad, R_OK)) {
+            D_AddFile(psdoom2wad);
+            ps_level_loaded = true;
+          }
+       }
+
+   } // end if auto-load suppression flag isn't there
+// *** PID END ***
 
     setbuf(stdout, NULL);
     modifiedgame = false;
 
     nomonsters = M_CheckParm("-nomonsters");
+
+// *** PID BEGIN ***
+// This keeps a 'no monsters' that is persistant across new games
+// and level warps.
+    if ( (nomonstersperiod = M_CheckParm("-nomonsters.") ) ) {
+       nomonsters = true;
+    }
+
+// This makes items respawn as in -altdeath (ie. no dropped items,
+// no invis, no invun)
+    respawnitems = M_CheckParm("-respawnitems");
+
+// Get flag to determine whether to run the 'ps' portion of the program.
+    nopsmon = M_CheckParm("-nopsmon");
+
+// Get flag to determine whether to execute the actual re-nice and kill
+// of processes.
+    nopsact = M_CheckParm("-nopsact");
+
+// Get flag to tell if we show all users' processes.  userlist_arg_given
+// is assigned so we don't set defaults later on since we specified
+// at least one user-related option.
+    psallusers = userlist_arg_given = M_CheckParm("-psallusers");
+
+// Set up list of users whose processes to include.
+    p = M_CheckParm("-psuser");
+    if (p)
+    {
+        // Keeps track if any specific usernames are given.  If not,
+        // use the current user's name.
+        boolean		user_name_given = false;
+
+        userlist_arg_given = true;  // Don't set defaults later on...
+
+	// the parms after p are user names,
+	// until end of parms or another - preceded parm
+	while (++p != myargc && myargv[p][0] != '-') {
+           user_name_given = true;
+           add_to_ps_userlist(psuser, myargv[p]);
+        }
+
+        // If there were no arguments to the -psuser flag,
+        // add current username to the list
+        if ( !user_name_given ) {
+
+           if ( whoami == NULL ) {  // Need to get username
+              // Get username of the person running the program.
+              // PSDOOMUSER, LOGNAME, USER, and USERNAME in the environment
+              // are checked with getenv(), in that order.  If none of
+              // these are set, abort with a message to set one of them.
+              if ( (whoami=getenv("PSDOOMUSER")) == NULL )
+                 if ( (whoami=getenv("LOGNAME")) == NULL )
+                    if ( (whoami=getenv("USER")) == NULL )
+                       if ( (whoami=getenv("USERNAME")) == NULL ) {
+                          // Error!  Need to have at least one of these set in
+                          // the environment so we can determine current username.
+                          I_Error("Could not determine your username.\nNeed to have PSDOOMUSER, LOGNAME, USER, or USERNAME set in the environment.\n");
+                       }
+           }  // end 'if whoami is not set'
+
+           add_to_ps_userlist(psuser, whoami);
+
+        }  // end 'if we default in current username'
+    }  // end -psuser
+
+// Set up list of users whose processes to exclude.
+    p = M_CheckParm("-psnotuser");
+    if (p)
+    {
+        // Keeps track if any specific usernames are given.  If not,
+        // use the current user's name.
+        boolean		user_name_given = false;
+
+        userlist_arg_given = true;  // Don't set defaults later on...
+
+	// the parms after p are user names,
+	// until end of parms or another - preceded parm
+	while (++p != myargc && myargv[p][0] != '-') {
+           user_name_given = true;
+           add_to_ps_userlist(psnotuser, myargv[p]);
+        }
+
+        // If there were no arguments to the -psnotuser flag,
+        // add current username to the list
+        if ( !user_name_given ) {
+
+           if ( whoami == NULL ) {  // Need to get username
+              // Get username of the person running the program.
+              // PSDOOMUSER, LOGNAME, USER, and USERNAME in the environment
+              // are checked with getenv(), in that order.  If none of
+              // these are set, abort with a message to set one of them.
+              if ( (whoami=getenv("PSDOOMUSER")) == NULL )
+                 if ( (whoami=getenv("LOGNAME")) == NULL )
+                    if ( (whoami=getenv("USER")) == NULL )
+                       if ( (whoami=getenv("USERNAME")) == NULL ) {
+                          // Error!  Need to have at least one of these set in
+                          // the environment so we can determine current username.
+                          I_Error("Could not determine your username.\nNeed to have PSDOOMUSER, LOGNAME, USER, or USERNAME set in the environment.\n");
+                       }
+           }  // end 'if whoami is not set'
+
+           add_to_ps_userlist(psnotuser, whoami);
+
+        }  // end 'if we default in the current username'
+    }  // end -psnotuser
+
+// If none of the user-related flags were given on the command line,
+// set defaults depending on whether the current user is root or not.
+    if ( !userlist_arg_given ) {
+
+       if ( whoami == NULL ) {  // Need to get username
+          // Get username of the person running the program.
+          // PSDOOMUSER, LOGNAME, USER, and USERNAME in the environment
+          // are checked with getenv(), in that order.  If none of
+          // these are set, abort with a message to set one of them.
+          if ( (whoami=getenv("PSDOOMUSER")) == NULL )
+             if ( (whoami=getenv("LOGNAME")) == NULL )
+                if ( (whoami=getenv("USER")) == NULL )
+                   if ( (whoami=getenv("USERNAME")) == NULL ) {
+                      // Error!  Need to have at least one of these set in
+                      // the environment so we can determine current username.
+                      I_Error("Could not determine your username.\nNeed to have PSDOOMUSER, LOGNAME, USER, or USERNAME set in the environment.\n");
+                   }
+       }  // end 'if whoami is not set'
+
+       if ( !strcmp(whoami,"root") ) {
+          // username is "root".  show all user processes.
+          psallusers = true;
+       } else {
+          // username is not "root".  show only current user's processes.
+          add_to_ps_userlist(psuser, whoami);
+       }
+
+    }  // end if !userlist_arg_given
+// *** PID END ***
+
     respawnparm = M_CheckParm("-respawn");
     fastparm = M_CheckParm("-fast");
     devparm = M_CheckParm("-devparm");

@@ -1,0 +1,43 @@
+This directory contains some custom process management levels for psDooM.
+
+NOTE: Be sure not to have a more recent version of these data files than
+      the release of psDooM you're using.  Newer data files may not work
+      properly with an older version of psDooM.
+
+To install the custom levels, copy them to the psDooM program directory
+(default is /usr/local/games/psdoom/).
+
+
+Custom level explanation from the psDooM README:
+
+If you have registered Doom 1, Ultimite Doom, or Doom 2, you can use a
+custom level designed for process management.  There is one level designed
+for Doom 1 (psdoom1.wad) and another designed for Doom 2 (psdoom2.wad).
+If those files are present (or linked to) in the program's directory and
+have the correct name (as given above), the level will automatically load
+as E1M1 or MAP01, unless suppressed with the command line flag:
+
+ -nopslev
+   Suppresses the automatic loading of the custom level psdoom*.wad and
+   makes psDooM assume pid monster coordinates for the stock E1M1 or
+   MAP01.  It has no effect if you don't have the custom level or if
+   you're using shareware Doom 1.
+
+NOTE: The command 'ps-xdoom -nopslev -file psdoom1.wad' will not work for
+process management.  While the custom level will be loaded, psDooM would
+assume E1M1 coordinates for the 'pid monster' placement.  The E1M1
+coordinates do not correlate to anywhere meaningful on the psdoom*.wad
+maps.
+
+A small description of the custom levels:
+
+  You spawn in a room with equiptment and weapons.  The switch ahead of
+  you exits the level, and the three doors take you to rooms containing
+  'pid monsters'.
+
+
+If you're interested in making your own custom level for psDooM:
+
+  *Any* level that has 3 1024x1024 areas for monster spawning such that
+  the bottom left coordinates of the squares are at (0,0); (2048,0); and
+  (4096,0), respectively, will work.

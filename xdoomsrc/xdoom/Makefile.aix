@@ -84,6 +84,9 @@ CFLAGS=$(OPTFLAGS) -DNORMALUNIX -DBIGEND $(GAMEOPT) $(FEATUREFLAG)
 O=aix
 
 # not too sophisticated dependency
+# *** PID BEGIN ***
+# Added pr_process.o to dependency list, just below endtxt.o.
+# *** PID END ***
 OBJS=				\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
@@ -153,12 +156,17 @@ OBJS=				\
 		$(O)/sounds.o		\
 		$(O)/searchp.o		\
 		$(O)/endtxt.o		\
+		$(O)/pr_process.o	\
 		$(O)/usleep.o		\
 		$(ASMMOD)
 
+# *** PID BEGIN ***
+# Changed this to build program called ps-xdoom, to denote the
+# difference to the normal xdoom.
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
-	-o $(O)/xdoom -lXext -lX11 -lm
+	-o $(O)/ps-xdoom -lXext -lX11 -lm
+# *** PID END ***
 
 $(O)/doomdef.o:	doomdef.c
 	$(CC) $(CFLAGS) -c doomdef.c -o $(O)/doomdef.o
@@ -363,6 +371,12 @@ $(O)/searchp.o: searchp.c
 
 $(O)/endtxt.o: endtxt.c
 	$(CC) $(CFLAGS) -c endtxt.c -o $(O)/endtxt.o
+
+# *** PID BEGIN ***
+# Add pr_process.o target.
+$(O)/pr_process.o: pr_process.c
+	$(CC) $(CFLAGS) -c pr_process.c -o $(O)/pr_process.o
+# *** PID END ***
 
 $(O)/usleep.o: usleep.c
 	$(CC) $(CFLAGS) -c usleep.c -o $(O)/usleep.o

@@ -117,6 +117,9 @@ XLIBS=-L/usr/lib/X11
 O=openserver5
 
 # not too sophisticated dependency
+# *** PID BEGIN ***
+# Added pr_process.o to dependency list, just below endtxt.o.
+# *** PID END ***
 OBJS=				\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
@@ -186,16 +189,21 @@ OBJS=				\
 		$(O)/sounds.o		\
 		$(O)/searchp.o		\
 		$(O)/endtxt.o		\
+		$(O)/pr_process.o	\
 		$(O)/usleep.o		\
 		$(ASMMOD)
 
+# *** PID BEGIN ***
+# Changed these to build programs called ps-*doom, to denote the
+# difference to the normal xdoom.
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
-	-o $(O)/xdoom -lXext -lX11 -lsocket -lm
+	-o $(O)/ps-xdoom -lXext -lX11 -lsocket -lm
 
 $(O)/sxdoom:	$(OBJS) $(O)/i_video_sco.o
 	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_sco.o \
-	-o $(O)/sxdoom -levent -lsocket -lm
+	-o $(O)/ps-sxdoom -levent -lsocket -lm
+# *** PID END ***
 
 all:	 $(O)/xdoom $(O)/sxdoom
 

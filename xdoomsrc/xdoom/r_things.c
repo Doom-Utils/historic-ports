@@ -7,6 +7,8 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 1999 by Dennis Chao
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +34,13 @@ rcsid[] = "$Id:$";
 
 #include <stdio.h>
 #include <stdlib.h>
+// *** PID BEGIN ***
+#include <string.h>
 
+/* from m_menu.c */
+void M_WriteText(int x, int y, char *string);
+// *** PID END ***
+ 
 #include "doomdef.h"
 #include "m_swap.h"
 #include "i_system.h"
@@ -322,11 +330,30 @@ short		*mceilingclip;
 fixed_t		spryscale;
 fixed_t		sprtopscreen;
 
-void R_DrawMaskedColumn(column_t *column)
+// *** PID BEGIN ***
+// Make a variable to keep track of the lowest dc_yl generated for a
+// sprite.  This will be the rendered top of the sprite, because y-values
+// increase down the screen.
+int		lowest_dc_yl = 0;
+
+// Have this function return a value denoting whether
+// it drew any columns for a sprite.
+// Return values are:
+//  0 if nothing was drawn
+//  1 if something was drawn
+boolean R_DrawMaskedColumn(column_t *column)
+// old code:
+// void R_DrawMaskedColumn(column_t *column)
+// *** PID END ***
 {
     int		topscreen;
     int 	bottomscreen;
     fixed_t	basetexturemid;
+
+// *** PID BEGIN ***
+// Added this var to keep track of whether drawing occurred.
+    boolean	drawing_occurred = 0;
+// *** PID END ***
 
     basetexturemid = dc_texturemid;
 
@@ -355,11 +382,28 @@ void R_DrawMaskedColumn(column_t *column)
 	    //  or (SHADOW) R_DrawFuzzColumn.
 	    dc_texheight = 0;
 	    colfunc();
+
+// *** PID BEGIN ***
+// This is where we tell if something was drawn.
+            drawing_occurred = 1;
+
+// Check to see if this dc_yl is higher on the screen (lower in value)
+// than the other columns so far for this sprite.  If so, reset the
+// lowest holder to the new value.
+            if ( lowest_dc_yl > dc_yl ){
+               lowest_dc_yl = dc_yl;
+            }
+// *** PID END ***
+
 	}
 	column = (column_t *)((byte *)column + column->length + 4);
     }
 
     dc_texturemid = basetexturemid;
+
+// *** PID BEGIN ***
+    return drawing_occurred;
+// *** PID END ***
 }
 
 //
@@ -373,6 +417,15 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
     fixed_t		frac;
     patch_t		*patch;
     extern byte		*tranmap;
+
+// *** PID BEGIN ***
+// This flag tells whether any of the sprite was drawn in the function
+// R_DrawMaskedColumn().  That function returns a boolean to denote
+// if drawing took place.  This takes care of walls, ceilings, and
+// floors blocking a sprite.
+    boolean		drawing_occurred = 0;
+// *** PID END ***
+
 
     patch = W_CacheLumpNum(vis->patch+firstspritelump, PU_CACHE);
 
@@ -402,6 +455,11 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
     spryscale = vis->scale;
     sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
 
+// *** PID BEGIN ***
+// Set the 'lowest' top of this sprite to the viewheight, initially.
+    lowest_dc_yl = viewheight;
+// *** PID END ***
+
     for (dc_x = vis->x1; dc_x <= vis->x2; dc_x++, frac += vis->xiscale)
     {
 	texturecolumn = frac >> FRACBITS;
@@ -411,10 +469,48 @@ void R_DrawVisSprite(vissprite_t *vis, int x1, int x2)
 #endif
 	column = (column_t *)((byte *)patch +
 			      LONG(patch->columnofs[texturecolumn]));
-	R_DrawMaskedColumn(column);
+
+// *** PID BEGIN ***
+// If something's been drawn already, don't reset the flag, but
+// call the drawing function.  Otherwise, grab the return value
+// of the function, too. 0 == nothing drawn, 1 == something drawn.
+        if ( drawing_occurred ){
+           R_DrawMaskedColumn(column);
+        } else {
+           drawing_occurred = R_DrawMaskedColumn(column);
+        }
+// old code:
+//        R_DrawMaskedColumn(column);
+// *** PID END ***
+
     }
 
     colfunc = basecolfunc;
+
+// *** PID BEGIN ***
+// At this point, the flag 'drawing_occurred' will be 0 if no part of
+// this sprite was drawn in R_DrawMaskedColumn(), or 1 if something
+// was drawn.  Added it to the list of conditions to check for
+// drawing the pid info.
+// Also, don't use the fact that a vis has a pid to determine
+// whether to draw; use the m_draw_pid_info flag instead.
+    if (vis->m_draw_pid_info && vis->scale>18000 &&
+       vis->x1>SCREENWIDTH/8 && vis->x2<SCREENWIDTH*7/8 &&
+       drawing_occurred ) {
+
+       char buf[16];
+       sprintf(buf, "%d", vis->m_pid);
+
+// Change y-placement of text to the top of the current sprite.
+// Make sure the pid text doesn't extend onto the status bar.
+       if ( lowest_dc_yl + 13 > viewheight ){
+          lowest_dc_yl = viewheight - 13;
+       }
+       M_WriteText(vis->x1, lowest_dc_yl, buf);
+       M_WriteText(vis->x1, lowest_dc_yl + 6, vis->m_pname);
+    }
+// *** PID END ***
+
 }
 
 //
@@ -515,6 +611,15 @@ void R_ProjectSprite(mobj_t *thing)
 
     // store information in a vissprite
     vis = R_NewVisSprite();
+
+// *** PID BEGIN ***
+// Set the pid and name in the vissprite.
+    vis->m_pid = thing->m_pid;
+    memcpy(vis->m_pname, thing->m_pname, 8);
+// Also set flag that tells whether to draw the pid info or not.
+    vis->m_draw_pid_info = thing->m_draw_pid_info;
+// *** PID END ***
+
     vis->mobjflags = thing->flags;
     vis->scale = xscale << detailshift;
     vis->gx = thing->x;
@@ -663,6 +768,12 @@ void R_DrawPSprite(pspdef_t *psp)
     vis->x2 = x2 >= viewwidth ? viewwidth - 1 : x2;
     vis->scale = pspritescale << detailshift;
 
+// *** PID BEGIN ***
+// Don't use the value of m_pid to determine whether to draw;
+// use the flag instead.
+    vis->m_draw_pid_info = false;
+// *** PID END ***
+ 
     if (flip)
     {
 	vis->xiscale = -pspriteiscale;

@@ -7,6 +7,7 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,7 +52,17 @@ rcsid[] = "$Id:$";
 #include "strcmp.h"
 #endif
 
-void	P_SpawnMapThing(mapthing_ext_t *mthing);
+// *** PID BEGIN ***
+// Needed for initialization functions.
+#include "pr_process.h"
+
+// Have this routine return a pointer to the pid mobj it creates.
+// Return NULL if nothing is created.
+// Also accept a parameter to tell if it is spawning a pid mobj.
+mobj_t *P_SpawnMapThing(mapthing_ext_t *mthing, boolean is_pid_mobj);
+// old code:
+//void P_SpawnMapThing(mapthing_ext_t *mthing);
+// *** PID END ***
 
 //
 // MAP related Lookup tables.
@@ -384,7 +395,12 @@ void P_LoadThings(int lump)
 	if (flags & 64)
 		mt_ext.flags &= ~MTF_COOPERATIVE;
 
-	P_SpawnMapThing(&mt_ext);
+// *** PID BEGIN ***
+// Added second parameter to tell the routine this is not a pid mobj.
+	P_SpawnMapThing(&mt_ext, IS_NOT_PID_MOBJ);
+// old code:
+//	P_SpawnMapThing(&mt_ext);
+// *** PID END ***
     }
 
     Z_Free(data);
@@ -418,7 +434,12 @@ void P_LoadThingsExt(int lump)
 	mt->type = SHORT(mt->type);
 	mt->flags = SHORT(mt->flags);
 
-	P_SpawnMapThing(mt);
+// *** PID BEGIN ***
+// Added second parameter to tell the routine this is not a pid mobj.
+	P_SpawnMapThing(mt, IS_NOT_PID_MOBJ);
+// old code:
+//	P_SpawnMapThing(mt);
+// *** PID END ***
     }
 
     Z_Free(data);
@@ -913,6 +934,17 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     int			lumpnum;
     extern msecnode_t	*headsecnode;
 
+// *** PID BEGIN ***
+// Print status message.
+    fprintf(stderr, "***** setup level: *****\n");
+
+// Do cleanup_pid_list() here, before anything is unallocated.
+// This used to be in g_game.c, G_PlayerReborn() -- after the
+// old level/mobj structures were destroyed and new ones created.
+// That type of memory fun caused crashes.
+    cleanup_pid_list(NULL);
+// *** PID END ***
+
     totalkills = totalitems = totalsecret = wminfo.maxfrags = 0;
     wminfo.partime = 180;
     for (i = 0; i < MAXPLAYERS; i++)
@@ -1042,6 +1074,13 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
     // preload graphics
     if (precache)
 	R_PrecacheLevel();
+
+// *** PID BEGIN ***
+// Do the initial check for processes; set them up on the level.
+// Mark them for deletion if they don't validate themselves again.
+    pr_check();
+    cleanup_pid_list(NULL);
+// *** PID END ***
 
     //printf("free memory: 0x%x\n", Z_FreeMemory());
 }

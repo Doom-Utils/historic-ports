@@ -7,6 +7,8 @@
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-1999 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
+// Copyright (C) 1999 by Dennis Chao
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -407,6 +409,17 @@ typedef struct vissprite_s
     // for color translation and shadow draw,
     //  maxbright frames as well
     lighttable_t	*colormap;
+
+// *** PID BEGIN ***
+    // the process id (0 if not a process)
+    int                 m_pid;
+    char                m_pname[8];
+
+    // Need another variable for advanced process management:
+    // A flag to tell whether to draw the pid info.
+    boolean             m_draw_pid_info;
+// *** PID END ***
+
 } vissprite_t;
 
 //
