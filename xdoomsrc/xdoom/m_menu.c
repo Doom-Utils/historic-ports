@@ -6,6 +6,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -533,7 +534,11 @@ void M_ReadSaveStrings(void)
 
     for (i = 0; i < load_end; i++)
     {
-	sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, i);
+// *** PID BEGIN ***
+	sprintf(name, "%s/.psdoom/"SAVEGAMENAME"%d.dsg", home, i);
+// old code:
+//	sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, i);
+// *** PID END ***
 
 	handle = open(name, O_RDONLY | 0, 0666);
 	if (handle == -1)
@@ -589,7 +594,12 @@ void M_LoadSelect(int choice)
     char	name[256];
     extern char	*home;
 
-    sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, choice);
+// *** PID BEGIN ***
+    sprintf(name, "%s/.psdoom/"SAVEGAMENAME"%d.dsg", home, choice);
+// old code:
+//    sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, choice);
+// *** PID END ***
+
     G_LoadGame(name);
     M_ClearMenus();
 }

@@ -1,5 +1,16 @@
 Changelog for psDooM:
 
+Release 2000.05.03.b - Changes since 2000.05.03.a
+  -Changed shell scripts in 'contrib' dir to shorten command length when
+    displayed with 'ps'.
+  -Use ~/.psdoom rather than ~/.xdoom for savegames, config files, etc.
+    Users need to copy current .doomrc and .xdlaunchrc files to ~/.psdoom.
+  -Added references to psDooM in startup header text, X resources, and
+    window title bar.
+  -Modified xdlaunch (ps-xdlaunch) to run ps-xdoom.
+  -Added ability to pass psDooM-specific command line flags to ps-xdoom
+    through ps-xdlaunch.
+
 Release 2000.05.03.a - Changes since 2000.05.03
   -Support for Solaris' version of 'ps'.
   -Added command line flag that allows pid monsters to be damaged by

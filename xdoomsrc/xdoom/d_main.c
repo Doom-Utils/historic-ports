@@ -639,7 +639,14 @@ void IdentifyVersion(void)
     home = getenv("HOME");
     if (!home)
       I_Error("Please set $HOME to your home directory");
-    sprintf(basedefault, "%s/.xdoom/.doomrc", home);
+
+// *** PID BEGIN ***
+// Make a ~/.psdoom directory for savegames, configs, etc.
+    sprintf(basedefault, "%s/.psdoom/.doomrc", home);
+// old code:
+//    sprintf(basedefault, "%s/.xdoom/.doomrc", home);
+// *** PID END ***
+
 #endif
 
     if (M_CheckParm("-shdev"))
@@ -1134,9 +1141,19 @@ void D_DoomMain(void)
     }
 
     printf("%s\n",title);
+
+// *** PID BEGIN ***
+    printf("                         psDooM version - %s\n", PSVERSION);
+    printf("                                  based on:\n");
+// *** PID END ***
+
     printf("                             XDoom build %i\n\n", BUILD);
 
-    printf("\tXDoom is released under the GNU General Public License 2.0.\n");
+// *** PID BEGIN ***
+    printf("\tpsDooM is released under the GNU General Public License 2.0.\n");
+// old code:
+//    printf("\tXDoom is released under the GNU General Public License 2.0.\n");
+// *** PID END ***
     printf("\tYou are welcome to redistribute it under certain conditions.\n");
     printf("\tIt comes with ABSOLUTELY NO WARRANTY. See file COPYING for"
            " details.\n\n");
@@ -1435,8 +1452,16 @@ void D_DoomMain(void)
     p = M_CheckParm("-loadgame");
     if (p && p < myargc - 1)
     {
-	sprintf(file, "%s/.xdoom/"SAVEGAMENAME"%c.dsg", home,
+
+// *** PID BEGIN ***
+// Make a ~/.psdoom directory for savegames, configs, etc.
+	sprintf(file, "%s/.psdoom/"SAVEGAMENAME"%c.dsg", home,
 		    myargv[p + 1][0]);
+// old code:
+//	sprintf(file, "%s/.xdoom/"SAVEGAMENAME"%c.dsg", home,
+//		    myargv[p + 1][0]);
+// *** PID END ***
+
 	G_LoadGame(file);
     }
 

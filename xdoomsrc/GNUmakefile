@@ -15,6 +15,7 @@
 # *** PID BEGIN ***
 # Modified install portion of makefile to install ps-*doom files.
 # Didn't explicitly denote where this happens in the file.
+# Also install ps-xdlaunch.
 # *** PID END ***
 #
 DESTDIR=/usr
@@ -172,7 +173,7 @@ install-uw7:
 	cp sndserv/unixware7/sndserver $(DLIB)
 	cp xdoom/unixware7/ps-xdoom $(DLIB)
 	cp xdoom/unixware7/ps-sxdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	cp contrib/sxdoom.sh $(DBIN)/ps-sxdoom
 	chmod 755 $(DLIB)/musserver.bin
@@ -180,7 +181,7 @@ install-uw7:
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-xdoom
 	chmod 755 $(DLIB)/ps-sxdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	chmod 755 $(DBIN)/ps-sxdoom
 	cp doc/xdoom.6 $(DMAN)/man6
@@ -200,7 +201,7 @@ install-uw2:
 	cp sndserv/unixware2/sndserver $(DLIB)
 	cp xdoom/unixware2/ps-xdoom $(DLIB)
 	cp xdoom/unixware2/ps-sxdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	cp contrib/sxdoom.sh $(DBIN)/ps-sxdoom
 	chmod 755 $(DLIB)/musserver.bin
@@ -208,7 +209,7 @@ install-uw2:
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-xdoom
 	chmod 755 $(DLIB)/ps-sxdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	chmod 755 $(DBIN)/ps-sxdoom
 	cp doc/xdoom.6 $(DMAN)/man6
@@ -228,7 +229,7 @@ install-os5:
 	cp sndserv/openserver5/sndserver $(DLIB)
 	cp xdoom/openserver5/ps-xdoom $(DLIB)
 	cp xdoom/openserver5/ps-sxdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	cp contrib/sxdoom.sh $(DBIN)/ps-sxdoom
 	chmod 755 $(DLIB)/musserver.bin
@@ -236,7 +237,7 @@ install-os5:
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-xdoom
 	chmod 755 $(DLIB)/ps-sxdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	chmod 755 $(DBIN)/ps-sxdoom
 	cp doc/xdoom.6 $(DMAN)/man.6
@@ -255,13 +256,13 @@ install-linux-x86:
 	cp musserv/musserver.sh $(DLIB)/musserver
 	cp sndserv/linux/sndserver $(DLIB)
 	cp xdoom/linux-x86/ps-xdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	chmod 755 $(DLIB)/musserver.bin
 	chmod 755 $(DLIB)/musserver
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-xdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
@@ -279,13 +280,13 @@ install-linux-x86-svga:
 	cp musserv/musserver.sh $(DLIB)/musserver
 	cp sndserv/linux/sndserver $(DLIB)
 	cp xdoom/linux-x86/ps-sxdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/sxdoom.sh $(DBIN)/ps-sxdoom
 	chmod 755 $(DLIB)/musserver.bin
 	chmod 755 $(DLIB)/musserver
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-sxdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-sxdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
@@ -303,13 +304,13 @@ install-linux-x86-3dfx:
 	cp musserv/musserver.sh $(DLIB)/musserver
 	cp sndserv/linux/sndserver $(DLIB)
 	cp xdoom/linux-x86/ps-glxdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/glxdoom.sh $(DBIN)/ps-glxdoom
 	chmod 755 $(DLIB)/musserver.bin
 	chmod 755 $(DLIB)/musserver
 	chmod 755 $(DLIB)/sndserver
 	chmod 755 $(DLIB)/ps-glxdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-glxdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
@@ -324,10 +325,10 @@ install-linux-alpha:
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
 	cp xdoom/linux-alpha/ps-xdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	chmod 755 $(DLIB)/ps-xdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
@@ -345,7 +346,7 @@ install-freebsd: freebsd
 	${INSTALL} -C -s -m 755 musserv/musserver.sh $(DLIB)/musserver
 	${INSTALL} -C -s -m 755 sndserv/freebsd/sndserver $(DLIB)/sndserver
 	${INSTALL} -C -s -m 755 xdoom/freebsd/ps-xdoom $(DLIB)/ps-xdoom
-	${INSTALL} -C -m 755 ../xdlaunch/xdlaunch $(DBIN)/xdlaunch
+	${INSTALL} -C -m 755 ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	${INSTALL} -C -m 755 contrib/xdoom.sh $(DBIN)/ps-xdoom
 	${INSTALL} -C -m 644 doc/xdoom.6 $(DMAN)/man6/xdoom.6
 	${INSTALL} -C -m 644 data/xdoom.wad $(DLIB)/xdoom.wad
@@ -362,7 +363,7 @@ install-freebsd-svga: freebsd
 	${INSTALL} -C -s -m 755 musserv/musserver.sh $(DLIB)/musserver
 	${INSTALL} -C -s -m 755 sndserv/freebsd/sndserver $(DLIB)/sndserver
 	${INSTALL} -C -s -m 755 xdoom/freebsd/ps-sxdoom $(DLIB)/ps-sxdoom
-	${INSTALL} -C -m 755 ../xdlaunch/xdlaunch $(DBIN)/xdlaunch
+	${INSTALL} -C -m 755 ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	${INSTALL} -C -m 755 contrib/sxdoom.sh $(DBIN)/ps-sxdoom
 	${INSTALL} -C -m 644 doc/xdoom.6 $(DMAN)/man6/xdoom.6
 	${INSTALL} -C -m 644 data/xdoom.wad $(DLIB)/xdoom.wad
@@ -376,10 +377,10 @@ install-solsparc:
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
 	cp xdoom/solarissparc/ps-xdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	chmod 755 $(DLIB)/ps-xdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
@@ -394,10 +395,10 @@ install-aix:
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
 	cp xdoom/aix/ps-xdoom $(DLIB)
-	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp ../xdlaunch/xdlaunch $(DBIN)/ps-xdlaunch
 	cp contrib/xdoom.sh $(DBIN)/ps-xdoom
 	chmod 755 $(DLIB)/ps-xdoom
-	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/ps-xdlaunch
 	chmod 755 $(DBIN)/ps-xdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)

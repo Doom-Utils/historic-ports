@@ -17,7 +17,8 @@ PATH=${LDIR}:${PATH}
 export DOOMWADDIR PATH
 
 # *** PID BEGIN ***
-exec ${LDIR}/ps-xdoom $*
+cd ${LDIR}
+exec ./ps-xdoom $*
 # old code:
 #exec ${LDIR}/xdoom $*
 # *** PID END ***

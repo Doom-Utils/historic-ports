@@ -8,6 +8,7 @@
 // Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1999 by Achim Oppelt
 // Copyright (C) 1999 by Oliver Kraus
+// Copyright (C) 2000 by David Koppenhofer
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1172,7 +1173,12 @@ static void grabsharedmemory(int size)
 void I_InitGraphics(void)
 {
     char		*displayname;
-    char		*window_name = "XDoom";
+// *** PID BEGIN ***
+// Change window title for psDooM:
+    char		*window_name = "psDooM";
+// old code:
+//    char		*window_name = "XDoom";
+// *** PID END ***
     char		*icon_name = window_name;
     char		*d;
     int			n;
@@ -1481,8 +1487,14 @@ void I_InitGraphics(void)
     X_wm.flags = StateHint | InputHint | IconPixmapHint;
 
     // resource class, in case we get a resource configuration file sometime
-    X_class.res_name = "xdoom";
-    X_class.res_class = "Xdoom";
+// *** PID BEGIN ***
+// Change to psdoom values:
+    X_class.res_name = "psdoom";
+    X_class.res_class = "Psdoom";
+// old code:
+//    X_class.res_name = "xdoom";
+//    X_class.res_class = "Xdoom";
+// *** PID END ***
 
     // set the properties
     XSetWMProperties(X_display, X_mainWindow, &windowName, &iconName,

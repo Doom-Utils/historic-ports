@@ -137,6 +137,8 @@ distribution), as it applies to psDooM also, with a few cavaets:
 * psDooM is installed into the directory /usr/local/games/psdoom rather
   than /usr/local/games/xdoom.  Shell scripts are still installed in
   /usr/local/bin.
+* psDooM looks for its default configuration files (.doomrc, .xdlaunchrc)
+  and savegame files (doomsav?.dsg) in ~/.psdoom rather than in ~/.xdoom.
 
 Now, with those out of the way, we can get to the good stuff. :-)
 
@@ -299,3 +301,11 @@ There are several other command line flags that affect how psDooM runs:
    do in '-altdeath' games (Invun, Invis, and dropped items don't 
    respawn; everything else does).  This flag has no effect when recording
    or playing a demo because it messes up timing.
+
+The XDoom distribution includes a graphical front-end to xdoom, called
+xdlaunch.  It allows the user to specify XDoom command line flags by
+clicking option boxes and using dropdown lists.  This utility has been
+renamed to ps-xdlaunch and modified to run psDooM.  Also, a place in the
+front-end was added so a user can manually type additional command line
+flags to pass to ps-xdoom.  psDooM-specific options can be shown by
+pressing a button in ps-xdlaunch.  This utility requires TCL/TK.

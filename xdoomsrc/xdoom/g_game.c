@@ -1309,7 +1309,11 @@ void G_DoSaveGame(void)
     int		i;
     extern char	*home;
 
-    sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, savegameslot);
+// *** PID BEGIN ***
+    sprintf(name, "%s/.psdoom/"SAVEGAMENAME"%d.dsg", home, savegameslot);
+// old code:
+//    sprintf(name, "%s/.xdoom/"SAVEGAMENAME"%d.dsg", home, savegameslot);
+// *** PID END ***
     description = savedescription;
 
     save_p = savebuffer = screens[1] + 0x4000;

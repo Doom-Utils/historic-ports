@@ -4,6 +4,7 @@ exec wish8.0 "$0" "$@"
 
 #
 # Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)
+# Copyright (C) 2000 by David Koppenhofer (djk@users.sourceforge.net)
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,6 +18,12 @@ exec wish8.0 "$0" "$@"
 #
 # This program requires Tk 8.0 at least.
 #
+
+# *** PID BEGIN ***
+# Removed the custom ps-management wad files from the pwad list,
+# changed so it will run ps-xdoom, and added psDooM-specific
+# command line options.
+# *** PID END ***
 
 # ========================================================================
 #			Initialization
@@ -46,6 +53,12 @@ set unknown	"undeterminate"
 # not an IWAD file (XDoom resource file), but we don't want to see it
 # in the PWAD selection listbox
 set xdoom	"xdoom.wad"
+
+# *** PID BEGIN ***
+# Don't show the custom ps-management wad files in the PWAD listbox
+set psdoom1	"psdoom1.wad"
+set psdoom2	"psdoom2.wad"
+# *** PID END ***
 
 #
 # the Doom save game filenames
@@ -91,7 +104,11 @@ set str_fsize	"fontsize"
 #
 # set window title
 #
-wm title . "XDoom Launcher"
+# *** PID BEGIN ***
+wm title . "psDooM Launcher"
+# old code:
+#wm title . "XDoom Launcher"
+# *** PID END ***
 
 #
 # Define our own fonts
@@ -337,11 +354,32 @@ grid .top.sav.f.s6 -sticky w -pady 2
 #--
 grid rowconfigure .top.sav 2 -weight 1
 
+
+# *** PID BEGIN ***
+#
+# Frame for additional command line input.
+#
+frame .top.cmdline -borderwidth 2 -relief raised
+label .top.cmdline.l -text "Additional psDooM Command Line Options" -font widgets
+entry .top.cmdline.i -width 100 -relief sunken -textvariable cmdline -font input
+button .top.cmdline.b -text "Show Options" -font widgets -command ShowOptions
+#++
+grid .top.cmdline.l -columnspan 2 -sticky nws
+grid .top.cmdline.i .top.cmdline.b -sticky news -padx 10
+# *** PID EMD ***
+
+
 #
 # Frame for XDoom's log output
 #
 frame .top.log -borderwidth 2 -relief raised
-label .top.log.l -text "XDoom log" -font widgets
+
+# *** PID BEGIN ***
+label .top.log.l -text "psDooM log" -font widgets
+# old code:
+#label .top.log.l -text "XDoom log" -font widgets
+# *** PID END ***
+
 set log [text .top.log.t -width 85 -heigh 5 -borderwidth 2 -relief sunken \
 	-yscrollcommand {.top.log.s set} -font input]
 scrollbar .top.log.s -command {.top.log.t yview} -orient vertical -width 10
@@ -395,12 +433,22 @@ grid .top.mon -row 1 -column 2 -columnspan 1 -sticky news
 grid .top.mp -row 2 -column 0 -columnspan 1 -sticky news
 grid .top.dem -row 2 -column 1 -columnspan 1 -sticky news
 grid .top.sav -row 2 -column 2 -columnspan 1 -sticky news
-grid .top.log -row 3 -columnspan 3 -sticky news
-grid .top.cntl -row 4 -columnspan 3 -sticky news
+# *** PID BEGIN ***
+grid .top.cmdline -row 3 -columnspan 3 -sticky news
+grid .top.log -row 4 -columnspan 3 -sticky news
+grid .top.cntl -row 5 -columnspan 3 -sticky news
+# old code:
+#grid .top.log -row 3 -columnspan 3 -sticky news
+#grid .top.cntl -row 4 -columnspan 3 -sticky news
+# *** PID END ***
 #--
 grid rowconfigure .top.log 1 -weight 1
 grid columnconfigure .top.log 0 -weight 1
-grid rowconfigure .top 3 -weight 1
+# *** PID BEGIN ***
+grid rowconfigure .top 4 -weight 1 
+# old code:
+#grid rowconfigure .top 3 -weight 1
+# *** PID END ***
 grid rowconfigure . 0 -weight 1
 grid columnconfigure .top 0 -weight 1
 grid columnconfigure . 0 -weight 1
@@ -418,12 +466,19 @@ focus .top.wad.p
 proc GetPwads {} {
 	global pwad pwaddir
 	global doom2 doomu doom doom1 plutonia tnt doom2f xdoom
+# *** PID BEGIN ***
+	global psdoom1 psdoom2
+# *** PID END ***
 
 	set pwd [pwd]
 	cd $pwaddir
 	$pwad delete 0 end
 	$pwad insert end "<none>"
 	foreach match [lsort [glob -nocomplain "*.wad"]] {
+
+# *** PID BEGIN ***
+# Added psdoom1 and psdoom2 conditions as well.
+# *** PID END ***
 	  if {[string compare $match $doom2] != 0 &&
 	      [string compare $match $doomu] != 0 &&
 	      [string compare $match $doom] != 0 &&
@@ -431,6 +486,8 @@ proc GetPwads {} {
 	      [string compare $match $plutonia] != 0 &&
 	      [string compare $match $tnt] != 0 &&
 	      [string compare $match $doom2f] != 0 &&
+	      [string compare $match $psdoom1] != 0 &&
+	      [string compare $match $psdoom2] != 0 &&
 	      [string compare $match $xdoom] != 0} {
 		$pwad insert end $match
 	  }
@@ -550,7 +607,12 @@ proc SaveSettings {} {
 	global str_port port str_dup dup str_demosz demosize
 	global str_fsize fsize
 
-	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] w 0600]
+# *** PID BEGIN ***
+# Change to using ~/.psdoom not ~/.xdoom
+	set fd [open [file join "~/.psdoom" ".xdlaunchrc"] w 0600]
+# old code:
+#	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] w 0600]
+# *** PID END ***
 
 	puts $fd [format "%s\t%s" $str_mag $mag]
 	puts $fd [format "%s\t%s" $str_tran $translu]
@@ -646,14 +708,25 @@ proc RestoreSettings {} {
 	global str_port port str_dup dup str_demosz demosize
 	global str_fsize fsize
 
-	if {![file exists [file join "~/.xdoom" ".xdlaunchrc"]]} {
+# *** PID BEGIN ***
+# Change to using ~/.psdoom not ~/.xdoom
+	if {![file exists [file join "~/.psdoom" ".xdlaunchrc"]]} {
 		return
 	}
+#	if {![file exists [file join "~/.xdoom" ".xdlaunchrc"]]} {
+#		return
+#	}
+# *** PID END ***
 
 	set var ""
 	set val ""
 
-	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] r]
+# *** PID BEGIN ***
+# Change to using ~/.psdoom not ~/.xdoom
+	set fd [open [file join "~/.psdoom" ".xdlaunchrc"] r]
+# old code:
+#	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] r]
+# *** PID END ***
 	while {[gets $fd line] != -1} {
 
 		scan $line "%s%s" var val
@@ -809,7 +882,13 @@ RestoreSettings
 # get the directory with the IWAD file
 #
 if [catch {set doomdir $env(DOOMWADDIR)} result] {
-	set doomdir "/usr/local/games/xdoom"
+
+# *** PID BEGIN ***
+	set doomdir "/usr/local/games/psdoom"
+# old code:
+#	set doomdir "/usr/local/games/xdoom"
+# *** PID END ***
+
 }
 
 #
@@ -828,7 +907,11 @@ set demo_selected ""
 #
 # look for saved games
 #
-set savedir [file join "~" ".xdoom"]
+# *** PID BEGIN ***
+# Change to using ~/.psdoom not ~/.xdoom
+set savedir [file join "~" ".psdoom"]
+#set savedir [file join "~" ".xdoom"]
+# *** PID END ***
 GetSave
 
 #
@@ -1002,6 +1085,9 @@ proc Run {} {
 	global mp_coop mp_coop2 mp_death mp_death2
 	global player host1 host2 host3 port dup
 	global epie
+# *** PID BEGIN ***
+        global cmdline
+# *** PID END ***
 
 	# do we have an IWAD?
 	if {[string compare $iwad $unknown] == 0} {
@@ -1170,6 +1256,12 @@ proc Run {} {
 	# we don't want the end text in the log
 	append options " -noendtxt"
 
+# *** PID BEGIN ***
+# Append additional command line options:
+        append options " "
+        append options $cmdline
+# *** PID END ***
+
 	# activate log and clear it
 	$log config -state normal
 	$log delete 1.0 99.0
@@ -1178,7 +1270,10 @@ proc Run {} {
 	# puts stdout $options
 
 	# try to run xdoom with the options
-	if [catch {open "|xdoom $options |& cat" r+} input] {
+# *** PID BEGIN ***
+# Put 'ps-xdoom' rather than 'xdoom' in the line below.
+	if [catch {open "|ps-xdoom $options |& cat" r+} input] {
+# *** PID END ***
 		$log insert end $input\n
 	} else {
 		fileevent $input readable Log
@@ -1235,8 +1330,11 @@ proc BrowsePwads {} {
 	  {"PWAD file" {".wad"}}
 	}
 
+# *** PID BEGIN ***
+# Changed 'xdlaunch' to 'ps-xdlaunch' in window title.
 	set wadfile [tk_getOpenFile -initialdir $pwaddir -filetypes $typelist \
-	-parent . -title "xdlaunch PWAD selection"]
+	-parent . -title "ps-xdlaunch PWAD selection"]
+# *** PID END ***
 
 	if {[string length $wadfile] != 0} {
 	    set pwaddir [file dirname $wadfile]
@@ -1307,17 +1405,28 @@ proc About {} {
 	wm protocol .about WM_DELETE_WINDOW
 	wm resizable .about 0 0
 
-	text .about.txt -width 65 -height 14 -borderwidth 2 -relief sunken \
+# *** PID BEGIN ***
+	text .about.txt -width 68 -height 16 -borderwidth 2 -relief sunken \
 		-font mytext
+# old code:
+#	text .about.txt -width 65 -height 14 -borderwidth 2 -relief sunken \
+#		-font mytext
+# *** PID END ***
 	button .about.ok -text "OK" -font widgets -command {destroy .about}
 	grid .about.txt -sticky news
 	grid .about.ok -sticky ns -pady 5
 
 	.about.txt config -state normal
 	.about.txt delete 1.0 end
-	.about.txt insert end "\t\tXDoom Launcher Release 1.9\n"
-	.about.txt insert end "\t\t==========================\n\n"
-	.about.txt insert end "Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)\n\n"
+# *** PID BEGIN ***
+	.about.txt insert end "\t\tpsDooM Launcher Release 1.9-a\n"
+	.about.txt insert end "\t\t=============================\n\n"
+	.about.txt insert end "Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)\n"
+	.about.txt insert end "Copyright (C) 2000 by David Koppenhofer (djk@users.sourceforge.net)\n\n"
+#	.about.txt insert end "\t\tXDoom Launcher Release 1.9\n"
+#	.about.txt insert end "\t\t==========================\n\n"
+#	.about.txt insert end "Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)\n\n"
+# *** PID END ***
 	.about.txt insert end "This program is free software; you can redistribute it and/or\n"
 	.about.txt insert end "modify it under the terms of the GNU General Public License\n"
 	.about.txt insert end "as published by the Free Software Foundation; either version 2\n"
@@ -1337,6 +1446,82 @@ proc About {} {
 	wm minsize .about [winfo width .about] [winfo height .about]
 	wm deiconify .about
 }
+
+# *** PID BEGIN ***
+# ========================================================================
+#			ShowOptions
+# ========================================================================
+proc ShowOptions {} {
+	toplevel .options
+	wm title .options "Additional psDooM Options"
+	wm transient .options .
+	wm withdraw .options
+	wm protocol .options WM_DELETE_WINDOW
+	wm resizable .options 0 0
+
+	set opts [text .options.txt -width 75 -heigh 25 -borderwidth 2 -relief sunken \
+		-yscrollcommand {.options.s set} -font input]
+	scrollbar .options.s -command {.options.txt yview} -orient vertical -width 10
+	button .options.ok -text "OK" -font widgets -command {destroy .options}
+	grid .options.txt .options.s -sticky news
+	grid .options.ok -sticky ns -pady 5
+
+	.options.txt config -state normal
+	.options.txt delete 1.0 end
+
+	.options.txt insert end "\t\t\tAdditional psDooM Options\n"
+	.options.txt insert end "\t\t\t=========================\n\n"
+	.options.txt insert end " -nopssafety\n"
+	.options.txt insert end "   Causes the 'pid monsters' to not be protected against damage from each\n"
+	.options.txt insert end "   other, normal Doom monsters, and the environment.  Normally, only the \n"
+	.options.txt insert end "   player may inflict damage on 'pid monsters'.\n\n"
+	.options.txt insert end " -psallusers\n"
+	.options.txt insert end "   Effectively adds every username to the list of users whose processes   \n"
+	.options.txt insert end "   to show.\n\n"
+	.options.txt insert end " -psuser \[username \[username\]...\]\n"
+	.options.txt insert end "   Adds username(s) to the list of users whose processes to show.  If no\n"
+	.options.txt insert end "   username is specified, the current username (as determined by the   \n"
+	.options.txt insert end "   environment variables listed above) is added to this list.\n\n"
+	.options.txt insert end " -psnotuser \[username \[username\]...\]\n"
+	.options.txt insert end "   Adds username(s) to the list of users whose processes NOT to show.  If \n"
+	.options.txt insert end "   no username is specified, the current username (as determined by the\n"
+	.options.txt insert end "   environment variables listed above) is added to this list.\n\n"
+	.options.txt insert end " -nopslev\n"
+	.options.txt insert end "   Suppresses the automatic loading of the custom level psdoom*.wad and\n"
+	.options.txt insert end "   makes psDooM assume pid monster coordinates for the stock E1M1 or\n"
+	.options.txt insert end "   MAP01.  It has no effect if you don't have the custom level or if\n"
+	.options.txt insert end "   you're using shareware Doom 1.\n\n"
+	.options.txt insert end " -nopsmon\n"
+	.options.txt insert end "   Disables process monitoring entirely.  Nice if you want to play an E1M1\n"
+	.options.txt insert end "   or MAP01 level that isn't set up for process monitoring.\n\n"
+	.options.txt insert end " -nopsact\n"
+	.options.txt insert end "   Disables the system calls to 'renice' and 'kill' when 'pid monsters' \n"
+	.options.txt insert end "   are wounded and killed.  This is good if you only want to monitor\n"
+	.options.txt insert end "   processes, not manage them.\n\n"
+	.options.txt insert end " -nomonsters.\n"
+	.options.txt insert end "   Yes, there is a period at the end of this command.  It does the same\n"
+	.options.txt insert end "   thing as the '-nomonsters' flag, but is persistant across new games and\n"
+	.options.txt insert end "   level warps.\n"
+	.options.txt insert end "   NOTE: 'pid monsters' are NOT affected by the '-nomonsters' and\n"
+	.options.txt insert end "         '-nomonsters.' flags; use -nopsmon to turn them off instead. \n\n"
+	.options.txt insert end " -respawnitems\n"
+	.options.txt insert end "   Like you think it may work, this flag causes items to respawn as they\n"
+	.options.txt insert end "   do in '-altdeath' games (Invun, Invis, and dropped items don't\n"
+	.options.txt insert end "   respawn; everything else does).  This flag has no effect when recording\n"
+	.options.txt insert end "   or playing a demo because it messes up timing."
+ 
+	.options.txt config -state disabled
+
+	update idletasks
+	set x [expr [winfo screenwidth .options]/2 - [winfo reqwidth .options]/2 \
+		- [winfo vrootx [winfo parent .options]]]
+	set y [expr [winfo screenheight .options]/2 - [winfo reqheight .options]/2 \
+		- [winfo vrooty [winfo parent .options]]]
+	wm geom .options +$x+$y
+	wm minsize .options [winfo width .options] [winfo height .options]
+	wm deiconify .options
+}
+# *** PID END ***
 
 # ========================================================================
 #			Program exit

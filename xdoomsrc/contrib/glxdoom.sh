@@ -17,7 +17,8 @@ PATH=${LDIR}:${PATH}
 export DOOMWADDIR PATH
 
 # *** PID BEGIN ***
-exec ${LDIR}/ps-glxdoom $*
+cd ${LDIR}
+exec ./ps-glxdoom $*
 # old code:
 #exec ${LDIR}/glxdoom $*
 # *** PID END ***

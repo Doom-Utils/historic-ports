@@ -7,6 +7,9 @@
 #define IS_NOT_PID_MOBJ		0
 #define IS_PID_MOBJ		1
 
+// Define the version to print in startup banner.
+#define PSVERSION		"2000.05.03.b"
+
 // All flags below are generally set up in d_main.c, D_DoomMain().
 
 // Need to have a flag to tell if we loaded the special process
