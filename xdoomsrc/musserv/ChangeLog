@@ -1,0 +1,254 @@
+Changes (December 5, 1999):
+
+  - took all CPU specific compiler options out of the makefiles,
+    not really necessary.
+  - removed GPL text from this directory, a copy is in doc directory
+    already.
+
+Changes (October 31, 1999):
+
+  - fixed a EGCS warning
+
+Changes (March 29, 1999):
+
+  - if a PWAD was used just with the filename and without path, musserver
+    always tried to use DOOMWADDIR as the path, if set and so not allowing
+    to play resources from a PWAD in the current directory. Fixed so that
+    it does not try to add DOOMWADDIR to files like ./mylevel.wad.
+
+Changes (March 25, 1999):
+
+  - Worked in the patches from Eric Lakin for FreeBSD 3.x
+
+Changes (February 28, 1999):
+
+  - include errno.h for Debian Linux
+
+More changes (February 20 1999):
+
+  - Implemented pausing and resuming of the musserver, so that it stops
+    playing the song while the game is paused or the X version iconified.
+
+More changes (May 6, 1998):
+
+  - under Unixware 7 I'm using the OSS driver from 4Front now too,
+    release 3.9-beta5. This is much better than the old driver as
+    comes with the OS. Sources modified to compile in support for
+    AWE32/64, playing the music on an Emu8000 MIDI Engine sounds
+    sooo much better. Won't compile anymore on the OS as comes out
+    of the box, upgrade your sound driver and get an AWE-64 ;-)
+
+More changes (February 11, 1998):
+
+  - ported to Unixware 7
+
+More changes (February 6, 1998):
+
+  - support for big endian machines provided by 4Front merged in
+
+More changes (January 30, 1998):
+
+  - didn't compile with the AWE32/64 support enabled, fixed
+
+Changes so far I made to the latest 1.4 version (January 26, 1998):
+
+  - Ported to Unixware 2.1 using GNU C 2.7.2 from www.freebird.com.
+  - Ported to OpenServer 5 using Robert Lipes GDS from ftp.sco.com,
+    does not work yet because of a bug in the OSS sound driver and
+    needs more work, no /proc filesystem.
+  - Platform specific makefiles and directories for the objects, I
+    need that because the common source tree for the whole X Doom
+    project is on my NFS server and the make dependencies don't work
+    if the objects for all platforms are in the same directory.
+  - Printing of pids and /proc entries changed to verbose > 1,
+    the average Doom players don't need this info.
+  - Some messages prefixed with "musserver: ", wasn't clear anymore,
+    where a message came from for problems finding wad files and such.
+  - Added support for Ultimate and Final Doom and for the french Doom][
+    version.
+  - Changed search order for the WADs so it's the same than in xdoom
+    and sndserver.
+
+---------------------------------------------------------------------------
+
+Changes in version 1.4 (June 14, 1997):
+  - Added AWE32/AWE64 support: merged in changes from the AWE32 Sound Driver
+    project.
+  - Bugfix: musserver checks to see if its parent is still alive; if Doom
+    exits abnormally, musserver will exit.
+  - Added -c option to disable this new check.
+
+Changes in version 1.3 (June 12, 1997):
+  - Removed failed attempt at GUS support.  Next version will merge in changes
+    from the Linux Ultra Sound Project's version so that it will work with
+    their kernel driver.
+
+Changes in version 1.22a (May 21, 1996):
+  - Minor README changes (pandora.st.hmc.edu is no longer connected to the
+    internet, so was removed from the list of sites for obtaining musserver).
+  - Minor README.GUS changes (see first paragraph of README.GUS).
+
+Changes in version 1.22 (Mar 4, 1996):
+
+  - Exits cleanly if /dev/sequencer does not exist or is in use
+  - Prints version number with verbosity > 1
+  - Updates to README and README.GUS
+
+Changes in version 1.21 (Jan 30, 1996):
+
+  - Fixed a bug (maybe) in sequencer.c and gusload.c where GUS samples are
+    reset.  I haven't heard anybody complain about it, but I'm pretty sure
+    it's a bug that would prevent the GUS support from working in most cases.
+  - A few README updates
+
+Changes in version 1.2 (Jan 28, 1996):
+
+  - Numerous changes to sequencer.c:
+    - Added preliminary GUS support
+    - Rewrote the code for detecting music devices
+    - Many minor changes
+  - Changes to musserver.c and readwad.c to reflect the GUS support
+  - Three new command-line options for GUS: -8, -a, -g
+  - User-configurable section in musserver.h
+
+Changes in version 1.11 (Jan 26, 1996):
+
+  - Very minor changes to playmus.c.  Musserver will now respond to IPC
+    messages during long periods of time with no music events (ie, the long
+    held notes at the beginning of the music for level 7, Doom II).
+  - Musserver no longer forks to the background.  It seems that this is
+    unnecessary when started from Doom, and forking leaves an extra zombie
+    process around.
+
+Changes in version 1.1 (Oct 25, 1995):
+
+  - Added external PWAD support (patch done by Michael Bischoff
+    <mbi@mo.math.nat.tu-bs.de>).  The patch requires no new command line
+    options to work.  It should automatically detect any PWADs you may be
+    using.
+
+Changes in version 1.0 (Aug 23, 1995):
+
+  - Removed the supplied kernel patches.  They are not necessary with Voxware
+    3.0.1, so users are encouraged to upgrade to that instead.
+
+Changes in version 0.99d (Aug 22, 1995):
+
+  - Added several free() calls to fix memory allocation bugs that had gone
+    previously unnoticed
+  - Fixed a few verbose status messages
+
+Changes in version 0.99c (Aug 22, 1995):
+
+  - Added a single break; statement to fix a problem with the -t option
+
+Changes in version 0.99b (Aug 21, 1995):
+
+  - The FM synth octave bug (fixed in kernel 1.3.14) was "unfixed" in kernel
+    1.3.18.  Thus musserver corrects for it again in the very latest kernels.
+  - Added -V option to tell musserver to ignore volume change messages from
+    Doom.  This seems to be necessary for some FM synth cards, for which
+    Voxware's mixer support is not fully functional.
+  - Musserver will not alllow both the -f and -m options to be specified,
+    since they are mutually exclusive.
+  - Added a troubleshooting section to the README.
+
+Changes in version 0.99a (Aug 11, 1995):
+
+  - If FM synth device is selected, musserver checks the date of the current
+    Voxware version.  If the Voxware date is later than July 10, 1995,
+    musserver does not correct for the FM octave bug (it was fixed in the
+    July 28, 1995 version of Voxware).  Otherwise musserver still transposes
+    notes up an octave (only in FM synth mode) to correct for the bug.
+
+Changes in version 0.99 (Aug 9, 1995):
+
+  - Removed all obsolete options and code (anything dealing with the user
+    manually changing music selections).  Removed options include:
+	-i (do not play intermission)
+	-k (kill existing musserver and start new process)
+	-n (play next music)
+	-p (play previous music)
+	-s (play secret music)
+	-t (terminate musserver)
+	-w (warp to level)
+	-W (warp to level while currently running)
+  - Added new -t option, to specify timeout in seconds when waiting to get
+    the IPC message queue id.  Default is 300.
+
+Changes in version 0.98 (Aug 9, 1995):
+
+  - Includes version 1.1 of the Doom executable patch by Steffen Winterfeld.
+    This patch appears to work perfectly, and will probably be the last one.
+  - Volume changes now work for FM synth mode.
+  - Volume changes are now based on a logarithmic, rather than linear, scale
+
+Changes in version 0.97 (Aug 8, 1995):
+
+  - Includes the first version of a Doom executable patch (by Steffen
+    Winterfeld) that allows Doom itself to control musserver.  Various changes
+    were made to IPC message handling to accommodate the Doom patch.
+  - Volume changes (from the Doom "Options" menu) now work for general midi.
+  - I decided not to release this version since the Doom patch would soon be
+    revised
+
+Changes in version 0.96a (July 28, 1995):
+
+  - Musserver now recognizes music resource names when receiving IPC messages.
+    When it receives a valid resource name in a message, it begins playing
+    the music corresponding to that name.  This is in hopes of hacking the
+    Doom executable to automatically tell musserver when to change music.
+
+Changes in version 0.96 (July 27, 1995):
+
+  - Added support for Thy Flesh Consumed (Doom I, episode 4).  Ultimate Doom
+    level numbers follow the same format as the first 3 episodes of Doom I:
+    42 means E4M2, or level 2 of Thy Flesh Consumed.
+
+Changes in version 0.95 (July 26, 1995):
+
+  - Added -W option to warp levels while musserver is currently running
+  - The -n, -p, and -s options now use IPC messages instead of kill(2)
+    signals.  This should not have changed anything as far as the end user is
+    concerned.
+  - More error checking, better cleanup upon exit
+
+Changes in version 0.94a (July 22, 1995):
+
+  - After talking to Hannu Savolainen, the author of Voxware, I decided to
+    implement FM pitch bending in a slightly different way.  The required
+    kernel patch has also changed.  These changes have no effect for general
+    midi users.
+
+Changes in version 0.94 (July 19, 1995):
+
+  - Pitch bending now works for FM synth mode.  Bending the note up should
+    work fine "out of the box," but bending the note down will not work
+    without the supplied kernel patch.  See the README for details.
+  - Added preliminary support for IPC messages.  All musserver does upon
+    receiving a message is echo it back, along with some other information.
+    The file ipc.c is a quick program I wrote to send IPC message to
+    musserver.  This is useful only for testing, but feel free to try it out.
+
+Changes in version 0.93 (June 29, 1995):
+
+  - Forks to the background in normal mode, unless -v (verbose) is set
+  - Waits for a signal before playing the first song
+  - Fixed bug in warping to levels 31 and 32 (Doom II)
+  - Fixed bug that allowed warping to invalid levels (Doom I)
+  - Continued improvement in FM synth playback.  Everything seems to work
+    except for main volume, panning, pitch bend, and a few percussion
+    instruments.
+
+Changes in version 0.92 (June 27, 1995):
+
+  - Adjusted timing factor so music is the same tempo as in Dos
+  - Renamed midi.c to sequencer.c (seemed more appropriate)
+  - FM synth playback has improved significantly, but is not perfect yet
+
+Changes in version 0.91 (June 24, 1995):
+
+  - Added -l option to list detected music devices
+  - Added -u option to choose device type to use
+
+Version 0.9:  First public release (June 22, 1995)

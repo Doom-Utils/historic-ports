@@ -1,0 +1,26 @@
+##########################################################
+#
+# $Id:$
+#
+# $Log:$
+#
+#
+
+CC	= gcc
+CFLAGS	= -O2 -Wall -DNORMALUNIX
+LDFLAGS	= -s
+LIBS	= -lm
+
+O	= freebsd
+OBJ	= ${O}/soundsrv.o ${O}/sounds.o ${O}/wadread.o ${O}/oss.o
+
+all:	$(O)/sndserver
+
+clean:
+	rm -rf $(O)
+
+$(O)/sndserver: ${OBJ}
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(O)/sndserver $(LIBS) ${OBJ}
+
+$(O)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@

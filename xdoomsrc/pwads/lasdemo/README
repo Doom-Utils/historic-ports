@@ -1,0 +1,34 @@
+lasdemo.map	- Level map created with tkwadcad.
+
+lasdemo.wgc	- Input file for wadgc to create the new textures used in
+		  lasdemo.wad.
+
+lasdemo.res	- Response file for mkwad which non graphical resouces to
+		  include.
+
+um_lasl.ppm	- Images in PPM P6 format for a laser barrier, left and right
+um_lasr.ppm	  side.
+
+um_lassl.ppm	- Images used as stoppers for the laser beams from laser[lr],
+lsrstpr.ppm	  so that the beams look more realistic and don't emit right
+		  out of the concrete.
+
+um_vlas.ppm	- A vertically laser image for building laser obstacles and
+		  force fields.
+
+um_lsig.ppm	- A Laser warning sign, similar to Radiation and Poison
+		  signs. This is one of the patches which define the texture
+		  UM_LSIGN, the other patches are in the Doom][ IWAD.
+
+laser0*.ppm	- An animated laser with beam emitter support texture. This
+		  textures are borrowed from Roger Ritenour's PWAD Galaxia.
+
+sky1.ppm	- The sky texture was rendered with povray, scene source
+		  file is included in xwadtools.
+
+umcomp[n].ppm	- Derived from COMP03_5 patch from id (Doom][), builds the
+		  animated access terminal texture.
+
+comtxt.txt	- Resource file for UAC communication gadget.
+
+swantbls.dat	- Input file for swantbls to create new animated textures.

@@ -1,0 +1,18 @@
+boomtst.map	- Level map created with tkwadcad.
+
+boomtst.wgc	- Input file for wadgc to create the new textures.
+
+boomtst.res	- Response file for mkwad which non graphical resources
+		  to include.
+
+tlite.ppm	- Flat from Doom][ IWAD, needed to make a wall texture for
+		  the scrolling ramp.
+
+glass*.ppm	- Glass textures, great for using with translucency,
+		  no good without.
+
+ksw*.ppm	- Patches for a customized switch animated texture to try that
+		  out. This patches are borrowed from Kurt Kesler's ZDoom PWAD
+		  KZDoom1.wad, have a look at http://www.fidnet.com/~kesler.
+
+swantbls.dat	- Input file for swantbls to create new animated textures.

@@ -1,0 +1,77 @@
+This directory contains Doom][ example PWAD's, which show features added to
+XDoom, which weren't implemented in id's original Doom. To play this PWAD's
+you need the Doom][ IWAD, they'll not work with Doom or shareware Doom IWAD.
+
+For your convenience the maps have no monsters in skill 1/2, so that one
+can mess with the features undisturbed. Higher skill settings add some
+monsters to test, how they react to the environment.
+
+Most examples have support for the UAC communication gadget. If you see
+a disk icon in the top left of the screen, press F5 to activate the
+device. The bug in dmcotst is intentional to test the PWAD debugging
+for the thingie.
+
+This PWAD's can be rebuild from their sources (which are all included) with
+the tools in ftp://ftp.cdrom.com/pub/doom/source/xwadtools*.
+
+boomtst		- XDoom has various features implemented from Boom. This is
+		  a test level to try out this features and make sure they
+		  are Boom compatible. So this level can be played with XDoom
+		  and Boom. All features used in the level map are supported
+		  in the WAD editor tkwadcad.
+
+dmcotst		- XDoom can spawn different things into a level, dependent on
+		  the game mode: single player, deathmatch and cooperative.
+		  This is a simple level just with one room and various things,
+		  which will be different for every game mode. The level has
+		  four player starts and four deathmatch starts. The used bits
+		  are compatible to Boom, so this should work with Boom engines
+		  too. WAD editors which support the new thing flags are Yadex
+		  and Tkwadcad.
+
+lasdemo		- XDoom got force fields (laser barriers). They can be opened
+		  with a switch or be used as obstacles. It is not a good idea
+		  to run into this lasers, I put 1GW lasers into XDoom (no
+		  energy problem in a virtual world) and they will fry your
+		  butt. The monsters are smart enough to avoid laser beams,
+		  so don't wait for them to run into lasers. If a barrier is
+		  opened with a switch it will close after a while, if some
+		  stuff is in it's surrounding sectors, it will not close
+		  (and cut you into two halves).
+		  Also note that the lasers have an effect on the surrounding
+		  light level, if switched on and off.
+		  Oh, a little secret is that one also can damage the lenses
+		  of some laser with a gunshot. Try shooting the silver stopper
+		  textures for the red laser beam, if you hit it right the
+		  lenses are damaged, the laser goes off and never on again.
+		  The Kamikaze Doom Warrior can try to punch the laser out
+		  too, yes, is possible if you are careful.
+		  This is up to the WAD author, as an example you cannot damage
+		  the lenses for the green force fields.
+		  Right now this lasers only work in XDoom. The WAD editor
+		  tkwadcad supports PWAD's with force fields.
+
+plustst		- Test level for XDoomPlus. This is a map in extended Hexen
+		  format for testing the engine. Also used for testing
+		  compatibility with ZDoom.
+
+sldoor		- I have finished and improved the code for horizontally
+		  sliding doors, as it was planned by id for Doom][. This
+		  example shows how to use sliding doors in PWAD's. The
+		  graphic art work was done by Andre Majorel and he supported
+		  me with ideas too. Right now also this will work only in
+		  XDoom, but the code can be implemented in other Doom engines
+		  too, it was partially done in the sources id released, and
+		  commented out. The WAD editor tkwadcad supports PWAD's with
+		  horizontally sliding doors.
+
+tfe		- Demonstration of the TFE bug. Can be used to test if XDoom
+		  was compiled with bug fixes or without.
+
+trandemo	- For the force fields I had implemented translucent wall
+		  textures, because the energy fields just look better if
+		  they are translucent. This feature also can be used to
+		  make realistic looking windows with glass in them and
+		  this demo shows some of this feature. Will only work
+		  with XDoom and the WAD editor tkwadcad supports translucent
+		  wall textures.

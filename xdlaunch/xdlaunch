@@ -1,0 +1,1348 @@
+#!/bin/sh
+# the next line restarts using wish \
+exec wish8.0 "$0" "$@"
+
+#
+# Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# This program requires Tk 8.0 at least.
+#
+
+# ========================================================================
+#			Initialization
+# ========================================================================
+
+#
+# some strings with the skill levels
+#
+set skill1	"I'm too young to die"
+set skill2	"Hey, not too rough"
+set skill3	"Hurt me plenty"
+set skill4	"Ultra-Violence"
+set skill5	"Nightmare"
+
+#
+# the Doom IWAD filenames
+#
+set doom2	"doom2.wad"
+set doomu	"doomu.wad"
+set doom	"doom.wad"
+set doom1	"doom1.wad"
+set plutonia	"plutonia.wad"
+set tnt		"tnt.wad"
+set doom2f	"doom2f.wad"
+set unknown	"undeterminate"
+
+# not an IWAD file (XDoom resource file), but we don't want to see it
+# in the PWAD selection listbox
+set xdoom	"xdoom.wad"
+
+#
+# the Doom save game filenames
+#
+set sfile0	"doomsav0.dsg"
+set sfile1	"doomsav1.dsg"
+set sfile2	"doomsav2.dsg"
+set sfile3	"doomsav3.dsg"
+set sfile4	"doomsav4.dsg"
+set sfile5	"doomsav5.dsg"
+
+#
+# strings for the .rc file
+#
+set str_mag	"magnification"
+set str_tran	"translucency"
+set str_mouse	"usemouse"
+set str_cdaudio	"cdaudio"
+set str_nomusic	"nomusic"
+set str_nosound	"nosound"
+set str_nomon	"nomonsters"
+set str_resmon	"resmonsters"
+set str_fastmon	"fastmonsters"
+set str_skill	"skill"
+set str_level	"level"
+set str_episode	"episode"
+set str_turbo	"turbo"
+set str_boost	"boost"
+set str_mode	"mode"
+set str_player	"player"
+set str_host1	"host1"
+set str_host2	"host2"
+set str_host3	"host3"
+set str_port	"port"
+set str_dup	"dup"
+set str_demosz	"demosize"
+set str_fsize	"fontsize"
+
+# ========================================================================
+#				GUI
+# ========================================================================
+
+#
+# set window title
+#
+wm title . "XDoom Launcher"
+
+#
+# Define our own fonts
+#
+font create widgets -family helvetica -size 10 -weight bold
+font create input -family fixed -size 10
+font create mytext -family courier -size 12
+
+#
+# create the top frame
+#
+frame .top
+
+#
+# Frame for handling IWADs and PWADs
+#
+frame .top.wad -borderwidth 2 -relief raised
+label .top.wad.l1 -text "Game IWAD file" -font widgets
+entry .top.wad.i -width 15 -relief sunken -textvariable iwad -font input
+label .top.wad.l2 -text "Custom PWAD files" -font widgets
+set pwad [listbox .top.wad.p -yscrollcommand ".top.wad.s set" \
+	-height 3 -width 15 -selectmode multiple -font input]
+scrollbar .top.wad.s -command {.top.wad.p yview} -orient vertical -width 10
+button .top.wad.b -text "Browse" -command BrowsePwads -padx 10 -font widgets
+#++
+grid .top.wad.l1 .top.wad.i -sticky w
+grid .top.wad.l2 .top.wad.p .top.wad.s -sticky nws
+grid .top.wad.b -row 1 -column 3 -sticky w
+#--
+grid columnconfigure .top.wad 4 -weight 1
+#**
+bind .top.wad.p <ButtonRelease-1> PwadSelected
+
+#
+# Frame to select magnification, mouse and translucency
+#
+frame .top.mag -borderwidth 2 -relief raised
+label .top.mag.l -text "Magnification" -font widgets
+radiobutton .top.mag.one -variable mag -text "x 1" -font widgets -value 1
+radiobutton .top.mag.two -variable mag -text "x 2" -font widgets -value 2
+radiobutton .top.mag.three -variable mag -text "x 3" -font widgets -value 3
+radiobutton .top.mag.four -variable mag -text "x 4" -font widgets -value 4
+label .top.mag.l1 -text "Use Mouse" -font widgets
+checkbutton .top.mag.m -variable mouse -font widgets
+label .top.mag.l2 -text "Translucency" -font widgets
+checkbutton .top.mag.t -variable translu -font widgets
+#++
+grid .top.mag.l .top.mag.one .top.mag.two .top.mag.three .top.mag.four \
+	-sticky w -padx 5
+grid .top.mag.l1 -row 1 -column 0 -sticky w -padx 5
+grid .top.mag.m -row 1 -column 1 -sticky w -padx 5
+grid .top.mag.l2 -row 1 -column 2 -columnspan 2 -sticky w -padx 5
+grid .top.mag.t -row 1 -column 4 -sticky w -padx 5
+
+#
+# Frame to select skill, episode, level and turbo speed
+#
+frame .top.skill -borderwidth 2 -relief raised
+label .top.skill.l -text "Player/Game Options" -font widgets
+frame .top.skill.f -borderwidth 1 -relief groove
+label .top.skill.f.l1 -text "Skill" -font widgets
+tk_optionMenu .top.skill.f.t skill $skill1 $skill2 $skill3 $skill4 $skill5
+.top.skill.f.t configure -takefocus 1 -width 20 -font widgets
+label .top.skill.f.l2 -text "Episode" -font widgets
+set epie [entry .top.skill.f.e -width 3 -relief sunken -textvariable episode \
+	-font input]
+label .top.skill.f.l3 -text "Level" -font widgets
+entry .top.skill.f.l -width 3 -relief sunken -textvariable level -font input
+label .top.skill.f.l4 -text "Turbo" -font widgets
+checkbutton .top.skill.f.tu -text enable -font widgets -variable turbo \
+	-command Turbo
+label .top.skill.f.l5 -text "Boost" -font widgets
+set booste [entry .top.skill.f.b -width 3 -relief sunken -textvariable boost \
+	-font input]
+#++
+grid .top.skill.l -sticky w -padx 10
+grid .top.skill.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.skill.f.l1 -row 0 -column 0 -sticky w -pady 5
+grid .top.skill.f.t -row 0 -column 1 -columnspan 3 -sticky w -pady 5
+grid .top.skill.f.l2 .top.skill.f.e .top.skill.f.l3 .top.skill.f.l \
+	-sticky w -pady 5
+grid .top.skill.f.l4 .top.skill.f.tu .top.skill.f.l5 .top.skill.f.b \
+	-sticky w -pady 5
+#--
+grid columnconfigure .top.skill 1 -weight 1
+grid rowconfigure .top.skill 2 -weight 1
+
+#
+# Frame to select audio options
+#
+frame .top.audio -borderwidth 2 -relief raised
+label .top.audio.l -text "Audio Options" -font widgets
+frame .top.audio.f -borderwidth 1 -relief groove
+checkbutton .top.audio.f.c -text "CD Music" -font widgets -variable cdaudio
+checkbutton .top.audio.f.m -text "No Music" -font widgets -variable nomusic
+checkbutton .top.audio.f.s -text "No Sound" -font widgets -variable nosound
+#++
+grid .top.audio.l -sticky w -padx 10
+grid .top.audio.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.audio.f.c -sticky w -pady 2
+grid .top.audio.f.m -sticky w -pady 2
+grid .top.audio.f.s -sticky w -pady 2
+#--
+grid rowconfigure .top.audio 3 -weight 1
+
+#
+# Frame to select monster options
+#
+frame .top.mon -borderwidth 2 -relief raised
+label .top.mon.l -text "Monster Options" -font widgets
+frame .top.mon.f -borderwidth 1 -relief groove
+checkbutton .top.mon.f.m -text "No Monsters" -font widgets \
+	-variable nomonsters -command NoMon
+checkbutton .top.mon.f.r -text "Respawn Monsters" -font widgets \
+	-variable resmonsters -command Mon
+checkbutton .top.mon.f.b -text "Fast Monsters" -font widgets \
+	-variable fastmonsters -command Mon
+#++
+grid .top.mon.l -sticky w -padx 10
+grid .top.mon.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.mon.f.m -sticky w -pady 2
+grid .top.mon.f.r -sticky w -pady 2
+grid .top.mon.f.b -sticky w -pady 2
+#--
+grid rowconfigure .top.mon 2 -weight 1
+
+#
+# Frame for the multiplayer stuff
+#
+frame .top.mp -borderwidth 2 -relief raised
+label .top.mp.l -text "Multi-Player Network Game" -font widgets -anchor nw
+frame .top.mp.f -borderwidth 1 -relief groove
+label .top.mp.f.l1 -text "Mode" -font widgets
+checkbutton .top.mp.f.m1 -text "Cooperative" -font widgets -variable mp_coop \
+	-command {NetGame mp_coop}
+checkbutton .top.mp.f.m2 -text "Cooperative 2" -font widgets \
+	-variable mp_coop2 -command {NetGame mp_coop2}
+checkbutton .top.mp.f.m3 -text "Deathmatch" -font widgets -variable mp_death \
+	-command {NetGame mp_death}
+checkbutton .top.mp.f.m4 -text "Deathmatch 2" -font widgets \
+	-variable mp_death2 -command {NetGame mp_death2}
+label .top.mp.f.l2 -text "Player No." -font widgets
+radiobutton .top.mp.f.p1 -text "1" -font widgets -variable player -value 1
+radiobutton .top.mp.f.p2 -text "2" -font widgets -variable player -value 2
+radiobutton .top.mp.f.p3 -text "3" -font widgets -variable player -value 3
+radiobutton .top.mp.f.p4 -text "4" -font widgets -variable player -value 4
+label .top.mp.f.l3 -text "Host 1" -font widgets
+set host1e [entry .top.mp.f.h1 -width 20 -relief sunken -textvariable host1 \
+	-font input]
+label .top.mp.f.l4 -text "Host 2" -font widgets
+set host2e [entry .top.mp.f.h2 -width 20 -relief sunken -textvariable host2 \
+	-font input]
+label .top.mp.f.l5 -text "Host 3" -font widgets
+set host3e [entry .top.mp.f.h3 -width 20 -relief sunken -textvariable host3 \
+	-font input]
+label .top.mp.f.l6 -text "Port" -font widgets
+set porte [entry .top.mp.f.po -width 5 -relief sunken -textvariable port \
+	-font input]
+label .top.mp.f.l7 -text "Dup" -font widgets
+set dupe [entry .top.mp.f.du -width 2 -relief sunken -textvariable dup \
+	-font input]
+#++
+grid .top.mp.l -sticky w -padx 10
+grid .top.mp.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.mp.f.l1 -row 0 -column 0 -sticky nw -padx 2
+grid .top.mp.f.m1 -row 0 -column 1 -columnspan 2 -sticky nw -padx 2
+grid .top.mp.f.m2 -row 0 -column 3 -columnspan 2 -sticky nw -padx 2
+grid .top.mp.f.m3 -row 1 -column 1 -columnspan 2 -sticky nw -padx 2
+grid .top.mp.f.m4 -row 1 -column 3 -columnspan 2 -sticky nw -padx 2
+grid .top.mp.f.l2 -row 2 -column 0 -sticky nw -pady 5
+grid .top.mp.f.p1 -row 2 -column 1 -sticky nw -pady 5
+grid .top.mp.f.p2 -row 2 -column 2 -sticky nw -pady 5
+grid .top.mp.f.p3 -row 2 -column 3 -sticky nw -pady 5
+grid .top.mp.f.p4 -row 2 -column 4 -sticky nw -pady 5
+grid .top.mp.f.l3 -row 3 -column 0 -sticky nw
+grid .top.mp.f.h1 -row 3 -column 1 -columnspan 4 -sticky nw
+grid .top.mp.f.l4 -row 4 -column 0 -sticky nw
+grid .top.mp.f.h2 -row 4 -column 1 -columnspan 4 -sticky nw
+grid .top.mp.f.l5 -row 5 -column 0 -sticky nw
+grid .top.mp.f.h3 -row 5 -column 1 -columnspan 4 -sticky nw
+grid .top.mp.f.l6 -row 6 -column 0 -sticky nw -pady 5
+grid .top.mp.f.po -row 6 -column 1 -columnspan 2 -sticky nw -pady 5
+grid .top.mp.f.l7 -row 7 -column 0 -sticky nw
+grid .top.mp.f.du -row 7 -column 1 -sticky nw
+#--
+grid columnconfigure .top.mp 1 -weight 1
+
+#
+# Frame for handling Demo files
+#
+frame .top.dem -borderwidth 2 -relief raised
+label .top.dem.l -text "Demos" -font widgets -anchor nw
+frame .top.dem.f -borderwidth 1 -relief groove
+label .top.dem.f.l1 -text "play" -font widgets
+set demo [listbox .top.dem.f.d -yscrollcommand ".top.dem.f.s set" \
+	-height 4 -width 15 -font input]
+scrollbar .top.dem.f.s -command {.top.dem.f.d yview} -orient vertical -width 10
+label .top.dem.f.l2 -text "record" -font widgets
+entry .top.dem.f.r -width 15 -relief sunken -textvariable record -font input
+label .top.dem.f.l3 -text "max size (kb)" -font widgets
+entry .top.dem.f.sz -width 4 -relief sunken -textvariable demosize -font input
+#++
+grid .top.dem.l -sticky nw -padx 10
+grid .top.dem.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.dem.f.l1 -sticky nw
+grid .top.dem.f.d .top.dem.f.s -sticky nws -pady 5
+grid .top.dem.f.l2 -sticky nw
+grid .top.dem.f.r -sticky nw -pady 5
+grid .top.dem.f.l3 -sticky nw
+grid .top.dem.f.sz -sticky nw -pady 5
+#--
+grid rowconfigure .top.dem 3 -weight 1
+#**
+bind .top.dem.f.d <ButtonRelease-1> DemoSelected
+
+#
+# Frame for handling saved games
+#
+frame .top.sav -borderwidth 2 -relief raised
+label .top.sav.l -text "Saved Games" -font widgets
+frame .top.sav.f -borderwidth 1 -relief groove
+set save1 [checkbutton .top.sav.f.s1 -width 24 -anchor w -variable sv_1 \
+	-command {SaveSel save1} -font widgets]
+set save2 [checkbutton .top.sav.f.s2 -width 24 -anchor w -variable sv_2 \
+	-command {SaveSel save2} -font widgets]
+set save3 [checkbutton .top.sav.f.s3 -width 24 -anchor w -variable sv_3 \
+	-command {SaveSel save3} -font widgets]
+set save4 [checkbutton .top.sav.f.s4 -width 24 -anchor w -variable sv_4 \
+	-command {SaveSel save4} -font widgets]
+set save5 [checkbutton .top.sav.f.s5 -width 24 -anchor w -variable sv_5 \
+	-command {SaveSel save5} -font widgets]
+set save6 [checkbutton .top.sav.f.s6 -width 24 -anchor w -variable sv_6 \
+	-command {SaveSel save6} -font widgets]
+#++
+grid .top.sav.l -sticky w -padx 10
+grid .top.sav.f -sticky news -ipadx 20 -ipady 15 -pady 10 -padx 10
+grid .top.sav.f.s1 -sticky w -pady 2
+grid .top.sav.f.s2 -sticky w -pady 2
+grid .top.sav.f.s3 -sticky w -pady 2
+grid .top.sav.f.s4 -sticky w -pady 2
+grid .top.sav.f.s5 -sticky w -pady 2
+grid .top.sav.f.s6 -sticky w -pady 2
+#--
+grid rowconfigure .top.sav 2 -weight 1
+
+#
+# Frame for XDoom's log output
+#
+frame .top.log -borderwidth 2 -relief raised
+label .top.log.l -text "XDoom log" -font widgets
+set log [text .top.log.t -width 85 -heigh 5 -borderwidth 2 -relief sunken \
+	-yscrollcommand {.top.log.s set} -font input]
+scrollbar .top.log.s -command {.top.log.t yview} -orient vertical -width 10
+#++
+grid .top.log.l -columnspan 2 -sticky nws
+grid .top.log.t .top.log.s -sticky news
+
+#
+# Frame for the command buttons
+#
+frame .top.cntl -borderwidth 2 -relief raised
+button .top.cntl.run -text "Start" -font widgets -command Run
+button .top.cntl.quit -text "Quit" -font widgets -command Bye
+#++
+grid .top.cntl.run .top.cntl.quit -sticky news -padx 100
+
+#
+# System menu
+#
+menu .menubar -tearoff 0
+. config -menu .menubar
+
+.menubar add cascade -label "Font" -menu .menubar.font -font widgets \
+	-underline 0
+menu .menubar.font -tearoff 0
+.menubar.font add radio -label "8" -variable fsize -value 8 \
+	-command FontConf -font widgets
+.menubar.font add radio -label "10" -variable fsize -value 10 \
+	-command FontConf -font widgets
+.menubar.font add radio -label "12" -variable fsize -value 12 \
+	-command FontConf -font widgets
+.menubar.font add radio -label "16" -variable fsize -value 16 \
+	-command FontConf -font widgets
+
+# Help menu under UNIX is special, right justified
+set m help
+set menuHelp [menu .menubar.$m]
+.menubar add cascade -label "Help" -menu .menubar.$m -font widgets -underline 0
+$menuHelp add command -label "About" -font widgets -command About \
+	-underline 0
+
+#
+# now place all the frames
+#
+grid .top -sticky news
+grid .top.wad -row 0 -column 0 -columnspan 1 -sticky news
+grid .top.mag -row 0 -column 1 -columnspan 2 -sticky news
+grid .top.skill -row 1 -column 0 -columnspan 1 -sticky news
+grid .top.audio -row 1 -column 1 -columnspan 1 -sticky news
+grid .top.mon -row 1 -column 2 -columnspan 1 -sticky news
+grid .top.mp -row 2 -column 0 -columnspan 1 -sticky news
+grid .top.dem -row 2 -column 1 -columnspan 1 -sticky news
+grid .top.sav -row 2 -column 2 -columnspan 1 -sticky news
+grid .top.log -row 3 -columnspan 3 -sticky news
+grid .top.cntl -row 4 -columnspan 3 -sticky news
+#--
+grid rowconfigure .top.log 1 -weight 1
+grid columnconfigure .top.log 0 -weight 1
+grid rowconfigure .top 3 -weight 1
+grid rowconfigure . 0 -weight 1
+grid columnconfigure .top 0 -weight 1
+grid columnconfigure . 0 -weight 1
+
+focus .top.wad.p
+
+# ========================================================================
+#			File handling
+# ========================================================================
+
+#
+# build a list with the PWAD files in the PWADs directory
+# and add them to the PWAD selection widget
+#
+proc GetPwads {} {
+	global pwad pwaddir
+	global doom2 doomu doom doom1 plutonia tnt doom2f xdoom
+
+	set pwd [pwd]
+	cd $pwaddir
+	$pwad delete 0 end
+	$pwad insert end "<none>"
+	foreach match [lsort [glob -nocomplain "*.wad"]] {
+	  if {[string compare $match $doom2] != 0 &&
+	      [string compare $match $doomu] != 0 &&
+	      [string compare $match $doom] != 0 &&
+	      [string compare $match $doom1] != 0 &&
+	      [string compare $match $plutonia] != 0 &&
+	      [string compare $match $tnt] != 0 &&
+	      [string compare $match $doom2f] != 0 &&
+	      [string compare $match $xdoom] != 0} {
+		$pwad insert end $match
+	  }
+	}
+	cd $pwd
+}
+
+#
+# build a list with the demo files in the current directory
+# and add them to the demo selection widget
+#
+proc GetDemos {} {
+	global demo
+
+	$demo delete 0 end
+	$demo insert end "<none>"
+	foreach match [lsort [glob -nocomplain "*.lmp"]] {
+		$demo insert end [file rootname $match]
+	}
+}
+
+#
+# test for saved game files and setup the select
+# buttons with the name of the saved game
+#
+proc GetSave {} {
+	global savedir sfile0 sfile1 sfile2 sfile3 sfile4 sfile5
+	global save1 save2 save3 save4 save5 save6
+
+	if [file exists [file join $savedir $sfile0]] {
+		$save1 config -state normal
+		$save1 config -text [GetSaveName [file join $savedir $sfile0]]
+	} else {
+		$save1 config -state disabled
+		$save1 config -text none
+		$save1 deselect
+	}
+
+	if [file exists [file join $savedir $sfile1]] {
+		$save2 config -state normal
+		$save2 config -text [GetSaveName [file join $savedir $sfile1]]
+	} else {
+		$save2 config -state disabled
+		$save2 config -text none
+		$save2 deselect
+	}
+
+	if [file exists [file join $savedir $sfile2]] {
+		$save3 config -state normal
+		$save3 config -text [GetSaveName [file join $savedir $sfile2]]
+	} else {
+		$save3 config -state disabled
+		$save3 config -text none
+		$save3 deselect
+	}
+
+	if [file exists [file join $savedir $sfile3]] {
+		$save4 config -state normal
+		$save4 config -text [GetSaveName [file join $savedir $sfile3]]
+	} else {
+		$save4 config -state disabled
+		$save4 config -text none
+		$save4 deselect
+	}
+
+	if [file exists [file join $savedir $sfile4]] {
+		$save5 config -state normal
+		$save5 config -text [GetSaveName [file join $savedir $sfile4]]
+	} else {
+		$save5 config -state disabled
+		$save5 config -text none
+		$save5 deselect
+	}
+
+	if [file exists [file join $savedir $sfile5]] {
+		$save6 config -state normal
+		$save6 config -text [GetSaveName [file join $savedir $sfile5]]
+	} else {
+		$save6 config -state disabled
+		$save6 config -text none
+		$save6 deselect
+	}
+}
+
+#
+# read the name of a saved game from a game save file
+#
+proc GetSaveName {fn} {
+	set name ""
+	set fd [open $fn r]
+
+	while {1} {
+		set c [read $fd 1]
+		if {$c == "\0"} {
+			break
+		}
+		append name $c
+	}
+
+	close $fd
+	return $name
+}
+
+#
+# save the GUI settings into .rc file
+#
+proc SaveSettings {} {
+	global str_mag mag str_mouse mouse
+	global str_nomusic nomusic
+	global str_cdaudio cdaudio str_tran translu
+	global str_nosound nosound str_nomon nomonsters str_resmon resmonsters
+	global str_fastmon fastmonsters str_skill skill str_level level
+	global skill1 skill2 skill3 skill4 skill5
+	global str_episode episode str_turbo turbo str_boost boost
+	global str_mode mp_coop mp_coop2 mp_death mp_death2
+	global str_player player str_host1 host1 str_host2 host2 str_host3 host3
+	global str_port port str_dup dup str_demosz demosize
+	global str_fsize fsize
+
+	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] w 0600]
+
+	puts $fd [format "%s\t%s" $str_mag $mag]
+	puts $fd [format "%s\t%s" $str_tran $translu]
+	puts $fd [format "%s\t%s" $str_mouse $mouse]
+	puts $fd [format "%s\t%s" $str_cdaudio $cdaudio]
+	puts $fd [format "%s\t%s" $str_nomusic $nomusic]
+	puts $fd [format "%s\t%s" $str_nosound $nosound]
+	puts $fd [format "%s\t%s" $str_nomon $nomonsters]
+	puts $fd [format "%s\t%s" $str_resmon $resmonsters]
+	puts $fd [format "%s\t%s" $str_fastmon $fastmonsters]
+	puts $fd [format "%s\t%s" $str_episode $episode]
+	puts $fd [format "%s\t%s" $str_level $level]
+
+	if {[string compare $skill $skill1] == 0} {
+		puts $fd [format "%s\t%s" $str_skill "1"]
+	} elseif {[string compare $skill $skill2] == 0} {
+		puts $fd [format "%s\t%s" $str_skill "2"]
+	} elseif {[string compare $skill $skill3] == 0} {
+		puts $fd [format "%s\t%s" $str_skill "3"]
+	} elseif {[string compare $skill $skill4] == 0} {
+		puts $fd [format "%s\t%s" $str_skill "4"]
+	} elseif {[string compare $skill $skill5] == 0} {
+		puts $fd [format "%s\t%s" $str_skill "5"]
+	}
+
+	puts $fd [format "%s\t%s" $str_turbo $turbo]
+	puts $fd [format "%s\t%s" $str_boost $boost]
+
+	if {$mp_coop} {
+		puts $fd [format "%s\t%s" $str_mode "1"]
+	} elseif {$mp_coop2} {
+		puts $fd [format "%s\t%s" $str_mode "2"]
+	} elseif {$mp_death} {
+		puts $fd [format "%s\t%s" $str_mode "3"]
+	} elseif {$mp_death2} {
+		puts $fd [format "%s\t%s" $str_mode "4"]
+	} else {
+		puts $fd [format "%s\t%s" $str_mode "0"]
+	}
+
+	puts $fd [format "%s\t%s" $str_player $player]
+
+	if {[string length $host1] != 0} {
+		puts $fd [format "%s\t%s" $str_host1 $host1]
+	} else {
+		puts $fd [format "%s\t-" $str_host1]
+	}
+	if {[string length $host2] != 0} {
+		puts $fd [format "%s\t%s" $str_host2 $host2]
+	} else {
+		puts $fd [format "%s\t-" $str_host2]
+	}
+	if {[string length $host3] != 0} {
+		puts $fd [format "%s\t%s" $str_host3 $host3]
+	} else {
+		puts $fd [format "%s\t-" $str_host3]
+	}
+	if {[string length $port] != 0} {
+		puts $fd [format "%s\t%s" $str_port $port]
+	} else {
+		puts $fd [format "%s\t-" $str_port]
+	}
+	if {[string length $dup] != 0} {
+		puts $fd [format "%s\t%s" $str_dup $dup]
+	} else {
+		puts $fd [format "%s\t-" $str_dup]
+	}
+
+	if {[string length $demosize] != 0} {
+		puts $fd [format "%s\t%s" $str_demosz $demosize]
+	} else {
+		puts $fd [format "%s\t-" $str_demosz]
+	}
+
+	puts $fd [format "%s\t%s" $str_fsize $fsize]
+
+	close $fd
+}
+
+#
+# restore the GUI setting from .rc file
+#
+proc RestoreSettings {} {
+	global str_mag mag str_mouse mouse
+	global str_nomusic nomusic
+	global str_cdaudio cdaudio str_tran translu
+	global str_nosound nosound str_nomon nomonsters str_resmon resmonsters
+	global str_fastmon fastmonsters str_skill skill str_level level
+	global skill1 skill2 skill3 skill4 skill5
+	global str_episode episode str_turbo turbo str_boost boost
+	global str_mode mp_coop mp_coop2 mp_death mp_death2
+	global str_player player str_host1 host1 str_host2 host2 str_host3 host3
+	global str_port port str_dup dup str_demosz demosize
+	global str_fsize fsize
+
+	if {![file exists [file join "~/.xdoom" ".xdlaunchrc"]]} {
+		return
+	}
+
+	set var ""
+	set val ""
+
+	set fd [open [file join "~/.xdoom" ".xdlaunchrc"] r]
+	while {[gets $fd line] != -1} {
+
+		scan $line "%s%s" var val
+		# debugging
+		# puts stdout [format "var=<%s>, val=<%s>" $var $val]
+
+		if {[string compare $var $str_mag] == 0} {
+			set mag $val
+		} elseif {[string compare $var $str_tran] == 0} {
+			set translu $val
+		} elseif {[string compare $var $str_mouse] == 0} {
+			set mouse $val
+		} elseif {[string compare $var $str_cdaudio] == 0} {
+			set cdaudio $val
+		} elseif {[string compare $var $str_nomusic] == 0} {
+			set nomusic $val
+		} elseif {[string compare $var $str_nosound] == 0} {
+			set nosound $val
+		} elseif {[string compare $var $str_nomon] == 0} {
+			set nomonsters $val
+		} elseif {[string compare $var $str_resmon] == 0} {
+			set resmonsters $val
+		} elseif {[string compare $var $str_fastmon] == 0} {
+			set fastmonsters $val
+		} elseif {[string compare $var $str_level] == 0} {
+			set level $val
+		} elseif {[string compare $var $str_episode] == 0} {
+			set episode $val
+
+		} elseif {[string compare $var $str_skill] == 0} {
+			if {[string compare $val "1"] == 0} {
+				set skill $skill1
+			} elseif {[string compare $val "2"] == 0} {
+				set skill $skill2
+			} elseif {[string compare $val "3"] == 0} {
+				set skill $skill3
+			} elseif {[string compare $val "4"] == 0} {
+				set skill $skill4
+			} elseif {[string compare $val "5"] == 0} {
+				set skill $skill5
+			}
+
+		} elseif {[string compare $var $str_turbo] == 0} {
+			set turbo $val
+		} elseif {[string compare $var $str_boost] == 0} {
+			set boost $val
+
+		} elseif {[string compare $var $str_mode] == 0} {
+			if {[string compare $val "1"] == 0} {
+				set mp_coop 1
+			} elseif {[string compare $val "2"] == 0} {
+				set mp_coop2 1
+			} elseif {[string compare $val "3"] == 0} {
+				set mp_death 1
+			} elseif {[string compare $val "4"] == 0} {
+				set mp_death2 1
+			}
+
+		} elseif {[string compare $var $str_player] == 0} {
+			set player $val
+		} elseif {[string compare $var $str_host1] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set host1 $val
+			} else {
+				set host1 ""
+			}
+		} elseif {[string compare $var $str_host2] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set host2 $val
+			} else {
+				set host2 ""
+			}
+		} elseif {[string compare $var $str_host3] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set host3 $val
+			} else {
+				set host3 ""
+			}
+		} elseif {[string compare $var $str_port] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set port $val
+			} else {
+				set port ""
+			}
+		} elseif {[string compare $var $str_dup] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set dup $val
+			} else {
+				set dup ""
+			}
+
+		} elseif {[string compare $var $str_demosz] == 0} {
+			if {[string compare $val "-"] != 0} {
+				set demosize $val
+			} else {
+				set demosize ""
+			}
+		} elseif {[string compare $var $str_fsize] == 0} {
+			set fsize $val
+		}
+	}
+
+	close $fd
+}
+
+# ========================================================================
+# 		Variable initialization and processing
+# ========================================================================
+
+#
+# initialize GUI variables with usable defaults
+#
+set mag 1
+set mouse 0
+set translu 1
+set cdaudio 0
+set nomusic 0
+set nosound 0
+set nomonsters 0
+set resmonsters 0
+set fastmonsters 0
+set skill $skill3
+set episode 1
+set level 1
+set turbo 0
+set boost 10
+$booste config -state disabled
+set mp_coop 0
+set mp_coop2 0
+set mp_death 0
+set mp_death2 0
+set player 1
+set host1 ""
+$host1e config -state disabled
+set host2 ""
+$host2e config -state disabled
+set host3 ""
+$host3e config -state disabled
+set port ""
+set dup 2
+$porte config -state disabled
+set record ""
+set demosize ""
+$log config -state disabled
+set fsize 10
+
+#
+# restore the GUI settings from .rc file
+#
+RestoreSettings
+
+#
+# get the directory with the IWAD file
+#
+if [catch {set doomdir $env(DOOMWADDIR)} result] {
+	set doomdir "/usr/local/games/xdoom"
+}
+
+#
+# we start looking there for PWADs too
+#
+set pwaddir $doomdir
+GetPwads
+set pwad_selected ""
+
+#
+# look for demos
+#
+GetDemos
+set demo_selected ""
+
+#
+# look for saved games
+#
+set savedir [file join "~" ".xdoom"]
+GetSave
+
+#
+# Figure which IWAD is used. Carefull here, must be same order as in xdoom
+#
+if [file exists [file join $doomdir $doom2]] {
+	set iwad doom2
+} elseif [file exists [file join $doomdir $doomu]] {
+	set iwad doomu
+} elseif [file exists [file join $doomdir/$doom]] {
+	set iwad doom
+} elseif [file exists [file join $doomdir $doom1]] {
+	set iwad doom1
+} elseif [file exists [file join $doomdir $plutonia]] {
+	set iwad plutonia
+} elseif [file exists [file join $doomdir $tnt]] {
+	set iwad tnt
+} elseif [file exists [file join $doomdir $doom2f]] {
+	set iwad doom2f
+} else {
+	set iwad $unknown
+}
+.top.wad.i config -state disabled
+
+#
+# depending on the IWAD used the game doesn't have episodes
+#
+if {[string compare $iwad doom] == 0 || [string compare $iwad doom1] == 0
+    || [string compare $iwad doomu] == 0} {
+	$epie config -state normal
+} else {
+	$epie config -state disabled
+}
+
+#
+# depending on the turbo button enable/disable boost input
+#
+if {$turbo} {
+	$booste config -state normal
+} else {
+	$booste config -state disabled
+}
+
+#
+# depending on the multiplayer options enable/disable hosts/port/dup input
+#
+if {$mp_coop || $mp_coop2 || $mp_death || $mp_death2} {
+	$host1e config -state normal
+	$host2e config -state normal
+	$host3e config -state normal
+	$porte config -state normal
+	$dupe config -state normal
+} else {
+	$host1e config -state disabled
+	$host2e config -state disabled
+	$host3e config -state disabled
+	$porte config -state disabled
+	$dupe config -state disabled
+}
+
+font configure widgets -size $fsize
+font configure input -size $fsize
+update idletasks
+wm minsize . [winfo width .] [expr [winfo height .] + 30]
+
+# ========================================================================
+#			Event handling
+# ========================================================================
+
+#
+# no monster was selected, so make sure the other selections are off
+#
+proc NoMon {} {
+	global resmonsters fastmonsters
+	set resmonsters 0
+	set fastmonsters 0
+}
+
+#
+# respawn or fast monsters was selected, so no monsters off
+#
+proc Mon {} {
+	global nomonsters
+	set nomonsters 0
+}
+
+#
+# allow boost input depending on the turbo state
+#
+proc Turbo {} {
+	global turbo boost booste
+	if {$turbo} {
+		$booste config -state normal
+	} else {
+		$booste config -state disabled
+	}
+}
+
+#
+# one of the saved games was selected, make sure only one selection is active
+#
+proc SaveSel {sel} {
+	global save1 save2 save3 save4 save5 save6
+
+	foreach i {save1 save2 save3 save4 save5 save6} {
+		if {$i != $sel} {
+			upvar $i var
+			$var deselect
+		}
+	}
+}
+
+#
+# one of the multiplayer options was selected, make sure only one is active
+#
+proc NetGame {sel} {
+	global mp_coop mp_coop2 mp_death mp_death2
+	global host1e host2e host3e porte dupe
+
+	upvar $sel val
+	if {$val} {
+		# a selection was made
+		foreach i {mp_coop mp_coop2 mp_death mp_death2} {
+			if {$i != $sel} {
+				upvar $i var
+				set var 0
+			}
+		}
+		$host1e config -state normal
+		$host2e config -state normal
+		$host3e config -state normal
+		$porte config -state normal
+		$dupe config -state normal
+	} else {
+		# netgame was deselected
+		$host1e config -state disabled
+		$host2e config -state disabled
+		$host3e config -state disabled
+		$porte config -state disabled
+		$dupe config -state disabled
+	}
+}
+
+#
+# font size changed
+#
+proc FontConf {} {
+	global fsize
+
+	font configure widgets -size $fsize
+	font configure input -size $fsize
+	update idletasks
+	wm minsize . [winfo width .] [expr [winfo height .] + 30]
+}
+
+# ========================================================================
+#			Start xdoom and read it's log
+# ========================================================================
+
+#
+# run xdoom
+#
+proc Run {} {
+	global skill skill1 skill2 skill3 skill4 skill5
+	global input log mag mouse translu cdaudio nomusic nosound
+	global episode level
+	global nomonsters resmonsters fastmonsters turbo boost
+	global iwad pwad_selected doomdir unknown demo_selected
+	global sv_1 sv_2 sv_3 sv_4 sv_5 sv_6
+	global record demosize
+	global mp_coop mp_coop2 mp_death mp_death2
+	global player host1 host2 host3 port dup
+	global epie
+
+	# do we have an IWAD?
+	if {[string compare $iwad $unknown] == 0} {
+		tk_messageBox -type ok -message \
+		"No IWAD file found, set DOOMWADDIR appropriate!" \
+	 	-icon error -parent .
+		return
+	}
+
+	# magnification
+	set options "-"
+	append options $mag
+
+	# mouse
+	if {$mouse} {
+		append options " -grabmouse"
+	}
+
+	# translucency
+	if {!$translu} {
+		append options " -notrans"
+	}
+
+	# skill
+	append options " -skill "
+
+	if {[string compare $skill $skill1] == 0} {
+		append options "1"
+	} elseif {[string compare $skill $skill2] == 0} {
+		append options "2"
+	} elseif {[string compare $skill $skill3] == 0} {
+		append options "3"
+	} elseif {[string compare $skill $skill4] == 0} {
+		append options "4"
+	} elseif {[string compare $skill $skill5] == 0} {
+		append options "5"
+	}
+
+	# audio
+	if {$cdaudio} {
+		append options " -cdaudio"
+	}
+
+	if {$nomusic} {
+		append options " -nomusic"
+	}
+
+	if {$nosound} {
+		append options " -nosound"
+	}
+
+	# monsters
+	if {$nomonsters} {
+		append options " -nomonsters"
+	}
+
+	if {$resmonsters} {
+		append options " -respawn"
+	}
+
+	if {$fastmonsters} {
+		append options " -fast"
+	}
+
+	# episode/level
+	append options " -warp "
+        set tmp [$epie cget -state]
+	if {[string compare $tmp "normal"] == 0} {
+		append options $episode
+		append options " "
+	}
+	append options $level
+
+	# turbo boost
+	if {$turbo} {
+		append options " -turbo "
+		append options $boost
+	}
+
+	# saved games
+	set i -1
+	if {$sv_1} {
+		set i 0
+	} elseif {$sv_2} {
+		set i 1
+	} elseif {$sv_3} {
+		set i 2
+	} elseif {$sv_4} {
+		set i 3
+	} elseif {$sv_5} {
+		set i 4
+	} elseif {$sv_6} {
+		set i 5
+	}
+	if {$i != -1} {
+		append options " -loadgame "
+		append options $i
+	}
+
+	# add PWADs
+	if {[string length $pwad_selected] != 0} {
+		append options " -file"
+		append options $pwad_selected
+	}
+
+	# play demo
+	if {[string length $demo_selected] != 0} {
+		append options " -playdemo "
+		append options $demo_selected
+	}
+
+	# record demo
+	if {[string length $record] != 0} {
+		if {[file exists $record.lmp]} {
+			set choice [tk_messageBox -type yesno -default no \
+			-message "The demo file already exists. Really \
+				 overwrite it?" -icon warning -parent .]
+			if {[string compare $choice "no"] == 0} {
+				return
+			}
+		}
+		append options " -record "
+		append options $record
+		if {[string length $demosize] != 0} {
+			append options " -maxdemo "
+			append options $demosize
+		}
+	}
+
+	# network game
+	if {$mp_coop || $mp_coop2 || $mp_death || $mp_death2} {
+		if {$mp_coop2} {
+			append options " -altcoop"
+		} elseif {$mp_death} {
+			append options " -deathmatch"
+		} elseif {$mp_death2} {
+			append options " -altdeath"
+		}
+
+		append options " -net "
+		append options $player
+		if {[string length $host1] != 0} {
+			append options " "
+			append options $host1
+		}
+		if {[string length $host2] != 0} {
+			append options " "
+			append options $host2
+		}
+		if {[string length $host3] != 0} {
+			append options " "
+			append options $host3
+		}
+
+		if {[string length $port] != 0} {
+			append options " -port "
+			append options $port
+		}
+
+		if {[string length $dup] != 0} {
+			append options " -dup "
+			append options $dup
+		}
+	}
+	
+	# we don't want the end text in the log
+	append options " -noendtxt"
+
+	# activate log and clear it
+	$log config -state normal
+	$log delete 1.0 99.0
+
+	# for debugging
+	# puts stdout $options
+
+	# try to run xdoom with the options
+	if [catch {open "|xdoom $options |& cat" r+} input] {
+		$log insert end $input\n
+	} else {
+		fileevent $input readable Log
+		fconfigure $input -blocking 0
+	}
+
+	# This was necessary for the original sources with banner warning
+	# if PWAD's were used. The banner is disable in XDoom since a while.
+	#puts $input \n
+	#flush $input
+}
+
+#
+# read the log output from xdoom and write into the log text widget
+#
+proc Log {} {
+	global input log
+	if [eof $input] {
+		Stop
+	} else {
+		if {[gets $input line] > 0} {
+			$log insert end $line\n
+			$log see end
+			if {[string first "ST_Init" $line] != -1} {
+				wm iconify .
+			}
+		}
+	}
+}
+
+#
+# xdoom terminated, close the log
+#
+proc Stop {} {
+	global input log
+	catch {close $input}
+	$log config -state disabled
+	GetSave
+	GetDemos
+	wm deiconify .
+}
+
+# ========================================================================
+#			PWAD selection
+# ========================================================================
+
+#
+# browse filesystem for PWADs
+#
+proc BrowsePwads {} {
+	global pwaddir pwad
+
+	set typelist {
+	  {"PWAD file" {".wad"}}
+	}
+
+	set wadfile [tk_getOpenFile -initialdir $pwaddir -filetypes $typelist \
+	-parent . -title "xdlaunch PWAD selection"]
+
+	if {[string length $wadfile] != 0} {
+	    set pwaddir [file dirname $wadfile]
+	    GetPwads
+
+	    set i 0
+	    set w [$pwad get 0]
+	    while {[string length $w] != 0} {
+		if {[string compare $w [file tail $wadfile]] == 0} {
+			break
+		}
+		incr i
+		set w [$pwad get $i]
+	    }
+	    $pwad selection set $i
+	}
+}
+
+#
+# some PWADs in the listbox were selected
+#
+proc PwadSelected {} {
+	global pwad pwaddir pwad_selected
+
+	set pwad_selected ""
+	set i [$pwad curselection]
+	if {$i == 0} {
+		$pwad selection clear 1 end
+		return
+	}
+	foreach i [$pwad curselection] {
+		if {$i != 0} {
+			append pwad_selected " "
+			append pwad_selected [file join $pwaddir [$pwad get $i]]
+		} else {
+			$pwad selection clear 1 end
+			break
+		}
+	}
+}
+
+# ========================================================================
+#			Demo selection
+# ========================================================================
+
+#
+# a demo in the listbox was selected
+#
+proc DemoSelected {} {
+	global demo demo_selected
+
+	set i [$demo curselection]
+	if {$i != 0} {
+		set demo_selected [$demo get $i]
+	} else {
+		set demo_selected ""
+	}
+}
+
+# ========================================================================
+#			About
+# ========================================================================
+proc About {} {
+	toplevel .about
+	wm title .about About
+	wm transient .about .
+	wm withdraw .about
+	wm protocol .about WM_DELETE_WINDOW
+	wm resizable .about 0 0
+
+	text .about.txt -width 65 -height 14 -borderwidth 2 -relief sunken \
+		-font mytext
+	button .about.ok -text "OK" -font widgets -command {destroy .about}
+	grid .about.txt -sticky news
+	grid .about.ok -sticky ns -pady 5
+
+	.about.txt config -state normal
+	.about.txt delete 1.0 end
+	.about.txt insert end "\t\tXDoom Launcher Release 1.9\n"
+	.about.txt insert end "\t\t==========================\n\n"
+	.about.txt insert end "Copyright (C) 1998-2000 by Udo Munk (um@compuserve.com)\n\n"
+	.about.txt insert end "This program is free software; you can redistribute it and/or\n"
+	.about.txt insert end "modify it under the terms of the GNU General Public License\n"
+	.about.txt insert end "as published by the Free Software Foundation; either version 2\n"
+	.about.txt insert end "of the License, or (at your option) any later version.\n\n"
+	.about.txt insert end "This program is distributed in the hope that it will be useful,\n"
+	.about.txt insert end "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+	.about.txt insert end "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+	.about.txt insert end "GNU General Public License for more details."
+	.about.txt config -state disabled
+
+	update idletasks
+	set x [expr [winfo screenwidth .about]/2 - [winfo reqwidth .about]/2 \
+		- [winfo vrootx [winfo parent .about]]]
+	set y [expr [winfo screenheight .about]/2 - [winfo reqheight .about]/2 \
+		- [winfo vrooty [winfo parent .about]]]
+	wm geom .about +$x+$y
+	wm minsize .about [winfo width .about] [winfo height .about]
+	wm deiconify .about
+}
+
+# ========================================================================
+#			Program exit
+# ========================================================================
+
+proc Bye {} {
+	SaveSettings
+	exit
+}

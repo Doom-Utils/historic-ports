@@ -1,0 +1,13 @@
+sldoor.map		- Level map created with tkwadcad.
+sldoor.wgc		- Input file for wadgc to create the door texture.
+gdoor*.ppm		- Images in PPM P6 format for the door texture.
+comtxt.txt		- Resource file for UAC communication gadget.
+
+All door graphics done from scratch by Andre Majorel (amajorel@teaser.fr).
+Andre released the door graphics as Public Domain, so you are allowed to
+use them in your own PWAD's and redistribute them. It sure would be nice
+if you give credit to Andre for his art work, if you use his textures.
+
+The level map self was done by Andre with Yadex and me with tkwadcad. We
+passed it forth and back and we both contributed to it, it was a lot of
+fun until the door finaly worked perfect.

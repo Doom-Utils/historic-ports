@@ -1,0 +1,237 @@
+XDOOM - a portable Doom engine based on id Software's public sources
+--------------------------------------------------------------------
+
+This archive includes a Doom(tm) and Doom][(tm) compatible game engine
+and a GUI launcher for those, who don't like to use all the command
+line options.
+
+This software is programmed and tested on various UNIX systems, no work
+was done so far, to make it working on DOS, MS Windows, OS/2, Mac-OS or
+an Apple][. Chances aren't great that it ever will be ported to a ZX80,
+but you never know...
+
+The name XDOOM was chosen for some reasons:
+
+	- It's an UNIX (X) application.
+	- X also could stand for cross-platform support, portability
+	  is an issue here.
+	- And finally it's eXtended some, from what was released originally.
+
+
+
+Features of the game engine:
+
+	* Many bug fixes from the sources id Software released,
+	  this is a pretty solid, commercial quality like software,
+	  similar to the products sold by id for DOS and Windows.
+	    - no TFE
+	    - no Medusa
+	    - no bullet and missile eating walls
+	  For PWAD compatibility tests the game engine still can be
+	  compiled with this bugs/features of the original game.
+
+	* Plays the huge PWAD files which crash original Doom 2.
+	  Visplanes and other data structures are allocated dynamic
+	  instead of using fixed sized arrays, so they can't overflow.
+	  No 2s line HOM bug anymore, because the drawsegs are dynamic
+	  allocated and the engine cannot run out of drawsegs.
+
+	* Does merge sprites and flats from PWAD's correctly with the
+	  IWAD, no external tools necessary for merging a PWAD before
+	  playing it.
+
+	* Enhanced version can play WAD files in extended Hexen format,
+	  a Hexen compatible P code interpreter is builtin. This doesn't
+	  mean that XDoom can play Hexen WAD files, this means that Doom
+	  WAD files can be created, which take advantage of features from
+	  the Hexen engine. An example PWAD is included.
+	  The script language ACS invented by Raven Software for Hexen
+	  is used to write the scripts, the acc compiler needed for this
+	  is included in xwadtools.
+
+	* Portable, is known to work on:
+		Linux x86 1.2.x, 2.0.x, 2.1.x, 2.2.x
+		Linux Dec Alpha 2.2.x (*)
+		FreeBSD 3.x
+		OpenServer 5.0.x
+		Unixware 2.1.x
+		Unixware 7
+		Solaris SPARC 2.5.1, 2.6 & 2.7
+		AIX 4.2
+	  Can be ported to any UNIX with X11 without too much efford.
+	  Depending on the OS full screen direct frame buffer usage is
+	  supported too, as an example under Linux x86 it runs on [S]VGA
+	  and Voodoo 3DFX cards, on FreeBSD and SCO OS's it runs on [S]VGA
+	  cards on the system console.
+
+	  (*) Not fully tested, might not work properly, see release notes
+	      for details. Any feedback welcome.
+
+	* Works on various X visuals (auto detected):
+		8bpp Pseudo Color
+		16bpp True Color
+		24bpp True Color
+		32bpp True Color
+	  If game engine and X server run on different hosts with
+	  opposite byte order this works too for 8, 24 and 32bpp,
+	  not yet for 16bpp, colors will be wrong.
+
+	* Has a new cooperative multiplayer mode, boy, you really need
+	  to cooperate with each other to get anywhere. Might be a new
+	  challenge for WAD authors.
+
+	* Can spawn different things dependent on game mode, single player,
+	  deathmatch, cooperative. This is Boom compatible, example PWAD
+	  included.
+
+	* Perfect game play with mouse under X11 and full screen.
+
+	* Joystick support under Linux x86, prepared to write new joystick
+	  support modules for other OS's, if a device driver is available.
+
+	* Sound and music support for all OS's with a 4Front OSS sound driver,
+	  supports 8 and 16 bit sound cards and Creative AWE cards.
+
+	* CD audio support with an OS independent support layer,
+	  which allows to make it working with any OS.
+
+	* Chaingun can have it's own sound without an impact on the
+	  pistol sound. Example included to make it sound like a big bad
+	  gun and not like a rapid firing pistol ;-)
+
+	* Translucent objects supported with a translucency table
+	  in PWAD's. Some explosions are rendered translucent too.
+	  Tool to build translucency tables for PWAD's is included in
+	  xwadtools.
+
+	* Translucent wall textures and functional laser beam
+	  barriers and force fields, even translucent doors and
+	  translucent scrolling walls can be done. Example PWAD's
+	  included.
+
+	* Horizontally sliding doors, example PWAD included.
+
+	* User customizable switches and texture/flat animations,
+	  compatible to Boom and ZDoom. The included example PWAD's
+	  make use of this, a tool to build the tables for inclusion
+	  into PWAD's is included in xwadtools.
+
+	* UAC communication gadget for extended interaction with the
+	  environment. The included example PWAD's make use of the device.
+
+	* Supports new linedefs defined for Boom by TeamTNT, like scrolling
+	  floors and ceilings. That includes carrying objects on scrolling
+	  floors. So it's possible to build conveyor belts, escalators...
+	  There is more Boom support than this, like silent teleporters,
+	  tagged local doors, but it is too much to mention it all here and
+	  I might keep adding features. So, example PWAD included to show
+	  some of the implemented features, the PWAD is compatible between
+	  XDoom and Boom. Also some Boom levels work OK under XDoom, levels
+	  known to fully work are listed inside in the documentation.
+
+	* Displays the end text from IWAD's and PWAD's.
+
+	* If levels have no secrets, 100% secrets is displayed in the
+	  status.
+
+	* Some assembler optimization for low end x86 systems.
+
+	* Always Run key and 180 degree turn key.
+
+
+
+New with this release:
+
+	*****************************************************************
+	* To get out of the way of other Doom style game engines, the   *
+	* configuration files for XDoom and xdlaunch have been moved    *
+	* to $HOME/.xdoom. So before you play with this new release     *
+	* please create a directory $HOME/.xdoom and move the files     *
+	* $HOME/.doomrc and $HOME/.xdlaunchrc into this directory, else *
+	* you'll loose your current settings from previous releases!    *
+	* Also please move your saved game file (doomsav[0-5].dsg to	*
+	* $HOME/.xdoom, else the game engine and xdlaunch won't be able *
+	* to find them. Saved game files are not compatible between the *
+	* various game engines and this avoids loading an incompatible  *
+	* one, as long as you don't copy saved games from other engines *
+	* into $HOME/.xdoom, that is.                                   *
+	*****************************************************************
+
+	Reviewed sources again to make them better readable and weeded
+	out old stuff and misleading comments.
+
+	Ported to Linux (SuSE 6.3 on Dec Alpha), not fully tested.
+
+	Implemented working lasers for XDoomPlus.
+
+	Implemented normal exit switch for XDoomPlus.
+
+	Bug fixes for ACS script support.
+
+	Moved .doomrc from $HOME to $HOME/.xdoom.
+
+	Also saved game files now will reside in $HOME/.xdoom and option
+	-cdrom is gone.
+
+	Documentation work.
+
+
+
+Features of the GUI launcher:
+
+	* Easy to use and very portable (written in Tcl/Tk).
+	* Supports all options essential for game players, including
+	  network games.
+	* Allows multiple selection of PWAD's.
+	* Saves the settings into a .rc file.
+
+New with this release:
+
+	Made the pipe non-blocking, gives faster response in the log widget.
+
+	Moved .xdlaunchrc from $HOME to $HOME/.xdoom.
+
+	Added the -dup option and use a default of 2 extra packets, better
+	for congested networks where routers might drop some UDP packets.
+
+	The IWAD on CD option is gone, saved games for XDoom always are
+	in $HOME/.xdoom now.
+
+
+Add-Ons:
+
+Did you know that you can create your own virtual world based on the
+Doom engine, completely under UNIX too? For this you want xwadtools
+from: ftp://ftp.cdrom.com/pub/doom/source/xwadtools*. The tools include
+a GUI level map editor, BSP node builders, tools to extract and import
+data like graphics and sound into WAD files and much more. The tools
+collection is maintained by the same author than XDoom, with the help of
+other net citizens of course, and the tools are freeware and come with
+all sources.
+
+________________________________________________________________
+This archive includes free sources for id Software's Doom game
+distributed under the GNU Public License. Only the sources are
+free, the commercial IWAD's (data files with level maps, graphic
+and sound resources) are _NOT_!
+This Doom engine run's with the shareware IWAD, which is freely
+available at:
+
+	http://www.idsoftware.com/archives/doomarc.html
+
+Use that if you don't wish to purchase commercial IWAD's, but
+please notice that gameplay is very limited with the shareware
+IWAD. No IWAD is included in this archive, you need to download
+the shareware IWAD or use one of the commercial ones purchased
+from id.
+----------------------------------------------------------------
+
+Oh, by the way, all the software in this archive won't be supported
+by id Software and it comes without any warranty. If you manage
+to blow up your $3 million Cray UNIX server somehow with this software,
+it's your own fault and no one can be held responsible for this. The
+software is provided with all sources on AS IS basis and free of fees,
+just for the fun of it. Use the Source Luke, RTFS ;-)
+
+Enjoy,
+Udo Munk	(um@compuserve.com)

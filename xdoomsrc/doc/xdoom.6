@@ -1,0 +1,555 @@
+.TH xdoom 6 "5 March 2000"
+
+.SH NAME
+xdoom \- UNIX version of the popular DOS game
+
+.SH SYNOPSIS
+.BR xdoom " [" \-1234 "] [" \-net " [" \fI1234\fR "] " \fIhostname1\fR " [" \fIhostname2\fR "] [" \fIhostname3\fR "] [" -port\ \fIportnum\fR "]] [" \fIgeneric-doom-arguments\fR "]"
+
+.SH DISCLAIMER
+This program is furnished on an AS IS basis for the fun of it.
+id Software does not support this program.
+
+.SH DESCRIPTION
+XDoom is a complex, violent virtual reality game that can be played
+alone against the monsters or with/\&against other workstation users. For
+those unfamiliar with the game, please consult the files
+.B INSTRUCTIONS
+and \fBdmfaq666.txt\fR.
+Both files are available with the XDoom source.
+.LP
+In order to work properly, the path needs to include the location of
+the \fBxdoom\fR, \fBsndserver\fR and \fBmusserver\fR
+binaries. The IWAD file must either be in the current directory, or the
+environment variable
+.B DOOMWADDIR
+must point to where one of the IWAD files can be found.
+
+.SH OPTIONS
+These are the options as supported with XDoom,
+note that they differ a bit from the options of the PC DOS version as
+described in the file \fBdmfaq666.txt\fR, for XDoom
+this manual page is decisive.
+
+.TP
+.B \-1234
+Run the game with the specified amount of magnification.
+.B \-1
+is pretty
+small on most screens (320x200),
+.B \-4
+results in a 1280 pixel wide image.
+XDoom will not allow the
+image to be larger than the screen and prints an error message and
+exits if the desired magnification will not fit on the screen.
+The less magnification used, the faster the game runs.
+This option does work only with X11, if another frame buffer is used
+the resolution is fixed and the option is ignored.
+.TP
+\fB\@\fR \fIfilename\fR
+Used to read in a command line parm file.
+.TP
+.B \-altcoop
+Alternative cooperative mode for multi\-player games. In this mode the
+multi\-player items aren't spawned and if one player picks up items they
+are gone, this includes the key cards. This is a lot harder to play
+than the original cooperative mode and players really have to
+cooperate to get anywhere.
+.TP
+.B \-altdeath
+Activates DeathMatch v2.0.
+.TP
+.B \-avg
+Ends the game after 20 minutes.
+.TP
+.B \-cdaudio
+Play the music from audio CD's instead of using
+.B musserver
+to play the music included in IWAD and PWAD files. This only works
+on platforms where a CD audio support module was compiled into \fBxdoom\fR,
+else the option does nothing. The title music still will be
+played with
+.B musserver
+from the used IWAD.
+.TP
+.B \-comdev
+Internal development for texture mapping, commercial version. This option
+was used by id for the development of the game, not very useful for end
+users.
+.TP
+\fB\-config\fR \fIfilename\fR
+Reads an alternate configuration file instead of \fB~/.xdoom/.doomrc\fR.
+.TP
+.B \-deathmatch
+Starts network game in Deathmatch mode.
+.TP
+.B \-debugfile
+Dumps debugging info into file debug<player-no>.txt.
+.TP
+.B \-devparm
+Puts game into developers mode. Press F1 to take screen shots, press S to
+spawn a simulated multiplayer character at one of the player start
+positions in the map. Also the game engine draws little dots in the
+status bar, left in the Ammo field. This dots reflect the current frame rate,
+the formula to calculate the frame rate from the number of displayed
+dots is: 70 / (number of dots + 1).
+.TP
+\fB\-display\fR \fIdisplayname\fR
+Display the
+.B xdoom
+window on a remote X display. If another frame buffer than X11 is used
+the option is ignored.
+.TP
+\fB\-dup\fR \fI1-9\fR
+This option sends 1 \- 9 extra copies of player movement packets to
+the other systems in a network game, perhaps making game play more
+smooth.
+.TP
+\fB\-episode\fR \fInum\fR
+Starts on episode (1-3) for Doom and (1-4) for Ultimate Doom. Doom][
+and Final Doom don't have episodes, see the option \-warp for those.
+.TP
+.B \-extratic
+This option sends one extra copy of player movement packets to the other
+systems in a network game, perhaps making game play more smooth.
+.TP
+.B \-fast
+Nightmare mode without respawn of dead monsters.
+.TP
+\fB\-file\fR \fIwadfile ...\fR
+Allows usage of external PWAD files. If this option isn't used with absolute
+pathnames, then the PWAD files will be looked up in the current directory
+first, then /usr/local/share/doom, then /usr/share/doom. Lookup is done in
+that order to allow local files override global ones.
+Note that an IWAD file other than the shareware Doom 1 wad is required to
+use this option.
+.TP
+\fB\-geometry\fR \fIgeom\fR
+This option specifies the preferred position of the
+.B xdoom
+window, it's broken, don't use. If another frame buffer than X11 is used
+the option is ignored.
+.TP
+.B \-grabmouse
+Keeps the X focus in the Doom window, used to play the game with a mouse.
+To release the mouse pointer for other usage pause the program.
+If another frame buffer than X11 is used the option is ignored, the mouse
+configuration in the config file \fB~/.xdoom/.doomrc\fR is used instead.
+.TP
+\fB\-loadgame\fR \fInumber\fR
+Starts from a saved game (0-5).
+.TP
+\fB\-maxdemo\fR \fIsize\fR
+Specifies the maximum buffer size for demo recording in kilobyte. The default
+buffer size is 128 kb.
+.TP
+\fB\-net\fR \fIplayerindex hostname1\fR [\fIhostname2\fR] [\fIhostname3\fR]
+This is perhaps the neatest feature in Doom - one can play each other.  To
+start a net game between three workstations named huey, dewey and louie,
+one would enter the following commands for the respective workstations:
+
+huey% xdoom -net 1 dewey louie
+
+dewey% xdoom -net 2 huey louie
+
+louie% xdoom -net 3 huey dewey
+
+One can choose to play cooperatively or shoot each other in the back -
+it's up to you.
+.TP
+.B \-noblit
+If used together with \fB\-timedemo\fR the demo will be played with the game
+engine rendering, but the results are not copied into the frame buffer.
+Only useful for comparative timing.
+.TP
+.B \-nochgun
+Do not use the extra chaingun sound from \fBxdoom.wad\fR, use the pistol
+sound instead. Some PWAD's substitute the pistol sound and count on
+chaingun sound linked to pistol sound. Use this option for such PWAD's,
+like Chex Quest (bloodless Doom for kids from that cereal company).
+.TP
+.B \-nodraw
+If used together with \fB\-timedemo\fR the demo will be played without that
+the game engine renders anything. Only useful for comparative timing.
+.TP
+.B \-noendtxt
+Do not write the end text, this option mainly was added for
+.B xdlaunch,
+so that the log isn't filled with this stuff. Handy too if the xterm
+is broken and doesn't handle the ANSI terminal sequences correct or
+the console device is not ANSI compatible.
+.TP
+.B \-nomonsters
+Starts the game without monsters.  Handy if all one wants to shoot
+are the other net players :-).
+.TP
+.B \-nomusic
+Don't play the music.
+.TP
+.B \-nosound
+No sound at all, so the boss won't call the Marines because one
+started XDoom
+in the office with volume set to 100% and she or he thinks an office
+war with firearms started.
+.TP
+.B \-notrans
+Switch translucency off completely. While it looks pretty good with the
+original id levels for Doom and many of the third party levels, there are
+some add-ons which look very stupid with translucency.
+.TP
+\fB\-pdebug
+Prints debugging informations for running Action Code Scripts. The
+information contains the script number running, instruction pointer
+relative to the start of code for this script, stack pointer and
+the P code executed. This option is interesting for WAD authors,
+the informations are not very helpful for players.
+.TP
+\fB\-playdemo\fR \fIfilename w/o .lmp\fR
+Plays back a recorded demo. The file must be in the current directory!
+.TP
+\fB\-port\fR \fInumber\fR
+Specify an alternate port for network play. By default XDoom
+uses UDP port 5029.
+.TP
+\fB\-record\fR \fIfilename w/o .lmp\fR
+Records a demo, the file will be created in the current directory.
+.TP
+.B \-regdev
+Internal development for texture mapping, registered version. This option
+was used by id for the development of the game, not very useful for end
+users.
+.TP
+.B \-respawn
+Causes enemies to respawn in non-Nightmare.
+.TP
+.B \-shdev
+Internal development for texture mapping, shareware version. This option
+was used by id for the development of the game, not very useful for end
+users.
+.TP
+.B \-showkeysym
+Print value of key press on stdout; useful for quickly remapping keys
+via ones
+.B ~/.xdoom/.doomrc
+file. This option only works if X11 is used, for other frame buffers the
+printed result won't be visible, because the video card is in full screen
+graphics mode. Use the contributed program \fBshowkey\fR for getting the
+keyboard scan codes for the full screen versions of the program. Please
+also note that the keys for the full screen versions of the program
+cannot be remapped in the configuration file, instead the scan code
+translation table in the sources needs to be modified.
+.TP
+\fB\-skill\fR \fIskill\fR
+Starts on skill level (1-5).
+.TP
+.B \-statcopy
+Copies game statistic to some device, useless without this device.
+.TP
+.B \-stripextbits
+Some PWAD's designed for original Doom or Doom][ have bits set in
+linedef flags, which are not used by the original engine and so ignored.
+XDoom supports some more bits (for PWAD's especially designed for
+XDoom) and this PWAD's won't play correct then.
+Use this option to strip the undefined bits from the linedefs, this
+makes the PWAD play correct.
+.TP
+\fB\-timedemo\fR \fIfilename w/o .lmp\fR
+Calculates the number of times the screen is redrawn when playing a demo.
+To time the demos included in WAD files use the names 'demo1', 'demo2'
+and so on, if a file demo1.lmp doesn't exist the demo included in the
+WAD file will be timed.
+.TP
+\fB\-timer\fR \fItime\fR
+Used in deathmatch mode, the levels will end after \fItime\fR minutes and
+after showing the summary the game proceeds to the next level.
+.TP
+\fB\-turbo\fR \fI1-255\fR
+Increases the speed of the marine.
+.TP
+\fB\-warp\fR \fIepisode level\fR
+Warps to \fIepisode\fR (1-3) \fIlevel\fR (1-9) in Doom. Ultimate Doom has
+four episodes, so one can use (1-4) and (1-9). For Doom][ and Final Doom
+just use the level (1-32), this games don't have episodes.
+.TP
+\fB\-wart\fR \fIepisode level\fR
+Loads a PWAD named E\fIepisode\fRM\fIlevel\fR.wad.
+
+.SH EXTENDED FEATURES
+XDoom has some extended features which weren't implemented in the original
+DOS game, nor were they part of the public source release.
+.LP
+The Shift-Lock key makes the marine always run without the need to
+hold down the Shift key all the time. Hit the key again for walking.
+This key can't be remapped in \fB~/.xdoom/.doomrc\fR.
+.LP
+Demons are popping up in your back and killing you? Not a problem
+anymore because
+XDoom allows fast 180 degree turns. The default key for this is <, the
+key can be remapped in \fB~/.xdoom/.doomrc\fR. Using it is cheating,
+don't use it with the original id Software IWAD's. But some PWAD
+authors implement very nasty ambushes, in this case the usage of
+180 degree turns give the average player a fighting chance.
+.LP
+In the original game one couldn't switch to the fist anymore after
+one got the chainsaw. This is modified in XDoom,
+it works the same as with the shotgun/double shotgun in Doom][.
+.LP
+Key 8 holsters the weapon, good for screen shoots, WAD designers
+and alien free levels which are for exploring only.
+.LP
+The cheat code IDBEHOLDB adds the ammo backpack.
+.LP
+If a level doesn't include any secret sectors, XDoom will report
+100% secrets found in the status for the level after finishing it. This
+is to prevent the disappointing search for secrets, when there aren't any.
+.LP
+In the original game there was no sound when one punched the walls,
+which is a bit odd and so it was modified in XDoom.
+.LP
+Smoke trails are added to player and Cyberdemon missiles, it looks
+cool from player view to see that missiles smoking away and it adds
+to deathmatch games, because one can see the path of a missile.
+.LP
+XDoom
+got a handheld communication gadget for communication with the environment.
+It can be activated and deactivated with F5. Be careful with this
+because the action will continue, while one holds the device in front of the
+face! If the display of the device shows the text "NO\ OS\ BOOTED", that
+means that the PWAD doesn't contain any electronics one could communicate
+with. The text "DEVICE\ MALFUNCTION" indicates an error in the COMTXT
+PWAD resource, the next line shows the missing or misspelled label for the
+WAD author.
+Whenever the gadget has new informations a little CD icon will be displayed
+and a sound signal is played.
+This icon will be removed after the gadget was used. Intentionally there is
+no message buffer, so activate the device when the icon appears or risk
+loosing informations.
+.br
+If one tries to use a teleporter or open a door and the gadget reports that
+the teleporter is deactivated, or the door is locked, one has to search for
+an access terminal, to unlock the door or activate the teleporter. Access
+terminals look like a computer screen but are animated. As usual walk up
+to the terminal and press the use key. The gadget will report then that
+a door was unlocked or a teleporter was activated. Also an access terminal
+could switch off a force field. Whenever you see something that looks like
+an access terminal use it and see what happens, if something happened the
+gadget will report it.
+.LP
+In original Doom the monster AI caused monsters to get stuck in door tracks
+and so stopping them to come after the player often. This has been fixed
+in XDoom, if not playing a demo in 1.9 compatibility mode. Right now
+there is no command line or menu option to downgrade monster AI in
+gameplay, probably the game is a bit more difficult to play now. If anyone
+needs an option for monster AI send email to \fIum@compuserve.com\fR,
+otherwise it probably won't get implemented, because smarter monsters are
+more fun to play with.
+.LP
+The instructions included in some PWAD's request that the PWAD gets merged
+with the IWAD with programs like DeuTex or DeuSF. This is not necessary for
+XDoom, the engine is bug fixed to merge sprites and flats contained in
+PWAD's properly with the ones contained in the IWAD.
+
+.SH PLATFORM REQUIREMENTS/RECOMMENDATIONS
+If using X11, make sure the DISPLAY variable is set to :0.0 and not
+hostname:0.0, so that shared memory (which is a lot faster) will be used.
+Naturally, this is not an option if one is using an X terminal or a
+remote X server.
+.LP
+If using fvwm as window manager hit the Num Lock key while playing XDoom.
+.LP
+If using another frame buffer than X11 it might be necessary to run the
+program as user root. Some OS's don't allow access to the frame buffer
+from user processes without root permission. It's not a good idea to
+install the program setuid root because of this. Doom was not designed
+with UNIX security problems in mind and XDoom
+doesn't deal with this either. Installing the program setuid root would
+allow users other than root to run the program and get access to the
+frame buffer, but this might compromise the security of the system,
+\fBcaveat utilitor\fR!
+.LP
+If used with another frame buffer than X11 the mouse configuration needs
+to be done in \fB~/.xdoom/.doomrc\fR. The parameter "mousedev" is the
+mouse device, usually /dev/mouse. "mousetype" is the type of mouse used and
+can be "microsoft", "mousesystems", "mmseries", "logitech", "busmouse",
+"ps2", "logiman", "gpm", "spaceball", "intellimouse" or "imps2".
+The parameter "use_mouse" must be set to 1 to use a mouse, by default
+it will be 0, in case the mouse configuration is giving trouble.
+All this parameters must be set if using Linux x86, because mouse support
+is not an integral component of the OS, but \fBsvgalib\fR is used instead.
+.br
+For SCO Unixware and OpenServer only the parameter "use_mouse" needs to be
+set to 1 to use the system mouse, no further configuration is necessary
+because the OS handles the rest and the other parameters are ignored.
+.LP
+Don't start the program versions using direct frame buffer access like for
+[S]VGA and Voodoo cards from X, switch to a text console to run those.
+.LP
+If a version with Joystick support is used, the Joystick must be enabled
+in \fB~/.xdoom/.doomrc\fR, similar to the mouse. For this change the parameter
+use_joystick from 0 to 1. One also can assign the functions Fire,
+Strafe, Use and Speed to Joystick buttons in \fB~/.xdoom/.doomrc\fR.
+.LP
+If one wants to play with sound and/or music an OSS compatible sound driver
+is needed. The 4-Front drivers (release 3.8 or later) work fine. These drivers
+are available for many platforms from 4-Front Technology (www.4front-tech.com).
+SCO has made free version of these drivers available for UnixWare and
+OpenServer. Linux and FreeBSD also contain free versions of these drivers.
+.LP
+Musserver won't work under OpenServer 5, even not with the latest OSS
+release 3.9.1e. Don't try it, it will just write lots of error messages
+into the syslog, there still is a timing problem with the MIDI sound driver.
+.LP
+Musserver will add the path from DOOMWADDIR for files without a pathname.
+To play resources from a PWAD in the current directory use filenames
+like ./mylevel.wad.
+.LP
+The number of used sfx sound channels can be configured in
+\fB~/.xdoom/.doomrc\fR, by default this is 8. This doesn't sound real great
+but is a working default for low end systems. If a system can handle the load,
+it should be increased to 16, the maximal possible value is 64. This only has
+an impact on the builtin sound, with the external sndserver process always
+8 sound channels will be used.
+.LP
+Some of the CD audio support modules use a command line CD player program
+which must be installed on the system and be found in PATH. If it
+isn't there the option \-cdaudio won't work.
+
+.SH "ENVIRONMENT"
+.TP
+.B DOOM_SOUND_SAMPLEBITS
+.B xdoom
+and
+.B sndserver
+request the sound driver to determine the sound cards capabilities and
+decide whether to play 16bit or 8bit sound samples. Unfortunately there
+are sound cards which are detected as 16bit capable but only work with
+8bit sound samples. If one has such a card and doesn't want to get rid of it,
+set DOOM_SOUND_SAMPLEBITS=8 and the programs will play 8bit sound samples.
+.TP
+.B DOOMWADDIR
+The directory where XDoom can find WAD files.
+At least one IWAD file is required to play.
+A PWAD file may be used but only in addition to an IWAD and it must be one
+of the registered IWAD's, won't work with the shareware IWAD.
+.TP
+.B PATH
+The path variable needs to include the directory containing
+the sndserver and musserver binary.
+
+.SH "FILES"
+.TP
+.B xdoom
+The XDoom executable that uses X11 with the MIT shared memory extension
+for drawing.
+.TP
+.B sxdoom
+The XDoom executable that uses [S]VGA direct frame buffer access. Don't
+run this from a xterm under X11, switch to a text console.
+.TP
+.B glxdoom
+The XDoom executable that uses a Voodoo 3DFX as frame buffer with the
+Glide library, only available on Linux x86. Don't
+run this from a xterm under X11, switch to a text console.
+.TP
+.B sndserver
+The executable that handles sound output for the Doom game, if sound support
+wasn't compiled into the game itself. If it isn't in the path, one won't get
+any sound without builtin sound. Sndserver will write 11.025 kHz 16bit
+stereo or 8bit mono PCM depending on the capabilities of the sound card.
+\fBXdoom\fR will do the same with sound support builtin.
+.TP
+.B musserver
+The executable that handles music output for the Doom game. If it isn't
+in the path, one won't get any music. By default musserver writes the
+music samples to the OPL2/OPL3 FM synthesizer on the sound card, but it
+can use external MIDI devices and better MIDI engines on Creative AWE
+cards too, consult the documentation for musserver for the details.
+.TP
+.B ~/.xdoom
+Directory for configuration files and saved game files.
+.TP
+.B ~/.xdoom/.doomrc
+Contains configuration, keymap, mouse and sound defaults. To adjust key
+mappings, try using the -showkeysym option. The contents of the file is
+self explanatory, so the various meanings of the configuration is not
+explained in detail here.
+.TP
+.B INSTRUCTIONS
+Detailed instructions. This file is included with the XDoom source
+distribution.
+.TP
+.B dmfaq666.txt
+The latest version of the popular Frequently Asked Questions regarding Doom.
+This file is included with the XDoom source distribution.
+.TP
+.B xdoom.wad
+This PWAD file includes new data which is not included in the original
+id Software IWAD's. Same as with the IWAD's this file must be found in
+the current directory or where DOOMWADDIR points to.
+.TP
+.B doom1.wad
+The shareware version of the Doom 1 wad. This wad will only allow limited
+play of Doom 1. Third party wads may not be used.
+.TP
+.B doom.wad
+The retail version of Doom 1.
+.TP
+.B doom2.wad
+Doom][. This wad is required for playing Doom][ third party wads.
+.TP
+.B doom2f.wad
+French version of Doom][, allows to play Doom][ third party wads too.
+.TP
+.B doomu.wad
+Ultimate Doom. This is a special version of the Doom 1 wad which contains
+an extra episode. If the file is named
+.B doom.wad
+the fourth episode will be auto detected too.
+.TP
+.B tnt.wad, plutonia.wad
+Final Doom.
+
+.SH BUGS/ERRORS
+If XDoom
+exits immediately at startup with the message "Game\ mode\ indeterminate."
+it means \fBxdoom\fR cannot find an IWAD file. One of the IWAD files specified
+above must be present in the current directory or the environment variable
+.B DOOMWADDIR
+must point to where one of the IWAD files may be found. Hint: don't put all
+the IWAD files into one directory, the programs look for them in some order
+to decide the game version one is playing. So the various WAD's must be in
+different directories, if one doesn't want to play the same one all the time.
+.P
+Similar, if it exits with the message "SWITCHES\ not\ found!" \fBxdoom\fR
+cannot find xdoom.wad.
+.P
+Note that PWAD files (third party wads) can be specified with the "-file"
+option. An IWAD file must be present to use a PWAD file.
+.P
+Keep in mind that some of the third party PWAD's have bugs; errors such
+as "Bad\ texture\ map\ column" are in the PWAD, not in the game.
+
+.SH NOTES
+Note other features of the game are just that \- features.  This game
+is offered as\-is, with no support possible or offered from
+id Software.  For help, please try the Doom-related newsgroups such as
+rec.games.computer.doom.*.  Neither id Software or anyone who worked
+on this project is responsible for any missed deadlines, meetings or loss
+of sleep and productivity resulting from playing XDoom.
+
+.SH AUTHOR
+Doom, Doom][, Ultimate Doom and Final Doom are registered trademarks
+of id Software (http://www.idsoftware.com). XDoom is based on
+the sources id released to the public in December 1997.
+.LP
+Hexen is a registered trademark of Raven Software (http://www.ravensoft.com),
+XDoom includes some features from the Hexen engine, also Raven released
+their sources.
+.LP
+Features from the Boom engine by TeamTNT (http://www.teamtnt.com) and from
+Lxdoom by Colin Phipps (http://lxdoom.linuxgames.com) have been used,
+to improve XDoom.
+.LP
+The XDoom project was created and is maintained by Udo Munk
+(um@compuserve.com). The distribution includes a file CREDITS, which
+should listen everyone who has contributed something.

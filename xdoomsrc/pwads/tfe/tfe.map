@@ -1,0 +1,117 @@
+# This map file was created with tkwadcad
+
+LEVEL_START 0 1 0 Doom2
+
+ VERTEXES_START
+  V0 : 128 -64
+  V1 : 640 -64
+  V2 : 640 -576
+  V3 : 128 -576
+  V4 : 224 -432
+  V5 : 256 -432
+  V6 : 256 -440
+  V7 : 224 -440
+  V8 : 352 -288
+  V9 : 416 -288
+  V10 : 352 -320
+  V11 : 416 -320
+  V12 : 352 -352
+  V13 : 416 -352
+  V14 : 352 -384
+  V15 : 416 -384
+  V16 : 416 -256
+  V17 : 352 -256
+  V18 : 416 -224
+  V19 : 352 -224
+ VERTEXES_END
+
+ SECTORS_START
+  S0 : 0 256 FLOOR0_3 FLAT2 200 0 0
+  S1 : 72 256 FLOOR0_3 FLAT2 200 0 0
+  S2 : 0 256 FLOOR0_3 FLAT2 200 0 1
+  S3 : 0 256  FLOOR0_3 FLAT2 200 0 0
+  S4 : 0 256  FLOOR0_3 FLAT2 200 0 0
+  S5 : 0 256  FLOOR0_3 FLAT2 200 0 0
+  S6 : 0 256  FLOOR0_3 FLAT2 200 0 0
+ SECTORS_END
+
+ LINEDEFS_START
+  V0 V1 : 1 0 0
+   S0 0 0 - - GRAY4
+   -
+  V1 V2 : 1 0 0
+   S0 0 0 - - GRAY4
+   -
+  V2 V3 : 1 0 0
+   S0 0 0 - - GRAY4
+   -
+  V3 V0 : 1 0 0
+   S0 0 0 - - GRAY4
+   -
+  V5 V4 : 5 0 0
+   S0 0 0 - GRAY1 -
+   S1 0 0 - - -
+  V6 V5 : 5 0 0
+   S0 0 0 - GRAY1 -
+   S1 0 0 - - -
+  V7 V6 : 5 127 1
+   S0 0 0 - SW1EXIT -
+   S1 0 0 - - -
+  V4 V7 : 5 0 0
+   S0 0 0 - GRAY1 -
+   S1 0 0 - - -
+  V10 V11 : 20 0 0
+   S3 0  0 - STEP4 -
+   S4 0  0 - - -
+  V11 V9 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S4 0 0 - - -
+  V8 V9 : 20 0 0
+   S4 0  0 - STEP4 -
+   S5 0  0 - - -
+  V8 V10 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S4 0 0 - - -
+  V12 V13 : 20 0 0
+   S2 0  0 - STEP4 -
+   S3 0  0 - - -
+  V13 V11 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S3 0 0 - - -
+  V10 V12 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S3 0 0 - - -
+  V15 V14 : 20 0 0
+   S2 0 0 - - -
+   S0 0 0 - STEP4 -
+  V15 V13 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S2 0 0 - - -
+  V12 V14 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S2 0 0 - - -
+  V9 V16 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S5 0 0 - - -
+  V18 V19 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S6 0 0 - - -
+  V17 V8 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S5 0 0 - - -
+  V16 V18 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S6 0 0 - - -
+  V17 V16 : 20 0 0
+   S5 0  0 - STEP4 -
+   S6 0  0 - - -
+  V19 V17 : 20 0 0
+   S0 0 0 - GRAYBIG -
+   S6 0 0 - - -
+ LINEDEFS_END
+
+ THINGS_START
+  1 : 224 -528 45 7
+ THINGS_END
+
+LEVEL_END

@@ -1,0 +1,53 @@
+Solaris SPARC:
+==============
+The sound code is not ported yet to Sun Solaris SPARC OS's, but sound
+works if you use the sndserver binary from the sundoom package. It's
+available at ftp.idsoftware.com.
+
+Linux x86 2.0.x:
+================
+If compiled with SNDINTR the svgalib version won't work.
+
+In textmode the Linux console can be switched to modes others than 80x25.
+If I do that on a S3 Virge card and use 132x43 the svgalib version doesn't
+work anymore, seems that svgalib cannot switch the video modes correctly.
+So if you want to use the svgalib version of XDoom, better boot Linux with
+a 80x25 console.
+
+If you use it with the 3DFX device driver for Voodoo cards chmod 666 /dev/3dfx,
+else it won't run from accounts other than root. Same for Linux x86 2.2.x.
+
+Linux PPC:
+==========
+If you try to build it on Linux Apple PPC hardware with the included
+Makefile, it's not very likely that the program will compile, because
+too many things are broken in the OS header files, which needs to be
+repaired. If you don't have experience with fixing broken UNIX systems
+your self just forget about it. Also I'm not able to help with it,
+because I don't have any Apple PPC hardware my self, the Apple PPC
+things included were done by others.
+
+Hm, above is the status from trying to get it working with an unknown
+release of Linux PPC in 1998 sometime. Probably Linux on Apple PPC
+hardware has matured in the meantime and chances to get it working
+might be much better nowadays. So if anyone is playing with this on
+Apple PPC hardware under Linux I would appreciate some feedback.
+
+Linux Dec Alpha 2.2.x
+=====================
+The sources were compiled on a SuSE 6.3 Linux (2.2.x kernel) and there
+are a few warnings. I was not able to fully test the game, because I
+used one of Compaqs Internet test drive machines for doing the port.
+They provide telnet access only and no ssh access and because all X
+servers I use always are protected by firewalls, I couldn't get the
+game engine rendering graphics on my X servers. So I know that the engine
+runs OK until it creates the X window, no idea if it works stable or if
+there are any bugs left beyond that point. If anyone plays arround with
+this on Dec Alpha systems I would appreciate some feedback.
+Of course without direct access to a Dec Alpha system I haven't done
+any work yet on the sound support.
+
+OpenServer5:
+============
+If compiled with SCO cc on OS5 the program aborts because some pointer
+arithmetic doesn't work correct. Use GNU C or EGCS.

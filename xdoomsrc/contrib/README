@@ -1,0 +1,23 @@
+The xdoom.sh shell script template was contributed by Ron Record (rr@sco.com).
+If you have more than one of the id Software titles, like Doom and Doom II
+and Final Doom, copy the script to /usr/local/bin as doom, doom2, tnt and
+so on. Then modify the DOOMWADDIR variable in each script to point to the
+directory with the IWAD file for the title. If you wish to play the TNT
+episode from Final Doom just type tnt and off you go.
+
+The sxdoom.sh script was derived from xdoom.sh and does the same for the
+[S]VGA full screen version of the program on various platforms.
+
+Same with glxdoom.sh, this one is for Voodoo 3DFX graphic cards, only
+supported under Linux with the Glide library from 3DFX.
+
+showkey.c is a program to show the scan codes of keyboards on PC UNIX's,
+when the keyboard is switched into raw (scan code) mode. For compiling
+on PC UNIX's use:
+
+Linux:			cc -DLINUX showkey.c -o showkey
+Openserver5:		cc -DSCOOS5 showkey.c -o showkey
+Unixware2, Unixware7:	cc -DSCOUW showkey.c -o showkey
+
+Then run the program and hit the keys, for which you need to know the
+scan code. The program terminates if there isn't any input for 10 seconds.

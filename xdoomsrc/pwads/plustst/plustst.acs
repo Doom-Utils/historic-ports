@@ -1,0 +1,99 @@
+#include <xdoom/common.acs>
+
+int	flag2;	// flag for script 2 is map variable to test those
+
+//
+// Script 1, runs at level start
+//
+script 1 OPEN
+{
+	int i;
+
+	// set linespecial of line with id 2 (laser barrier) to damage things
+	setlinespecial(2, 73, 0, 0, 0, 0, 0);
+
+	// print some greeting
+	print(s:"WELCOME TO PLUSTST");
+	delay(const: 35 * 5);
+	print(s:"BORING ROOM, HU?");
+	delay(const: 35 * 5);
+	print(s:"OK, I'LL MAKE IT A BIT MORE INTERESTING");
+
+	// start script 3
+	ACS_Execute(3, 1, 0, 0, 0);
+
+	// some loop
+	for (i = 0; i < 10; i++)
+	{
+		// change floor and ceiling texture in sector with tag 1
+		changefloor(1, "FLAT22");
+		changeceiling(1, "TLITE6_5");
+
+		// wait a bit and change textures back
+		delay(const: 35);
+		changefloor(1, "FLOOR0_3");
+		changeceiling(1, "TLITE6_6");
+
+		// and wait again
+		delay(const: 35);
+	}
+}
+
+//
+// This script is triggered by player crossing a line,
+// it stops and resumes script 3, dependend on the flag.
+// Only stop/resume script 3 if line is crossed from
+// its first side.
+//
+script 2 (void)
+{
+	if (lineside() == LINE_FRONT)
+	{
+		if (!flag2)
+		{
+			ACS_Suspend(const: 3, 1);
+			flag2 = 1;
+		}
+		else
+		{
+			ACS_Execute(const: 3, 1, 0, 0, 0);
+			flag2 = 0;
+		}
+	}
+}
+
+//
+// This script plays an animation on a wall. With scripts
+// we can play our own animations completely, without using
+// the animated textures build into the game engine, or
+// use loadable ones.
+//
+script 3 (void)
+{
+	while (TRUE)
+	{
+		setlinetexture(1, SIDE_FRONT, TEXTURE_MIDDLE, "SW2COMM");
+		delay(const: 4);
+		setlinetexture(1, SIDE_FRONT, TEXTURE_MIDDLE, "SW1COMM");
+		delay(const: 4);
+	}
+}
+
+//
+// This script is triggered if user pushes the lines of the machine with
+// the scroller.
+//
+script 4 (void)
+{
+	print(s:"OUCH, DON'T RUN ME INTO MACHINES!");
+}
+
+//
+// This script also runs at level start, but then it waits until script 1
+// has terminated.
+//
+script 5 OPEN
+{
+	scriptwait(const: 1);
+	print(s:"HAVING FUN?");
+}

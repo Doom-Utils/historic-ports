@@ -1,0 +1,12 @@
+This PWAD is a demonstration of the Tutti Frutti Effect (aka TFE) bug in
+engines distributed by id. The problem is caused by short textures which
+are not tiled correctly in the rendering engine. Most Doom engine ports
+have fixed this problem, however, XDoom can be compiled with bugs fixed
+and without. So use this PWAD to test if XDoom was compiled with the bug
+fixes.
+
+The level just is one small room with a switch. If the switch is pressed
+stairs raise from the floor in the middle of the room. The front of the
+steps have a short lower texture. If the stairs look OK then the engine
+was compiled with bug fixes. If not random colored pixels are displayed
+on the front of the steps.

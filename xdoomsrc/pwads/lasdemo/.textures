@@ -1,0 +1,12 @@
+# TkWadCad support file: local textures for this PWAD project
+
+[TEXTURES]
+SKY1 sky1.ppm 256 128 1
+UM_LASR um_lasr.ppm 64 128 1
+UM_LASL um_lasl.ppm 64 128 1
+UM_LASSL um_lassl.ppm 8 128 1
+UM_LASSR um_lassr.ppm 8 128 1
+UM_VLAS um_vlas.ppm 4 64 1
+UMCOMP1 umcomp1.ppm 64 64 1
+LASER01 laser01.ppm 16 128 1
+LASER03 laser03.ppm 64 72 1

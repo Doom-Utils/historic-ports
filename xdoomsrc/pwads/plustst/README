@@ -1,0 +1,19 @@
+If you run this PWAD make sure you have set messages on in the game engine.
+The scripts print some messages and this is done with the standard Doom
+message handling for now, so if messages are off one won't see them.
+
+Don't start shooting the trooper, he's facing the wall by purpose and
+can't see you. Wait a bit until the scripts are doing their stuff and
+watch the fun.
+
+Also don't shoot the barrels, go into the sector with lowered floor
+and ceiling lights. This also gets rid of the trooper, if you resisted
+so far to shoot him :-)
+
+You can stop and restart the wall texture switch animation by walking
+into this section. This switch is not usable, is just some wall animation
+played with a script.
+
+Try pushing the machine with the scrolling texture on it.
+
+Don't run into the laser or you're toast, better switch it off :-)

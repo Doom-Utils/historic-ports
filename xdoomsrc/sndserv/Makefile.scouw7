@@ -1,0 +1,44 @@
+##########################################################
+#
+# $Id:$
+#
+# $Log:$
+#
+#
+
+# use this for SCO compiler
+CC=cc
+CFLAGS=-O2 -DNORMALUNIX -DSCOUW7
+
+# use this for EGCS compiler
+#CC=gcc
+#CFLAGS=-O2 -Wall -DNORMALUNIX -DSCOUW7
+
+LDFLAGS=-s
+LIBS=-lm
+
+O=unixware7
+
+all:	 $(O)/sndserver
+
+clean:
+	rm -f $(O)/*
+
+# Target
+$(O)/sndserver: \
+	$(O)/soundsrv.o \
+	$(O)/sounds.o \
+	$(O)/wadread.o \
+	$(O)/strcmp.o \
+	$(O)/oss.o
+	$(CC) $(CFLAGS) $(LDFLAGS) \
+	$(O)/soundsrv.o \
+	$(O)/sounds.o \
+	$(O)/wadread.o \
+	$(O)/strcmp.o \
+	$(O)/oss.o -o $(O)/sndserver $(LIBS)
+	echo make complete.
+
+# Rule
+$(O)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@

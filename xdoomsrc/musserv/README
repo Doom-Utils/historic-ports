@@ -1,0 +1,452 @@
+Musserver 1.4  (June 14, 1997)
+
+	Michael Heasley
+	mheasley@hmc.edu
+
+
+Table of Contents
+=================
+
+1. Introduction
+2. System requirements
+3. Installation
+  3.1. Installing the Doom executable patch
+  3.2. Installing the latest version of Voxware
+4. Using musserver
+  4.1. What musserver does
+  4.2. Command line options
+  4.3. New .doomrc entry
+5. Troubleshooting
+  5.1. Musserver error messages
+  5.2. Kernel error messages
+  5.3. If it still doesn't work...
+6. Future enhancements
+  6.1. Known bugs
+  6.2. Other enhancements
+7. Obtaining musserver and related packages
+8. Acknowledgments
+
+
+
+1. Introduction
+
+	When Linux Doom was originally released, the music support had been
+left out.  Musserver, a companion to Id's sndserver, provides full music
+support for doom.  Its behavior is similar to, if not indistinguishable from,
+that of the DOS version of Doom.  Musserver plays the music for Doom via the
+/dev/sequencer interface.  It automatically changes music whenever
+appropriate, and loops songs while the user is in a level.  It also changes
+music volume according to the "MUSIC VOLUME" slider in Doom.
+
+	With previous versions of musserver, the user was required to manually
+send a command to musserver whenever music was supposed to change.  This
+version fully integrates musserver with the Doom executable.  A binary patch
+(written by Steffen Winterfeld) for the Doom executable allows Linux Doom to
+automatically notify musserver whenever the music selection or volume should
+change.
+
+
+2.  System requirements
+
+	In order to use this version of musserver, you must have the
+following:
+
+	- A general midi synth device (SB16 Midi, MPU-401, 6850 UART, etc),
+	  FM synth device (Adlib, OPL3, etc), or AWE32/AWE64 card (this
+	  requires the AWE32 kernel driver, found at
+	  http://bahamut.mm.t.u-tokyo.ac.jp/~iwai/midi.html)
+	- A version of Linux or FreeBSD capable of running Doom (SystemV
+	  IPC support is required)
+	- For general midi users: Voxware (USS) 2.9 and up
+	  For FM synth users: Voxware (USS) 3.0.1 and up
+	  (Voxware or USS is the kernel's sound driver)
+	- Linux Doom version 1.8.  The included Doom executable patch will
+	  work only with this version of Doom.  It may be used with or without
+	  the Ultimate LinuxDoom patch (also by Steffen Winterfeld).
+
+Apparently some versions of FreeBSD can run musserver along with Doom.
+Since I don't have FreeBSD, I've never tested this and can't tell you
+any more.
+
+
+3.  Installation
+
+	To install the binary included in this package, simply copy it to the
+desired destination directory (i.e. 'cp musserver /usr/local/bin').  The
+binary was compiled as ELF under Linux 2.0.30, using gcc-2.7.2.1 and
+libc-5.4.17.  To recompile the program, follow these steps:
+
+	- Edit the Makefile to your liking.  You will probably only want to
+	  change DESTDIR, but may want to change CFLAGS as well.
+	- Edit musserver.h, if desired, to change musserver's default
+	  behavior or add support for AWE32 cards.
+	- Type 'make' to compile musserver, or 'make install' to compile and
+	  install the program.
+
+Once you have finished all of the installation described in this section,
+please read section 4 carefully before using musserver.
+
+3.1. Installing the Doom executable patch
+
+** NOTE: the patch has not changed since musserver version 0.98.  If you have
+** already installed it, you need not do so again.
+
+This version of musserver includes a linuxdoom patch (file doompat.tgz) that
+allows full integration of musserver into the doom executable.  In other
+words, this patch allows Doom to communicate with musserver, automating music
+changes.  Follow these steps to install the patch:
+
+  1. Make sure you have version 1.8 of Linux Doom.  It is available at
+     sunsite.unc.edu and mirrors, under the games directory.  This patch will
+     not work with previous versions of Linux Doom.  It is, however, fully
+     compatible with the recently released Ultimate LinuxDoom patch.
+  2. Make a backup of your current doom executable(s)
+  3. Unpack the patch into a directory containing the doom executable(s)
+  4. Edit the included shell script (file muspat) and run it.  The script
+     assumes the executables are named xdoom (X version) and sdoom (SVGA
+     version).  You may want to change these.  If no errors appear, the patch
+     should have applied correctly.
+
+The patch was done by Steffen Winterfeld (wfeldt@tph100.physik.uni-leipzig.de)
+
+3.2. Installing the latest version of Voxware (USS)
+
+Versions of Voxware (the kernel's sound driver, now known as USS) before 3.0.1
+had a small bug in FM pitch bending.  Previous versions of musserver were
+distributed with a kernel patch to fix this bug.  This patch is no longer
+necessary or supported by the author, now that Voxware 3.0.1 fixes the bug.
+Instead, you are encouraged to upgrade your version of Voxware to 3.0.1 or
+later if you wish to use musserver with an FM synth device.  There are two
+basic ways to do this:
+
+  1. Install and compile kernel 1.3.18 or later (2.0.30 is recommended at
+     the time of this update).  Voxware 3.0.1 or higher comes standard in
+     these kernels.
+  2. Merge Voxware 3.0.1 into your existing kernel source tree, then
+     recompile and install that kernel.  To do so, follow these basic steps:
+	a. From the base linux source directory (usually /usr/src/linux),
+	   rename the drivers/sound directory to something else
+	   (ie, 'mv drivers/sound drivers/sound.old').
+	b. From the drivers subdirectory, unpack the Voxware 3.0.1 archive
+	   (ie, 'cd drivers; tar xzvf VoxWare-3.0.1.tar.gz').  This should
+	   put Voxware 3.0.1 in the proper place under the linux source tree.
+	c. Recompile and install your kernel as usual.
+
+** NOTE: Voxware 3.0.1 is not required for general midi users.  If you have
+** at least version 2.9, and use general midi, do not worry about this part.
+** You can check your version of Voxware by looking at the first line of
+** output from 'cat /dev/sndstat'
+
+
+4.  Using musserver
+
+4.1. What musserver does
+
+	In its normal mode of operation musserver does the following:
+
+	- Checks to see if you've used the -file option with Doom, to load a
+	  PWAD.  If so, it checks the PWAD(s) to see if there are music
+	  entries, and plays the ones it finds.  The patch for this was done 
+	  by Michael Bischoff (mbi@mo.math.nat.tu-bs.de).
+	- Waits until an IPC message queue has been created by Doom, then
+	  obtains the queue id.  Use the -t option to set the timeout for
+	  this.
+	- Waits for IPC messages from Doom, telling it what music to play
+	- Loops music while in a level
+	- Changes music upon receiving a SystemV IPC message from Doom that
+	  contains the name of a valid music resource
+	- Changes music volume upon receiving an appropriate IPC message
+	  from Doom
+	- Quits upon receiving any one of SIGTERM, SIGQUIT, SIGINT, SIGKILL
+	- Quits when the IPC message queue is removed (this occurs when
+	  Doom exits normally)
+	- Or quits when it appears that the Doom process no longer exists
+	  (Doom exited abnormally)
+
+4.2. Command line options
+
+	-a
+		Force use of the AWE32 synth device.  This option only works
+		if you have compiled musserver with AWE32 support (see the
+		user configurable section in musserver.h).
+
+	-c
+		Normally musserver periodically checks to see if its parent
+		process (presumably Doom) is still alive.  If the parent
+		process no longer exists (Doom died abnormally for some
+		reason), musserver will normally exit.  Use the -c option to
+		disable this feature.
+
+	-d directory
+		Look in 'directory' for the Doom wad file.  Ordinarily,
+		musserver uses the same rules as Doom for finding the wad
+		file and thus the appropriate Doom version.  It uses the
+		environment variable "DOOMWADDIR" if present, otherwise it
+		uses the current working directory.  The -d option overrides
+		both of these.
+
+	-f
+		Force use of FM synth device for music playback.  This is
+		sounding much better than in previous versions.  Use this
+		if your soundcard has both midi and FM devices, but nothing
+		attached to the midi device.
+
+	-h
+		Print a help message and exit.
+
+	-l
+		List detected music devices and exit.  If used in conjunction
+		with the -m option, musserver will only list detected midi
+		devices.  Similarly, it will only list FM synth devices if the
+		-f option is specified.
+
+	-m
+		Use general midi device for music playback.  If both FM and
+		general midi devices are detected, musserver will use the
+		midi device by default.  If only one or the other is
+		detected, musserver will use that one.  If more than one
+		device of either type is detected, the last one detected will
+		be given highest priority.
+
+	-t number
+		Cause musserver to timeout after 'number' seconds while
+		waiting to get the IPC message queue id.  Default is 300.
+
+	-u number
+		Use device of type 'number' where 'number is the device type
+		reported by 'musserver -l'.  This must be used in conjunction
+		with either the -f option or the -m option.  For example,
+		'musserver -m -u 7' would use midi device type 7 if it exists.
+		If no device of the specified type is detected, musserver
+		prints an error message and exits.
+
+	-V
+		Ignore volume change messages from Doom.  Use this if you have
+		an FM synth card, and mixer functions are not supported for
+		it.  This should not be necessary for most cards.  But I know
+		of one case where volume changes do not work with a Windows
+		Sound System card.
+
+	-v
+		Verbose mode.  Prints status messages while detecting music
+		hardware and playing music.  Specify this option more than
+		once to get even more output.
+
+4.3. New .doomrc entry
+
+	One important feature of the new doom patch is new entry in the
+$HOME/.doomrc file, describing what program to use as the music server.  The
+entry is very similar to that for sndserver.  The default entry follows:
+
+musserver		"musserver"
+
+This will be automatically added to your $HOME/.doomrc the first time you run
+the patched doom program.  Just as with the sndserver entry, you can change the
+string in quotes to specify the full pathname to the musserver program.
+
+If you currently require any command line options to run musserver, you may be
+able to specify new default behavior by editing musserver.h.  Make any changes
+based on the instructions given in the comments, then recompile musserver by
+doing a 'make clean;make'.
+
+If this is not sufficient, I suggest you put your needed options in a small
+shell script.  For example:
+
+#!/bin/sh
+exec /usr/local/bin/musserver.bin -f -u 3
+
+Install the musserver binary as /usr/local/bin/musserver.bin, and install the
+shell script as /usr/local/bin/musserver.  Of course you can change the
+pathnames to suit your needs.  One important note: if you do not use "exec"
+in the shell script to execute musserver, it will be unable to check to make
+sure Doom hasn't died unexpectedly (see the description of the -c option for
+more on this behavior).
+
+
+5.  Troubleshooting
+
+5.1.  Musserver error messages
+
+These messages are all prefixed by the string "musserver: "
+
+  * game mode indeterminate.
+
+	This means that musserver cannot find a wadfile to use.  As with
+	Doom, you must tell it where to look for the wadfile (either use the
+	environment variable DOOMWADDIR or the current directory)
+
+  * could not get IPC message queue id, exiting.
+
+	No IPC message queue has been created during a specified waiting
+	period.  Normally the patched Doom executable is responsible for
+	creating the queue, at which time musserver gets the queue id and
+	continues.  The default waiting period is 300 seconds.  It may be
+	changed with the -t option.
+
+  * unknown error in music playing, exiting.
+
+	This message occurs when the function that actually plays music exits
+	with an unknown return value.  It should never happen.
+
+  * unrecognized music entry (D_j)
+
+	Music resource names in the Doom wadfiles all begin with "D_".  Some
+	versions of the Doom wadfiles contain resources beginning with this
+	string, but containing no music.  In general these are very harmless.
+	"D_j" is one, and "D_." is another common one.
+
+  * could not allocate %d bytes for music data, exiting.
+
+	%d represents the size in bytes of the current music data lump.  This
+	message indicates that your system is nearly out of virtual memory.
+	Typical data sizes are around 30 kbytes.
+
+  * couldn't find GENMIDI entry in wadfile, exiting.
+
+	This indicates that you have a corrupted wadfile.  All Doom wadfiles
+	should contain the GENMIDI entry, which has FM synth patches.
+
+  * no music devices found, exiting.
+
+	This means that either no music hardware exists on your system, or
+	your kernel is not configured for music hardware.  Consult the
+	Voxware documentation (probably in /usr/src/linux/drivers/sound) for
+	information on recompiling a kernel with music hardware support.
+	This could also mean that you are missing the device file
+	/dev/sequencer.  Again, consult the Voxware documentation.
+
+  * could not open /dev/sndstat, exiting.
+
+	Musserver uses /dev/sndstat to check the Voxware version.  Check the
+	Voxware documentation on how to properly setup this and the other
+	sound device files.
+
+5.2. Kernel error messages
+
+  * volume change: Invalid argument
+
+	For some reason, the mixer functions of your soundcard are not
+	supported.  This could be due to an improperly compiled sound driver
+	in your kernel, or Voxware may not currently support your card's
+	mixer functions (if they exist).  You may need to use the -V option
+	to eliminate these error messages (see section 4.2 for more).
+
+  * volume change: Bad file number
+
+	This will occur when you are in FM synth mode and the device file
+	/dev/mixer does not exist.  Consult the Voxware documentation to
+	properly create it.
+
+I'm sure there are many other possible kernel error messages, but none have
+been brought to my attention.
+
+5.3. If it still doesn't work...
+
+This section outlines my suggested procedure for determining the cause of a
+problem when musserver will not work.
+
+  1. Run "musserver -l" to list detected music devices.  Musserver will
+     normally use the last music device detected, unless told otherwise by
+     command line options.  Your problem may be that musserver is trying to
+     use a device to which nothing is attached.  For example, the SB16 has a
+     FM synth chip and a MIDI interface.  By default musserver will choose the
+     MIDI interface.  But if you have nothing attached to it, you'll need to
+     use the -f option to tell musserver to use the FM synth chip instead.
+     This also applies if you have more than one FM or MIDI device.  In this
+     case, you may need the -u option to specify the device type to use.
+  2. If you found your problem in step 1, you'll need to create a shell script
+     to pass the required options to musserver (or edit musserver.h to set the
+     default options).  This is detailed in section 4.3.
+  3. Make sure the synth volume is up on your soundcard's mixer.  You may
+     use any mixer program, such as setmixer or xmix.
+  4. If it still doesn't work, try creating a shell script (as in section 4.3)
+     that adds the option -vv (that's right, two v's: verbosity level of 2)
+     to musserver's command line.  Then run Doom, redirecting the output to a
+     file.  You should be able to tell from this whether musserver and Doom
+     are communicating properly.  If you can't figure out the problem from
+     this, send me the output and I'll try to help.  Along with this output,
+     please include the output from 'cat /dev/sndstat' so I'll have
+     information about your kernel and hardware.
+  5. GUS is not supported in this release.  The Linux Ultra Sound Project
+     (http://www.pf.jcu.cz/~perex/ultra) has ported musserver 1.0 to use
+     their GUS kernel driver.  See their web page for details.  I plan to
+     merge their changes into this version of musserver sometime in the
+     future.
+  6. If pitch bending does not seem to work in FM synth mode, see section 3.2.
+  7. If you have an AWE32 or AWE64 card, be sure you have the awedrv kernel
+     driver (http://bahamut.mm.t.u-tokyo.ac.jp/~iwai/midi.html) and you have
+     recompiled musserver with AWE32_SYNTH_SUPPORT defined in musserver.h.
+
+
+6.  Future enhancements
+
+6.1.  Known bugs that may or may not be fixed:
+
+  - None (that doesn't mean there aren't any bugs).
+
+6.2. Other enhancements
+
+  - Fix FM synth playback.  Getting closer, but still not quite perfect.  The
+    remaining items to be fixed are main volume and panning.  I've talked to
+    Hannu Savolainen, the Voxware author, and he says these are not supported
+    in the current kernel sound driver.
+  - Currently, volume changes in FM synth mode are accomplished by changing
+    the synth volume in the mixer.  This should really be accomplished via
+    midi main volume events (as they are in general midi mode), but this has
+    not been implemented in the kernel sound driver.  See above.
+  - Add support for MPU-401 intelligent mode.  Again, I don't have a MPU-401,
+    making debugging difficult.
+  - Add support for a configuration file ($HOME/.musserverrc), thus
+    eliminating the need for a shell script (as in section 4.3).  Maybe not,
+    now that defaults can be changed easily at compile-time.
+  - Update when a new version of Voxware (USS) comes out.  Add code to detect
+    the Voxware (USS) version and then act accordingly.
+  - Code cleanup, optimization, etc
+  - More error checking, fault tolerance, etc
+  - This README always needs revision...
+  - Other suggestions are welcome
+
+
+7.  Obtaining musserver and related packages
+
+Musserver:
+	ftp://sunsite.unc.edu/pub/Linux/games/doom/musserver.tgz
+	ftp://ftp.cdrom.com/pub/idgames/utils/linux/musserver.tgz
+	http://www3.hmc.edu/~mheasley/musserver.tgz
+
+The first 2 sites only contain the latest "official" release; the last one
+should always contain the very latest version.
+
+Voxware 3.0.1:
+	ftp.funet.fi /pub/OS/Linux/util/sound/snd-kit/VoxWare-3.0.1.tar.gz
+	sunsite.unc.edu /pub/Linux/kernel/sound/VoxWare-3.0.1.tar.gz
+
+Doom 1.8:
+	sunsite.unc.edu /pub/Linux/games/doom/linux[s,x]doom.tar.gz
+	ftp.cdrom.com /pub/idgames/idstuff/linux/linux[s,x]doom.tar.gz
+
+
+8.  Acknowledgments
+
+	I would like to thank the following people for their (in)direct
+contributions to musserver:
+
+	- Id Software		for Doom
+	- Dave Taylor		for porting Doom to Linux
+	- Steffen Winterfeld	for the doom executable patch
+	- Michael Bischoff	for the external PWAD patch
+	- Hannu Savolainen	for the Voxware driver
+        - Nathan Laredo		for playmidi 1.1 and 2.2 (I learned a lot
+        			about how to use /dev/sequencer from
+				playmidi's code)
+	- Vladimir Arnost	for documentation on the MUS file format
+	- Matthew S Fell	for the Unofficial Doom Specs
+	- Takashi Iwai		for the AWE32 driver and patch to musserver
+	- Of course, the whole Linux crowd for Linux
+
+
+
+Please email me with any questions, bug reports/fixes, or comments.
+
+	Michael Heasley
+	mheasley@hmc.edu

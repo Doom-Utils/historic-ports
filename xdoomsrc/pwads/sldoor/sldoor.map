@@ -1,0 +1,207 @@
+# This map file was created with tkwadcad
+
+LEVEL_START 0 1 0 XDoom
+
+ VERTEXES_START
+  V0 : 0 0
+  V1 : 128 0
+  V2 : 384 0
+  V3 : 384 -320
+  V4 : 0 -320
+  V5 : 0 448
+  V6 : 384 448
+  V7 : 384 128
+  V8 : 256 128
+  V9 : 0 128
+  V10 : 128 128
+  V11 : 256 0
+  V12 : 128 64
+  V13 : 256 64
+  V14 : 256 24
+  V15 : 128 24
+  V16 : 128 104
+  V17 : 256 104
+  V18 : 256 56
+  V19 : 256 72
+  V20 : 128 56
+  V21 : 128 72
+  V22 : 0 -192
+  V23 : 384 -192
+  V24 : 384 320
+  V25 : 384 256
+  V26 : 392 320
+  V27 : 392 256
+  V28 : 64 384
+  V29 : 128 384
+  V30 : 128 320
+  V31 : 64 320
+  V32 : 56 320
+  V33 : 56 392
+  V34 : 136 392
+  V35 : 136 320
+  V36 : 16 -176
+  V37 : 368 -176
+ VERTEXES_END
+
+ SECTORS_START
+  S0 : 0 192 FLOOR0_3 FLAT2 144 9 0
+  S1 : 0 128 FLOOR0_3 FLAT4 144 0 0
+  S2 : 0 192 FLOOR0_3 FLAT2 144 0 0
+  S3 : 0 128 FLOOR0_3 FLAT4 144 0 0
+  S4 : 0 128 FLOOR0_3 FLAT4 96 0 1
+  S5 : 0 128 FLOOR0_3 FLAT4 208 0 0
+  S6 : 0 192 FLOOR0_3 FLAT2 144 0 0
+  S7 : 0 128 FLOOR0_3 FLAT2 208 8 0
+  S8 : 32 160 FLOOR0_3 TLITE6_6 208 0 0
+ SECTORS_END
+
+ LINEDEFS_START
+  V0 V1 : 257 0 0
+   S0 0 0 - - GRAY4
+   -
+  V2 V23 : 257 0 0
+   S0 0 0 - - GRAY4
+   -
+  V3 V4 : 257 0 0
+   S6 0 0 - - GRAY4
+   -
+  V4 V22 : 257 0 0
+   S6 0 0 - - GRAY4
+   -
+  V5 V6 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V6 V24 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V7 V8 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V9 V5 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V10 V9 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V8 V10 : 140 0 0
+   S2 0 0 GRAY4 - -
+   S3 0 0 - - -
+  V1 V11 : 140 0 0
+   S0 0 0 GRAY4 - -
+   S1 0 0 - - -
+  V11 V2 : 257 0 0
+   S0 0 0 - - GRAY4
+   -
+  V1 V15 : 273 0 0
+   S1 0 0 - - GRAY4
+   -
+  V8 V17 : 17 0 0
+   S3 0 0 - - GRAY4
+   -
+  V12 V21 : 1 0 0
+   S5 0 0 - - SUPPORT2
+   -
+  V15 V20 : 257 0 0
+   S4 0 0 - - LITE3
+   -
+  V12 V13 : 325 300 0
+   S4 0 0 - - GDOOR1F1
+   S5 0 0 - - GDOOR1B1
+  V14 V11 : 273 0 0
+   S1 0 0 - - GRAY4
+   -
+  V13 V18 : 1 0 0
+   S4 0 0 - - SUPPORT2
+   -
+  V15 V14 : 132 0 0
+   S1 0 0 - - -
+   S4 0 0 - - -
+  V16 V10 : 17 0 0
+   S3 0 0 - - GRAY4
+   -
+  V17 V19 : 1 0 0
+   S5 0 0 - - LITE3
+   -
+  V17 V16 : 196 0 0
+   S3 0 0 - - -
+   S5 0 0 - - -
+  V18 V14 : 257 0 0
+   S4 0 0 - - LITE3
+   -
+  V19 V13 : 1 0 0
+   S5 0 0 - - SUPPORT2
+   -
+  V20 V12 : 1 0 0
+   S4 0 0 - - SUPPORT2
+   -
+  V21 V16 : 1 0 0
+   S5 0 0 - - LITE3
+   -
+  V22 V0 : 257 0 0
+   S0 0 0 - - GRAY4
+   -
+  V23 V3 : 257 0 0
+   S6 0 0 - - GRAY4
+   -
+  V22 V23 : 132 12 1
+   S6 0 0 - - -
+   S0 0 0 - - -
+  V24 V25 : 12 0 0
+   S2 0 0 GRAY4 - -
+   S7 0 0 - - -
+  V25 V7 : 1 0 0
+   S2 0 0 - - GRAY4
+   -
+  V24 V26 : 1 0 0
+   S7 0 0 - - GRAY4
+   -
+  V26 V27 : 1 11 0
+   S7 0 0 - - SW1GRAY
+   -
+  V27 V25 : 1 0 0
+   S7 0 0 - - GRAY4
+   -
+  V28 V29 : 1 0 0
+   S8 0 0 - - TEKLITE
+   -
+  V29 V30 : 1 0 0
+   S8 0 0 - - TEKLITE
+   -
+  V30 V31 : 5 0 0
+   S8 0 0 - - MIDBRONZ
+   S2 0 0 GRAYBIG GRAYBIG MIDBRONZ
+  V31 V28 : 1 0 0
+   S8 0 0 - - TEKLITE
+   -
+  V30 V35 : 1 0 0
+   S2 0 0 - - GRAYBIG
+   -
+  V35 V34 : 1 0 0
+   S2 0 0 - - GRAYBIG
+   -
+  V34 V33 : 1 0 0
+   S2 0 0 - - GRAYBIG
+   -
+  V33 V32 : 1 0 0
+   S2 0 0 - - GRAYBIG
+   -
+  V32 V31 : 1 0 0
+   S2 0 0 - - GRAYBIG
+   -
+  V36 V37 : 132 331 5000
+   S0 0  0 - - -
+   S0 0  0 - - -
+ LINEDEFS_END
+
+ THINGS_START
+  1 : 64 -256 45 7
+  2001 : 192 -256 0 7
+  2049 : 192 -192 0 7
+  65 : 96 352 270 4
+  9 : 32 352 270 6
+  9 : 160 352 270 6
+  2018 : 64 -64 0 7
+  2035 : 80 304 0 7
+ THINGS_END
+
+LEVEL_END

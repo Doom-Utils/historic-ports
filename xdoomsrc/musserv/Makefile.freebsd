@@ -1,0 +1,25 @@
+#
+# Makefile for musserver 1.4 for FreeBSD 3.x
+#
+
+CC	= gcc
+CFLAGS	= -I. -Wall -O2 -I/usr/src/sys/gnu/i386/isa/sound
+LDFLAGS	= -s
+
+#############################################
+# Nothing below this line should be changed #
+#############################################
+
+O	= freebsd
+OBJ	= ${O}/musserver.o ${O}/readwad.o ${O}/playmus.o ${O}/sequencer.o
+
+all: ${O}/musserver
+
+${O}/musserver: ${OBJ}
+	${CC} ${CFLAGS} ${LDFLAGS} -o $@ ${OBJ}
+
+clean:
+	rm -f ${O}/*
+
+${O}/%.o: %.c
+	${CC} ${CFLAGS} -c $< -o $@

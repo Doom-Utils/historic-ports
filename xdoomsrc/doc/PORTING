@@ -1,0 +1,19 @@
+WAD data files include binary data which always is in little endian byte
+order. To compile on systems with big endian byte order the define -DBIGEND
+must be set in the makefiles for the platform, else the programs abort with
+an error message or dump core, because the read data is junk.
+
+WAD data files also include some data in structures and a structure alignment
+of 2 bytes is assumed, which is the default for x86 environments.
+This structure alignment is not optimal on other platforms and different
+alignment is used by default. The sources include appropriate #pragma pack
+directives, but unfortunately some compilers ignore them. If you use GNU C
+or EGCS this should work on most platforms (doesn't work under AIX), but
+other compilers require a command line option for different structure
+alignment. RTFM and make sure you use an option for 2 byte alignment, else
+the programs won't work.
+
+The assumption was made that char variables by default are signed, which
+is not true on every platform. Usually the compiler on such platforms
+has an option to force signed char variables. For GNU C use -fsigned-char,
+for other compilers RTFM.

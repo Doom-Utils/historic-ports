@@ -1,0 +1,77 @@
+The file xdoom.wad is a PWAD file which gets automatically loaded by XDoom,
+if found in the current working directory or $DOOMWADDIR. This PWAD file
+includes new lumps for XDoom, like the translucency table and new sound for
+the chaingun. The pre-compiled xdoom.wad just is build how I like things
+looking and sounding, feel free to play with it and adjust it to what you
+like. All raw data to rebuild xdoom.wad is provided here, but please note
+that you need xwadtools from ftp://ftp.cdrom.com/pub/doom/source to build
+xdoom.wad your self. Xwadtools includes all and any tools to manipulate
+WAD files, I have working under UNIX. To rebuild xdoom.wad simply type make
+in this directory (after you installed xwadtools, that is), 'make clean'
+to remove the temporary files generated.
+
+The files in this directory are as follows:
+
+xdoom.res:	This is the response file used for 'mkwad' to tell, which
+		non graphical resources to include into xdoom.wad.
+
+xdoom.wgc:	Input file for 'wadgc' used for the graphical resources
+		in xdoom.wad.
+
+swantbls.dat:	Input file for 'swantbls' with the default switches and
+		animated textures/flats in the id IWAD's.
+
+dschgun.sfx:	This is a weapon sound I took out of Marines Doom, the included
+		text file doesn't limit usage of the PWAD in any way. With this
+		the chaingun now sounds like a big bad weapon and not like a
+		rapid firing pistol anymore. If a PWAD file includes a lump
+		DSCHGUN it will be used for the chaingun without an impact on
+		the pistol sound. If the lump wasn't found, XDoom will default
+		back to the pistol sound, like original Doom. So if you liked
+		the original Doom chaingun sound just take the lump out of
+		xdoom.res and rebuild xdoom.wad without or use XDoom with
+		option -nochgun.
+
+m_cdvol.ppm:	Image file in PPM P6 format, this image shows the text
+		'CD Volume', used in the sound setup menu.
+
+m_horsen.ppm	Image in PPM P6 format, shows menu text 'Horizonal' for
+		horizontal mouse sensitivity setting. This image was taken
+		from the Boom resource wad.
+
+m_versen.ppm	As above, for vertical mouse sensitivity, from Boom too.
+
+comdev.ppm:	XDoom allows communication with a handheld computer gadget.
+		This is the image for the device.
+
+dsbeep[n].sfx:	Sound alerts for the gadget. Sounds were taken from a PD
+		CD-ROM with sound effects. Files were in wave format,
+		converted with sox into 8bit 11kHz raw format and then
+		converted with raw2sfx (included in xwadtools) to id's sfx
+		format. Link the one you like best to dsbeep.sfx to be
+		included in xdoom.wad.
+
+common.acs:	The system include files for acc for XDoomPlus. Do NOT
+defs.acs:	use the includes that come with acc, they are for Hexen
+specials.acs:	and XDoomPlus is not Hexen! This files should be copied
+		to /usr/local/lib/acc/xdoom, the top level makefile does
+		this for you.
+
+wvars.acs:	Example include file for world variables. This file must
+		be provided in a PWAD directory using scripts, because
+		common.acs includes it from the current directory.
+
+The file multigen.txt is the input state table for the tool 'multigen',
+which compiles info.c and info.h for the game engine from this state tables.
+The state table is modified to render several sprites translucent and to
+add a smoke trail to player and Cyberdemon missiles. The original, unmodified
+version of this file from id Software is included in xwadtools in the multigen
+source directory.
+So if you don't like some of the modifications I did, just get xwadtools
+and compile info.c and info.h from the original file, or change things
+to your liking anyway, whatever.
+To get rid of translucency remove the MF_TRANSLUC flag from the thing flags.
+To get rid of missile smoke trails change the action function for S_ROCKET
+from A_Tracer to NULL. Then compile info.c and info.h from the modified state
+tables with multigen and replace the ones in the xdoom source directory with
+your new ones and recompile the game engine.

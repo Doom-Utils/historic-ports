@@ -1,0 +1,6 @@
+# TkWadCad support file: local textures for this PWAD project
+
+[TEXTURES]
+GLASS1 glass1.ppm 256 128 1
+LASER01 laser01.ppm 16 128 1
+LASER03 laser03.ppm 64 72 1

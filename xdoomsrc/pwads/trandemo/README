@@ -1,0 +1,19 @@
+transdemo.map	- Level map created with tkwadcad.
+
+transmap.wgc	- Input file for wadgc to create the new textures.
+
+tranmap.res	- Response file for mkwad which non graphical resources to
+		  include.
+
+glass*.ppm	- Glass textures, great for using with the translucent
+		  flag, no good without.
+
+umgr1.ppm	- Some sort of granite texture, rendered with Povray3, scene
+		  source file is included in xwadtools.
+
+umcomp[n].ppm	- Derived from COMP03_5 patch from id (Doom][), to build an
+		  animated computer display.
+
+comtxt.txt	- Resource file for UAC communication gadget.
+
+swantbls.dat	- Input file for swantbls to create new animated textures.

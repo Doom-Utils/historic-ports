@@ -1,0 +1,380 @@
+################################################################
+#
+# $Id:$
+#
+# $Log:$
+#
+
+CC=  cc
+
+#
+# OS dependent options:
+#
+#	-DNORMALUNIX		well, I guess should be active for any UNIX
+#	-DBIGEND		set this for big endian machines
+#
+#	-DCAPSLOCK		define this if the X server handles
+#				status of the Caps Lock key
+#
+#	-DLINUX			set this for Linux
+#	-DSCOSO5		set this for SCO OpenServer 5
+#	-DSCOUW2		set this for SCO Unixware 2
+#	-DSCOUW7		set this for SCO Unixware 7
+#	-DFREEBSD		set this for FreeBSD
+#	-DSOLARIS		set this for Sun Solaris
+#
+# Game options:
+#
+#	-DSNDSERV		Use external sndserver process to play the
+#				sound effects, without this define builtin
+#				sound handling will be used.
+#	-DSNDINTR		When using builtin sound with this define
+#				sound update will be asynchrony with an
+#				interrupt. If not defined sound will be
+#				updated synchony every game tick.
+#	-DSNDMMAP		Use mmap'ed DMA buffer for sound output, if
+#				the driver does support it. Only works if
+#				SNDINTR is not defined.
+#	-DMUSSERV		Compile support for musserver to play
+#				music too.
+#	-DPOLL_POINTER		With this define code will be compiled, which
+#				polls the mouse under X, instead of handling
+#				it with X events. This works much better, make
+#				sure this is defined.
+#	-DBUGFIXES		The original id Software engine has several
+#				bugs like Medusa, TFE and bullet/missile
+#				eating walls. With this define code will be
+#				compiled, which fixes this bugs. Do not try
+#				to compile without this option together with
+#				USE_ASMMOD, because the assembler routines
+#				have the TFE bug fixed.
+#
+# Optimization/Debugging:
+#
+#	-DINIT_MESSAGES		More verbose messages from game engine
+#				initialization additional to the ... stuff.
+#	-DRANGECHECK		Parameter validation debugging, activate this
+#				if you mess with the sources.
+#	-DUSE_INLINE		Compile some functions as (assembler) inline
+#				functions on plaforms with compilers, which
+#				do support this. For testing modified sources
+#				and for debugging this should be turned off.
+#	-DUSE_ASMMOD		Use a module with some functions written in
+#				assembler, if this is defined, if undefined
+#				portable C source will be compiled. If defined
+#				you also need to select the appropriate
+#				assembler source module below.
+
+GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DSNDSERV
+
+# You need to select one of the following possible CD audio modules:
+CDMOD=cd_stub.o			# empty module, doesn't do anything
+#CDMOD=cd_dummy.o		# dummy module to test the CD support
+#CDMOD=cd_cda.o			# uses Ti Kan's CD audio player 'cda'
+
+# The assembler source modules implemented, use non if portable C
+# sources should be compiled
+ASMMOD=				# use this to compile C
+
+OPTFLAGS=-O2 -ma -qcpluscmt -qchars=signed -qalign=packed
+
+CFLAGS=$(OPTFLAGS) -DNORMALUNIX -DBIGEND $(GAMEOPT) $(FEATUREFLAG)
+
+# subdirectory for objects
+O=aix
+
+# not too sophisticated dependency
+OBJS=				\
+		$(O)/doomdef.o		\
+		$(O)/doomstat.o		\
+		$(O)/dstrings.o		\
+		$(O)/i_main.o		\
+		$(O)/i_system.o		\
+		$(O)/i_sound.o		\
+		$(O)/$(CDMOD)		\
+		$(O)/i_net.o		\
+		$(O)/tables.o		\
+		$(O)/f_finale.o		\
+		$(O)/f_wipe.o 		\
+		$(O)/d_main.o		\
+		$(O)/d_net.o		\
+		$(O)/d_items.o		\
+		$(O)/g_game.o		\
+		$(O)/m_menu.o		\
+		$(O)/m_comdev.o		\
+		$(O)/m_misc.o		\
+		$(O)/m_argv.o  		\
+		$(O)/m_bbox.o		\
+		$(O)/m_fixed.o		\
+		$(O)/m_swap.o		\
+		$(O)/m_cheat.o		\
+		$(O)/m_random.o		\
+		$(O)/am_map.o		\
+		$(O)/p_ceilng.o		\
+		$(O)/p_doors.o		\
+		$(O)/p_doorsplus.o	\
+		$(O)/p_enemy.o		\
+		$(O)/p_floor.o		\
+		$(O)/p_inter.o		\
+		$(O)/p_lights.o		\
+		$(O)/p_map.o		\
+		$(O)/p_maputl.o		\
+		$(O)/p_plats.o		\
+		$(O)/p_pspr.o		\
+		$(O)/p_setup.o		\
+		$(O)/p_sight.o		\
+		$(O)/p_spec.o		\
+		$(O)/p_specplus.o	\
+		$(O)/p_switch.o		\
+		$(O)/p_mobj.o		\
+		$(O)/p_telept.o		\
+		$(O)/p_tick.o		\
+		$(O)/p_saveg.o		\
+		$(O)/p_user.o		\
+		$(O)/p_acs.o		\
+		$(O)/r_bsp.o		\
+		$(O)/r_data.o		\
+		$(O)/r_draw.o		\
+		$(O)/r_main.o		\
+		$(O)/r_plane.o		\
+		$(O)/r_segs.o		\
+		$(O)/r_sky.o		\
+		$(O)/r_things.o		\
+		$(O)/w_wad.o		\
+		$(O)/wi_stuff.o		\
+		$(O)/v_video.o		\
+		$(O)/st_lib.o		\
+		$(O)/st_stuff.o		\
+		$(O)/hu_stuff.o		\
+		$(O)/hu_lib.o		\
+		$(O)/s_sound.o		\
+		$(O)/z_zone.o		\
+		$(O)/info.o		\
+		$(O)/sounds.o		\
+		$(O)/searchp.o		\
+		$(O)/endtxt.o		\
+		$(O)/usleep.o		\
+		$(ASMMOD)
+
+$(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
+	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
+	-o $(O)/xdoom -lXext -lX11 -lm
+
+$(O)/doomdef.o:	doomdef.c
+	$(CC) $(CFLAGS) -c doomdef.c -o $(O)/doomdef.o
+
+$(O)/doomstat.o: doomstat.c
+	$(CC) $(CFLAGS) -c doomstat.c -o $(O)/doomstat.o
+
+$(O)/dstrings.o: dstrings.c
+	$(CC) $(CFLAGS) -c dstrings.c -o $(O)/dstrings.o
+
+$(O)/i_main.o: i_main.c
+	$(CC) $(CFLAGS) -c i_main.c -o $(O)/i_main.o
+
+$(O)/i_system.o: i_system.c
+	$(CC) $(CFLAGS) -c i_system.c -o $(O)/i_system.o
+
+$(O)/i_sound.o: i_sound.c
+	$(CC) $(CFLAGS) -c i_sound.c -o $(O)/i_sound.o
+
+$(O)/cd_stub.o: cd_stub.c
+	$(CC) $(CFLAGS) -c cd_stub.c -o $(O)/cd_stub.o
+
+$(O)/i_net.o: i_net.c
+	$(CC) $(CFLAGS) -c i_net.c -o $(O)/i_net.o
+
+$(O)/tables.o: tables.c
+	$(CC) $(CFLAGS) -c tables.c -o $(O)/tables.o
+
+$(O)/f_finale.o: f_finale.c
+	$(CC) $(CFLAGS) -c f_finale.c -o $(O)/f_finale.o
+
+$(O)/f_wipe.o: f_wipe.c
+	$(CC) $(CFLAGS) -c f_wipe.c -o $(O)/f_wipe.o
+
+$(O)/d_main.o: d_main.c
+	$(CC) $(CFLAGS) -c d_main.c -o $(O)/d_main.o
+
+$(O)/d_net.o: d_net.c
+	$(CC) $(CFLAGS) -c d_net.c -o $(O)/d_net.o
+
+$(O)/d_items.o: d_items.c
+	$(CC) $(CFLAGS) -c d_items.c -o $(O)/d_items.o
+
+$(O)/g_game.o: g_game.c
+	$(CC) $(CFLAGS) -c g_game.c -o $(O)/g_game.o
+
+$(O)/m_menu.o: m_menu.c
+	$(CC) $(CFLAGS) -c m_menu.c -o $(O)/m_menu.o
+
+$(O)/m_comdev.o: m_comdev.c
+	$(CC) $(CFLAGS) -c m_comdev.c -o $(O)/m_comdev.o
+
+$(O)/m_misc.o: m_misc.c
+	$(CC) $(CFLAGS) -c m_misc.c -o $(O)/m_misc.o
+
+$(O)/m_argv.o: m_argv.c
+	$(CC) $(CFLAGS) -c m_argv.c -o $(O)/m_argv.o
+
+$(O)/m_bbox.o: m_bbox.c
+	$(CC) $(CFLAGS) -c m_bbox.c -o $(O)/m_bbox.o
+
+$(O)/m_fixed.o: m_fixed.c
+	$(CC) $(CFLAGS) -c m_fixed.c -o $(O)/m_fixed.o
+
+$(O)/m_swap.o: m_swap.c
+	$(CC) $(CFLAGS) -c m_swap.c -o $(O)/m_swap.o
+
+$(O)/m_cheat.o: m_cheat.c
+	$(CC) $(CFLAGS) -c m_cheat.c -o $(O)/m_cheat.o
+
+$(O)/m_random.o: m_random.c
+	$(CC) $(CFLAGS) -c m_random.c -o $(O)/m_random.o
+
+$(O)/am_map.o: am_map.c
+	$(CC) $(CFLAGS) -c am_map.c -o $(O)/am_map.o
+
+$(O)/p_ceilng.o: p_ceilng.c
+	$(CC) $(CFLAGS) -c p_ceilng.c -o $(O)/p_ceilng.o
+
+$(O)/p_doors.o: p_doors.c
+	$(CC) $(CFLAGS) -c p_doors.c -o $(O)/p_doors.o
+
+$(O)/p_doorsplus.o: p_doorsplus.c
+	$(CC) $(CFLAGS) -c p_doorsplus.c -o $(O)/p_doorsplus.o
+
+$(O)/p_enemy.o: p_enemy.c
+	$(CC) $(CFLAGS) -c p_enemy.c -o $(O)/p_enemy.o
+
+$(O)/p_floor.o: p_floor.c
+	$(CC) $(CFLAGS) -c p_floor.c -o $(O)/p_floor.o
+
+$(O)/p_inter.o: p_inter.c
+	$(CC) $(CFLAGS) -c p_inter.c -o $(O)/p_inter.o
+
+$(O)/p_lights.o: p_lights.c
+	$(CC) $(CFLAGS) -c p_lights.c -o $(O)/p_lights.o
+
+$(O)/p_map.o: p_map.c
+	$(CC) $(CFLAGS) -c p_map.c -o $(O)/p_map.o
+
+$(O)/p_maputl.o: p_maputl.c
+	$(CC) $(CFLAGS) -c p_maputl.c -o $(O)/p_maputl.o
+
+$(O)/p_plats.o: p_plats.c
+	$(CC) $(CFLAGS) -c p_plats.c -o $(O)/p_plats.o
+
+$(O)/p_pspr.o: p_pspr.c
+	$(CC) $(CFLAGS) -c p_pspr.c -o $(O)/p_pspr.o
+
+$(O)/p_setup.o: p_setup.c
+	$(CC) $(CFLAGS) -c p_setup.c -o $(O)/p_setup.o
+
+$(O)/p_sight.o: p_sight.c
+	$(CC) $(CFLAGS) -c p_sight.c -o $(O)/p_sight.o
+
+$(O)/p_spec.o: p_spec.c
+	$(CC) $(CFLAGS) -c p_spec.c -o $(O)/p_spec.o
+
+$(O)/p_specplus.o: p_specplus.c
+	$(CC) $(CFLAGS) -c p_specplus.c -o $(O)/p_specplus.o
+
+$(O)/p_switch.o: p_switch.c
+	$(CC) $(CFLAGS) -c p_switch.c -o $(O)/p_switch.o
+
+$(O)/p_mobj.o: p_mobj.c
+	$(CC) $(CFLAGS) -c p_mobj.c -o $(O)/p_mobj.o
+
+$(O)/p_telept.o: p_telept.c
+	$(CC) $(CFLAGS) -c p_telept.c -o $(O)/p_telept.o
+
+$(O)/p_tick.o: p_tick.c
+	$(CC) $(CFLAGS) -c p_tick.c -o $(O)/p_tick.o
+
+$(O)/p_saveg.o: p_saveg.c
+	$(CC) $(CFLAGS) -c p_saveg.c -o $(O)/p_saveg.o
+
+$(O)/p_user.o: p_user.c
+	$(CC) $(CFLAGS) -c p_user.c -o $(O)/p_user.o
+
+$(O)/p_acs.o: p_acs.c
+	$(CC) $(CFLAGS) -c p_acs.c -o $(O)/p_acs.o
+
+$(O)/r_bsp.o: r_bsp.c
+	$(CC) $(CFLAGS) -c r_bsp.c -o $(O)/r_bsp.o
+
+$(O)/r_data.o: r_data.c
+	$(CC) $(CFLAGS) -c r_data.c -o $(O)/r_data.o
+
+$(O)/r_draw.o: r_draw.c
+	$(CC) $(CFLAGS) -c r_draw.c -o $(O)/r_draw.o
+
+$(O)/r_main.o: r_main.c
+	$(CC) $(CFLAGS) -c r_main.c -o $(O)/r_main.o
+
+$(O)/r_plane.o: r_plane.c
+	$(CC) $(CFLAGS) -c r_plane.c -o $(O)/r_plane.o
+
+$(O)/r_segs.o: r_segs.c
+	$(CC) $(CFLAGS) -c r_segs.c -o $(O)/r_segs.o
+
+$(O)/r_sky.o: r_sky.c
+	$(CC) $(CFLAGS) -c r_sky.c -o $(O)/r_sky.o
+
+$(O)/r_things.o: r_things.c
+	$(CC) $(CFLAGS) -c r_things.c -o $(O)/r_things.o
+
+$(O)/w_wad.o: w_wad.c
+	$(CC) $(CFLAGS) -c w_wad.c -o $(O)/w_wad.o
+
+$(O)/wi_stuff.o: wi_stuff.c
+	$(CC) $(CFLAGS) -c wi_stuff.c -o $(O)/wi_stuff.o
+
+$(O)/v_video.o: v_video.c
+	$(CC) $(CFLAGS) -c v_video.c -o $(O)/v_video.o
+
+$(O)/st_lib.o: st_lib.c
+	$(CC) $(CFLAGS) -c st_lib.c -o $(O)/st_lib.o
+
+$(O)/st_stuff.o: st_stuff.c
+	$(CC) $(CFLAGS) -c st_stuff.c -o $(O)/st_stuff.o
+
+$(O)/hu_stuff.o: hu_stuff.c
+	$(CC) $(CFLAGS) -c hu_stuff.c -o $(O)/hu_stuff.o
+
+$(O)/hu_lib.o: hu_lib.c
+	$(CC) $(CFLAGS) -c hu_lib.c -o $(O)/hu_lib.o
+
+$(O)/s_sound.o: s_sound.c
+	$(CC) $(CFLAGS) -c s_sound.c -o $(O)/s_sound.o
+
+$(O)/z_zone.o: z_zone.c
+	$(CC) $(CFLAGS) -c z_zone.c -o $(O)/z_zone.o
+
+$(O)/info.o: info.c
+	$(CC) $(CFLAGS) -c info.c -o $(O)/info.o
+
+$(O)/sounds.o: sounds.c
+	$(CC) $(CFLAGS) -c sounds.c -o $(O)/sounds.o
+
+$(O)/searchp.o: searchp.c
+	$(CC) $(CFLAGS) -c searchp.c -o $(O)/searchp.o
+
+$(O)/endtxt.o: endtxt.c
+	$(CC) $(CFLAGS) -c endtxt.c -o $(O)/endtxt.o
+
+$(O)/usleep.o: usleep.c
+	$(CC) $(CFLAGS) -c usleep.c -o $(O)/usleep.o
+
+$(O)/i_video_xshm.o: i_video_xshm.c
+	$(CC) $(CFLAGS) -c i_video_xshm.c -o $(O)/i_video_xshm.o
+
+all:	 $(O)/xdoom
+
+clean:
+	rm -f $(O)/*
+
+#############################################################
+#
+#############################################################

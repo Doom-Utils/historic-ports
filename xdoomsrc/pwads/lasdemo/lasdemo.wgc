@@ -1,0 +1,55 @@
+P_START
+  RSKY1 sky1.ppm @ 0 0 W 256 H 128
+  UM_LR um_lasr.ppm @ 0 0 W 64 H 128
+  UM_LL um_lasl.ppm @ 0 0 W 64 H 128
+  UM_LSR um_lassr.ppm @ 0 0 W 8 H 128
+  UM_LSL um_lassl.ppm @ 0 0 W 8 H 128
+  UM_VL um_vlas.ppm @ 0 0 W 4 H 64
+  UM_LSIG um_lsig.ppm @ 0 0 W 62 H 36
+  UMCOMP1 umcomp1.ppm @ 0 0 W 64 H 64
+  UMCOMP2 umcomp2.ppm @ 0 0 W 64 H 64
+  UMCOMP3 umcomp3.ppm @ 0 0 W 64 H 64
+  LASER01 laser01.ppm @ 0 0 W 16 H 128
+  LASER02 laser02.ppm @ 0 0 W 16 H 72
+  LASER03 laser03.ppm @ 0 0 W 64 H 72
+  LASER04 laser04.ppm @ 0 0 W 64 H 72
+  LASER05 laser05.ppm @ 0 0 W 64 H 72
+  LASER06 laser06.ppm @ 0 0 W 64 H 72
+P_END
+
+TEXTURE1_START
+  UMCOMP1 64 64 1
+    COMP03_5 0 0
+  UMCOMP2 64 64 1
+    UMCOMP1 0 0
+  UMCOMP3 64 64 1
+    UMCOMP2 0 0
+  UMCOMP4 64 64 1
+    UMCOMP3 0 0
+  UM_LASR 64 128 1
+    UM_LR 0 0
+  UM_LASL 64 128 1
+    UM_LL 0 0
+  UM_LASSR 8 128 1
+    UM_LSR 0 0
+  UM_LASSL 8 128 1
+    UM_LSL 0 0
+  UM_VLAS 4 64 1
+    UM_VL 0 0
+  UM_LSIGN 64 128 3
+    WALL02_2 0 56
+    WALL02_2 0 0
+    UM_LSIG 1 35
+  LASER01 16 128 1
+    LASER01 0 0
+  LASER02 16 72 1
+    LASER02 0 0
+  LASER03 64 72 1
+    LASER03 0 0
+  LASER04 64 72 1
+    LASER04 0 0
+  LASER05 64 72 1
+    LASER05 0 0
+  LASER06 64 72 1
+    LASER06 0 0
+TEXTURE1_END

@@ -1,0 +1,40 @@
+#
+# Makefile for musserver 1.4 for Openserver 5.0.x
+#
+
+# use this for the SCO compiler
+#CC	= cc
+#CFLAGS	= -O2 -b elf -DSCOOS5
+
+# use this for GNU/EGCS compilers
+CC	= gcc
+CFLAGS	= -Wall -O2 -DSCOOS5
+
+LDFLAGS	= -s
+
+#############################################
+# Nothing below this line should be changed #
+#############################################
+
+O=openserver5
+
+all: ${O}/musserver
+
+${O}/musserver: \
+	${O}/musserver.o \
+	${O}/readwad.o \
+	${O}/playmus.o \
+	${O}/sequencer.o \
+	${O}/usleep.o
+	${CC} ${CFLAGS} ${LDFLAGS} \
+	${O}/musserver.o \
+	${O}/readwad.o \
+	${O}/playmus.o \
+	${O}/sequencer.o \
+	${O}/usleep.o -o ${O}/musserver
+
+clean:
+	rm -f ${O}/*
+
+${O}/%.o: %.c
+	${CC} ${CFLAGS} -c $< -o $@

@@ -1,0 +1,322 @@
+		THE OFFICIAL XDOOM ENGINE SPECIFICATIONS
+===========================================================================
+
+The XDoom engine is based on the public sources, id released December 1997.
+The excellent document 'THE UNOFFICIAL DOOM SPECS', or short UDS, from
+Matthew S Fell specifies the Doom engine very well, with a few minor glitches
+in the paper, which are documented too. This documentations are available
+on the Internet at a thousand locations and they are included in xwadtools,
+available at ftp.cdrom.com, /pub/doom/source. This paper won't be a rewrite
+of the existing documentation, which is copyrighted anyway. This paper does
+specify additional features added to XDoom, which were not part of the
+sources id released. It is assumed that you read the UDS before you start
+getting into XDoom's advanced features!
+
+The WAD level map editor 'tkwadcad', included in xwadtools, will always
+support all extended XDoom features, just be sure to use xwadtools with the
+same release date than the XDoom release. Other WAD editors might or might
+not support the features discussed here.
+
+There are small and working example PWAD's in the directory pwads of the
+XDoom source archive. They are there for your convenience to try out the
+features documented here and to study them with a WAD editor. You need
+the commercial Doom][ IWAD for playing with this.
+
+
+1. New features available by loading xdoom.wad
+
+1.1 Translucency table
+
+XDoom draws various sprites like explosions and powerup spheres
+translucent. Also translucent middle textures are supported. For this
+the program needs a pre-calculated translucency table, included in a
+lump with the name TRANMAP. The xdoom.wad file, automatically loaded
+by XDoom, includes such a lump with a 50% translucency table, so that
+existing IWAD's and PWAD's without can make use of this feature.
+A tool to create other translucency tables is included in xwadtools,
+it can be used to add tables to PWAD's with a different factor than
+the 50% default. This lump will be used by default in the rendering
+engine for all translucency special effects. It is possible to use
+textures with different translucency in one level with the extended
+Boom linedef 260, see below.
+If no TRANMAP lump is found in any of the used PWAD's, the engine will
+render everything without translucency, same as option -notrans
+was used.
+
+
+1.2 New chaingun sound
+
+XDoom can play a different sound for the chaingun than using the pistol
+sound for it too. For this a sfx lump with the name DSCHGUN must be
+present. Xdoom.wad includes such a sfx lump, to enable the feature
+for IWAD's and PWAD's without. If this lump is not found in any PWAD,
+XDoom will use the pistol sound for the chaingun, same as original
+Doom does.
+
+
+1.3 UAC communication gadget graphics and sound
+
+XDoom is enhanced with a handheld communication device for extended
+interaction with the environment. For this a graphic resource with
+the name COMDEV and a sound resource with the name DSBEEP must be
+present. Both resources are included in xdoom.wad, which will be
+loaded automatically, if found. If the resources are missing the
+game engine will abort with an error message.
+
+
+2. New features which can be used in PWAD's
+
+2.1 Translucent textures
+
+XDoom supports translucent normal textures on any 2s line with a new
+defined bit in the linedef flag, used is bit 10 for this. In original
+Doom 2s lines won't block shoots, so XDoom was enhanced with this feature
+too, if bit 11 in the linedef flag is set, this line will block all shoots
+from players and monsters. This flag should be set for a 2s line with a
+translucent glass or force field normal texture e.g., so that one cannot
+shoot through the line, which is very unrealistic.
+
+Please note that XDoom also supports the way Boom does translucent textures
+for compatibility, with linedef type 260, see below. One should use the
+one or the other method, but not both on the same line. Nothing bad will
+happen if one does, it just wastes some CPU cycles in the rendering engine.
+
+
+2.2 Laser barriers and force fields
+
+XDoom does support realistic working laser barriers and force fields with
+linedef 320. Such a linedef is absolutely deadly for players running into
+it, monsters never run into lasers. Apply appropriate textures on both
+sidedefs on such lines, example textures are included in the PWAD lasdemo.
+Of course a laser can be switched off too. Two triggers are provided for
+this, linedef 321 is a switch which switches a laser off, after 10 seconds
+it goes on again. Linedef 322 is a gun trigger, use this one on the support
+texture from which the laser beam emits. If the support texture is shot the
+laser goes off and stays off, use this for the imagination of doing damage to
+the laser emitter. For making the triggers work the linedef with the trigger
+needs to have the same tag than the linedef which builds the laser barrier.
+Also the triggers have an effect on the lighting in the sectors in front
+and behind the force field linedef 320. Use small sectors with a higher light
+level around the laser barrier. If the laser is switched off, the light
+adjusts to the lighting of the next closest sector, if laser goes on again,
+the old light level for the sectors is restored.
+It is a good idea to set translucency for linedefs 320, together with
+appropriate textures the lasers look much better and more realistic.
+For massive force fields also set the block shoot flag in the linedefs 320,
+so that one can't shoot through this line.
+
+
+2.3 Horizontally sliding doors
+
+A horizontally sliding door is provided with linedef 300. This door can be
+opened by players only with the use function (no keys required) and
+automatically closes after 4 seconds. For this door to work special textures
+are required! The names of this textures are fixed because they are handled
+special by the game engine, 4 different sliding door textures are supported
+in one level map. The texture names are GDOOR1F[1-8] for the front side
+of the first door, GDOOR1B[1-8] for the back side of the first door. Texture
+names for the second door are GDOOR2F[1-8] and GDOOR2B[1-8] for front and
+back sides. Eight frames are needed for every side of the door, showing
+the door completely closed (GDOOR1F1 e.g.), completely open (GDOOR1F8 e.g.)
+and six different frames for various degrees of an open door (GDOOR1F2 -
+GDOOR1F7 e.g.). This works similar like animated wall textures, but
+for sliding doors not only the animated frames are played on the wall,
+also the line properties change appropriate to let players and monsters
+pass, don't block shoots when open, and so on. Example sliding door
+textures are inluded in the PWAD sldoor.
+Unlike regular doors the sliding door will NOT block sound! If a closed
+sliding door should block sound two lines with the 'block sound' flag
+are required, one can be the line with the door it self.
+The front and back sectors of the door line are used to figure, if stuff
+is in between the door. The door will not close if monsters, players or
+items are in the front or back sector. So use this type of door in a hallway
+and surround it with smaller sectors and don't put stuff into this sectors.
+A sliding door connected to two large rooms might never close again, because
+stuff is in one of the rooms.
+
+
+2.4 The UAC communication handheld
+
+
+2.5 Boom compatible thing spawn flags
+
+
+2.6 Boom compatible linedefs implemented so far
+
+The documentation for this linedefs is based on the documentation
+included in the Boom 2.02 sources.
+
+Doors
+-----
+
+Since a push door (P1/PR) has no use for its tag, XDoom has extended
+the functionality to include changing any tagged sectors to maximum
+neighbor lighting on fully opening, then to minimum neighbor lighting
+on fully closing. This is true for all doors with push triggers.
+
+
+Floors
+------
+
+#     Trig   Dir Spd   Chg  Mdl Mon Crsh  Target
+
+219   W1     Dn  Slow  None --  No  No    Next Neighbor Floor
+220   WR     Dn  Slow  None --  No  No    Next Neighbor Floor
+221   S1     Dn  Slow  None --  No  No    Next Neighbor Floor
+
+
+Ceilings
+--------
+
+#     Trig   Dir Spd   *Chg *Mdl Mon Crsh Target
+
+152   WR     Dn  Fast  None  --  No  No   Floor
+
+* Monster enabled must be No if Chg field is not None
+
+
+Elevators
+--------
+
+#     Trig  Spd    Target
+
+228   WR    Fast   Next Highest Floor
+230   SR    Fast   Next Highest Floor
+232   WR    Fast   Next Lowest Floor
+234   SR    Fast   Next Lowest Floor
+
+
+Lighting
+--------
+
+#     Trig  Target
+171   S1    255 Units
+
+
+Teleporters
+-----------
+
+A teleporter can preserve orientation or set orientation from the
+position, height, and angle of the teleport thing. Note a thing
+destination teleporter always sets position, though it may preserve
+orientation otherwise.
+
+A teleporter can produce green fog and a whoosh noise, or it can be
+silent, in which case it does neither.
+
+A teleporter can transport monsters only, or both players and
+monsters.
+
+#     Trig  Silent Mon Plyr Orient    Dest
+
+207   W1    Yes    Yes Yes  Preserve  TP thing in tagged sector
+208   WR    Yes    Yes Yes  Preserve  TP thing in tagged sector
+
+244   WR    Yes    Yes Yes  Preserve  Line with same tag
+
+268   W1    Yes    Yes No   Set       TP thing in tagged sector
+269   WR    Yes    Yes No   Set       TP thing in tagged sector
+
+
+Simple Static Scrollers
+-----------------------
+
+For convenience three simple static scroll functions are provided
+for when you just need a wall to scroll and don't need to control its
+rate and don't want to bother with proportionality.
+
+48     -- Animated wall, Scrolls Left                         
+
+A linedefs with this type scrolls its first sidedef left at a
+constant rate of 1 unit per frame.
+
+85     -- Animated wall, Scrolls Right
+
+A linedef with this type scrolls its first sidedef right at a
+constant rate of 1 unit per frame.
+
+255    -- Scroll Wall Using Sidedef Offsets                   
+
+For simplicity, a static scroller is provided that scrolls the first
+sidedef of a linedef, based on its x- and y- offsets. No tag is used.
+The x offset controls the rate of horizontal scrolling, 1 unit per
+frame per x offset, and the y offset controls the rate of vertical
+scrolling, 1 unit per frame per y offset.
+
+
+Static Scrollers
+----------------
+
+The static scrolling linedefs causes some part of the tagged sector or
+tagged wall to scroll, in proportion to the length of the linedef the
+trigger is on, and according to the direction that trigger linedef lies.
+For each 32 units of length of the trigger, the tagged object scrolls 1
+unit per frame. Since the length of a linedef doesn't change during
+gameplay, these types are static, the scrolling effect remains constant
+during gameplay. However, these effects can be combined with, and/or
+canceled by, other scrollers.
+
+250    -- Scroll Tagged Ceiling
+
+The ceiling of the tagged sector scrolls in the direction of the linedef
+trigger, 1 unit per frame for each 32 units of linedef trigger length.
+Objects attached to the ceiling do not move.
+
+251    -- Scroll Tagged Floor                                 
+
+The floor of the tagged sector scrolls in the direction of the linedef
+trigger, 1 unit per frame for each 32 units of linedef trigger length.
+Objects resting on the floor do not move.
+
+252    -- Carry Objects on Tagged Floor                       
+
+Objects on the floor of the tagged sector move in the direction of the
+linedef trigger, 1 unit per frame for each 32 units of linedef trigger
+length. The floor itself does not scroll.
+
+253    -- Scroll Tagged Floor, Carry Objects
+
+Both the floor of the tagged sector and objects resting on that floor
+move in the direction of the linedef trigger, 1 unit per frame for each
+32 units of linedef trigger length.
+
+254    -- Scroll Tagged Wall
+
+Walls with the same tag as the linedef trigger scroll at the same
+rate as a floor or ceiling controlled by one of 250-253, allowing
+their motion to be synchronized. When the linedef trigger is not
+parallel to the wall, the component of the linedef in the direction
+perpendicular to the wall causes the wall to scroll vertically. The
+length of the component parallel to the wall sets the horizontal
+scroll rate.
+
+
+Property Transfer
+-----------------
+
+These linedefs are special purpose and are used to transfer
+properties from the linedef itself or the sector on its first sidedef 
+to the tagged sector(s). None are triggered, they simply exist.
+
+213	-- Set Tagged Floor Lighting to Lighting on 1st Sidedef's Sector
+
+Used to give the floor of a sector a different light level from the
+remainder of the sector. For example bright lava in a dark room.
+
+261	-- Set Tagged Ceiling Lighting to Lighting on 1st Sidedef's Sector
+
+Used to give the ceiling of a sector a different light level from the
+remainder of the sector.
+
+260	--   Make Tagged Lines (or this line if tag==0) Translucent
+
+Used to make 2s normal textures translucent. If tag==0, then this linedef's
+normal texture is made translucent if it's 2s, and the default translucency
+map TRANMAP is used as the filter. If tag!=0, then all similarly-tagged 2s
+linedefs' normal textures are made translucent, and if this linedef's first
+sidedef contains a valid lump name for its middle texture (as opposed to a
+texture name), and the lump is 64K long, then that lump will be used as the
+translucency filter instead of the default TRANMAP, allowing different
+filters to be used in different parts of the same maps. If the first side's
+normal texture is not a valid translucency filter lump name, it must be a
+valid texture name, and will be displayed as such on this linedef.

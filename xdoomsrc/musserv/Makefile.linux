@@ -1,0 +1,33 @@
+#
+# Makefile for musserver 1.4 for Linux x86 2.0.x
+#
+
+CC	= gcc
+CFLAGS	= -Wall -O2
+LDFLAGS	= -s
+#LDFLAGS	= -static
+
+#############################################
+# Nothing below this line should be changed #
+#############################################
+
+O=linux
+
+all: ${O}/musserver
+
+${O}/musserver: \
+	${O}/musserver.o \
+	${O}/readwad.o \
+	${O}/playmus.o \
+	${O}/sequencer.o
+	${CC} ${CFLAGS} ${LDFLAGS} \
+	${O}/musserver.o \
+	${O}/readwad.o \
+	${O}/playmus.o \
+	${O}/sequencer.o -o ${O}/musserver
+
+clean:
+	rm -f ${O}/*
+
+${O}/%.o: %.c
+	${CC} ${CFLAGS} -c $< -o $@

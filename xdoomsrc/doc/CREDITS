@@ -1,0 +1,154 @@
+The following list should show all companies, organizations and persons
+who worked on this project and contributed something. If someone who
+contributed isn't mentioned it is my fault, please email me so that
+I can correct it. The list is in no particular order, I just keep
+adding as stuff comes in here, but of course id Software is mentioned
+first, without them this project won't exist.
+
+id Software: http://www.idsoftware.com
+
+    * For writing one kind of a great game, which redefined computer
+      game playing.
+    * For releasing the sources to the public and allow us to mess with it.
+    * For using UNIX systems too.
+
+Bernd Kreimeier: bk@gamers.org
+
+    * For taking the time to clean up the project before it was released.
+
+Raven Software: http://www.ravensoft.com
+
+    * For the Hexen game engine, XDoom includes some features from this
+      engine, like the ACS P code interpreter and linedefs/things with
+      arguments.
+    * For releasing the sources to the public and allow us to mess with it.
+
+Hank Leukart: ap641@cleveland.freenet.edu
+
+    * For the very detailed FAQ.
+
+4Front Technologies: http://www.4front-tech.com
+
+    * For providing me with up to date sound drivers for all platforms.
+    * For patiently answering my questions about the OSS API and the
+      sound drivers.
+    * For the initial integration of musserver into xdoom.
+    * For the big endian support for musserver.
+
+Michael Heasley: mheasley@hmc.edu
+
+    * For writing 'musserver', so that we are able to enjoy the Doom tunes
+      under UNIX.
+
+Larry Plona: ljp@tiac.net
+
+    * For the idea with the skull menu, the Java-Script code and gif images
+      for the xdoom web page.
+    * For reading through the whole documentation and improving it
+      significantly.
+    * For bringing me on track with the big/little endian mess in xdoom.
+
+The Linux crowd: http://www.linux.org
+
+    * The sources id released are for Linux. Without Linux there never
+      might have been public released Doom sources, who knows.
+
+The Skunkware crew: http://www.sco.com/skunkware
+
+    * The Skunkware crew is a gang of software developers and SCO
+      engineers who put a lot of effort into porting freeware to
+      SCO OS's and help people to get their hands on this stuff.
+      Thanks for answering my questions about SCO OS's and providing
+      help with all kind of technical problems.
+
+Achim Oppelt: aoppelt@theorie3.physik.uni-erlangen.de
+
+    * For the patch which enables xdoom to work on X servers with
+      16, 24 and 32 bpp.
+
+Klaus ter Fehn: ktf@gun.de
+
+    * For helping out with some nasty Tcl/Tk details in xdlaunch, which
+      I couldn't figure out my self from Brent B. Welch's book.
+
+Ron Record: rr@sco.com
+
+    * For the top level Makefile and the xdoom.sh template.
+
+TeamTNT: http://www.neosoft.com/~teamtnt
+
+    * I took Lee Killough's C drawing routines with the TFE fix from
+      the Boom sources and worked them into xdoom.
+    * I also took Lee Killough's x86 assembler drawing routines with
+      the TFE fix from the Boom sources and worked them into xdoom.
+    * The idea about "not deathmatch" and "not cooperative" thing flags
+      I took from Boom too.
+    * Also from Boom I took the thinker based scrolling functions and
+      implemented a part of them into xdoom. I believe the thinker based
+      scroll functions in Boom were written by Lee Killough.
+    * Took Lee's Medusa fix from Boom sources too.
+    * Used Lee's dynamic visplane, openings and visplane allocation sources
+      from Boom.
+    * The menu pictures with text 'horizontal' and 'vertical' are from
+      the Boom resource wad, I just made the images a bit smaller though.
+      However, credit for this graphics is due to some artist from
+      TeamTNT.
+    * Dynamic allocated drawsegs, which fix the 2s line HOM, are from Boom.
+    * Silent teleporters are from Boom.
+    * TeamTNT has improved the linedefs used in the Doom engine by adding
+      a more complete set of triggers. It is way too much to mention those
+      all in detail, but all the Boom based triggers implemented in XDoom
+      are based on sources from TeamTNT. The SPEC.xdoom document lists all
+      currently implemented, see there.
+
+Andre Majorel <amajorel@teaser.fr>
+
+   * For the improved PWAD lookup in /usr/(local)/share/doom.
+   * For pointing out the xdoom crashes on a map with thing id 0.
+   * For making me overwork the top level makefile and use GNUmakefile
+     to autodetect, if GNU make is used.
+   * For contributing the sliding door textures and providing me with
+     ideas for making them work.
+   * For usable bug reports, feedback and supporting me with ideas in general.
+   * For bothering me about removing the static limitations, like it was
+     done in Boom by TeamTNT. If Andre hadn't complained about this enough,
+     the limitations still might be there. It was a lot of work but worth it.
+   * For testing and bug reports of XDoomPlus.
+
+Alan Curry <pacman@cqc.com>
+
+   * For a lot of feedback and bug reports.
+   * For various bug fixes in XDoom and the tools.
+   * For mklinux support on Apple PPC hardware.
+
+Colin Phipps <cph@lxdoom.linuxgames.com>
+
+   * I took the idea about giving up CPU while waiting for XSHM finishing
+     the blitting out of Colin's lxdoom sources. Lxdoom is a port of
+     DOS Boom to Linux.
+   * I also took the idea about polling the mouse pointer every game tic
+     instead of handling X events for it from the same source.
+
+Eric Lakin <elakin@ricochet.net>
+
+   * For the patches for XDoom, sndserver and musserver to compile
+     under FreeBSD 3.x
+
+Oliver Kraus <olikraus@yahoo.com>
+
+   * For bug fixes for Solaris 2.x on SPARC.
+   * For figuring out how to compile with Sun's WorkShop compiler.
+   * For optimization on 32bpp Sun SPARC X servers.
+
+Priit Jaerv <priit@mig.ee>
+
+   * For the FreeBSD ioctl() module for CD audio.
+   * For the FreeBSD VGA frame buffer module using libvgl.
+
+John Davison <davisoja@yahoo.com>
+
+   * For help with structure align problems on AIX and making sure the
+     commercial IWAD's work OK under AIX.
+
+The XDoom project was created and is maintained by:
+Udo Munk (um@compuserve.com)

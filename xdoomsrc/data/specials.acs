@@ -1,0 +1,15 @@
+//**************************************************************************
+//**
+//** specials.acs
+//**
+//**************************************************************************
+
+special
+	80:ACS_Execute(5),
+	81:ACS_Suspend(2),
+	82:ACS_Terminate(2),
+	83:ACS_LockedExecute(5),
+	72:ThrustThing(2),
+	73:DamageThing(1),
+	132:Thing_Remove(1),
+	133:Thing_Destroy(1);

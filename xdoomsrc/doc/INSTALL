@@ -1,0 +1,120 @@
+To build XDoom, you need an ANSI C compiler which can accept C++ style
+comments.  You will also need the GNU version of make, due to the
+construction of certain make rules.
+
+GNU C 2.7.2 and later supports C++ style comments in C code, some other
+compilers will not. Personally I'm using EGCS on such systems where the
+vendors compiler won't work, see http://www.cygnus.com/egcs/.
+
+GNU make can be downloaded from ftp.gnu.org.
+
+Building XDoom is fairly straight forward. There is a top level makefile
+in the XDoom source directory, which supports compilation and installation
+for all supported OS's. To show the supported targets just type 'make',
+'make install' and 'make clean'. As an example the installation on a
+Linux x86 system is done with:
+
+	make linux-x86
+	make install-linux-x86
+	make clean-linux-x86
+
+XDoom will be installed under /usr/local/games/xdoom and shell scripts
+as well as the GUI launcher program will be installed under /usr/local/bin.
+If the installation directory is modified in GNUMakefile it needs to be
+modified to the same in the shell scripts in directory contrib.
+
+There are three source directories: xdoom, musserv and sndserv. In each
+directory makefile templates for various platforms are named
+Makefile.<platform>. All this Makefiles are configured to build production
+binaries. Most Makefiles have options to build binaries for debugging and
+some features can be activated and deactivated. This features are commented
+in the Makefiles, it is a good idea to have a look before installing XDoom.
+Also for many platforms more than one C compiler is supported, you need to
+adjust the Makefiles for the compiler you want to use.
+
+If you want to build a binary using a [S]VGA card in full screen mode
+on Linux x86, you need to install svgalib. This was developed and tested
+with svgalib 1.3.0 and 1.3.1, other releases might cause problems.
+
+If you want to build a binary using [S]VGA card in full screen mode on
+FreeBSD 3.x, you need to install libvgl.
+
+If you want to build a binary using Voodoo 3DFX as framebuffer, you
+need to download the Glide library for your platform first. For Linux x86
+you can use glide 2.4 from www.3dfx.com and glide 2.46 from glide.xxedgexx.com.
+I suggest you get the later one and use it together with the 3DFX device
+driver module, because then it's not necessary to run XDoom as user root,
+or worse, install it setuid root. You also need svgalib because the 3DFX
+module uses mouse support from this library. This was developed and tested
+with svgalib 1.3.1, other releases might cause problems.
+
+If you want to compile Joystick support into Linux x86 2.0 you need the
+Joystick device driver. You can find it at:
+	http://atrey.karlin.mff.cuni.cz/~vojtech/joystick/
+I have used release 1.2.7 together with a 2.0.33 kernel.
+Linux 2.2 comes with Joystick driver included, just use that one, works
+nicely.
+
+The musserv and sndserv source is only relevant if you have a sound card and
+an OSS compatible driver. Sndserver is optional because it's possible to
+compile builtin OSS compatible sound support into XDoom, see below.
+Free drivers for SCO operating systems can be found at the SCO WEB site.
+4-Front Technology sells drivers for virtually any card on any UNIX variant.
+There is also a freeware driver called Voxware which supports many platforms.
+If you use ancient drivers you won't experience good sound support, get a
+driver from 4Front and use a 3.8 release or better. The README file contains
+the locations of these drivers on the Internet.
+
+For the supported platforms XDoom should build as is. There are some
+compile time options, depending on the platform you're using, the
+Makefiles in the source distribution document this options. The essential
+ones are:
+
+MUSSERV: this allows to listen to the Doom music tracks included in
+	 the IWAD and PWAD files.
+
+SNDSERV: if this is defined the external program 'sndserver' will be
+	 used to play the sound effects.
+	 Define this too for platforms without an OSS driver installed,
+	 then no sound specific include files are required, to compile XDoom.
+	 The game engine self will run, also if this server can't be found.
+
+SNDINTR: if SNDSERV is not defined and builtin code is used, with this define
+	 active the sound will be updated asynchrony with a timer interrupt.
+	 If this is not defined the sound updates happen synchrony from
+	 the main game loop. The interrupt timer is 10ms, not every OS on
+	 low end hardware can handle this.
+
+SNDMMAP: with this defined the builtin sound code uses mmap() to mix sound
+	 samples directly into the DMA buffer. This is mutually exclusive
+	 with SNDINTR.
+
+WITH OTHER WORDS, define SNDSERV _OR_ SNDINTR _OR_ SNDMMAP _OR_ NONE OF THEM,
+THOSE ARE MUTUALLY EXCLUSIVE.
+
+Uh oh, but which method should I compile on my system???
+
+Use no define or SNDSERV, SNDINTR and SNDMMAP both have various problems.
+If SNDSERV is defined and the external sound server process is used some
+sound features are missing, due to the ugly design of the thing and problems
+with PWAD merging.
+
+BUGFIXES:
+	 The original game has some bugs in the rendering engine, like
+	 Medusa, TFE and bullet/missile eating walls. This bugs are fixed
+	 in XDoom, if compiled with this define active. If you want the
+	 original Doom behavior with this bugs (for testing PWAD
+	 compatibility maybe), undefine it in the Makefiles. If USE_ASMMOD
+	 is defined, the TFE bug on x86 still won't be visible, because the
+	 x86 assembler module only includes rendering routines with TFE fixed.
+	 So compile the portable C module and not the assembler module if you
+	 don't want this.
+
+USE_JOYSTICK:
+	 Compile in Joystick support. You also need to select a Joystick
+	 support module in the used Makefile. Joystick support currently
+	 is available for Linux x86 only, due to lack of device drivers
+	 for other OS's.
+
+If you use the shareware IWAD, this file must be named doom1.wad and
+not doom.wad, else the game engine will abort with an error message.

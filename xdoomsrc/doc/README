@@ -1,0 +1,424 @@
+Welcome to XDoom - Where everyone's favorite game meets everyone's favorite
+operating system. If you thought that UNIX was only good for making a
+living, guess again. Now you can put that high priced computer hardware
+to work destroying demons of all shapes and sizes.
+
+XDoom is a UNIX/X11 version of the commercial game Doom.  XDoom is however
+free and available as source code. Commercial Doom data files (wads) may be
+used with XDoom, but must be purchased.
+
+XDoom does work with the shareware version of the Doom 1 wad, just like
+shareware Doom for DOS. This allows a limited portion of the Doom game to be
+played. To play the full Doom 1 game, Doom II or third party wads, commercial
+wads must be used. The same wads sold by id software and retail stores will
+work with XDoom.
+
+------------------------------------------------------------------------
+Supported Platforms
+------------------------------------------------------------------------
+
+XDoom is known to work on the following platforms:
+
+    SCO UnixWare 7, X11 and [S]VGA support, mouse and keyboard support
+    SCO UnixWare 2.1.x, X11 and [S]VGA support, mouse and keyboard support
+    SCO OpenServer 5.0.x, X11 and [S]VGA support, mouse and keyboard support
+    Linux x86 1.2.x, 2.0.x, 2.1.x and 2.2.x, X11, [S]VGA and Voodoo 3DFX
+	support, mouse, keyboard and joystick support
+    Linux Dec Alpha 2.2.x, X11 support, no sound yet, mouse and keyboard support
+    FreeBSD 3.x, X11 and [S]VGA support, mouse and keyboard support
+    Solaris SPARC 2.5.1, 2.6 and 2.7 X11 support, no sound yet,
+	mouse and keyboard
+    IBM AIX 4.2, X11 support, no sound yet, mouse and keyboard support
+
+XDoom can probably be made to work on any version of UNIX which runs X11.
+Dependent on the console driver of the OS full screen direct graphics
+support is possible too, enough implementation examples are included
+to see how this can be done on various OS's. If X11 runs on the console
+XDoom can be made to run in full screen graphics mode on the console too.
+
+------------------------------------------------------------------------
+Obtaining the Source
+------------------------------------------------------------------------
+
+The latest released version of the XDoom source can be found at:
+
+    ftp://ftp.cdrom.com/pub/doom/source
+
+------------------------------------------------------------------------
+Problem Reports
+------------------------------------------------------------------------
+
+In case of technical problems feel free to email me at um@compuserve.com,
+but please don't bother me about how to play the game and cheats, this is
+explained in great detail in the included documentation.
+I cannot guarantee that I can solve your problem, I'm doing this in my spare
+time for the fun of it, this software is provided on AS IS basis.
+
+------------------------------------------------------------------------
+Building XDoom from Source
+------------------------------------------------------------------------
+
+See the file "INSTALL".
+
+------------------------------------------------------------------------
+Getting UNIX Sound Drivers
+------------------------------------------------------------------------
+
+4-Front Technology has commercial drivers for most versions of UNIX. These
+drivers are reasonably priced for the home user. Free OS's like Linux and
+FreeBSD come with a 'Lite' version of this driver. SCO offers a free version
+of this driver for SCO UnixWare and SCO OpenServer.
+
+When using any 4-Front driver, make sure that it's version 3.8 or later.
+
+Commercial 4-Front drivers
+
+    http://www.4front-tech.com
+
+Free 4-Front drivers for UnixWare and OpenServer
+
+    http://www.sco.com/skunkware/audiovis/index.html
+
+There is also a free sound driver with source code variously called
+Voxware, USS/Lite and OSS/Free.
+
+    http://www.4front-tech.com/ossfree
+
+For Linux systems there also exists a PC speaker driver and the driver
+emulates a sound card with the OSS API. This driver is available at
+http://www.imladris.demon.co.uk/pcsp/patch-pcsp-soundcore-2.1.126.
+and it was reported that XDoom plays sound with this driver too.
+
+------------------------------------------------------------------------
+Using musserver with Creative AWE sound cards
+------------------------------------------------------------------------
+
+By default musserver is compiled to play the music via the OPL FM
+synthesizer on sound cards, because probably all sound cards will
+support this and because that's what most people have. If you are
+using a Creative AWE 32 or AWE 64 sound card, you got one with a pretty
+good MIDI engine, which sounds way better than the FM synthesizer. The
+OSS sound drivers do support this Emu8000 MIDI engine on the AWE cards
+and so does musserver. AWE support is compiled in, just not used by
+default. So if you wish to play the tunes with the Emu8000 MIDI engine
+modify the shell wrapper for the musserver program:
+
+/usr/local/games/xdoom/musserver
+
+#!/bin/sh
+exec musserver.bin -a $*
+
+Works too out of the box with the sound driver included in Linux x86 2.2
+kernels.
+
+------------------------------------------------------------------------
+Using CD audio support
+------------------------------------------------------------------------
+
+CD audio support differs a lot on all the different UNIX's, so an abstract
+layer was added to XDoom, which allows to write further CD audio support
+modules without more modifications in the game engine it self. There are
+two working support modules implemented, one uses Ti Kan's cda audio player
+program, the other uses the ioctl() interface used in Linux/BSD/Solaris.
+If you are running XDoom on a system without an ioctl() interface for
+CD audio support and you wish to use CD audio support, you need to install
+Ti Kan's xmcd CD audio player program on your system. The program can be
+found at:
+
+http://sunsite.unc.edu/~cddb/xmcd/welcome.html
+
+You don't have a good audio CD to play together with XDoom? Well, there
+is one, check out:
+
+http://www.bpmusic.com/latest.html
+
+------------------------------------------------------------------------
+Using a Voodoo 3DFX as framebuffer
+------------------------------------------------------------------------
+
+Under Linux XDoom can be compiled to run on a Voodoo 3DFX framebuffer in
+full screen mode with a resolution of 640x400 and 16/24bit color depth.
+This was tested with Glide 2.4 from www.3dfx.com and with Glide 2.46
+from glide.xxedgexx.com including the driver module. Use the later one,
+XDoom won't need root permission then to run. You also need the SVGA
+library, because the 3DFX DGA module uses the mouse support from this
+library. This was developed and tested with svgalib 1.3.1, other releases
+might cause problems.
+I don't know if the Glide library is available for anything other than
+Linux x86 and Microsoft OS's, check out http://www.3dfx.com.
+
+------------------------------------------------------------------------
+Joystick support
+------------------------------------------------------------------------
+
+Joystick support is enabled in the Makefile for Linux x86, the 2.2 kernel
+includes the driver already. For 2.0 release you can find the driver at:
+
+	http://atrey.karlin.mff.cuni.cz/~vojtech/joystick/
+
+Linux x86 is the only OS with Joystick support currently, I'm not aware
+about drivers for other OS's. If you know about free drivers for other OS's
+let me know where to find them and I might try to add support for this.
+
+To disable Joystick support for Linux x86 edit
+xdoomsrc/xdoom/Makefile.linux-x86 and remove -DUSE_JOYSTICK from the GAMEOPT
+define. Also comment the JOYSTICK define below and uncomment the empty one.
+
+After you got XDoom compiled with Joystick support you need to enable
+it in your ~/.doomrc, change use_joystick from 0 to 1 for this. By default
+usage of the Joystick is disabled in ~/.doomrc. Also you can configure
+up to 4 buttons there.
+
+I used an analog Logitech Wingman Joystick and it works OK for me. There is
+no Joystick calibration, because the driver documentation says the driver
+does it internally and besides this it comes with a calibration program
+'jscal'. So use that after you loaded the appropriate driver modules.
+
+I have no clue how sensitive other Joysticks are and which range of
+values the driver returns for the axes. If it is too sensitive or not
+sensitive enough change the threshold defines in i_ljoy.c. Also I would
+appreciate an email if the default values won't work for you, because
+then I might have to add some sort of calibration procedure.
+
+------------------------------------------------------------------------
+Use with Commercial Doom Products
+------------------------------------------------------------------------
+
+The XDoom source is free software distributed under the GNU license. The
+unregistered version of the Doom 1 wad file is also free. The unregistered
+wad contains one of the three Doom 1 episodes. The unregistered wad will not
+play the other two Doom 1 episodes, nor will it play third party Doom wads.
+Registration will activate all episodes and allow the use of third party
+wads. Registration is explained in Doom's online documentation at
+http://www.idsoftware.com.
+
+Registration is not the only way to expand XDoom. The following retail
+products are also available for use with XDoom:
+
+Ultimate Doom (Doom SE) - This is a retail version of Doom 1. It contains
+the three episodes of Doom 1 plus an extra episode. Purchasing Ultimate
+Doom is the same as registering Doom 1.
+
+Doom II - The Doom II wad will run without Doom 1 registration. It will
+also enable the ability to play Doom II third party wads.
+
+Final Doom - This comes with two new IWADs, Plutonia and TNT, which will run
+without Doom 1 registration. Both IWADs also will enable the ability to play
+Doom II third party wads.
+
+Depths of Doom Trilogy - This is a retail package containing Ultimate
+Doom, Doom II and The Doom Master Levels.
+
+Note that all of these products are sold as DOS/Windows software. Do not be
+discouraged, they work just fine with XDoom. Installation is explained below.
+
+Some Doom products can also be purchased from Id software on their WEB site.
+
+    http://www.idsoftware.com
+
+------------------------------------------------------------------------
+Executing XDoom
+------------------------------------------------------------------------
+
+To run XDoom an IWAD file must be available. This is one of doom1.wad,
+doom.wad, doom2.wad, doom2f.wad, doomu.wad, plutonia.wad or tnt.wad. Only
+one IWAD should be presented to XDoom. XDoom will search either the current
+directory or the directory specified by the DOOMWADDIR environment variable.
+
+To play a third party Doom wad one of the above files other than doom1.wad
+must be found.  The third party wad can then be specified on the command line
+with "-file <path to wad>".
+
+The PATH environment variable is searched for the sndserver and musserver
+executables. These need not be present to play XDoom but are required for
+sound. If they are missing XDoom will work, just without sound and/or music.
+
+Demo files always are expected to be in the current directory and will
+be written there too.
+
+Here is one way to set up XDoom for a multi-user UNIX system, this is
+what the top level makefile will do if not modified:
+
+Install the xdoom, sndserver and musserver shell wrappers in a common location
+such as /usr/local/bin. Install the binary executables in
+/usr/local/games/xdoom. Also install each IWAD into /usr/local/games/xdoom.
+
+For each user on the system, create Doom areas for each IWAD file. Each area
+should contain a symbolic link to a single IWAD.
+
+    $HOME/.doom/doom.wad@     --> /usr/local/games/xdoom/doom.wad
+    $HOME/.doom2/doom2.wad@   --> /usr/local/games/xdoom/doom2.wad
+
+To execute the above example (Doom II), simply enter the directory and
+execute "xdoom". If you wish to play a third party Doom II wad, add
+"-file <wad>" to the xdoom command line.
+You need to do the same for the xdoom.wad file included in the data directory,
+the installation will copy it into /usr/local/games/xdoom. This PWAD file
+includes new resources, which aren't in the id Software IWAD files and XDoom
+only works, if this resources are found.
+
+The environment variable "DOOM_SOUND_SAMPLEBITS" may be set to force 8 bit
+sound to be used.
+
+When playing XDoom on a local console, make sure that the DISPLAY environment
+variable is set to ":0.0" and not "hostname:0.0". Use of the latter will
+cause shared memory to be disabled.
+
+Ultimate Doom - The CD for Ultimate Doom contains a wad named "doom.wad".
+For older XDoom releases this wad file must be renamed to "doomu.wad" in
+order to play all four episodes. With this release it's not necessary
+to rename the wad file anymore, the fourth episode will be auto detected.
+
+Master Levels - The Doom Master levels is a CD containing lots of Doom 1
+and Doom II third party wad files. The files can be found in:
+
+    maximum/wads/doom1
+    maximum/wads/doom2
+
+The wads may be played from the CD or copied onto a hard drive. Note that
+the Doom 1 (or Ultimate Doom) IWAD must be present to play Doom 1 wads
+and the Doom II IWAD must be present to play the Doom II wads.
+
+------------------------------------------------------------------------
+How do I play Doom?  What are the cheat codes?
+------------------------------------------------------------------------
+
+XDoom is almost the same as the DOS version. Instructions about how to
+play the game are in the file INSTRUCTIONS, which is the same as is
+distributed with DOS Doom. Also the fairly comprehensive Doom FAQ,
+dmfaq666.txt can be found in the doc directory of the XDoom source tree.
+And also read the manual page xdoom.6, found in the doc directory too.
+One additional cheat code was added to XDoom so far:
+
+	IDBEHOLDB	- Get the ammo backpack
+
+------------------------------------------------------------------------
+Boom compatibility
+------------------------------------------------------------------------
+
+XDoom has implemented some extended features from Boom by TeamTNT.
+This includes scrolling floors and ceilings, with floors being able to
+carry objects. It also includes independent lighting for the sector, its
+floor and its ceiling. Also some silent teleportes are implemented. While
+there is a PWAD included, which I use for testing the compatibility of this
+features, this one won't be great fun to play. So, are there any Boom
+levels which really do play OK? Certainly, so far I found the following
+Boom levels playing OK. You really should get them and have a look,
+because this levels are much better than what I can do.
+
+	foa.wad
+	lih.wad			all 4 levels ok
+	kboom_2.wad
+	hl.wad, hltextur.wad	level with Half-Life textures
+
+You should be able to find this Boom levels on ftp.cdrom.com.
+
+So how does one test if a Boom level is OK to play with XDoom and doesn't
+use features, not implemented in XDoom?
+
+This is easy, get xwadtools from ftp.cdrom.com, same place where you got
+XDoom. This tools include the WAD editor tkwadcad, which supports all
+features implemented in XDoom and it has WAD consistency checking builtin.
+Make sure you use a xwadtools release with the same release date than the
+XDoom release you have. So, to check if a PWAD would play with XDoom do this:
+
+- First decompile the level map from the PWAD:
+	wadldc -g XDoom MAP01 foa.wad foa.map
+
+- Then load the map into tkwadcad:
+	tkwadcad foa.map
+
+Make sure the game version is set to XDoom, so that the consistency
+checker works with the XDoom features. Then from the Check menu run all
+check functions other than 'Tag references'. If no function complains
+about an unknown sector type, unknown thing id or unknown linedef type,
+then this PWAD should play OK with XDoom. Please note that the consistency
+checks are very thorough, on large maps they will need a long time to complete.
+It can need some minutes to finish a test, even on fast systems. This is
+normal, just be patient.
+
+If you check other levels this way and find some which are OK and not
+listed above, I would appreciate an email, so that it can be listed
+here, thank you.
+
+------------------------------------------------------------------------
+Original Readme from ID
+------------------------------------------------------------------------
+
+Here it is, at long last.  The DOOM source code is released for your
+non-profit use.  You still need real DOOM data to work with this code.
+If you don't actually own a real copy of one of the DOOMs, you should
+still be able to find them at software stores.
+
+Many thanks to Bernd Kreimeier for taking the time to clean up the
+project and make sure that it actually works.  Projects tends to rot if
+you leave it alone for a few years, and it takes effort for someone to
+deal with it again.
+
+The bad news:  this code only compiles and runs on linux.  We couldn't
+release the dos code because of a copyrighted sound library we used
+(wow, was that a mistake -- I write my own sound code now), and I
+honestly don't even know what happened to the port that microsoft did
+to windows.
+
+Still, the code is quite portable, and it should be straightforward to
+bring it up on just about any platform.
+
+I wrote this code a long, long time ago, and there are plenty of things
+that seem downright silly in retrospect (using polar coordinates for
+clipping comes to mind), but overall it should still be a useful base
+to experiment and build on.
+
+The basic rendering concept -- horizontal and vertical lines of constant
+Z with fixed light shading per band was dead-on, but the implementation
+could be improved dramatically from the original code if it were
+revisited.  The way the rendering proceeded from walls to floors to
+sprites could be collapsed into a single front-to-back walk of the bsp
+tree to collect information, then draw all the contents of a subsector
+on the way back up the tree.  It requires treating floors and ceilings
+as polygons, rather than just the gaps between walls, and it requires
+clipping sprite billboards into subsector fragments, but it would be
+The Right Thing.
+
+The movement and line of sight checking against the lines is one of the
+bigger misses that I look back on.  It is messy code that had some
+failure cases, and there was a vastly simpler (and faster) solution
+sitting in front of my face.  I used the BSP tree for rendering things,
+but I didn't realize at the time that it could also be used for
+environment testing.  Replacing the line of sight test with a bsp line
+clip would be pretty easy.  Sweeping volumes for movement gets a bit
+tougher, and touches on many of the challenges faced in quake / quake2
+with edge bevels on polyhedrons.
+
+Some project ideas:
+
+Port it to your favorite operating system.
+
+Add some rendering features -- transparency, look up / down, slopes,
+etc.
+
+Add some game features -- weapons, jumping, ducking, flying, etc.
+
+Create a packet server based internet game.
+
+Create a client / server based internet game.
+
+Do a 3D accelerated version.  On modern hardware (fast pentium + 3DFX)
+you probably wouldn't even need to be clever -- you could just draw the
+entire level and get reasonable speed.  With a touch of effort, it should
+easily lock at 60 fps (well, there are some issues with DOOM's 35 hz
+timebase...).  The biggest issues would probably be the non-power of two
+texture sizes and the walls composed of multiple textures.
+
+
+I don't have a real good guess at how many people are going to be
+playing with this, but if significant projects are undertaken, it would
+be cool to see a level of community cooperation.  I know that most early
+projects are going to be rough hacks done in isolation, but I would be
+very pleased to see a coordinated 'net release of an improved, backwards
+compatible version of DOOM on multiple platforms next year.
+
+Have fun.
+
+John Carmack
+12-23-97

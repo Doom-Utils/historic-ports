@@ -1,0 +1,42 @@
+##########################################################
+#
+# $Id:$
+#
+# $Log:$
+#
+#
+
+# use this for the SCO compiler
+#CC=cc
+#CFLAGS=-O2 -b elf -DNORMALUNIX -DSCOOS5
+
+# use this for GNU/EGCS compiler
+CC=gcc
+CFLAGS=-O2 -Wall -DNORMALUNIX -DSCOOS5
+
+LDFLAGS=-s
+LIBS=-lm
+
+O=openserver5
+
+all:	 $(O)/sndserver
+
+clean:
+	rm -f $(O)/*
+
+# Target
+$(O)/sndserver: \
+	$(O)/soundsrv.o \
+	$(O)/sounds.o \
+	$(O)/wadread.o \
+	$(O)/oss.o
+	$(CC) $(CFLAGS) $(LDFLAGS) \
+	$(O)/soundsrv.o \
+	$(O)/sounds.o \
+	$(O)/wadread.o \
+	$(O)/oss.o -o $(O)/sndserver $(LIBS)
+	echo make complete.
+
+# Rule
+$(O)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@

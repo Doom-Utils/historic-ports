@@ -1,0 +1,42 @@
+//**************************************************************************
+//**
+//** defs.acs
+//**
+//**************************************************************************
+
+#define TRUE				1
+#define FALSE				0
+#define ON				1
+#define OFF				0
+#define YES				1
+#define NO				0
+
+#define LINE_FRONT			0
+#define LINE_BACK			1
+
+#define SIDE_FRONT			0
+#define SIDE_BACK			1
+
+#define TEXTURE_TOP			0
+#define TEXTURE_MIDDLE			1
+#define TEXTURE_BOTTOM			2
+
+#define GAME_SINGLE_PLAYER		0
+#define GAME_NET_COOPERATIVE		1
+#define GAME_NET_DEATHMATCH		2
+#define GAME_NET_ALTCOOP		3
+
+#define SKILL_VERY_EASY			0
+#define SKILL_EASY			1
+#define SKILL_NORMAL			2
+#define SKILL_HARD			3
+#define SKILL_VERY_HARD			4
+
+#define KEY_NOKEY			0
+#define KEY_CARD_RED			1
+#define KEY_CARD_BLUE			2
+#define KEY_CARD_YELLOW			3
+#define KEY_SKULL_RED			4
+#define KEY_SKULL_BLUE			5
+#define KEY_SKULL_YELLOW		6
+#define KEY_ANY				100

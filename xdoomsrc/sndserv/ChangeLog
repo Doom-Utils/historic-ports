@@ -1,0 +1,121 @@
+Sun Dec  5 12:22:37 1999	<um@compuserve.com>
+
+	* took all CPU specific optimization out of makefiles,
+	  not really necessary.
+
+Sun Oct 31 02:38:02 1999	<um@compuserve.com>
+
+	* Fixed a EGCS warning.
+
+Sat Oct 30 13:46:21 1999	<um@compuserve.com>
+
+	* Renamed linux.c to oss.c, that module implements the API
+	  to the OSS sound driver and that ain't Linux only.
+
+Sat Oct 23 12:26:53 1999	<um@compuserve.com>
+
+	* Re-licensed under GPL.
+
+Mon Jun 21 02:42:24 1999	<um@compuserve.com>
+
+	* Reformatted to the same style than used for xdoom.
+
+Wed Jun 09 23:25:01 1999	<um@compuserve.com>
+
+	* Added sfx for comdev gadget, so that the program doesn't
+	  terminate because it should play an unknown sfx.
+
+Sun May  9 16:30:01 1999	<um@compuserve.com>
+
+	* Merging sfx frpm PWADs doesn't work correct, disabled for now.
+
+Mon Apr  5 15:07:30 1999	<um@compuserve.com>
+
+	* More patches from Eric Lakin for FreeBSD 3.x
+
+Thu Mar 25 12:06:21 1999	<um@compuserve.com>
+
+	* Worked in the patches from Eric Lakin for FreeBSD 3.x.
+
+Tue Feb 16 06:58:02 1999	<um@compuserve.com>
+
+	* Reset of the DSP still was done and it causes problems with
+	  the older sound driver, commented out.
+
+Sun Feb 14 01:58:49 1999	<um@compuserve.com>
+
+	* There was a warning left because <sys/ioctl.h> wasn't
+	  included, fixed.
+
+	* Modified openwad(), so that it can merge sfx lumps from
+	  pwads.
+
+	* Modified even more to optionally load the new chaingun sound
+	  from xdoom.wad, if not found use pistol sound. This is a real
+	  gross hack I'm not proud about and I can only hope no one
+	  looks into this shit. The whole sndserver supports as it is
+	  belongs into the trash can and should be rewritten from scratch
+	  with an appropriate design, which allows more flexibility. One
+	  day I might do that...
+
+Fri Jan 29 21:08:34 1999	<um@compuserve.com>
+
+	* Raised the sound volume, so that it's similar to other
+	  applications playing sfx sound output.
+
+Wed Apr 22 19:55:46 1998	<udo@umserver.umnet.de>
+
+	* If the DSP device is busy or no sound card available
+	  sndserver now continues to work, just without playing
+	  the sounds. So XDoom continues to work too in this case
+	  and doesn't terminate anymore.
+
+Tue Mar  3 18:35:53 1998	<udo@umserver.umnet.de>
+
+	* 8 bit sound support improved like done for the xdoom
+	  builtin sound handling, see xdoom's log file too.
+
+Wed Feb 11 13:36:50 1998	<udo@umserver.umnet.de>
+
+	* Ported to Unixware 7.
+
+Mon Jan 26 13:03:35 1998	<udo@umserver.umnet.de>
+
+	* Added test for environment variable DOOM_SOUND_SAMPLEBITS
+	  to override detection of a 16bit sound card and activate
+	  conversion to 8bit sound samples. There are 16bit sound
+	  cards which aren't SoundBlaster compatible and changing
+	  the sources to force it playing 8bit samples worked with
+	  this sound card. I added this environment variable,
+	  so people won't need to modify the source anymore.
+
+	* Support for tnt.wad and plutonia.wad added
+
+	* Changed order so that sndserver looks for the WADs
+	  in the same order then xdoom does.
+
+Thu Jan  1 16:47:37 1998	<udo@umserver.umnet.de>
+
+	* This ChangeLog added, who knows how much work will
+	  be done here, so it's better to have separate log
+	  for sndserver too.
+
+	* The sound card initialization sequence was the opposite
+	  as the 4Front OSS documentation says, how this should
+	  be done. It might cause problems with some sound cards,
+	  I don't know, I just fixed it and it's a better style
+	  anyway to coincide with documented API's.
+
+Wed Dec 31 1997			<udo@umserver.umnet.de>
+
+	* Sound support for 8bit sound cards added. The server
+	  detected the sample format capabilities of the sound
+	  hardware already and the conversion from the signed
+	  short sounds samples to 8bit unsigned is pretty easy
+	  to do. Also I modified the text output, so that it
+	  just shows which type of card it's using, instead of
+	  the original error message, if the hardware isn't
+	  able to play the 16bit signed samples.
+	  This should work with all PC UNIX's, but I have tested
+	  it under UW 2.1.2 only, because that is the only system
+	  I have with old 8bit sound hardware.
