@@ -1,23 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Status Bar Library Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by Id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-// 	The status bar widget code.
-//
-//-----------------------------------------------------------------------------
 
 #ifndef __STLIB__
 #define __STLIB__

@@ -1,30 +1,16 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Pseudo-Random Number Code (via LUT)
 //
-// $Id:$
+// Based on the Doom Source code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//
-//    
-//-----------------------------------------------------------------------------
-
 
 #ifndef __M_RANDOM__
 #define __M_RANDOM__
 
 
-#include "doomtype.h"
+#include "dm_type.h"
 
 
 
@@ -35,7 +21,6 @@ int M_Random (void);
 // As M_Random, but used only by the play simulation.
 int P_Random (void);
 int J_Random (void);
-
 
 // Fix randoms for demos.
 void M_ClearRandom (void);

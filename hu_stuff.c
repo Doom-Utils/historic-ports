@@ -1,31 +1,14 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Heads-Up-Display Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:  Heads-up displays
-//
-//-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 
 #include <ctype.h>
 
-#include "doomdef.h"
+#include "dm_defs.h"
 #include "v_res.h"
 
 #include "z_zone.h"
@@ -38,7 +21,7 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 
 #include "s_sound.h"
 
-#include "doomstat.h"
+#include "dm_state.h"
 
 // Data.
 #include "dstrings.h"
@@ -51,10 +34,8 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 //
 // Locally used constants, shortcuts.
 //
-#define HU_TITLE	(mapnames[(gameepisode-1)*9+gamemap-1])
-#define HU_TITLE2	(mapnames2[gamemap-1])
-#define HU_TITLEP	(mapnamesp[gamemap-1])
-#define HU_TITLET	(mapnamest[gamemap-1])
+// -ACB- 1998/08/09 Removed the HU_TITLE stuff; Use currentmap->description.
+//
 #define HU_TITLEHEIGHT	1
 #define HU_TITLEX	0
 #define HU_TITLEY	(SCREENHEIGHT-(200-(167 - SHORT(hu_font[0]->height))))
@@ -73,17 +54,17 @@ char*	player_names[MAXPLAYERS];
 
 
 char			chat_char; // remove later.
-static player_t*	plr;
 patch_t*		hu_font[HU_FONTSIZE];
-static hu_textline_t	w_title;
 boolean			chat_on;
+static player_t*	plr;
+static hu_textline_t	w_title;
 static hu_itext_t	w_chat;
 static boolean		always_off = false;
 static char		chat_dest[MAXPLAYERS];
-static hu_itext_t w_inputbuffer[MAXPLAYERS];
+static hu_itext_t       w_inputbuffer[MAXPLAYERS];
 
-static boolean		message_on;
 boolean			message_dontfuckwithme;
+static boolean		message_on;
 static boolean		message_nottobefuckedwith;
 
 static hu_stext_t	w_message;
@@ -94,10 +75,15 @@ extern boolean		automapactive;
 
 static boolean		headsupactive = false;
 
-
+// 23-6-98 KM Added a line showing the current limits in the
+// render code.  Note that these are not really limits,
+// just show how many items we have enough memory for.  These
+// numbers will increase as needed.  vp = visplanes, ds = drawsegs,
+// vs = vissprites, cs = clipsegs
 static hu_textline_t	textlinefps;
 static hu_textline_t	textlinepos;
 static hu_textline_t	textlinestats;
+static hu_textline_t	textlinelimits;
 
 
 //
@@ -150,8 +136,19 @@ const char french_shiftxform[] =
     '\'', // shift-`
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    '{', '|', '}', '~', 127
-
+    '{', '|', '}', '~', 127,
+// -KM- 1998/10/29 Added support for foreign chars.  Not finished, some
+// capital chars need to be mapped to lowercase
+ 128 , 129 , 130 , 131 , 132 , 133 , 134 , 135 , 136 , 137 , 138 , 139 , 140 ,
+ 141 , 132 , 143 , 144 , 145 , 146 , 147 , 148 , 149 , 150 , 151 , 152 , 148 ,
+ 154 , 155 , 156 , 157 , 158 , 159 , 160 , 161 , 162 , 163 , 164 , 165 , 166 ,
+ 167 , 168 , 169 , 170 , 171 , 172 , 173 , 174 , 175 , 176 , 177 , 178 , 179 ,
+ 180 , 181 , 182 , 183 , 184 , 185 , 186 , 187 , 188 , 189 , 190 , 191 , 192 ,
+ 193 , 194 , 195 , 196 , 197 , 198 , 199 , 200 , 201 , 202 , 203 , 204 , 205 ,
+ 206 , 207 , 208 , 209 , 210 , 211 , 212 , 213 , 214 , 215 , 216 , 217 , 218 ,
+ 219 , 220 , 221 , 222 , 223 , 224 , 225 , 226 , 227 , 228 , 229 , 230 , 231 ,
+ 232 , 233 , 234 , 235 , 236 , 237 , 238 , 239 , 240 , 241 , 242 , 243 , 244 ,
+ 245 , 246 , 247 , 248 , 249 , 250 , 251 , 252 , 253 , 254 , 255
 };
 
 const char english_shiftxform[] =
@@ -193,7 +190,17 @@ const char english_shiftxform[] =
     '\'', // shift-`
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    '{', '|', '}', '~', 127
+    '{', '|', '}', '~', 127,
+ 128 , 129 , 130 , 131 , 132 , 133 , 134 , 135 , 136 , 137 , 138 , 139 , 140 ,
+ 141 , 132 , 143 , 144 , 145 , 146 , 147 , 148 , 149 , 150 , 151 , 152 , 148 ,
+ 154 , 155 , 156 , 157 , 158 , 159 , 160 , 161 , 162 , 163 , 164 , 165 , 166 ,
+ 167 , 168 , 169 , 170 , 171 , 172 , 173 , 174 , 175 , 176 , 177 , 178 , 179 ,
+ 180 , 181 , 182 , 183 , 184 , 185 , 186 , 187 , 188 , 189 , 190 , 191 , 192 ,
+ 193 , 194 , 195 , 196 , 197 , 198 , 199 , 200 , 201 , 202 , 203 , 204 , 205 ,
+ 206 , 207 , 208 , 209 , 210 , 211 , 212 , 213 , 214 , 215 , 216 , 217 , 218 ,
+ 219 , 220 , 221 , 222 , 223 , 224 , 225 , 226 , 227 , 228 , 229 , 230 , 231 ,
+ 232 , 233 , 234 , 235 , 236 , 237 , 238 , 239 , 240 , 241 , 242 , 243 , 244 ,
+ 245 , 246 , 247 , 248 , 249 , 250 , 251 , 252 , 253 , 254 , 255
 };
 
 char frenchKeyMap[128]=
@@ -221,19 +228,25 @@ void HU_Init(void)
 
     int		i;
     int		j;
+    int         lump;
     char	buffer[9];
 
-    if (language==french)
-	shiftxform = french_shiftxform;
-    else
+//    if (language==french)
+//	shiftxform = french_shiftxform;
+//    else
 	shiftxform = english_shiftxform;
 
     // load the heads-up font
     j = HU_FONTSTART;
     for (i=0;i<HU_FONTSIZE;i++)
     {
+        // -KM- 1998/10/29 Chars not found will be replaced by a default.
 	sprintf(buffer, "STCFN%.3d", j++);
-	hu_font[i] = (patch_t *) W_CacheLumpName(buffer, PU_STATIC);
+        lump = W_CheckNumForName(buffer);
+        if (lump == -1)
+          hu_font[i] = (patch_t *) W_CacheLumpName("STCFN000", PU_STATIC);
+        else
+	  hu_font[i] = (patch_t *) W_CacheLumpName(buffer, PU_STATIC);
     }
 
 }
@@ -243,14 +256,14 @@ void HU_Stop(void)
     headsupactive = false;
 }
 
+// -ACB- 1998/08/09 Used Currentmap to set the map name in string
 void HU_Start(void)
 {
-
-    int		i;
-    char*	s = HU_TITLE;
+    int i;
+    char* string;
 
     if (headsupactive)
-	HU_Stop();
+      HU_Stop();
 
     plr = &players[consoleplayer];
     message_on = false;
@@ -272,38 +285,28 @@ void HU_Start(void)
 
 
    //create stuff for showstats cheat
+   // 23-6-98 KM Limits info added.
     HUlib_initTextLine(&textlinefps,
 		       0, 1*(1+hu_font[0]->height),
-		       hu_font,
-		       HU_FONTSTART);
-    HUlib_initTextLine(&textlinepos,
-		       0, 3*(1+hu_font[0]->height),
 		       hu_font,
 		       HU_FONTSTART);
     HUlib_initTextLine(&textlinestats,
 		       0, 2*(1+hu_font[0]->height),
 		       hu_font,
 		       HU_FONTSTART);
-    
-//Raven: Another patch to work with plutonia and tnt properly
-//Raven: Helps display the map names properly in map view mode...
-    switch(gamemission)
-         {
-            case pack_plut:
-               s = HU_TITLEP;
-               break;
-            case pack_tnt:
-               s = HU_TITLET;
-               break;
-            case doom2:
-               s = HU_TITLE2;
-               break;
-            default:
-            }
-//Raven: End of patch
-    
-    while (*s)
-	HUlib_addCharToTextLine(&w_title, *(s++));
+    HUlib_initTextLine(&textlinepos,
+		       0, 3*(1+hu_font[0]->height),
+		       hu_font,
+		       HU_FONTSTART);
+    HUlib_initTextLine(&textlinelimits,
+ 		       0, 4*(1+hu_font[0]->height),
+  		       hu_font,
+  		       HU_FONTSTART);
+
+    // -ACB- 1998/08/09 Use Currentmap settings
+    string = currentmap->description;
+    while (*string)
+	HUlib_addCharToTextLine(&w_title, *(string++));
 
     // create the chat widget
     HUlib_initIText(&w_chat,
@@ -320,23 +323,26 @@ void HU_Start(void)
 }
 
 void HU_PutPixel(int x,int y,int color)
-  {
+{
   if (BPP==1)
     screens[0][y*SCREENWIDTH+x]=color;
   else
     ((short *)(screens[0]))[y*SCREENWIDTH+x]=palette_color[color];
-  }
+}
 
 
 int chcount=0, chdir=1, chtimer=0; 
 extern int setblocks;              
+
+#define TIPSHEIGHT 100
 
 void HU_Drawer(void)
 {
 
     int sbarheight=SBARHEIGHT; 
 
-    TIP_DisplayTips(((SCREENHEIGHT-sbarheight)/2)-2);
+    // -ACB- 1998/06/14 work out height properly with new scaled patch indirect.
+    TIP_DisplayTips(TIPSHEIGHT);
 	
     HUlib_drawSText(&w_message);
     HUlib_drawIText(&w_chat);
@@ -347,7 +353,8 @@ void HU_Drawer(void)
        sbarheight=0;           //-JC- Make sure crosshair works full scr.
 
     // -jc- Pulsating
-    if (chtimer++%5) {
+    if (chtimer++%5)
+    {
         if (chcount==14)
            chdir=-1;
         else if (chcount==0)
@@ -357,7 +364,7 @@ void HU_Drawer(void)
 
     //do crosshairs
     if (crosshair==1)
-      {
+    {
       HU_PutPixel(SCREENWIDTH/2-3,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2-2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
@@ -366,40 +373,45 @@ void HU_Drawer(void)
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2-2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+3,HU_CROSSHAIRCOLOR+chcount);
-      }
+    }
     else if (crosshair==2)
-      {
+    {
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
-      }
+    }
     else if (crosshair==3)
-      {
+    {
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2+1,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-sbarheight)/2,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+1,HU_CROSSHAIRCOLOR+chcount);
       HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-sbarheight)/2+2,HU_CROSSHAIRCOLOR+chcount);
-      }
+    }
 
     //now, draw stats
+    // -ACB- 1998/09/11 Used White Colour Scaling.
     if (showstats)
-      {
+    {
       char textbuf[100];
       char *s;      
       static int timelastframe=0,fps=0,numframes=0;
       int currtime,timediff;
+      extern int maxdrawsegs;
+      extern int maxvissprites;
+      extern int maxvisplanes;
+      extern int maxsolidsegs;
 
       numframes++;
       currtime=I_GetTime();
       timediff=currtime-timelastframe;
       if (timediff>11)  //update every third of a second
-        {
+      {
         if (timediff<350)
           fps=numframes*350/timediff;
         else
           fps=0;
         timelastframe=currtime;      
         numframes=0;
-        }
+      }
 
       HUlib_clearTextLine(&textlinefps);
       sprintf(textbuf,"fps:%d.%d   time:%d:%d%d",
@@ -409,17 +421,27 @@ void HU_Drawer(void)
       s=textbuf; while (*s) HUlib_addCharToTextLine(&textlinefps,*(s++));
       HUlib_drawTextLine(&textlinefps,0);
 
+      HUlib_clearTextLine(&textlinelimits);
+      sprintf(textbuf,"vp:%d vs:%d ds:%d ss:%d",
+              maxvisplanes,
+              maxvissprites,
+              maxdrawsegs,
+              maxsolidsegs);
+      s=textbuf; while (*s) HUlib_addCharToTextLine(&textlinelimits,*(s++));
+      HUlib_drawTextLine(&textlinelimits,0);
+
       if (!netgame)
-        {
+      {
         HUlib_clearTextLine(&textlinepos);
         HUlib_clearTextLine(&textlinestats);
 
-
         // Convert angle & x,y co-ordinates so they are easier to read.
-        sprintf(textbuf,"ang=0x%x; x,y=( %d, %d )",
-              players[consoleplayer].mo->angle>>16,
-              players[consoleplayer].mo->x>>16,
-              players[consoleplayer].mo->y>>16);
+        // -KM- 1998/11/25 Added z co-ordinate
+        sprintf(textbuf,"LookDir=%d; x,y,z=( %d, %d, %d )",
+              players[consoleplayer].mo->angle>>FRACBITS,
+              players[consoleplayer].mo->x>>FRACBITS,
+              players[consoleplayer].mo->y>>FRACBITS,
+              players[consoleplayer].mo->z>>FRACBITS);
         s=textbuf; 	 while (*s)HUlib_addCharToTextLine(&textlinepos,*(s++));
         sprintf(textbuf,"Kills:%d/%d   Items:%d/%d   Secrets:%d/%d",
               players[consoleplayer].killcount,totalkills,
@@ -428,19 +450,17 @@ void HU_Drawer(void)
         s=textbuf; while (*s)HUlib_addCharToTextLine(&textlinestats,*(s++));
         HUlib_drawTextLine(&textlinepos,0);
         HUlib_drawTextLine(&textlinestats,0);
-        }
       }
+    }
 
 
 }
 
 void HU_Erase(void)
 {
-
     HUlib_eraseSText(&w_message);
     HUlib_eraseIText(&w_chat);
     HUlib_eraseTextLine(&w_title);
-
 }
 
 void HU_Ticker(void)
@@ -529,7 +549,7 @@ void HU_queueChatChar(char c)
 {
     if (((head + 1) & (QUEUESIZE-1)) == tail)
     {
-	plr->message = HUSTR_MSGU;
+	plr->message = DDF_LanguageLookup("UnsentMsg");
     }
     else
     {
@@ -627,15 +647,15 @@ boolean HU_Responder(event_t *ev)
 		    {
 			num_nobrainers++;
 			if (num_nobrainers < 3)
-			    plr->message = HUSTR_TALKTOSELF1;
+			    plr->message = DDF_LanguageLookup("TALKTOSELF1");
 			else if (num_nobrainers < 6)
-			    plr->message = HUSTR_TALKTOSELF2;
+			    plr->message = DDF_LanguageLookup("TALKTOSELF2");
 			else if (num_nobrainers < 9)
-			    plr->message = HUSTR_TALKTOSELF3;
+			    plr->message = DDF_LanguageLookup("TALKTOSELF3");
 			else if (num_nobrainers < 32)
-			    plr->message = HUSTR_TALKTOSELF4;
+			    plr->message = DDF_LanguageLookup("TALKTOSELF4");
 			else
-			    plr->message = HUSTR_TALKTOSELF5;
+			    plr->message = DDF_LanguageLookup("TALKTOSELF5");
 		    }
 		}
 	    }
@@ -657,8 +677,8 @@ boolean HU_Responder(event_t *ev)
 	    HU_queueChatChar(KEYD_ENTER); // DEBUG!!!
 	    
 	    // send the macro message
-	    while (*macromessage)
-		HU_queueChatChar(*macromessage++);
+	    while (*macromessage) HU_queueChatChar(*macromessage++);
+
 	    HU_queueChatChar(KEYD_ENTER);
 	    
 	    // leave chat mode and notify that it was sent
@@ -669,10 +689,9 @@ boolean HU_Responder(event_t *ev)
 	}
 	else
 	{
-	    if (language==french)
-		c = ForeignTranslation(c);
 	    if (shiftdown || (c >= 'a' && c <= 'z'))
-		c = shiftxform[c];
+	      c = shiftxform[c];
+
 	    eatkey = HUlib_keyInIText(&w_chat, c);
 	    if (eatkey)
 	    {

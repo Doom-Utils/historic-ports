@@ -16,7 +16,7 @@
 //
 // DESCRIPTION:
 //	Refresh, visplane stuff (floor, ceilings).
-//
+// -KM- 1998/09/27 Dynamic colourmaps
 //-----------------------------------------------------------------------------
 
 
@@ -33,7 +33,7 @@
 
 // Visplane related.
 extern  short*		lastopening;
-
+extern	visplane_t*	visplanes;
 
 typedef void (*planefunction_t) (int top, int bottom);
 
@@ -68,15 +68,17 @@ R_MakeSpans
 
 void R_DrawPlanes (void);
 
-visplane_t*
+int
 R_FindPlane
 ( fixed_t	height,
   int		picnum,
-  int		lightlevel );
+  int		lightlevel,
+  int           colourmaplump,
+  int           colourmap);
 
-visplane_t*
+int
 R_CheckPlane
-( visplane_t*	pl,
+( int		pl,
   int		start,
   int		stop );
 

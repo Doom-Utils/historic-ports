@@ -1,68 +1,36 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Mathematics LookUp Tables
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the DOOM Video Source Code
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id Software (c) 1993-1996. (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Lookup tables.
-//	Do not try to look them up :-).
-//	In the order of appearance: 
+// In the order of appearance:
 //
 //	int finetangent[4096]	- Tangens LUT.
-//	 Should work with BAM fairly well (12 of 16bit,
-//      effectively, by shifting).
+//	  Should work with BAM fairly well (12 of 16bit, effectively, by shifting).
 //
 //	int finesine[10240]		- Sine lookup.
-//	 Guess what, serves as cosine, too.
-//	 Remarkable thing is, how to use BAMs with this? 
+//	  Guess what, serves as cosine, too.
+//	  Remarkable thing is, how to use BAMs with this?
 //
 //	int tantoangle[2049]	- ArcTan LUT,
 //	  maps tan(angle) to angle fast. Gotta search.
-//	
-//    
-//-----------------------------------------------------------------------------
-
-
-static const char
-rcsid[] = "$Id: tables.c,v 1.4 1997/02/03 16:47:57 b1 Exp $";
-
-
+//
 
 #include "lu_math.h"
 
-
-
-
-int
-SlopeDiv
-( unsigned	num,
-  unsigned	den)
+int SlopeDiv (unsigned int num, unsigned int den)
 {
-    unsigned 	ans;
+  unsigned ans;
     
-    if (den < 512)
-	return SLOPERANGE;
+  if (den < 512)
+    return SLOPERANGE;
 
-    ans = (num<<3)/(den>>8);
+  ans = (num<<3)/(den>>8);
 
-    return ans <= SLOPERANGE ? ans : SLOPERANGE;
+  return ans <= SLOPERANGE ? ans : SLOPERANGE;
 }
-
-
-
 
 int finetangent[4096] =
 {
@@ -579,7 +547,6 @@ int finetangent[4096] =
     5512368,5892567,6329090,6835455,7429880,8137527,8994149,10052327,
     11392683,13145455,15535599,18988036,24413316,34178904,56965752,170910304
 };
-
 
 int finesine[10240] =
 {
@@ -1864,8 +1831,6 @@ int finesine[10240] =
     65531,65531,65532,65532,65533,65533,65534,65534,
     65534,65535,65535,65535,65535,65535,65535,65535
 };
-
-
 
 angle_t tantoangle[2049] =
 {

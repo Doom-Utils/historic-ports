@@ -70,8 +70,22 @@ M_WriteTextTrans
   int		index,
   char*		string);
 
+// 25-6-98 KM
+void
+M_StartMessage
+( char*		string,
+  void*		routine,
+  boolean	input );
 
-
+// -KM- 1998/07/21
+// String will be printed as a prompt.
+// Routine should be void Foobar(char *string)
+// and will be called with the input returned
+// or NULL if user pressed escape.
+void
+M_StartMessageInput
+( char*		string,
+  void*		routine);
 
 #endif    
 //-----------------------------------------------------------------------------

@@ -24,18 +24,14 @@
 //
 //-----------------------------------------------------------------------------
 
-static const char
-rcsid[] = "$Id: p_maputl.c,v 1.5 1997/02/03 22:45:11 b1 Exp $";
-
+static const char rcsid[] = "$Id: p_maputl.c,v 1.5 1997/02/03 22:45:11 b1 Exp $";
 
 #include <stdlib.h>
-
-
 #include "m_bbox.h"
-
-#include "doomdef.h"
+#include "dm_defs.h"
 #include "p_local.h"
 
+#include "z_zone.h"
 
 // State.
 #include "r_state.h"
@@ -45,15 +41,15 @@ rcsid[] = "$Id: p_maputl.c,v 1.5 1997/02/03 22:45:11 b1 Exp $";
 // Gives an estimation of distance (not exact)
 //
 
-fixed_t
-P_AproxDistance
-( fixed_t	dx,
-  fixed_t	dy )
+fixed_t P_AproxDistance (fixed_t dx, fixed_t dy)
 {
     dx = abs(dx);
+
     dy = abs(dy);
+
     if (dx < dy)
 	return dx+dy-(dx>>1);
+
     return dx+dy-(dy>>1);
 }
 
@@ -62,11 +58,7 @@ P_AproxDistance
 // P_PointOnLineSide
 // Returns 0 or 1
 //
-int
-P_PointOnLineSide
-( fixed_t	x,
-  fixed_t	y,
-  line_t*	line )
+int P_PointOnLineSide (fixed_t x, fixed_t y, line_t* line)
 {
     fixed_t	dx;
     fixed_t	dy;
@@ -96,6 +88,7 @@ P_PointOnLineSide
 	
     if (right < left)
 	return 0;		// front side
+
     return 1;			// back side
 }
 
@@ -207,10 +200,7 @@ P_PointOnDivlineSide
 //
 // P_MakeDivline
 //
-void
-P_MakeDivline
-( line_t*	li,
-  divline_t*	dl )
+void P_MakeDivline (line_t* li, divline_t* dl)
 {
     dl->x = li->v1->x;
     dl->y = li->v1->y;
@@ -227,62 +217,40 @@ P_MakeDivline
 // This is only called by the addthings
 // and addlines traversers.
 //
-fixed_t
-P_InterceptVector
-( divline_t*	v2,
-  divline_t*	v1 )
+fixed_t P_InterceptVector (divline_t* v2, divline_t* v1)
 {
-#if 1
     fixed_t	frac;
-    fixed_t	num;
-    fixed_t	den;
+    double	num;
+    double      den;
+    long	v1x;
+    long	v1y;
+    long	v1dx;
+    long	v1dy;
+    long	v2x;
+    long	v2y;
+    long	v2dx;
+    long	v2dy;
+
+    v1x = v1->x;
+    v1y = v1->y;
+    v1dx = v1->dx;
+    v1dy = v1->dy;
+    v2x = v2->x;
+    v2y = v2->y;
+    v2dx = v2->dx;
+    v2dy = v2->dy;
 	
-    den = FixedMul (v1->dy>>8,v2->dx) - FixedMul(v1->dx>>8,v2->dy);
-
-    if (den == 0)
-	return 0;
-    //	I_Error ("P_InterceptVector: parallel");
-    
-    num =
-	FixedMul ( (v1->x - v2->x)>>8 ,v1->dy )
-	+FixedMul ( (v2->y - v1->y)>>8, v1->dx );
-
-    frac = FixedDiv (num , den);
-
-    return frac;
-#else	// UNUSED, float debug.
-    float	frac;
-    float	num;
-    float	den;
-    float	v1x;
-    float	v1y;
-    float	v1dx;
-    float	v1dy;
-    float	v2x;
-    float	v2y;
-    float	v2dx;
-    float	v2dy;
-
-    v1x = (float)v1->x/FRACUNIT;
-    v1y = (float)v1->y/FRACUNIT;
-    v1dx = (float)v1->dx/FRACUNIT;
-    v1dy = (float)v1->dy/FRACUNIT;
-    v2x = (float)v2->x/FRACUNIT;
-    v2y = (float)v2->y/FRACUNIT;
-    v2dx = (float)v2->dx/FRACUNIT;
-    v2dy = (float)v2->dy/FRACUNIT;
-	
-    den = v1dy*v2dx - v1dx*v2dy;
+    den = (long long)v1dy*v2dx - (long long)v1dx*v2dy;
 
     if (den == 0)
 	return 0;	// parallel
     
-    num = (v1x - v2x)*v1dy + (v2y - v1y)*v1dx;
-    frac = num / den;
+    num = (long long)(v1x - v2x)*v1dy + (long long)(v2y - v1y)*v1dx;
+    frac = (num*FRACUNIT) / den;
 
-    return frac*FRACUNIT;
-#endif
+    return frac;
 }
+
 
 
 //
@@ -294,8 +262,7 @@ P_InterceptVector
 fixed_t opentop;
 fixed_t openbottom;
 fixed_t openrange;
-fixed_t	lowfloor;
-
+fixed_t lowfloor;
 
 void P_LineOpening (line_t* linedef)
 {
@@ -313,9 +280,9 @@ void P_LineOpening (line_t* linedef)
     back = linedef->backsector;
 	
     if (front->ceilingheight < back->ceilingheight)
-	opentop = front->ceilingheight;
+      opentop = front->ceilingheight;
     else
-	opentop = back->ceilingheight;
+      opentop = back->ceilingheight;
 
     if (front->floorheight > back->floorheight)
     {
@@ -405,10 +372,9 @@ P_SetThingPosition (mobj_t* thing)
     // link into subsector
     ss = R_PointInSubsector (thing->x,thing->y);
     thing->subsector = ss;
-    
-    if ( ! (thing->flags & MF_NOSECTOR) )
+
+    if (!(thing->flags & MF_NOSECTOR))
     {
-	// invisible things don't go into the sector links
 	sec = ss->sector;
 	
 	thing->sprev = NULL;
@@ -422,9 +388,8 @@ P_SetThingPosition (mobj_t* thing)
 
     
     // link into blockmap
-    if ( ! (thing->flags & MF_NOBLOCKMAP) )
+    if (!(thing->flags & MF_NOBLOCKMAP))
     {
-	// inert things don't need to be in blockmap		
 	blockx = (thing->x - bmaporgx)>>MAPBLOCKSHIFT;
 	blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
 
@@ -468,6 +433,7 @@ P_SetThingPosition (mobj_t* thing)
 // to P_BlockLinesIterator, then make one or more calls
 // to it.
 //
+// 23-6-98 KM Changed to reflect blockmap is now int* not short*
 boolean
 P_BlockLinesIterator
 ( int			x,
@@ -475,20 +441,13 @@ P_BlockLinesIterator
   boolean(*func)(line_t*) )
 {
     int			offset;
-    short*		list;
+    int*		list;
     line_t*		ld;
 	
-    if (x<0
-	|| y<0
-	|| x>=bmapwidth
-	|| y>=bmapheight)
-    {
+    if (x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
 	return true;
-    }
     
-    offset = y*bmapwidth+x;
-	
-    offset = *(blockmap+offset);
+    offset = blockmap[y*bmapwidth+x];
 
     for ( list = blockmaplump+offset ; *list != -1 ; list++)
     {
@@ -509,40 +468,32 @@ P_BlockLinesIterator
 //
 // P_BlockThingsIterator
 //
-boolean
-P_BlockThingsIterator
-( int			x,
-  int			y,
-  boolean(*func)(mobj_t*) )
+boolean P_BlockThingsIterator ( int x, int y, boolean(*func)(mobj_t*) )
 {
     mobj_t*		mobj;
 	
-    if ( x<0
-	 || y<0
-	 || x>=bmapwidth
-	 || y>=bmapheight)
+    if ( x<0 || y<0 || x>=bmapwidth || y>=bmapheight)
     {
 	return true;
     }
     
 
-    for (mobj = blocklinks[y*bmapwidth+x] ;
-	 mobj ;
-	 mobj = mobj->bnext)
+    for (mobj = blocklinks[y*bmapwidth+x]; mobj; mobj = mobj->bnext)
     {
 	if (!func( mobj ) )
 	    return false;
     }
+
     return true;
 }
-
 
 
 //
 // INTERCEPT ROUTINES
 //
-intercept_t	intercepts[MAXINTERCEPTS];
-intercept_t*	intercept_p;
+int		maxintercepts = MAXINTERCEPTS;
+intercept_t*	intercepts = NULL;
+int		intercept_p;
 
 divline_t 	trace;
 boolean 	earlyout;
@@ -558,8 +509,7 @@ int		ptflags;
 // are on opposite sides of the trace.
 // Returns true if earlyout and a solid line hit.
 //
-boolean
-PIT_AddLineIntercepts (line_t* ld)
+boolean PIT_AddLineIntercepts (line_t* ld)
 {
     int			s1;
     int			s2;
@@ -592,18 +542,15 @@ PIT_AddLineIntercepts (line_t* ld)
 	return true;	// behind source
 	
     // try to early out the check
-    if (earlyout
-	&& frac < FRACUNIT
-	&& !ld->backsector)
-    {
+    if (earlyout && frac < FRACUNIT && !ld->backsector)
 	return false;	// stop checking
-    }
-    
-	
-    intercept_p->frac = frac;
-    intercept_p->isaline = true;
-    intercept_p->d.line = ld;
+    	
+    intercepts[intercept_p].frac = frac;
+    intercepts[intercept_p].isaline = true;
+    intercepts[intercept_p].d.line = ld;
     intercept_p++;
+    if (intercept_p == maxintercepts)
+      intercepts = Z_ReMalloc(intercepts, sizeof(intercept_t) * ++maxintercepts);
 
     return true;	// continue
 }
@@ -665,10 +612,12 @@ boolean PIT_AddThingIntercepts (mobj_t* thing)
     if (frac < 0)
 	return true;		// behind source
 
-    intercept_p->frac = frac;
-    intercept_p->isaline = false;
-    intercept_p->d.thing = thing;
+    intercepts[intercept_p].frac = frac;
+    intercepts[intercept_p].isaline = false;
+    intercepts[intercept_p].d.thing = thing;
     intercept_p++;
+    if (intercept_p == maxintercepts)
+      intercepts = Z_ReMalloc(intercepts, sizeof(intercept_t) * ++maxintercepts);
 
     return true;		// keep going
 }
@@ -679,24 +628,21 @@ boolean PIT_AddThingIntercepts (mobj_t* thing)
 // Returns true if the traverser function returns true
 // for all lines.
 // 
-boolean
-P_TraverseIntercepts
-( traverser_t	func,
-  fixed_t	maxfrac )
+boolean P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 {
-    int			count;
-    fixed_t		dist;
-    intercept_t*	scan;
-    intercept_t*	in;
+    int	count;
+    fixed_t dist;
+    intercept_t* scan;
+    intercept_t* in;
 	
-    count = intercept_p - intercepts;
+    count = intercept_p;
     
     in = 0;			// shut up compiler warning
 	
     while (count--)
     {
 	dist = MAXINT;
-	for (scan = intercepts ; scan<intercept_p ; scan++)
+	for (scan = intercepts ; scan<&intercepts[intercept_p] ; scan++)
 	{
 	    if (scan->frac < dist)
 	    {
@@ -712,7 +658,7 @@ P_TraverseIntercepts
     {
 	// don't check these yet, there may be others inserted
 	in = scan = intercepts;
-	for ( scan = intercepts ; scan<intercept_p ; scan++)
+	for ( scan = intercepts ; scan<&intercepts[intercept_p] ; scan++)
 	    if (scan->frac > maxfrac)
 		*in++ = *scan;
 	intercept_p = in;
@@ -720,8 +666,8 @@ P_TraverseIntercepts
     }
 #endif
 
-        if ( !func (in) )
-	    return false;	// don't bother going farther
+        if (!func(in))
+	  return false;	// don't bother going farther
 
 	in->frac = MAXINT;
     }
@@ -772,7 +718,9 @@ P_PathTraverse
     earlyout = flags & PT_EARLYOUT;
 		
     validcount++;
-    intercept_p = intercepts;
+    if (!intercepts)
+      intercepts = Z_Malloc(sizeof(intercept_t) * maxintercepts, PU_STATIC, NULL);
+    intercept_p = 0;
 	
     if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
 	x1 += FRACUNIT;	// don't side exactly on a line
@@ -875,6 +823,7 @@ P_PathTraverse
 	}
 		
     }
+
     // go through the sorted list
     return P_TraverseIntercepts ( trav, FRACUNIT );
 }

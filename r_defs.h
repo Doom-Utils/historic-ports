@@ -25,7 +25,7 @@
 
 
 // Screenwidth.
-#include "doomdef.h"
+#include "dm_defs.h"
 
 // Some more or less basic data types
 // we depend on.
@@ -52,7 +52,8 @@
 #define SIL_TOP			2
 #define SIL_BOTH		3
 
-#define MAXDRAWSEGS		1024
+// 23-6-98 KM Save all that redundant space...
+#define MAXDRAWSEGS		128
 
 
 
@@ -108,6 +109,15 @@ typedef	struct
     short	special;
     short	tag;
 
+    // -KM- 1998/09/27 Dynamic colourmaps.
+    int         colourmaplump;
+    int         colourmap;
+
+    // -KM- 1989/10/29 Added gravity + friction
+    fixed_t     gravity;
+    fixed_t     friction;
+    fixed_t     viscosity;
+
     // 0 = untraversed, 1,2 = sndlines -1
     int		soundtraversed;
 
@@ -127,14 +137,17 @@ typedef	struct
     mobj_t*	thinglist;
 
     // thinker_t for reversable actions
-    void*	specialdata;
+    // -KM- 1998/10/29 Seperate thinkers for lights(misc)/floor + ceiling
+    void*	specialdata[3];
 
     int			linecount;
     struct line_s**	lines;	// [linecount] size
     
 } sector_t;
 
-
+#define LIGHTS 2
+#define FLOOR 0
+#define CEILING 1
 
 
 //
@@ -190,6 +203,7 @@ typedef struct line_s
     short	flags;
     short	special;
     short	tag;
+    int         count;
 
     // Visual appearance: SideDefs.
     //  sidenum[1] will be -1 if one sided
@@ -211,7 +225,7 @@ typedef struct line_s
     int		validcount;
 
     // thinker_t for reversable actions
-    void*	specialdata;		
+    void*	specialdata;
 } line_t;
 
 
@@ -353,7 +367,7 @@ typedef struct drawseg_s
 // Patches are used for sprites and all masked pictures,
 // and we compose textures from the TEXTURE1/2 lists
 // of patches.
-typedef struct 
+typedef struct patch_s
 { 
     short		width;		// bounding box size 
     short		height; 
@@ -372,12 +386,9 @@ typedef struct
 // A vissprite_t is a thing
 //  that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
+// -KM- 1989/10/29 Removed sorting stuff, added colourmap stuff
 typedef struct vissprite_s
 {
-    // Doubly linked list.
-    struct vissprite_s*	prev;
-    struct vissprite_s*	next;
-    
     int			x1;
     int			x2;
 
@@ -402,12 +413,14 @@ typedef struct vissprite_s
 
     // for color translation and shadow draw,
     //  maxbright frames as well
-    lighttable_t*	colormap;
+    int                 colourmaplump;
+    int                 colormap;
    
     int			mobjflags;
     byte                playxtra;
 
-    int                 invisibility;
+    // -KM- 1998/11/25 Is now fixed_t
+    fixed_t             invisibility;
     
 } vissprite_t;
 
@@ -465,6 +478,9 @@ typedef struct
   fixed_t		height;
   int			picnum;
   int			lightlevel;
+  // -KM- 1998/09/27 Dynamic colourmaps
+  int                   colourmaplump;
+  int                   colourmap;
   int			minx;
   int			maxx;
   

@@ -1,29 +1,14 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Game Handling Code
 //
-// $Id:$
+// Based on the Doom Source Code,
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT).
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//   Duh.
-// 
-//-----------------------------------------------------------------------------
-
-
 #ifndef __G_GAME__
 #define __G_GAME__
 
-#include "doomdef.h"
+#include "dm_defs.h"
 #include "d_event.h"
 
 
@@ -33,12 +18,16 @@
 //
 void G_DeathMatchSpawnPlayer (int playernum);
 
-void G_InitNew (skill_t skill, int episode, int map);
+void G_InitNew (skill_t skill, mapstuff_t* map);
 
-// Can be called by the startup code or M_Responder.
-// A normal game starts at map 1,
-// but a warp test can start elsewhere
-void G_DeferedInitNew (GameMission_t miss, skill_t skill, int episode, int map);
+//
+// Called by the Startup code & M_Responder; A normal game
+// is started by calling the beginning map. The level jump
+// cheat can get us anywhere.
+//
+// -ACB- 1998/08/10 New DDF Structure, Use map reference name.
+//
+boolean G_DeferedInitNew (skill_t skill, const char *mapname);
 
 void G_DeferedPlayDemo (char* demo);
 
@@ -60,8 +49,10 @@ void G_PlayDemo (char* name);
 void G_TimeDemo (char* name);
 boolean G_CheckDemoStatus (void);
 
-void G_ExitLevel (void);
-void G_SecretExitLevel (void);
+// -KM- 1998/11/25 Added Time param
+void G_ExitLevel (int time);
+void G_SecretExitLevel (int time);
+void G_ExitToLevel(char* name, int time);
 
 void G_WorldDone (void);
 

@@ -1,24 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Sound FX Handling Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by Id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//	The not so system specific sound interface.
-//
-//-----------------------------------------------------------------------------
-
 
 #ifndef __S_SOUND__
 #define __S_SOUND__
@@ -59,7 +45,7 @@ void S_Start(void);
 int
 S_StartSound
 ( mobj_t*		origin,
-  int		sound_id );
+  sfx_t*		sound_id );
 
 #ifdef DJGPP
 void S_DoSound(void);
@@ -73,23 +59,19 @@ S_StartSoundAtVolume
   int		volume );
 
 
-// Stop sound for thing at <origin>
+// Stop sound for thing at <origin> and Channel num
 void S_StopSound(mobj_t* origin);
+void S_StopChannel(int cnum);
 
 
 // Start music using <music_id> from sounds.h
-void S_StartMusic(int music_id);
+//void S_StartMusic(int music_id);
 
 // Start music using <music_id> from sounds.h,
 //  and set whether looping
-void
-S_ChangeMusic
-( int		music_id,
-  int		looping );
-void
-S_ChangeMusicbyName
-( char                 *name,
-  int                   looping );
+//void S_ChangeMusic(int music_id, int looping);
+
+void S_ChangeMusic(char *name, int looping);
 
 // Stops the music fer sure.
 void S_StopMusic(void);
@@ -110,6 +92,9 @@ void S_SetSfxVolume(int volume);
 
 
 extern int numChannels;
+
+#define S_CLIPPING_DIST         1600
+#define S_CLOSE_DIST            160
 
 #endif
 //-----------------------------------------------------------------------------

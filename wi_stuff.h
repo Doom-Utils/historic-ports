@@ -1,30 +1,16 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Intermission Screen Code
 //
-// $Id:$
+// Based on the Doom Source Code,
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//  Intermission.
-//
-//-----------------------------------------------------------------------------
-
 #ifndef __WI_STUFF__
 #define __WI_STUFF__
 
 //#include "v_video.h"
 
-#include "doomdef.h"
+#include "dm_defs.h"
 
 // States for the intermission
 
@@ -45,6 +31,10 @@ void WI_Drawer (void);
 
 // Setup for an intermission screen.
 void WI_Start(wbstartstruct_t*	 wbstartstruct);
+
+
+extern wi_map_t        worldmap;
+void WI_MapInit(wi_map_t* map);
 
 #endif
 //-----------------------------------------------------------------------------

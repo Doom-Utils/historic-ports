@@ -24,7 +24,7 @@
 #define __D_EVENT__
 
 
-#include "doomtype.h"
+#include "dm_type.h"
 
 
 //
@@ -32,24 +32,26 @@
 //
 
 // Input event types.
+// -KM- 1998/09/01 Amalgamate joystick/mouse into analogue
 typedef enum
 {
     ev_keydown,
     ev_keyup,
-    ev_mouse,
-    ev_joystick
+    ev_analogue
 } evtype_t;
 
 // Event structure.
+// -KM- 1998/09/01 Added another field
 typedef struct
 {
     evtype_t	type;
-    int		data1;		// keys / mouse/joystick buttons
-    int		data2;		// mouse/joystick x move
-    int		data3;		// mouse/joystick y move
+    int		data1;		// buttons (keys) / data2 axis
+    int		data2;		// analogue axis 1
+    int		data3;		// data4 axis
+    int         data4;          // analogue axis 2
 } event_t;
 
- 
+// -KM- 1998/11/25 Added support for finales before levels
 typedef enum
 {
     ga_nothing,
@@ -61,7 +63,8 @@ typedef enum
     ga_completed,
     ga_victory,
     ga_worlddone,
-    ga_screenshot
+    ga_screenshot,
+    ga_briefing
 } gameaction_t;
 
 
@@ -83,14 +86,11 @@ typedef enum
     // Flag, weapon change pending.
     // If true, the next 3 bits hold weapon num.
     BT_CHANGE		= 4,
-    // The 3bit weapon mask and shift, convenience.
-    BT_WEAPONMASK	= (8+16+32),
-    BT_WEAPONSHIFT	= 3,
 
-    //new stuff - bit 6 indicates its a new thing
-    BT_DOSDOOM          = 64,
-    BT_JUMP             = (64+8),
-    BT_DUCK             = (64+16),
+    // The 3bit weapon mask and shift, convenience.
+    // -KM- 1998/11/25 Allow 10 weapon keys
+    BT_WEAPONMASK	= (8+16+32+64),
+    BT_WEAPONSHIFT	= 3,
 
     // Pause the game.
     BTS_PAUSE		= 1,
@@ -104,8 +104,16 @@ typedef enum
   
 } buttoncode_t;
 
-
-
+//
+// Extended Buttons: DOSDoom Specfics
+// -ACB- 1998/07/03
+//
+typedef enum
+{
+    EBT_JUMP             = 1,
+    EBT_VERTLOOK         = 2,
+    EBT_CENTER           = 4
+} extbuttoncode_t;
 
 //
 // GLOBAL VARIABLES
@@ -120,8 +128,4 @@ extern  gameaction_t    gameaction;
 
 
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log:$
-//
-//-----------------------------------------------------------------------------
+

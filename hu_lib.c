@@ -1,32 +1,16 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Heads-up-display library Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -KM- 1998/10/29 Modified to allow foreign characters like '„'
 //
-// $Log:$
-//
-// DESCRIPTION:  heads-up text and input code
-//
-//-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id: hu_lib.c,v 1.3 1997/01/26 07:44:58 b1 Exp $";
-
 #include <ctype.h>
 
-#include "doomdef.h"
-#include "doomstat.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 
 #include "v_res.h"
 #include "m_swap.h"
@@ -96,48 +80,46 @@ boolean HUlib_delCharFromTextLine(hu_textline_t* t)
 
 }
 
-void HUlib_drawTextLine
-( hu_textline_t*	l,
-  boolean		drawcursor )
+void HUlib_drawTextLine (hu_textline_t* l, boolean drawcursor)
 {
+  int i;
+  int w;
+  int x;
+  unsigned char	c = 0;
 
-    int			i;
-    int			w;
-    int			x;
-    unsigned char	c;
+  // draw the new stuff
+  x = l->x;
 
+  for (i=0;i<l->len;i++)
+  {
+    if (l->l[i] < 128)
+      c = toupper(l->l[i]);
+    else
+      c = l->l[i];
 
-    // draw the new stuff
-    x = l->x;
-    for (i=0;i<l->len;i++)
+    if (c != ' ' && c >= l->sc)
     {
-	c = toupper(l->l[i]);
-	if (c != ' '
-	    && c >= l->sc
-	    && c <= '_')
-	{
-	    w = SHORT(l->f[c - l->sc]->width);
-	    if (x+w > 320)
-		break;
-	    V_DrawPatchDirect(x, l->y, FG, l->f[c - l->sc]);
-	    x += w;
-	}
-	else
-	{
-	    x += 4;
-	    if (x >= SCREENWIDTH)
-		break;
-	}
-    }
+      w = SHORT(l->f[c - l->sc]->width);
 
-    // draw the cursor if requested
-    if (drawcursor
-	&& x + SHORT(l->f['_' - l->sc]->width) <= 320)
-    {
-	V_DrawPatchDirect(x, l->y, FG, l->f['_' - l->sc]);
+      if (x+w > SCREENWIDTH) // -ACB- 1998/06/09 was (x+w > 320):
+	break;             //      not displaying all text at high resolutions.
+
+      V_DrawPatchDirect(x, l->y, FG, l->f[c - l->sc]);
+      x += w;
     }
+    else
+    {
+      x += 4;
+
+      if (x >= SCREENWIDTH)
+	break;
+    }
+  }
+
+  // draw the cursor if requested
+  if (drawcursor && x + SHORT(l->f['_' - l->sc]->width) <= SCREENWIDTH)
+    V_DrawPatchDirect(x, l->y, FG, l->f['_' - l->sc]);
 }
-
 
 // sorta called by HU_Erase and just better darn get things straight
 void HUlib_eraseTextLine(hu_textline_t* l)
@@ -151,8 +133,7 @@ void HUlib_eraseTextLine(hu_textline_t* l)
     // and the text must either need updating or refreshing
     // (because of a recent change back from the automap)
 
-    if (!automapactive &&
-	viewwindowx && l->needsupdate)
+    if (!automapactive && viewwindowx && l->needsupdate)
     {
 	lh = SHORT(l->f[0]->height) + 1;
 	for (y=l->y,yoffset=y*SCREENWIDTH ; y<l->y+lh ; y++,yoffset+=SCREENWIDTH)
@@ -351,4 +332,61 @@ void HUlib_eraseIText(hu_itext_t* it)
     HUlib_eraseTextLine(&it->l);
     it->laston = *it->on;
 }
+
+//
+// HUlib_drawTextLineTrans
+//
+// New Procedure: Same as HUlib_drawTextLine, but the
+// colour is indexed with the PALREMAP translation
+// tables and scaled if possible.
+//
+// -ACB- 1998/06/10 Procedure Written.
+//
+// -ACB- 1998/09/11 Index changed from JC's Pre-Calculated to using
+//                  the PALREMAP translation maps.
+//
+void HUlib_drawTextLineTrans (hu_textline_t* l, boolean drawcursor, int index)
+{
+  int i;
+  int w;
+  int x;
+  int y;
+  unsigned char c = 0;
+
+  // draw the new stuff
+  x = l->x;
+  y = l->y;
+
+  for (i=0;i<l->len;i++)
+  {
+    if (l->l[i] < 128)
+     c = toupper(l->l[i]);
+    else
+     c = l->l[i];
+
+    if (c != ' ' && c >= l->sc)
+    {
+      w = SHORT(l->f[c - l->sc]->width);
+
+      if (x+w > SCREENWIDTH)
+	break;
+
+      V_DrawPatchInDirectTrans(x, y, index, FG, l->f[c - l->sc]);
+
+      x += w;
+    }
+    else
+    {
+      x += 4;
+
+      if (x >= SCREENWIDTH)
+	break;
+    }
+  }
+
+    // draw the cursor if requested
+    if (drawcursor && x + SHORT(l->f['_' - l->sc]->width) <= SCREENWIDTH)
+      V_DrawPatchInDirectTrans(x, y, index, FG, l->f['_' - l->sc]);
+}
+
 

@@ -51,20 +51,23 @@ extern fixed_t*		spritetopoffset;
 
 extern lighttable_t*	colormaps;
 
+// -ES- 1998/08/20 Added these two
+extern lighttable_t     *colormaps8, *colormaps16;
+extern int numcolourmaps;
+
 extern int		viewwidth;
 extern int		scaledviewwidth;
 extern int		viewheight;
 
-extern int		firstflat;
 
 // for global animation
+extern int*		flatlist;
 extern int*		flattranslation;	
 extern int*		texturetranslation;	
 
 
 // Sprite....
-extern int		firstspritelump;
-extern int		lastspritelump;
+extern int*		spritelist;
 extern int		numspritelumps;
 
 
@@ -126,8 +129,8 @@ extern int		rw_angle1;
 // Segs count?
 extern int		sscount;
 
-extern visplane_t*	floorplane;
-extern visplane_t*	ceilingplane;
+extern int		floorplane;
+extern int		ceilingplane;
 
 
 #endif

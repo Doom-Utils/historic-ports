@@ -1,34 +1,46 @@
-#include <stdlib.h>
-#include "doomdef.h"
-#include "doomstat.h"
-#include "m_argv.h"
+//  
+// DOSDoom Video Code  
+//
+// Based on the Doom Source Code
+//
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
+//
 
+#include <stdlib.h>
+#include "d_debug.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 #include "d_event.h"
+
+#include "am_map.h"
+#include "i_video.h"
+#include "i_system.h"
+#include "m_argv.h"
+#include "m_fixed.h"
+#include "r_draw1.h"
+#include "r_draw2.h"
 #include "r_plane.h"
 #include "r_state.h"
 #include "r_things.h"
-#include "am_map.h"
-
 #include "v_res.h"
-
 #include "v_video1.h"
 #include "v_video2.h"
-#include "r_draw1.h"
-#include "r_draw2.h"
-#include "i_video.h"
 
-#include "v_trans.h"
-
-#include <i_system.h>
-
-///////////////////////////////////////
+//
 //v_video.c stuff
-///////////////////////////////////////
+//
 
 // Each screen is [SCREENWIDTH*SCREENHEIGHT*BPP];
-byte*				screens[7];  //screens[5] and screens[6] are the double-buffers
-int	usegamma;
-int transluc=1;
+// 98-7-10 KM Init to 0
+byte* screens[7] = {0, 0, 0, 0, 0, 0, 0};  // screens[5] and screens[6] are the
+                                           // double-buffers
+int usegamma;
+//int transluc=1;
+
+fixed_t	DX, DY, DXI, DYI, DY2, DYI2, SCALEDWIDTH, SCALEDHEIGHT, X_OFFSET, Y_OFFSET;
+
+fixed_t BASEYCENTER;
+
 
 // Now where did these came from?
 byte gammatable[5][256]=
@@ -115,161 +127,628 @@ byte gammatable[5][256]=
      251,252,252,253,254,254,255,255}
 };
 
-///////////////////////////////////////
+//
 //r_draw.c stuff
-///////////////////////////////////////
+//
 
 //
-// R_DrawColumn
+// For R_DrawColumn functions...
 // Source is the top of the column to scale.
 //
-lighttable_t*		dc_colormap; 
-int			dc_x; 
-int			dc_yl; 
-int			dc_yh; 
-fixed_t			dc_iscale; 
-fixed_t			dc_texturemid;
+lighttable_t* dc_colormap;
+int dc_x;
+int dc_yl;
+int dc_yh;
+fixed_t dc_iscale;
+fixed_t dc_texturemid;
+// -KM- 1998/11/25 Added translucency parameter.
+fixed_t dc_translucency;
 
-// first pixel in a column (possibly virtual) 
-byte*			dc_source;		
+// first pixel in a column
+byte* dc_source;
 
-byte*	dc_translation;
-byte*	translationtables;
+byte* dc_translation;
+byte* translationtables;
 
 
 //r_drawspan:
-int			ds_y; 
-int			ds_x1; 
-int			ds_x2;
+int ds_y;
+int ds_x1;
+int ds_x2;
 
-lighttable_t*		ds_colormap; 
+lighttable_t* ds_colormap;
 
-fixed_t			ds_xfrac; 
-fixed_t			ds_yfrac; 
-fixed_t			ds_xstep; 
-fixed_t			ds_ystep;
+fixed_t	ds_xfrac;
+fixed_t	ds_yfrac;
+fixed_t	ds_xstep;
+fixed_t	ds_ystep;
 
 // start of a 64*64 tile image 
-byte*			ds_source;	
+byte* ds_source;
 
 // just for profiling
-int			dscount;
+int dscount;
 
-byte*		ylookup[MAXHEIGHT]; 
-int		columnofs[MAXWIDTH]; 
+// -ES- 1998/08/20 Explicit initialisation to NULL
+byte** ylookup = NULL;
+int* columnofs = NULL;
 
-
-#define FUZZTABLE		50 
-#define FUZZOFF	1
-int fuzzoffset[FUZZTABLE]=
+// -ES- 1998/08/20 Moved away FUZZOFF define, added fuzzpos declaration.
+int FUZZTABLE;
+int fuzzpos;
+// Fuzztable of size 64 allows us to optimise to & 63 instead of % FUZZTABLE
+int fuzzoffset[]=
 {
-    FUZZOFF,-FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,
-    FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,
-    FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,
-    FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF 
+     FUZZOFF,-FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,-FUZZOFF,
+     FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF,
+     FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF, FUZZOFF,
+     FUZZOFF,-FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,
+     FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,
+     FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,
+     FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF,-FUZZOFF,
+    -FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF, FUZZOFF, FUZZOFF,-FUZZOFF,-FUZZOFF,
+     NULL
 }; 
 
-///////////////////////////////////////
-//Now, Finally, comes my stuff
-///////////////////////////////////////
+//
+// align_r_draw8
+//
+// -ES- 1998/08/14 aligns some asm inner loops
+// -ACB- 1998/08/15 Made the I_Printf into Debug_Printf 
+// -ES- 1998/09/11 Made some of the Debug_Printfs into File_Printf
+//
+// align_loop: Helper macro for use in align_r_draw8 ONLY. Parameters:
+// loop_lbl: Loop's label name.
+// endfunc: Unused function occupying at least 31 bytes, placed immediately
+// after the function containing the loop
+// align_offs: Loop will start at align_offs mod 32
+#define align_loop(loop_lbl,end_lbl,align_offs)\
+asm("movl $" loop_lbl ",%0":"=g"(start)::"memory");\
+Debug_Printf("start=%p ",start);\
+new_start=(char*)((((long)start+31-align_offs) & ~31) + align_offs);\
+File_Printf("new_start=%p ",new_start);\
+asm("movl $" end_lbl ",%0":"=g"(end_func)::"memory");\
+File_Printf("end_func=%p ",end_func);\
+for (i=end_func-start-1; i >= 0; i--) new_start[i] = start[i];\
+dist=new_start-start;\
+File_Printf("dist=%ld",dist);\
+if (dist==1)\
+  *start=0x90;/*only one byte to insert, nop is enough*/\
+if (dist>1)\
+{/*more than one byte to insert, use unconditional short jump insead*/\
+  *(start)=0xEB;/*jmp rel8*/\
+  *(start+1)=(char)dist-2;/*distance to jump*/\
+}/*dist<1 means dist==0, nothing to insert*/\
+File_Printf(", done\n");
+
+//
+// Jumps that cross the loop label won't work after the alignment. This macro
+// makes such jumps work. from_lbl should be an asm label pointing to the
+// instruction RIGHT AFTER the jump, and to_lbl should be the jump destination.
+// The jump must be relative, to 0xDEAD0FF5 (write this "jmp 0xDEAD0FF5").
+// It may be conditional or unconditional.
+//
+// This macro only works with the latest inner loop aligned with align_loop
+// or unaligned with unalign_loop.
+//
+#define set_jmpdest(from_lbl,to_lbl)\
+asm("movl $" to_lbl ",%0":"=g"(to)::"memory");\
+Debug_Printf("  to %p ",to);\
+asm("movl $" from_lbl ",%0":"=g"(from)::"memory");\
+Debug_Printf("from %p",from);\
+*(long*)(from - 4) = (long)(dist+to-from);\
+Debug_Printf(", done\n");
+
+//
+// Like set_jmpdest, but to_lbl is an absolute, rather than relative, address
+//
+#define set_address(from_lbl,to_lbl)\
+asm("movl $" to_lbl ",%0":"=g"(to)::"memory");\
+Debug_Printf("  to %p ",to);\
+asm("movl $" from_lbl ",%0":"=g"(from)::"memory");\
+File_Printf("from %p",from);\
+*(long*)(from - 4) = (long)(dist+to);\
+File_Printf(", done\n");
+
+void align_r_draw(void)
+{
+  char *start;
+  long dist;
+  char *new_start;
+  char *end_func;
+  char *to;
+  char *from;
+  int i;
+
+  align_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
+  set_jmpdest("rdc8moffs1","rdc8mdone");
+  set_jmpdest("rdc8moffs2","rdc8mdone");
+
+  align_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
+  set_jmpdest("rdc8eoffs1","rdc8edone");
+  set_jmpdest("rdc8eoffs2","rdc8eloop");
+  set_jmpdest("rdc8eoffs3","rdc8echecklast");
+  set_address("rdc8epatcher1","rdc8epatch1-4");
+  set_address("rdc8epatcher2","rdc8epatch2-4");
+  set_address("rdc8epatcher3","rdc8epatch3-4");
+  set_address("rdc8epatcher4","rdc8epatch4-4");
+
+  // -ES- 1998/08/20 Fixed id alignment
+  align_loop("rdc8iloop","R_DrawColumn8_id_end",0);
+  set_jmpdest("rdc8ioffs1","rdc8idone");
+  set_jmpdest("rdc8ioffs2","rdc8iloop");
+  set_jmpdest("rdc8ioffs3","rdc8ichecklast");
+  set_address("rdc8ipatcher1","rdc8ipatch1-4");
+  set_address("rdc8ipatcher2","rdc8ipatch2-4");
+
+  align_loop("rds8mloop","R_DrawSpan8MMX_end",16);
+  set_jmpdest("rds8moffs1","rds8mdone");
+
+  align_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
+  set_jmpdest("rds8eoffs1","rds8edone");
+  set_jmpdest("rds8eoffs2","rds8eloop");
+  set_jmpdest("rds8eoffs3","rds8echecklast");
+  set_address("rds8epatcher1","rds8epatch1-4");
+  set_address("rds8epatcher2","rds8epatch2-4");
+  set_address("rds8epatcher3","rds8epatch3-4");
+  set_address("rds8epatcher4","rds8epatch4-4");
+
+  align_loop("rds8iloop","R_DrawSpan8_id_end",0);
+  set_jmpdest("rds8ioffs1","rds8idone");
+  set_jmpdest("rds8ioffs2","rds8iloop");
+  set_jmpdest("rds8ioffs3","rds8ichecklast");
+  set_address("rds8ipatcher1","rds8ipatch1-4");
+  set_address("rds8ipatcher2","rds8ipatch2-4");
+}
+
+//
+// Unalign
+//
+// Needed when changing resolution run-time: The resinit_r_draw_c function
+// uses some labels to patch screenwidth, so the code must be restored.
+//
+// unalign_loop: Restores a loop aligned with align_loop. Pass exactly the
+// same parameters you passed to align_loop.
+// If you want the unaligned code to be runnable without first re-aligning it,
+// you could use the same set_jmpdests as you used to align.
+#define unalign_loop(loop_lbl,end_lbl,align_offs)\
+asm("movl $" loop_lbl ",%0":"=g"(start)::"memory");\
+Debug_Printf("start=%p ",start);\
+new_start=(char*)((((long)start+31-align_offs) & ~31) + align_offs);\
+File_Printf("new_start=%p ",new_start);\
+asm("movl $" end_lbl ",%0":"=g"(end_func)::"memory");\
+File_Printf("end_func=%p ",end_func);\
+for (i=0; i<end_func-start; i++) start[i] = new_start[i];\
+dist=0;\
+File_Printf(", done\n");
+void unalign_r_draw(void)
+{
+  char *start;
+  long dist;
+  char *new_start;
+  char *end_func;
+  char *to;
+  char *from;
+  int i;
+
+  unalign_loop("rdc8mloop","R_DrawColumn8_K6_MMX_end",0);
+  set_jmpdest("rdc8moffs1","rdc8mdone");
+  set_jmpdest("rdc8moffs2","rdc8mdone");
+
+  unalign_loop("rdc8eloop","R_DrawColumn8_id_Erik_end",0);
+  set_jmpdest("rdc8eoffs1","rdc8edone");
+  set_jmpdest("rdc8eoffs2","rdc8eloop");
+  set_jmpdest("rdc8eoffs3","rdc8echecklast");
+  set_address("rdc8epatcher1","rdc8epatch1-4");
+  set_address("rdc8epatcher2","rdc8epatch2-4");
+  set_address("rdc8epatcher3","rdc8epatch3-4");
+  set_address("rdc8epatcher4","rdc8epatch4-4");
+
+  // -ES- 1998/08/20 Fixed alignment of id routines
+  unalign_loop("rdc8iloop","R_DrawColumn8_id_end",0);
+  set_jmpdest("rdc8ioffs1","rdc8idone");
+  set_jmpdest("rdc8ioffs2","rdc8iloop");
+  set_jmpdest("rdc8ioffs3","rdc8ichecklast");
+  set_address("rdc8ipatcher1","rdc8ipatch1-4");
+  set_address("rdc8ipatcher2","rdc8ipatch2-4");
+
+  unalign_loop("rds8mloop","R_DrawSpan8MMX_end",16);
+  set_jmpdest("rds8moffs1","rds8mdone");
+
+  unalign_loop("rds8eloop","R_DrawSpan8_id_Erik_end",0);
+  set_jmpdest("rds8eoffs1","rds8edone");
+  set_jmpdest("rds8eoffs2","rds8eloop");
+  set_jmpdest("rds8eoffs3","rds8echecklast");
+  set_address("rds8epatcher1","rds8epatch1-4");
+  set_address("rds8epatcher2","rds8epatch2-4");
+  set_address("rds8epatcher3","rds8epatch3-4");
+  set_address("rds8epatcher4","rds8epatch4-4");
+
+  unalign_loop("rds8iloop","R_DrawSpan8_id_end",0);
+  set_jmpdest("rds8ioffs1","rds8idone");
+  set_jmpdest("rds8ioffs2","rds8iloop");
+  set_jmpdest("rds8ioffs3","rds8ichecklast");
+  set_address("rds8ipatcher1","rds8ipatch1-4");
+  set_address("rds8ipatcher2","rds8ipatch2-4");
+}
 
 static void multires_setres(void)
-  {
+{
+  int i;
 
-  I_GetResolution();
-  I_Printf("Resolution: %d x %d x %dc\n",SCREENWIDTH,SCREENHEIGHT,1<<(BPP*8));
-
+  // -ES- 1998/08/20 Moved away resolution autodetection to V_MultiResInit
   weirdaspect=(SCREENHEIGHT<<FRACBITS)/SCREENWIDTH;
+
   if ((weirdaspect != 40960) && (weirdaspect != 49152))
-    {
-    I_Printf("Warning: Bad aspect ratio, things might look screwy\n");
-    }
+  {
+    I_Printf("Warning: Bad aspect ratio - may look awful\n");
+  }
+
+  SCALEDWIDTH = (SCREENWIDTH-(SCREENWIDTH%320));
+  SCALEDHEIGHT = 200*(SCALEDWIDTH/320);
+
+  //
+  // Weapon Centering
+  // Calculates the weapon height, relative to the aspect ratio.
+  //
+  // Moved here from a #define in r_things.c  -ACB- 1998/08/04
+  //
+  BASEYCENTER = (FixedMul(weirdaspect, -200<<FRACBITS)+(225<<FRACBITS))-(FRACUNIT/2);
+  SCALEDWIDTH = (SCREENWIDTH-(SCREENWIDTH%320));
+  SCALEDHEIGHT = 200*(SCALEDWIDTH/320);
+
+  X_OFFSET = (SCREENWIDTH - SCALEDWIDTH) / (2 * (SCALEDWIDTH / 320) );
+  Y_OFFSET = (SCREENHEIGHT - SCALEDHEIGHT) / (2 * (SCALEDHEIGHT / 200) );
+
+  // -KM- 1998/07/31 Cosmetic indenting
+  I_Printf("  Scaled Resolution: %d x %d\n",SCALEDWIDTH,SCALEDHEIGHT);
+
+  DX  = (SCALEDWIDTH << 16) / 320;
+  DXI = (320 << 16) / SCALEDWIDTH;
+  DY  = (SCALEDHEIGHT << 16) / 200;
+  DYI = (200 << 16) / SCALEDHEIGHT;
+  DY2 = DY / 2;
+  DYI2 = DYI * 2;
+
+  // -ES- 1998/08/20 realloc instead of malloc
+  columnofs = realloc(columnofs,SCREENWIDTH * sizeof(int));
+  ylookup   = realloc(ylookup,SCREENHEIGHT * sizeof(byte *));
 
   //allocate all the res-dependant vars
+  unalign_r_draw();
+  align_r_draw();
+  unalign_r_draw();
   resinit_r_plane_c();
   resinit_am_map_c();
   resinit_r_draw_c();
-  xtoviewangle=(angle_t *)calloc(SCREENWIDTH+1,sizeof(angle_t));
-  negonearray=(short *)calloc(SCREENWIDTH,sizeof(short));
-  screenheightarray=(short *)calloc(SCREENWIDTH,sizeof(short));
+  align_r_draw();
+
+  // -ES- 1998/08/20 realloc instead of calloc
+  negonearray=(short *)realloc(negonearray,SCREENWIDTH*sizeof(short));
+  for (i=0 ; i<SCREENWIDTH ; i++)
+    negonearray[i] = -1;
+
+  xtoviewangle=(angle_t *)realloc(xtoviewangle,(SCREENWIDTH+1)*sizeof(angle_t));
+  for (i=0 ; i<SCREENWIDTH+1 ; i++)
+    xtoviewangle[i] = 0;
+
+  screenheightarray=(short *)realloc(screenheightarray,SCREENWIDTH*sizeof(short));
+  for (i=0 ; i<SCREENWIDTH ; i++)
+    screenheightarray[i] = 0;
+}
+
+struct VideoFunc_s
+{
+  void (*V_Init) (void);
+  
+  void (*V_CopyRect)
+  ( int		srcx,
+    int		srcy,
+    int		srcscrn,
+    int		width,
+    int		height,
+    int		destx,
+    int		desty,
+    int		destscrn );
+  
+  
+  void (*V_DrawPatch) ( int x, int y, int	scrn, patch_t* patch);
+  void (*V_DrawPatchDirect) ( int	x, int y, int scrn, patch_t* patch );
+  void (*V_DrawPatchFlipped) ( int x, int	y, int scrn, patch_t* patch );
+  void (*V_DrawPatchShrink) ( int x, int y, int scrn, patch_t* patch );
+  void (*V_DrawPatchTrans) ( int x, int y, int index ,int	scrn, patch_t* patch );
+  
+  void (*V_DrawPatchInDirect) ( int x, int y, int scrn, patch_t*	patch );
+  void (*V_DrawPatchInDirectFlipped) ( int x, int y, int scrn, patch_t* patch );
+  void (*V_DrawPatchInDirectTrans) ( int x, int y, int index, int	scrn, patch_t* patch );
+  
+  // Draw a linear block of pixels into the view buffer.
+  void (*V_DrawBlock) ( int x, int y, int	scrn, int width, int height, byte* src );
+  
+  // Reads a linear block of pixels into the view buffer.
+  void (*V_GetBlock) ( int x, int	y, int scrn, int width, int height, byte* dest );
+  
+  void (*V_MarkRect) ( int x, int y, int width, int height );
+  
+  void (*V_DarkenScreen)(int scrn);
+  
+  // 98-7-10 KM Reduce code reduncany
+  void (*V_TextureBackScreen)(char *flatname);
+  
+  void (*resinit_r_draw_c) (void);
+  
+  void (*R_DrawColumn) (void);
+  void (*R_DrawFuzzColumn) (void);
+  void (*R_DrawTranslatedColumn) (void);
+  void (*R_DrawTranslucentTranslatedColumn) (void);
+  
+  void (*R_VideoErase) ( unsigned	ofs, int count );
+  
+  void (*R_DrawSpan) (void);
+  
+  void (*R_InitBuffer) ( int width, int height );
+  void (*R_InitTranslationTables) (void);
+  void (*R_FillBackScreen) (void);
+  void (*R_DrawViewBorder) (void);
+  
+  void (*R_DrawTranslucentColumn) (void);
+  
+}
+VideoFunc[] = {
+  {
+    V_Init8,
+    V_CopyRect8,
+  
+    V_DrawPatch8,
+    V_DrawPatchDirect8,
+    V_DrawPatchFlipped8,
+    V_DrawPatchShrink8,
+    V_DrawPatchTrans8,
+
+    V_DrawPatchInDirect8,
+    V_DrawPatchInDirectFlipped8,
+    V_DrawPatchInDirectTrans8,
+
+    V_DrawBlock8,
+    V_GetBlock8,
+    V_MarkRect8,
+    V_DarkenScreen8,
+
+    // 98-7-10 KM Reduce code redundancy
+    V_TextureBackScreen8,
+
+    resinit_r_draw_c8,
+    R_DrawColumn8_Rasem,
+    R_DrawFuzzColumn8,
+    R_DrawTranslatedColumn8,
+    R_DrawTranslucentTranslatedColumn8,
+    R_VideoErase8,
+    R_DrawSpan8_Rasem,
+    R_InitBuffer8,
+    R_InitTranslationTables8,
+    R_FillBackScreen8,
+    R_DrawViewBorder8,
+    R_DrawTranslucentColumn8,
+  },
+  {
+    V_Init16,
+    V_CopyRect16,
+
+    V_DrawPatch16,
+    V_DrawPatchDirect16,
+    V_DrawPatchFlipped16,
+    V_DrawPatchShrink16,
+    V_DrawPatchTrans16,
+    
+    V_DrawPatchInDirect16,
+    V_DrawPatchInDirectFlipped16,
+    V_DrawPatchInDirectTrans16,
+
+    V_DrawBlock16,
+    V_GetBlock16,
+    V_MarkRect16,
+    V_DarkenScreen16,
+
+    // 98-7-10 KM Reduce code redundancy
+    V_TextureBackScreen16,
+    resinit_r_draw_c16,
+    R_DrawColumn16_Rasem,
+    R_DrawFuzzColumn16,
+    R_DrawTranslatedColumn16,
+    R_DrawTranslucentTranslatedColumn16,
+    R_VideoErase16,
+    R_DrawSpan16_Rasem,
+    R_InitBuffer16,
+    R_InitTranslationTables16,
+    R_FillBackScreen16,
+    R_DrawViewBorder16,
+    R_DrawTranslucentColumn16,
   }
+};
+
 
 static void multires_setbpp(void)
-  {
-  
-  I_AutodetectBPP();
+{
+  int i,p;
+  col_func *RDC;
+  span_func *RDS;
+
+  // -ES- 1998/08/20 Moved away BPP autodetect to V_MultiResInit
+  i = BPP - 1;
 
   //okay, set all the function pointers
-  if (BPP==1)
-    {
-    V_Init=V_Init8;
-    V_CopyRect=V_CopyRect8;
-    V_DrawPatch=V_DrawPatch8;
-    V_DrawPatchFlipped=V_DrawPatchFlipped8;
-    V_DrawPatchDirect=V_DrawPatchDirect8;
-    V_DrawPatchInDirect=V_DrawPatchInDirect8;
-    V_DrawPatchInDirectFlipped=V_DrawPatchInDirectFlipped8;
-    V_DrawPatchTrans=V_DrawPatchTrans8;
-    V_DrawPatchInDirectTrans=V_DrawPatchInDirectTrans8;
-    V_DrawPatchShrink=V_DrawPatchShrink8;
-    V_DrawBlock=V_DrawBlock8;
-    V_GetBlock=V_GetBlock8;
-    V_MarkRect=V_MarkRect8;
-    V_DarkenScreen=V_DarkenScreen8;
+  V_Init=VideoFunc[i].V_Init;
+  V_CopyRect=VideoFunc[i].V_CopyRect;
+  V_DrawPatch=VideoFunc[i].V_DrawPatch;
+  V_DrawPatchFlipped=VideoFunc[i].V_DrawPatchFlipped;
+  V_DrawPatchDirect=VideoFunc[i].V_DrawPatchDirect;
+  V_DrawPatchInDirect=VideoFunc[i].V_DrawPatchInDirect;
+  V_DrawPatchInDirectFlipped=VideoFunc[i].V_DrawPatchInDirectFlipped;
+  V_DrawPatchTrans=VideoFunc[i].V_DrawPatchTrans;
+  V_DrawPatchInDirectTrans=VideoFunc[i].V_DrawPatchInDirectTrans;
+  V_DrawPatchShrink=VideoFunc[i].V_DrawPatchShrink;
+  V_DrawBlock=VideoFunc[i].V_DrawBlock;
+  V_GetBlock=VideoFunc[i].V_GetBlock;
+  V_MarkRect=VideoFunc[i].V_MarkRect;
+  V_DarkenScreen=VideoFunc[i].V_DarkenScreen;
 
-    resinit_r_draw_c=resinit_r_draw_c8;
-    R_DrawColumn=R_DrawColumn8;
-    R_DrawFuzzColumn=R_DrawFuzzColumn8;
-    R_DrawTranslatedColumn=R_DrawTranslatedColumn8;
-    R_VideoErase=R_VideoErase8;
-    R_DrawSpan=R_DrawSpan8;
-    R_InitBuffer=R_InitBuffer8;
-    R_InitTranslationTables=R_InitTranslationTables8;
-    R_FillBackScreen=R_FillBackScreen8;
-    R_DrawViewBorder=R_DrawViewBorder8;
-    R_DrawTranslucentColumn25=R_DrawTranslucentColumn258;
-    R_DrawTranslucentColumn50=R_DrawTranslucentColumn508;
-    R_DrawTranslucentColumn75=R_DrawTranslucentColumn758;
-    }
-  else
-    {
-    V_Init=V_Init16;
-    V_CopyRect=V_CopyRect16;
-    V_DrawPatch=V_DrawPatch16;
-    V_DrawPatchFlipped=V_DrawPatchFlipped16;
-    V_DrawPatchDirect=V_DrawPatchDirect16;
-    V_DrawPatchInDirect=V_DrawPatchInDirect16;
-    V_DrawPatchInDirectFlipped=V_DrawPatchInDirectFlipped16;
-    V_DrawPatchTrans=V_DrawPatchTrans16;
-    V_DrawPatchInDirectTrans=V_DrawPatchInDirectTrans16;
-    V_DrawPatchShrink=V_DrawPatchShrink16;
-    V_DrawBlock=V_DrawBlock16;
-    V_GetBlock=V_GetBlock16;
-    V_MarkRect=V_MarkRect16;
-    V_DarkenScreen=V_DarkenScreen16;
+  // 98-7-10 KM Reduce code redundancy
+  V_TextureBackScreen=VideoFunc[i].V_TextureBackScreen;
 
-    resinit_r_draw_c=resinit_r_draw_c16;
-    R_DrawColumn=R_DrawColumn16;
-    R_DrawFuzzColumn=R_DrawFuzzColumn16;
-    R_DrawTranslatedColumn=R_DrawTranslatedColumn16;
-    R_VideoErase=R_VideoErase16;
-    R_DrawSpan=R_DrawSpan16;
-    R_InitBuffer=R_InitBuffer16;
-    R_InitTranslationTables=R_InitTranslationTables16;
-    R_FillBackScreen=R_FillBackScreen16;
-    R_DrawViewBorder=R_DrawViewBorder16;
-    R_DrawTranslucentColumn25=R_DrawTranslucentColumn2516;
-    R_DrawTranslucentColumn50=R_DrawTranslucentColumn5016;
-    R_DrawTranslucentColumn75=R_DrawTranslucentColumn7516;
-    }
+  resinit_r_draw_c=VideoFunc[i].resinit_r_draw_c;
+
+  R_DrawFuzzColumn=VideoFunc[i].R_DrawFuzzColumn;
+  R_DrawTranslatedColumn=VideoFunc[i].R_DrawTranslatedColumn;
+  R_DrawTranslucentTranslatedColumn=VideoFunc[i].R_DrawTranslucentTranslatedColumn;
+  R_VideoErase=VideoFunc[i].R_VideoErase;
+  R_DrawSpan=VideoFunc[i].R_DrawSpan;
+  R_InitBuffer=VideoFunc[i].R_InitBuffer;
+  R_InitTranslationTables=VideoFunc[i].R_InitTranslationTables;
+  R_FillBackScreen=VideoFunc[i].R_FillBackScreen;
+  R_DrawViewBorder=VideoFunc[i].R_DrawViewBorder;
+  R_DrawTranslucentColumn=VideoFunc[i].R_DrawTranslucentColumn;
+
+  // -ES- 1998/08/05 Routine choice depending on CPU type
+  // -ES- 1998/08/13 Added -list
+  if (M_CheckParm("-list"))
+  {
+    I_Printf("Available 8-bit column routines:\n");
+    for (RDC = RDC8_Head; RDC; RDC = RDC->next)
+      I_Printf(" %s %s\n",RDC->name, (RDC->mmx) ? "(requires MMX)":"");
+    I_Printf("Available 16-bit column routines:\n");
+    for (RDC = RDC16_Head; RDC; RDC = RDC->next)
+      I_Printf(" %s %s\n",RDC->name, (RDC->mmx) ? "(requires MMX)":"");
+    I_Printf("Available 8-bit span routines:\n");
+    for (RDS = RDS8_Head; RDS; RDS = RDS->next)
+      I_Printf(" %s %s\n",RDS->name, (RDS->mmx) ? "(requires MMX)":"");
+    I_Printf("Available 16-bit span routines:\n");
+    for (RDS = RDS16_Head; RDS; RDS = RDS->next)
+      I_Printf(" %s %s\n",RDS->name, (RDS->mmx) ? "(requires MMX)":"");
+    exit(0);
   }
 
+  if (BPP==1)
+  {
+    RDC_Head = RDC8_Head;
+    cpu.RDC=cpu.model->RDC8;
+    RDS_Head = RDS8_Head;
+    cpu.RDS=cpu.model->RDS8;
+  } else
+  {
+    RDC_Head = RDC16_Head;
+    cpu.RDC=cpu.model->RDC16;
+    RDS_Head = RDS16_Head;
+    cpu.RDS=cpu.model->RDS16;
+  }
+
+  p = M_CheckParm ("-UseCol");
+  if (p && p < myargc-1)
+  {
+    RDC = RDC_Head;
+    while (RDC)
+    {
+      if ( !strcasecmp(myargv[p+1], RDC->name) )
+         break;
+      RDC = RDC->next;
+    }
+    if (!RDC) // Routine doesn't exist, exit
+      I_Error("multires_setbpp: No %d-bit column drawing routine called \"%s\"",4<<BPP,myargv[p+1]);
+    if (RDC->mmx && !cpu.mmx)
+      I_Error("multires_setbpp: CPU doesn't support MMX, used by column routine \"%s\"",myargv[p+1]);
+    cpu.RDC = RDC;
+  }
+  R_DrawColumn = cpu.RDC->func;
+  I_Printf("Using %d-bit %s column drawing routine\n",4<<BPP,cpu.RDC->name);
+
+  p = M_CheckParm ("-UseSpan");
+  if (p && p < myargc-1)
+  {
+    RDS = RDS_Head;
+    while (RDS)
+    {
+      if ( !strcasecmp(myargv[p+1], RDS->name) )
+         break;
+      RDS = RDS->next;
+    }
+    if (!RDS) // Routine doesn't exist, exit
+      I_Error("multires_setbpp: No %d-bit span drawing routine called \"%s\"",4<<BPP,myargv[p+1]);
+    if (RDS->mmx && !cpu.mmx)
+      I_Error("multires_setbpp: CPU doesn't support MMX, used by span routine \"%s\"",myargv[p+1]);
+    cpu.RDS = RDS;
+  }
+  R_DrawSpan = cpu.RDS->func;
+  I_Printf("Using %d-bit %s span drawing routine\n",4<<BPP,cpu.RDS->name);
+
+  // -ES- 1998/08/20 Moved this here
+  // -ACB- 1998/06/18 used SCREENDEPTH to be a global variable for SCREENWIDTH*BPP
+  SCREENDEPTH = SCREENWIDTH*BPP;
+}
+
+//
+// V_InitResolution
+// Inits everything resolution-dependent to SCREENWIDTH x SCREENHEIGHT x BPP
+//
+// -ES- 1998/08/20 Added this
+//
+void V_InitResolution(void)
+{
+  multires_setbpp();
+  multires_setres();
+  V_Init();
+}
+
+//
+// V_MultiResInit
+// Called once at startup to initialise first V_InitResolution
+//
 void V_MultiResInit(void)
 {
-    //check resolution
-    multires_setbpp();
-    multires_setres();
+  // -ES- 1998/08/20 Moved some autodetect stuff here
+  I_AutodetectBPP();
+  I_GetResolution();
+
+  // -KM- 1998/07/31 Nice cosmetic change...
+  I_Printf("  Resolution: %d x %d x %dc\n",SCREENWIDTH,SCREENHEIGHT,1<<(BPP*8));
+
+  // multires_setres unaligns first of all, so the routines must first be aligned
+  align_r_draw();
 }
+
+// -KM- 1998/07/21 This func clears around the edge of a scaled pic
+void V_ClearPageBackground(int scrn)
+{
+  int y;
+  int leftoffset = BPP * (SCREENWIDTH - SCALEDWIDTH) / 2;
+  int topoffset = (SCREENHEIGHT - SCALEDHEIGHT) / 2;
+
+  if (SCALEDHEIGHT < SCREENHEIGHT)
+  {
+    // Clear top of screen & bottom of screen
+    memset(screens[scrn],
+           0,
+           topoffset * SCREENDEPTH);
+    memset(screens[scrn] + SCREENDEPTH * (SCALEDHEIGHT + topoffset),
+           0,
+           SCREENDEPTH * topoffset);
+  }
+
+  if (SCALEDWIDTH < SCREENWIDTH)
+  {
+    // Clear the first black bit on the left
+    memset(screens[scrn] + SCREENDEPTH * topoffset,
+           0,
+           leftoffset);
+    // Because the right edge of a screen line runs into the left of the next
+    // screenline, we can clear them all with one fell swoop.
+    for (y = (topoffset + 1) * SCREENDEPTH - leftoffset;
+         y < (SCREENHEIGHT - topoffset - 1) * SCREENDEPTH;
+         y+= SCREENDEPTH)
+             memset(screens[scrn] + y, 0, leftoffset * 2);
+
+    // Clear the last end bit at the right
+    memset(screens[scrn] + (SCREENHEIGHT - topoffset) * SCREENDEPTH - leftoffset,
+    0,
+    leftoffset);
+  }
+}
+

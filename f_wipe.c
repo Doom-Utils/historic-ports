@@ -1,43 +1,24 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Wipe/Melt Screen Effect Code
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Mission begin melt/wipe screen special effect.
-//
-//-----------------------------------------------------------------------------
-
-
-static const char rcsid[] = "$Id: f_wipe.c,v 1.2 1997/02/03 22:45:09 b1 Exp $";
-
-
 
 #include "z_zone.h"
 #include "i_video.h"
 #include "v_res.h"
 #include "m_random.h"
 
-#include "doomdef.h"
-#include "doomstat.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 
 #include "f_wipe.h"
+#include <allegro.h>
 
 //
-//                       SCREEN WIPE PACKAGE
+// SCREEN WIPE PACKAGE
 //
 
 // when zero, stop the wipe
@@ -80,50 +61,98 @@ wipe_initColorXForm
     return 0;
 }
 
-int
-wipe_doColorXForm
-( int	width,
-  int	height,
-  int	ticks )
+// -ES- 1998/11/08 Added proper xform routines with new translucency
+#define WIPE_XFORM_TICS 30
+int wipe_ColorXForm_tick = 0;
+
+int wipe_doColorXForm16 (int width, int height, int ticks)
 {
-    boolean	changed;
-    byte*	w;
-    byte*	e;
-    int		newval;
+  unsigned short *w;
+  unsigned short *e;
+  unsigned short *s;
 
-    changed = false;
-    w = wipe_scr;
-    e = wipe_scr_end;
-    
-    while (w!=wipe_scr+width*height)
-    {
-	if (*w != *e)
-	{
-	    if (*w > *e)
-	    {
-		newval = *w - ticks;
-		if (newval < *e)
-		    *w = *e;
-		else
-		    *w = newval;
-		changed = true;
-	    }
-	    else if (*w < *e)
-	    {
-		newval = *w + ticks;
-		if (newval > *e)
-		    *w = *e;
-		else
-		    *w = newval;
-		changed = true;
-	    }
-	}
-	w++;
-	e++;
-    }
+  unsigned long elevel,slevel;
+  unsigned long c1,c2;
 
-    return !changed;
+  wipe_ColorXForm_tick += ticks;
+  elevel = (wipe_ColorXForm_tick*FRACUNIT)/WIPE_XFORM_TICS;
+  if (elevel > FRACUNIT)
+  {
+    memcpy(wipe_scr_start, wipe_scr_end, width*height*BPP);
+    wipe_ColorXForm_tick = 0;
+    return 1;
+  }
 
+  slevel = FRACUNIT - elevel;
+
+  slevel >>= 10;
+  elevel >>= 10;
+
+  w = (unsigned short *)wipe_scr;
+  e = (unsigned short *)wipe_scr_end;
+  s = (unsigned short *)wipe_scr_start;
+
+  while (w!=(unsigned short*)wipe_scr+width*height)
+  {
+    // -ES- 1998/11/29 Use the new algorithm
+    c1 = *s++;
+    c2 = *e++;
+    c1 = col2rgb16[slevel][c1&0xff][0] +
+         col2rgb16[slevel][c1>>8][1]   +
+         col2rgb16[elevel][c2&0xff][0] +
+         col2rgb16[elevel][c2>>8][1];
+    c1 &= hicolortransmask3;
+    c1 |= c1>>16;
+    c1 >>= hicolortransshift;
+
+    *w++ = (short)c1;
+  }
+
+  return 0;
+}
+
+int wipe_doColorXForm8 (int width, int height, int ticks)
+{
+  byte          *w;
+  byte	        *e;
+  byte          *s;
+
+  unsigned long wlevel;
+  unsigned long *w2rgb,*e2rgb;
+  unsigned long c;
+
+  wipe_ColorXForm_tick += ticks;
+  wlevel = (wipe_ColorXForm_tick*64)/WIPE_XFORM_TICS;
+  if (wlevel > 64)
+  {
+    memcpy(wipe_scr_start, wipe_scr_end, width*height*BPP);
+    wipe_ColorXForm_tick = 0;
+    return 1;
+  }
+
+  w2rgb = col2rgb8[64-wlevel];
+  e2rgb = col2rgb8[wlevel];
+
+  w = wipe_scr;
+  e = wipe_scr_end;
+  s = wipe_scr_start;
+
+  while (w!=wipe_scr+width*height)
+  {
+    c = (w2rgb[*s]+e2rgb[*e]) | 0xF07C3E1F;
+    *w = rgb_8k[0][0][(c>>5) & (c>>19)];
+    e++;
+    w++;
+    s++;
+  }
+
+  return 0;
+}
+
+int wipe_doColorXForm (int width, int height, int ticks)
+{
+  return BPP == 1 ? wipe_doColorXForm8(width,height,ticks) :
+                    wipe_doColorXForm16(width,height,ticks);
 }
 
 int
@@ -259,8 +288,7 @@ wipe_EndScreen
     return 0;
 }
 
-int
-wipe_ScreenWipe
+int wipe_ScreenWipe 
 ( int	wipeno,
   int	x,
   int	y,
@@ -279,9 +307,10 @@ wipe_ScreenWipe
     if (!go)
     {
 	go = 1;
-   if (wipe_scr==NULL)
-	  wipe_scr = (byte *) Z_Malloc(width*height*BPP, PU_STATIC, 0); // DEBUG
-	//wipe_scr = screens[0];
+   
+     // -ES- 1998/08/20 Used Z_ReMalloc instead of Z_Malloc
+	wipe_scr = (byte *) Z_ReMalloc(wipe_scr, width*height*BPP); // DEBUG
+	
 	(*wipes[wipeno*3])(width, height, ticks);
     }
 

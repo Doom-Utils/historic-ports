@@ -16,7 +16,7 @@
 //
 // DESCRIPTION:
 //	System specific interface stuff.
-//
+// -KM- 1998/09/27 Dynamic Colourmaps.
 //-----------------------------------------------------------------------------
 
 
@@ -73,9 +73,9 @@ extern int		linecount;
 #define MAXLIGHTZ	       512
 #define LIGHTZSHIFT		18
 
-extern lighttable_t*	scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-extern lighttable_t*	scalelightfixed[MAXLIGHTSCALE];
-extern lighttable_t*	zlight[LIGHTLEVELS][MAXLIGHTZ];
+extern int              scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
+extern int              scalelightfixed[MAXLIGHTSCALE];
+extern int              zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 extern int		extralight;
 extern lighttable_t*	fixedcolormap;
@@ -160,6 +160,11 @@ void R_RenderPlayerView (player_t *player);
 
 // Called by startup code.
 void R_Init (void);
+
+// -ES- 1998/09/11 Added these prototypes.
+void R_SetViewSize (int	 blocks, int detail);
+void R_ChangeResolution (int width, int height, int bpp);
+
 
 // Called by M_Responder.
 void R_SetViewSize (int blocks, int detail);

@@ -25,8 +25,10 @@
 
 #include <stdio.h>    //to avoid a warning
 #ifdef DJGPP
-#include <allegro.h>  //because sfxinfo_struct now has a SAMPLE*
+#include "i_alleg.h"  //because sfxinfo_struct now has a SAMPLE*
 #endif
+
+#include "dm_type.h"
 
 //
 // SoundFX struct.
@@ -36,10 +38,10 @@ typedef struct sfxinfo_struct	sfxinfo_t;
 struct sfxinfo_struct
 {
     // up to 6-character name
-    char*	name;
+    char name[8];
 
     // Sfx singularity (only one at a time)
-    int		singularity;
+    int singularity;
 
     // Sfx priority
     int		priority;
@@ -52,6 +54,12 @@ struct sfxinfo_struct
 
     // volume if a link
     int		volume;
+
+    // -KM- 1998/09/01  Looping: for non NULL origins
+    boolean     looping;
+
+    int         bits;
+    boolean     stereo;
 
     // sound data
     #ifdef DJGPP
@@ -77,8 +85,8 @@ struct sfxinfo_struct
 //
 typedef struct
 {
-    // up to 6-character name
-    char*	name;
+    // -ACB- 1998/09/06 Sufficent space allocated; cannot copy into the void
+    char name[9];
 
     // lump number of music
     int		lumpnum;
@@ -95,8 +103,8 @@ typedef struct
 
 
 // the complete set of sound effects
-extern sfxinfo_t	S_sfx[];
-
+extern sfxinfo_t*	S_sfx;
+/*
 // the complete set of music
 extern musicinfo_t	S_music[];
 
@@ -177,11 +185,11 @@ typedef enum
     NUMMUSIC
 } musicenum_t;
 
-
+*/
 //
 // Identifiers for all sfx in game.
 //
-
+/*
 typedef enum
 {
     sfx_None,
@@ -293,8 +301,17 @@ typedef enum
     sfx_skesit,
     sfx_skeatk,
     sfx_radio,
+    // -MH- 1998/08/23 - jetpack sounds
+    sfx_jprise,         // upward movement
+    sfx_jpmove,         // lateral movement
+    sfx_jpidle,         // hovering
+    sfx_jpdown,         // downward movement
+    sfx_jpflow,         // low on fuel (stuttering)
     NUMSFX
 } sfxenum_t;
+*/
+
+extern int numsfx;
 
 #endif
 //-----------------------------------------------------------------------------

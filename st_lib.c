@@ -1,34 +1,15 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Status Bar Library Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by Id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	The status bar widget code.
-//
-//-----------------------------------------------------------------------------
-
-
-static const char
-rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 
 #include <ctype.h>
 
-#include "doomdef.h"
-#include "doomstat.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 
 #include "z_zone.h"
 #include "v_res.h"
@@ -47,9 +28,6 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 
 // in AM_map.c
 extern boolean		automapactive; 
-
-
-
 
 //
 // Hack display negative frags.
@@ -124,13 +102,8 @@ STlib_drawNum
     if (n->y - ST_Y < 0)
 	I_Error("drawNum: n->y - ST_Y < 0");
 
-    if (doublebufferflag==1)
-      {
-      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, 5);
-      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, 6);
-      }
-    else
-      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, FG);
+    // -KM- 1998-07-10 Removed Doublebuffer: unneeded
+    V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, FG);
 
     // if non-number, do not draw it
     if (num == 1994)
@@ -141,12 +114,7 @@ STlib_drawNum
     // in the special case of 0, you draw 0
     if (!num)
       {
-      if (doublebufferflag==1)
-        {
-        V_DrawPatch(x - w, n->y, 5, n->p[ 0 ]);
-        V_DrawPatch(x - w, n->y, 6, n->p[ 0 ]);
-        }
-      else
+        // -KM- 1998-07-10 Removed Doublebuffer: unneeded
         V_DrawPatch(x - w, n->y, FG, n->p[ 0 ]);
       }
 
@@ -154,25 +122,17 @@ STlib_drawNum
     while (num && numdigits--)
     {
 	x -= w;
-   if (doublebufferflag==1)
-     {
-     V_DrawPatch(x, n->y, 5, n->p[ num % 10 ]);
-     V_DrawPatch(x, n->y, 6, n->p[ num % 10 ]);
-     }
-   else
-     V_DrawPatch(x, n->y, FG, n->p[ num % 10 ]);
-	num /= 10;
+
+        // -KM- 1998-07-10 Removed Doublebuffer: unneeded
+        V_DrawPatch(x, n->y, FG, n->p[ num % 10 ]);
+
+        num /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
       {
-      if (doublebufferflag==1)
-        {
-        V_DrawPatch(x - 8, n->y, 5, sttminus);
-        V_DrawPatch(x - 8, n->y, 6, sttminus);
-        }
-      else
+        // -KM- 1998-07-10 Removed Doublebuffer: unneeded
         V_DrawPatch(x - 8, n->y, FG, sttminus);
       }
 }
@@ -213,12 +173,7 @@ STlib_updatePercent
 {
     if (refresh && *per->n.on)
       {
-      if (doublebufferflag==1)
-        {
-        V_DrawPatch(per->n.x, per->n.y, 5, per->p);
-        V_DrawPatch(per->n.x, per->n.y, 6, per->p);
-        }
-      else
+        // -KM- 1998-07-10 Removed Doublebuffer: unneeded
         V_DrawPatch(per->n.x, per->n.y, FG, per->p);
       }
     
@@ -270,21 +225,12 @@ STlib_updateMultIcon
 	    if (y - ST_Y < 0)
 		I_Error("updateMultIcon: y - ST_Y < 0");
 
-       if (doublebufferflag==1)
-         {
-         V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 5);
-         V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 6);
-         }
-       else
+         // -KM- 1998-07-10 Removed Doublebuffer: unneeded
          V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
 	}
-   if (doublebufferflag==1)
-     {
-     V_DrawPatch(mi->x, mi->y, 5, mi->p[*mi->inum]);
-     V_DrawPatch(mi->x, mi->y, 6, mi->p[*mi->inum]);
-     }
-   else
-     V_DrawPatch(mi->x, mi->y, FG, mi->p[*mi->inum]);
+
+        // -KM- 1998-07-10 Removed Doublebuffer: unneeded
+        V_DrawPatch(mi->x, mi->y, FG, mi->p[*mi->inum]);
 	mi->oldinum = *mi->inum;
     }
 }
@@ -333,23 +279,13 @@ STlib_updateBinIcon
 
 	if (*bi->val)
      {
-     if (doublebufferflag==1)
-       {
-       V_DrawPatch(bi->x, bi->y, 5, bi->p);
-       V_DrawPatch(bi->x, bi->y, 6, bi->p);
-       }
-     else
+       // -KM- 1998-07-10 Removed Doublebuffer: unneeded
        V_DrawPatch(bi->x, bi->y, FG, bi->p);
      }
 	else
      {
-     if (doublebufferflag==1)
-       {
-	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 5);
-	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 6);
-       }
-     else
-	  V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+       // -KM- 1998-07-10 Removed Doublebuffer: unneeded
+       V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
      }
 
 	bi->oldval = *bi->val;

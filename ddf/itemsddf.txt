@@ -1,0 +1,536 @@
+//
+// DDF Version 0.2
+//
+// Items.DDF Explanation:
+//
+// By Andy Baker (DOSDoom Team)
+//
+
+Note: This is a basic version of Items.DDF; more stuff will be added.
+
+CONTENTS:
+   EXAMPLE
+   ACTIONS (Full Index)
+   BACKPACK INFO (Full description)
+   BENEFITS (Full Index)
+   COMMANDS (The commands not in the example)
+   PARSER NOTES
+   SPRITE NOTES
+
+******************************** EXAMPLE ***********************************
+
+Here's the full explanation of the fully working version of DDF: At
+first glance, you may underestimate its capabilities, but a closer look will
+reveal more details than you anticipated.
+
+Let's take the MEDIKIT definition:
+
+[MEDIKIT]
+MAPNUMBER=2012;
+BENEFIT_TYPE=POWERUP_HEALTH;
+BENEFIT_AMOUNT=25;
+BENEFIT_LIMIT=100;
+RADIUS=20;
+HEIGHT=16;
+PICKUP_SOUND=ITEMUP;
+
+SPRITE_NAME=MEDI;
+
+STATES=A:-1:NORMAL:NOTHING;
+
+--- First line: ---
+
+[MEDIKIT], when you want to start an object, it must have a name:
+the MEDIKIT is called MEDIKIT, but the object can be called anything: the only
+relevance this has is when you pick it up, the message displayed is:
+
+ITEM PICKED UP: <NAME>
+-or-
+ITEM PICKED UP: MEDIKIT
+
+is what is displayed with the our example (DOSDoom does this at present, but
+a specific message is planned to be displayed in the future). we have just
+started the new object.
+
+*NOTE* The Parser Treats '_' as a space because ' ' is ignored. *NOTE*
+
+*NOTE* The name must be unique DOSDoom will exit with an error message if the 
+name is not unique. *NOTE*
+
+Every "command" is structured like this:
+<COMMAND>=<INFO>
+
+<INFO> is sometimes a name or a number (which depends on the command), either
+way the information given tells DOSDoom what to do with your new object type.
+All commands are terminated with a ';'.
+
+--- Second line ---
+
+MAPNUMBER=2012;
+
+Format: MAPNUMBER=<NUMBER>
+
+This obviously says that the object mapnumber is 2012, the number is used
+by map editors to tell DOSDoom what object to spawn. This number could
+in theory be as big as 32768, but to be safe stick to numbers below 10000.
+Levels editors like DCK, DoomCAD & WADAuthor allow you to add entries to
+their files so that you can use new objects in your levels.
+
+*NOTE* This number must be unique *NOTE*
+
+DOSDoom does not currently check this for you (yet).
+
+--- Third Line ---
+
+BENEFIT_TYPE=POWERUP_HEALTH;
+
+Format: BENEFIT_TYPE=<DESCRIPTION>;
+
+check the benefits index for a full list, the benefit here is health.
+
+--- Fourth Line ---
+
+BENEFIT_AMOUNT is how much of BENEFIT_TYPE you get, sometimes it is not
+relevant, but here it is. It gives the amount of health. The format is
+obvious:
+
+BENEFIT_AMOUNT=<NUMBER>;
+
+Number between between 0 and 999, its control is the next line:
+
+BENEFIT_LIMIT=<AMOUNT>;
+
+The limits are how much this item can bring the benefit up to: a health
+object that has a BENEFIT_AMOUNT of 20 & a BENEFIT_LIMIT of 50 can only bring 
+the limit up to 50. If you do not benefit from it, it is not picked up. The 
+same is true with time amounts, it tops you up until the limit.
+
+RADIUS & HEIGHT determine how easy or how hard an item is to pick up. A thing 
+with a big radius is very easy to pick up, as it reduces the chance of missing.
+The reverse is also true. HEIGHT will do the same when 3D Checking is complete.
+
+Format:
+
+RADIUS=<NUMBER>;
+HEIGHT=<NUMBER>;
+
+20 is normal for the item radius, 16 is normal for the item height.
+
+
+New command PICKUP_SOUND: This changed from the V0.1 format you have all
+seen, it use to be the whole lump name of the sound, this is no longer the
+case: the lump name with the exception of the DS at the beginning, it
+allows for all the Doom/Doom II sounds to be used, as opposed to the original
+three. You may now cause any Doom sound to be generated when this object is
+picked up.
+
+Format:
+
+PICKUP_SOUND=<LUMPNAME without the initial DS>;
+
+so for this item it is:
+
+PICKUP_SOUND=ITEMUP
+
+which was formerly: PICKUP_SOUND=DSITEMUP
+
+
+SPRITE_NAME is the sprite prefix for all the sprites used.
+MEDI is the prefix for a doom medikit; you may use any prefix you like
+as long as it is alphanumeric. If you use a new sprite name (not used in
+any Doom IWAD before) it must be added correctly in a PWAD. For example:
+adding a set of new sprites to a WAD in WinTEX, it will add SS_START
+before the first new sprite and SS_END to the end of the new sprites - this
+is not the correct method: you should rename SS_START & SS_END to S_START &
+S_STOP respectively and your new sprites will work fine with DOSDoom.
+
+Format:
+
+SPRITE_NAME=<SPRITE_PREFIX>;
+
+
+The next one is somewhat less idiot-proof:
+STATES=<STATE>,<STATE>....;
+
+where <STATE> is:
+<SPRITE_SUFFIX>:<DURATION>:<LIGHTING>:<ACTION>
+
+The example one is:
+STATES=A:-1:NORMAL:NOTHING;
+
+The SPRITE_SUFFIX and SPRITE_PREFIX gives all the info for the sprite used
+for this state (items have only one: spawn state, since they don't do much
+else). SPRITE_PREFIX here is MEDI and the SPRITE_SUFFIX is A, so the
+sprite name is MEDIA, the rest is worked out by DOSDoom as the full name
+is MEDIA0, the is explained further in the SPRITE NOTES.
+
+Next up, DURATION. It is the number of tics that the object remains in this
+state, -1 is an infinite duration as shown here, but it is most cases it is
+a value.
+
+*NOTE* There are 35 tics per second *NOTE*
+
+There are only two settings - so far - for LIGHTING: NORMAL & BRIGHT,
+BRIGHT is an object that is at full brightness at all time, NORMAL is
+an object that is effected by the light levels of the sector it is in.
+
+ACTION is something that happen when the object gets to this state, in this
+object it is NOTHING, it does nothing.
+
+Check out the actions list.
+
+Notes on multiple states:-
+
+If someone declared this set of states:
+
+STATES=A:6:NORMAL:NOTHING,
+       B:6:BRIGHT:NOTHING,
+       A:6:NORMAL:NOTHING,
+       C:6:BRIGHT:NOTHING;
+
+It would rotate in an infinite loop, A->B->A->C and round again forever. 
+
+*********************** ACTIONS (Full Index) ******************************
+
+  --Action name--       --Description--
+  ^^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^
+  NOTHING               Object does nothing
+
+  ALTERTRANSLUC         Object alters its translucency level: 
+                            It becomes more translucent, but never becomes
+                            invisible and when it reachs its most transluc
+                            level it will start becoming less transluc until
+                            it is almost fully visible and then starts
+                            becoming more transluc and so forth... Everytime
+                            it reachs this state it will alter by one level
+                            of translucency
+
+  ALTERVISIBILITY       Object alters it visibility level:
+                            It will become less visible until it is invisible
+                            and then becomes more visible until it is visible,
+                            and back again....it will alter by one level of
+                            visible, every time it hits this state.
+
+  LESSVISIBLE           Object will become less visible:
+                            Every time it hits this state it will become less
+                            visible, one visibility level at a time.
+
+  MOREVISIBLE           Object will become more visible:
+                            Every time it hits this state it will become more
+                            visible, one visibility level at a time.
+
+  MAKESOUND             Object will make a sound from its location:
+                            Makes a sound, which is specified by the command
+                            AMBIENT_SOUND, it has the same format as
+                            PICKUP_SOUND. it works like this:
+
+                            AMBIENT_SOUND=ITEMUP;
+
+                            like PICKUP_SOUND, everytime the state with
+                            MAKESOUND is encountered, the sound with the
+                            name specified in AMBIENT_SOUND.
+
+  MAKESOUNDRANDOM      Object has a limited chance of making a sound
+                            Like the above, except their is a good chance
+                            no sound will be made.
+
+There are currently 5 Visibility Levels:
+   VISIBLE, Low-Tranlucency, medium-Tranlucency, high-Tranlucency, INVISIBLE.
+
+*********************** BACKPACK INFO *****************************
+
+The Backpack is a special type as it needs more information,
+BENEFIT_AMOUNT & BENEFIT_LIMIT are ignored, but the follow commands are
+avaliable for configuring a backpack type:
+
+BACKPACK_AMMO
+BACKPACK_AMMOLIMIT
+BACKPACK_ARMOUR
+BACKPACK_KEYS
+BACKPACK_WEAPONS
+
+
+The BACKPACK_AMMO & BACKPACK_AMMOLIMIT command are setup like this:
+
+BACKPACK_AMMO=<AMMO_TYPE1>,<AMMO_TYPE2>,<AMMO_TYPE3>,<AMMO_TYPE4>;
+BACKPACK_AMMOLIMIT=<AMMO_TYPE1>,<AMMO_TYPE2>,<AMMO_TYPE3>,<AMMO_TYPE4>;
+
+The Doom backpack settings are:
+
+BACKPACK_AMMO=10,4,1,20;
+BACKPACK_AMMOLIMIT=400,100,100,600;
+
+This is assuming that we have 4 ammo types, this may be alterable in the
+future.
+
+
+Command BACKPACK_ARMOUR:
+
+The original doom code had no facility for this, but I feel it should be made
+possible to have armour in a backpack, the armour class is decided by the
+value here, if it is over the norm (presently 100) then the armour class is
+the best (BLUE), but if it is less then the armour class is basic (GREEN).
+
+BACKPACK_ARMOUR=<NUMBER>;
+
+NUMBER is value of between 0 and 999.
+
+
+Command BACKPACK_KEYS:
+
+Another new addition, you can add keys to a backpack. The Key references are
+BLUECARD, YELLOWCARD, REDCARD, BLUESKULL, YELLOWSKULL & REDSKULL the setup
+is:
+
+BACKPACK_KEYS=<KEY>,<KEY>.....;
+
+like:
+
+BACKPACK_KEYS=BLUESKULL,REDCARD,YELLOWCARD;
+
+for giving a Blue Skull Key and the Red and Yellow Key Cards.
+
+
+Command BACKPACK_WEAPONS:
+
+Any Backpack types you create can enjoy Mary Poppin like features: You can
+add the weapons into the bag, the setup here:
+
+BACKPACK_WEAPONS=<WEAPONTYPE>,<WEAPONTYPE>.....;
+
+for example:
+
+BACKPACK_WEAPONS=5,6;
+
+would give you type 5 (missile launcher in doom) and also a type 6 (which
+gives a plasma rifle in doom) weapon.
+
+*********************** BENEFITS (Full Index) *****************************
+
+  --Benefit_type--      --Benefit_amount--       --Benefit_limit--
+  ^^^^^^^^^^^^^^^^      ^^^^^^^^^^^^^^^^^^       ^^^^^^^^^^^^^^^^^
+  AMMO_TYPE1            AMOUNT                   not applicable
+  AMMO_TYPE2            AMOUNT                   not applicable
+  AMMO_TYPE3            AMOUNT                   not applicable
+  AMMO_TYPE4            AMOUNT                   not applicable
+  KEY_BLUECARD          not applicable           not applicable
+  KEY_REDCARD           not applicable           not applicable
+  KEY_YELLOWCARD        not applicable           not applicable
+  KEY_BLUESKULL         not applicable           not applicable
+  KEY_REDSKULL          not applicable           not applicable
+  KEY_YELLOWSKULL       not applicable           not applicable
+  POWERUP_ACIDSUIT      TIME                     TIME-LIMIT
+  POWERUP_ARMOUR        AMOUNT                   ARMOUR-LIMIT
+  POWERUP_AUTOMAP       not applicable           not applicable
+  POWERUP_BACKPACK      ---SEE BACKPACK NOTES--- ---SEE BACKPACK NOTES---
+  POWERUP_BERSERK       HEALTH-AMOUNT            HEALTH-LIMIT
+  POWERUP_HEALTH        AMOUNT                   HEALTH-LIMIT
+  POWERUP_HEALTHARMOUR  AMOUNT                   HEALTH-&-ARMOUR-LIMIT
+  POWERUP_INVULNERABLE  TIME                     TIME-LIMIT
+  POWERUP_LIGHTGOGGLES  TIME                     TIME-LIMIT
+  POWERUP_PARTINVIS     TIME                     TIME-LIMIT
+  WEAPON_TYPE0          not applicable           not applicable
+  WEAPON_TYPE1          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE2          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE3          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE4          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE5          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE6          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE7          AMOUNT-OF-AMMO           not applicable
+  WEAPON_TYPE8          not applicable           not applicable
+
+General information:
+  Weapon and ammo types are not referred to by their doom name, the idea is
+  that later stages of DDF will allow for Weapons to be totally converted,
+  therefore calling them by their current doom names would not be approiate,
+  the table below indicates the types and their doom names:
+
+  TYPES            Doom Name
+  ^^^^^            ^^^^^^^^^
+  AMMO_TYPE1       Bullets
+  AMMO_TYPE2       Shells
+  AMMO_TYPE3       Rockets
+  AMMO_TYPE4       Cells
+  WEAPON_TYPE0     Fist
+  WEAPON_TYPE1     Pistol
+  WEAPON_TYPE2     Shotgun
+  WEAPON_TYPE3     DoubleBarrel Shotgun
+  WEAPON_TYPE4     Chaingun
+  WEAPON_TYPE5     Missile Launcher
+  WEAPON_TYPE6     Plasma Rifle
+  WEAPON_TYPE7     BFG9000
+  WEAPON_TYPE8     Chainsaw
+
+  Weapons type 0 & 8 have not applicable over the benefit amount, this is only
+  currently true: the fist and chainsaw do not use ammo, when new weapons are
+  defined it will be possible to place values here. All Weapons and Ammos
+  do not use the limit because this is in the player's information.
+
+************************** COMMANDS (Other) *****************************
+
+Heres the list of commmands not listed in the example:
+
+Command AMBIENT_SOUND:
+AMBIENT_SOUND=<LUMPNAME without the initial DS>;
+
+Same format as PICKUP_SOUND, this is used in combination with the MAKESOUND
+action: when the state uses MAKESOUND, it plays the sound specified by
+AMBIENT_SOUND;
+
+
+Command SPECIAL:
+Format: SPECIAL=<ATTRIBUTE>,<ATTRIBUTE>.....;
+
+Any object created can have these attributes:
+
+  --ATTRIBUTE--     --DESCRIPTION--
+  ^^^^^^^^^^^^^     ^^^^^^^^^^^^^^^
+  FUZZY             Doom Spectre effect
+  INVISIBLE         Invisible
+  LOW_TRANSLUC      Low Level of Translucency
+  MED_TRANSLUC      Medium Level of Translucency
+  HIGH_TRANSLUC     High Level of Translucency
+  NO_RESPAWN        Does not respawn EVER.
+  ON_CEILING        Spawned attached to the ceiling
+
+so for an object to be highly translucent & that does not respawn:
+
+SPECIAL=HIGH_TRANSLUC,NO_RESPAWN;
+
+Don't combine FUZZY, INVISIBLE, LOW_TRANSLUC, MED_TRANSLUC, HIGH_TRANSLUC 
+for obvious reasons.
+
+***************************** PARSER NOTES ******************************
+
+The DOSDoom Parser is at a very basic stage. It follows these rules:
+
++ All space is completely ignored
+
++ '_' is a recoginised as a space:
+        an object called BARON_OF_HELL would be displayed as BARON OF HELL
+
++ All commands must be terminated by ';'
+
++ Remarking:
+        '{' is the start of the remark, everything inbetween is ignored
+        until '}' is encountered.
+
+General advice:
+
+I normally layout my definitions like this:
+
+[OBJECT]
+MAPNUMBER=1234;
+BENEFIT_TYPE=POWERUP_HEALTH;
+BENEFIT_AMOUNT=123;
+BENEFIT_LIMIT=234;
+RADIUS=12;
+HEIGHT=34;
+PICKUP_SOUND=ITEMUP;
+
+SPRITE_NAME=MEDI;
+
+STATES=A:-1:NORMAL:NOTHING;
+
+Although the parser would intepret this as the same:
+
+[OBJECT]MAPNUMBER=1234;BENEFIT_TYPE=POWERUP_HEALTH;BENEFIT_AMOUNT=123;
+BENEFIT_LIMIT=234;RADIUS=12;HEIGHT=34;PICKUP_SOUND=ITEMUP;
+SPRITE_NAME=MEDI;STATES=A:-1:NORMAL:NOTHING;
+
+The above is legal, but for editing purposes a good layout makes things
+easier to understand.
+
+The parser is case-insensitive 'MAPNUMBER' and 'mapnumber' are the same,
+although I have written the doom items.ddf in UPPER-case, you can use any
+combination of uppercase & lowecase you choose.
+
+List of possible errors:
+
+ --ERROR--                                    --DESCRIPTION--
+ ^^^^^^^^^                                    ^^^^^^^^^^^^^^^
+ DDF_ItemGetType: Unknown Type <TYPE>         Benefit_type given is unknown
+
+ DDF_ItemLoadStates: Sprite name undeclared   The need to declare a SPRITE
+                                              NAME, before declaring any
+                                              STATES.
+
+ DDF_ItemLoadStates: Illegal Sprite Reference The SPRITE_PREFIX is not
+                                              an alphabetic character or
+                                              '[', '\' or ']'.
+
+ DDF_ItemLoadStates: Out of States            You have exceeded the max
+                                              number of states. This is
+                                              a limit that will be removed
+                                              in future DDF Versions.
+
+ DDF_ItemLookupSound: SFX does not exist      You have specified a sound
+                                              name that does not exist.
+                                              Please make sure that you
+                                              have removed the initial
+                                              DS from the Lump Name.
+
+ DDF_ItemSpriteName: Sprite Names must for 4 Characters long.
+                                              A SPRITE_NAME has to be 4
+                                              characters long; The one
+                                              read is not.
+
+ DDF_ItemSpriteName: Out of Sprites           You have exceeded the max
+                                              number of sprite names
+                                              avaliable. This is a limit
+                                              that will be removed in
+                                              future DDF Versions.
+
+ DDF_ItemCheckCommand: Unknown Command - <COMMAND>
+                                              You have given a command
+                                              that does not exist, check for
+                                              spelling mistakes in your
+                                              commands.
+
+ DDF_ItemCreateMobj: MOBJTYPE limit exceeded  You have exceeded the max
+                                              number of mobjtypes - object
+                                              definition. This limit will
+                                              be removed in future releases.
+
+ <TO BE COMPLETED>
+                                               
+***************************** SPRITE NOTES ******************************
+
+In a WAD File sprites are stored in the format:
+
+AAAAXNXN - AAAA being the SPRITE_PREFIX, X is a SPRITE_SUFFIX and N is
+the numeric value which dictates what angle this sprite is used for:
+
+for example:
+
+STIMA0 - STIM is the prefix, A is the suffix and the angle is zero, which
+means that this sprite is always looking at you.
+
+however if it has a value between 1 & 8, DOSDoom uses the object direction to
+work out want sprite it uses:
+
+1 - Front view (facing you)
+2 - Front, but to the left (from your viewpoint)
+3 - Facing Left (from your viewpoint)
+4 - Back, but to the Left (from your viewpoint)
+5 - Back view (facing away from you)
+6 - Back, but to the Right (from your viewpoint)
+7 - Facing Right (from your viewpoint)
+8 - Front, but to the Right (from your viewpoint)
+
+STIMA3 - would be the sprite used, when a stimpack is facing left from your
+viewpoint.
+
+so what would be STIMA3A7? In order to create a facing right sprite, it uses
+this sprite and mirrors it.
+
+STIMA3C7 in order to create the facing right sprite for the C suffix, DOSDoom
+uses this sprite and mirrors it.
+
+All DOSDoom needs to know is the SPRITE_PREFIX and what SPRITE_SUFFIX to use.
+
+**************************************************************************
+
+Any questions? email the team: acbaker@lineone.net
+
+**************************************************************************

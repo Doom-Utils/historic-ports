@@ -1,34 +1,22 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Status Bar Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by Id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -KM- 1998/07/21 Removed Cheats from this file to m_cheat.c.  If you undefine the
+//                 #define below, cht_Responder will never be called, and you will be
+//                 on a level platform with those demons for once.
 //
-// $Log:$
+// -KM- 1998/07/21 Undefine this if you're hard enough...
 //
-// DESCRIPTION:
-//	Status bar code.
-//	Does the face/direction indicator animatin.
-//	Does palette indicators as well (red pain/berserk, bright pickup)
-//
-//-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
+//#define NOCHEATS
 
 #include <stdio.h>
+
 #ifdef DJGPP
-#include <i_music.h>
+#include "i_music.h"
 #endif
 
 #include "i_system.h"
@@ -37,8 +25,10 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #include "m_random.h"
 #include "w_wad.h"
 
-#include "doomdef.h"
+#include "dm_defs.h"
 
+#include "m_fixed.h"
+#include "ddf_main.h"
 #include "g_game.h"
 
 #include "st_stuff.h"
@@ -51,6 +41,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 
 #include "am_map.h"
 #include "m_cheat.h"
+#include "m_menu.h"
 
 #include "s_sound.h"
 
@@ -58,7 +49,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #include "v_res.h"
 
 // State.
-#include "doomstat.h"
+#include "dm_state.h"
 
 // Data.
 #include "dstrings.h"
@@ -74,8 +65,9 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 // For damage/bonus red-/gold-shifts
 #define STARTREDPALS		1
 #define STARTBONUSPALS		9
-#define NUMREDPALS			8
+#define NUMREDPALS              8
 #define NUMBONUSPALS		4
+
 // Radiation suit, green shift.
 #define RADIATIONPAL		13
 
@@ -188,10 +180,10 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #define ST_AMMO1Y			(SCREENHEIGHT-(200-179))
 #define ST_AMMO2WIDTH		ST_AMMO0WIDTH
 #define ST_AMMO2X			(((SCREENWIDTH-320)/2)+288)
-#define ST_AMMO2Y			(SCREENHEIGHT-(200-191))
+#define ST_AMMO2Y			(SCREENHEIGHT-(200-185))
 #define ST_AMMO3WIDTH		ST_AMMO0WIDTH
 #define ST_AMMO3X			(((SCREENWIDTH-320)/2)+288)
-#define ST_AMMO3Y			(SCREENHEIGHT-(200-185))
+#define ST_AMMO3Y			(SCREENHEIGHT-(200-191))
 
 // Indicate maximum ammunition.
 // Only needed because backpack exists.
@@ -204,10 +196,10 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #define ST_MAXAMMO1Y		(SCREENHEIGHT-(200-179))
 #define ST_MAXAMMO2WIDTH		ST_MAXAMMO0WIDTH
 #define ST_MAXAMMO2X		(((SCREENWIDTH-320)/2)+314)
-#define ST_MAXAMMO2Y		(SCREENHEIGHT-(200-191))
+#define ST_MAXAMMO2Y		(SCREENHEIGHT-(200-185))
 #define ST_MAXAMMO3WIDTH		ST_MAXAMMO0WIDTH
 #define ST_MAXAMMO3X		(((SCREENWIDTH-320)/2)+314)
-#define ST_MAXAMMO3Y		(SCREENHEIGHT-(200-185))
+#define ST_MAXAMMO3Y		(SCREENHEIGHT-(200-191))
 
 // pistol
 #define ST_WEAPON0X			(((SCREENWIDTH-320)/2)+110)
@@ -327,8 +319,8 @@ static patch_t*		tallpercent;
 // 0-9, short, yellow (,different!) numbers
 static patch_t*		shortnum[10];
 
-// 3 key-cards, 3 skulls
-static patch_t*		keys[NUMCARDS]; 
+// 3 key-cards, 3 skulls & 3 Combination -ACB- 1998/09/11
+static patch_t*		keys[NUMCARDS+3];
 
 // face status patches
 static patch_t*		faces[ST_NUMFACES];
@@ -382,7 +374,8 @@ static int	st_fragscount;
 static int	st_oldhealth = -1;
 
 // used for evil grin
-static boolean	oldweaponsowned[NUMWEAPONS]; 
+// -KM- 1998/11/25 Dynamic allocation
+static boolean*	oldweaponsowned;
 
  // count until face changes
 static int	st_facecount = 0;
@@ -396,192 +389,6 @@ static int	keyboxes[3];
 // a random number per tick
 static int	st_randomnumber;  
 
-
-
-// Massive bunches of cheat shit
-//  to keep it from being easy to figure them out.
-// Yeah, right...
-unsigned char	cheat_mus_seq[] =
-{
-'i','d','m','u','s',1,0,0,0xff
-};
-
-unsigned char	cheat_choppers_seq[] =
-{
-'i','d','c','h','o','p','p','e','r','s',0xff
-};
-
-unsigned char	cheat_god_seq[] =
-{
-'i','d','d','q','d',0xff
-};
-
-unsigned char	cheat_ammo_seq[] =
-{
-'i','d','k','f','a',0xff
-};
-
-unsigned char	cheat_ammonokey_seq[] =
-{
-'i','d','f','a',0xff
-};
-
-
-// Smashing Pumpkins Into Small Piles Of Putried Debris.
-unsigned char	cheat_noclip_seq[] =
-{
-'i','d','s','p','i','s','p','o','p','d',0xff
-};
-
-//
-unsigned char	cheat_commercial_noclip_seq[] =
-{
-'i','d','c','l','i','p',0xff
-}; 
-
-
-
-unsigned char	cheat_powerup_seq[7][10] =
-{
-    {'i','d','b','e','h','o','l','d','v',0xff},
-    {'i','d','b','e','h','o','l','d','s',0xff},
-    {'i','d','b','e','h','o','l','d','i',0xff},
-    {'i','d','b','e','h','o','l','d','r',0xff},
-    {'i','d','b','e','h','o','l','d','a',0xff},
-    {'i','d','b','e','h','o','l','d','l',0xff},
-    {'i','d','b','e','h','o','l','d',0xff}
-};
-
-
-unsigned char	cheat_clev_seq[] =
-{
-'i','d','c','l','e','v',1,0,0,0xff
-};
-
-
-// my position cheat
-unsigned char	cheat_mypos_seq[] =
-{
-'i','d','m','y','p','o','s',0xff
-}; 
-
-//
-// DOSDoom Cheats
-//
-
-// CD Next Track
-unsigned char	cheat_cdnext_seq[] =
-{
-'c','d','n','e','x','t',0xff
-};
-
-// CD Previous Track
-unsigned char	cheat_cdprev_seq[] =
-{
-'c','d','p','r','e','v',0xff
-};
-
-// Kill all monsters
-unsigned char	cheat_killall_seq[] =
-{
-'i','d','k','i','l','l','a','l','l',0xff
-};
-
-// Suicide
-unsigned char	cheat_suicide_seq[] =
-{
-'i','d','s','u','i','c','i','d','e',0xff
-};
-
-// show player pos and level info
-unsigned char	cheat_showstats_seq[] =
-{
-'i','d','i','n','f','o',0xff
-}; 
-
-// give all the keys to me!
-unsigned char	cheat_keys_seq[] =
-{
-'i','d','u','n','l','o','c','k',0xff
-}; 
-
-// show me the ammo!
-unsigned char	cheat_loaded_seq[] =
-{
-'i','d','l','o','a','d','e','d',0xff
-}; 
-
-// removes weapons, ammos and keys
-unsigned char	cheat_takeall_seq[] =
-{
-'i','d','t','a','k','e','a','l','l',0xff
-}; 
-
-// give weapons
-unsigned char	cheat_giveweapon_seq[8][8] =
-{
-        {'i','d','g','i','v','e',0xff},     // not used
-        {'i','d','g','i','v','e','1',0xff}, // chainsaw
-        {'i','d','g','i','v','e','2',0xff}, // shotgun
-        {'i','d','g','i','v','e','3',0xff}, // double-barrel shotgun
-        {'i','d','g','i','v','e','4',0xff}, // chaingun
-        {'i','d','g','i','v','e','5',0xff}, // missile launcher
-        {'i','d','g','i','v','e','6',0xff}, // plasma rifle
-        {'i','d','g','i','v','e','7',0xff}, // BFG9000
-}; 
-
-// Now what?
-cheatseq_t	cheat_mus = { cheat_mus_seq, 0 };
-cheatseq_t	cheat_god = { cheat_god_seq, 0 };
-cheatseq_t	cheat_ammo = { cheat_ammo_seq, 0 };
-cheatseq_t	cheat_ammonokey = { cheat_ammonokey_seq, 0 };
-cheatseq_t	cheat_noclip = { cheat_noclip_seq, 0 };
-cheatseq_t	cheat_commercial_noclip = { cheat_commercial_noclip_seq, 0 };
-
-cheatseq_t	cheat_powerup[7] =
-{
-    { cheat_powerup_seq[0], 0 },
-    { cheat_powerup_seq[1], 0 },
-    { cheat_powerup_seq[2], 0 },
-    { cheat_powerup_seq[3], 0 },
-    { cheat_powerup_seq[4], 0 },
-    { cheat_powerup_seq[5], 0 },
-    { cheat_powerup_seq[6], 0 }
-};
-
-cheatseq_t	cheat_choppers = { cheat_choppers_seq, 0 };
-cheatseq_t	cheat_clev = { cheat_clev_seq, 0 };
-cheatseq_t	cheat_mypos = { cheat_mypos_seq, 0 };
-
-//new cheats
-cheatseq_t	cheat_cdnext = { cheat_cdnext_seq, 0 };
-cheatseq_t	cheat_cdprev = { cheat_cdprev_seq, 0 };
-cheatseq_t	cheat_killall = { cheat_killall_seq, 0 };
-cheatseq_t	cheat_showstats = { cheat_showstats_seq, 0 };
-cheatseq_t	cheat_suicide = { cheat_suicide_seq, 0 };
-cheatseq_t	cheat_keys = { cheat_keys_seq, 0 };
-cheatseq_t	cheat_loaded = { cheat_loaded_seq, 0 };
-cheatseq_t	cheat_takeall = { cheat_takeall_seq, 0 };
-
-cheatseq_t	cheat_giveweapon[8] =
-{
-    { cheat_giveweapon_seq[0], 0 },
-    { cheat_giveweapon_seq[1], 0 },
-    { cheat_giveweapon_seq[2], 0 },
-    { cheat_giveweapon_seq[3], 0 },
-    { cheat_giveweapon_seq[4], 0 },
-    { cheat_giveweapon_seq[5], 0 },
-    { cheat_giveweapon_seq[6], 0 },
-    { cheat_giveweapon_seq[7], 0 },
-};
-
-
-// 
-extern char*	mapnames[];
-
-//for cdaudio
-char tmpmsgstring[40];
-
 //
 // STATUS BAR CODE
 //
@@ -589,34 +396,25 @@ void ST_Stop(void);
 
 void ST_refreshBackground(void)
 {
-
     if (st_statusbaron)
     {
-	V_DrawPatch(ST_X, 0, BG, sbar);
+      V_DrawPatch(ST_X, 0, BG, sbar);
 
-	if (netgame)
-	    V_DrawPatch(ST_FX, 0, BG, faceback);
+      if (netgame)
+	V_DrawPatch(ST_FX, 0, BG, faceback);
 
-   if (doublebufferflag==1)
-     {
-     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, 5);
-     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, 6);
-     }
-   else
-     {
-     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
-     }
+      // -KM- 1998-07-10 Removed Doublebuffer: unneeded
+      V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
     }
-
 }
 
 
 // Respond to keyboard input events,
-//  intercept cheats.
+//
+// -KM- 1998/07/21 Cheats are intecepted in m_cheat.c
+//
 boolean ST_Responder (event_t* ev)
 {
-  int		i;
-    
   // Filter automap on/off.
   if (ev->type == ev_keyup
       && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
@@ -629,371 +427,24 @@ boolean ST_Responder (event_t* ev)
 	break;
 	
       case AM_MSGEXITED:
-	//	fprintf(stderr, "AM exited\n");
 	st_gamestate = FirstPersonState;
 	break;
     }
   }
 
-  // if a user keypress...
-  else if (ev->type == ev_keydown)
-  {
-    if (!netgame)
-    {
-      // b. - enabled for more debug fun.
-      // if (gameskill != sk_nightmare) {
-      
-      // 'dqd' cheat for toggleable god mode
-      if (cht_CheckCheat(&cheat_god, ev->data1))
-      {
-	plyr->cheats ^= CF_GODMODE;
-	if (plyr->cheats & CF_GODMODE)
-	{
-	  if (plyr->mo)
-	    plyr->mo->health = NORMHEALTH;
-	  
-	  plyr->health = NORMHEALTH;
-	  plyr->message = STSTR_DQDON;
-	}
-	else 
-	  plyr->message = STSTR_DQDOFF;
-      }
-      // 'fa' cheat for killer fucking arsenal
-      else if (cht_CheckCheat(&cheat_ammonokey, ev->data1))
-      {
-	if (!plyr->backpack)
-	{
-	    for (i=0 ; i<NUMAMMO ; i++)
-		plyr->maxammo[i] *= 2;
-	    plyr->backpack = true;
-	}
-	plyr->armorpoints = CHEATARMOUR;
-	plyr->armortype = CHEATARMOURT;
-	
-	for (i=0;i<NUMWEAPONS;i++)
-	  plyr->weaponowned[i] = true;
-	
-	for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = plyr->maxammo[i];
-	
-	plyr->message = STSTR_FAADDED;
-      }
-      // 'kfa' cheat for key full ammo
-      else if (cht_CheckCheat(&cheat_ammo, ev->data1))
-      {
-        if (!plyr->backpack)
-	{
-	    for (i=0 ; i<NUMAMMO ; i++)
-		plyr->maxammo[i] *= 2;
-	    plyr->backpack = true;
-	}
-        plyr->armorpoints = CHEATARMOUR;
-	plyr->armortype = CHEATARMOURT;
-	
-        for (i=0;i<NUMWEAPONS;i++)
-	  plyr->weaponowned[i] = true;
-	
-        for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = plyr->maxammo[i];
-	
-	for (i=0;i<NUMCARDS;i++)
-	  plyr->cards[i] = true;
+  // Are you hard enough?
+  // -ACB- 1998/08/24 Use current map settings to check also
 
-        // refresh to add all stuff to status bar
-        st_firsttime = true;
-
-	plyr->message = STSTR_KFAADDED;
-      }
-      else if (cht_CheckCheat(&cheat_keys, ev->data1))
-      {
-        for (i=0;i<NUMCARDS;i++)
-	  plyr->cards[i] = true;
-
-        // refresh to remove all stuff from status bar
-        st_firsttime = true;
-
-        plyr->message = "Unlock any door!";
-      }
-      else if (cht_CheckCheat(&cheat_loaded, ev->data1))
-      {
-        for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = plyr->maxammo[i];
-
-        plyr->message = "Loaded!";
-      }
-      else if (cht_CheckCheat(&cheat_takeall, ev->data1))
-      {
-        for (i=0;i<NUMAMMO;i++)
-	  plyr->ammo[i] = 0;
-
-        for (i=0;i<NUMCARDS;i++)
-	  plyr->cards[i] = false;
-
-        for (i=0;i<NUMWEAPONS;i++)
-	  plyr->weaponowned[i] = false;
-
-        plyr->weaponowned[wp_pistol] = true;
-        plyr->ammo[am_clip] = 50;
-
-	plyr->armorpoints = 0;
-	plyr->armortype   = 0;
-
-        if (plyr->backpack)
-	{
-	    for (i=0 ; i<NUMAMMO ; i++)
-		plyr->maxammo[i] /= 2;
-	    plyr->backpack = false;
-	}
-
-        plyr->pendingweapon = wp_pistol;
-
-        // refresh to remove all stuff from status bar
-        st_firsttime = true;
-
-        plyr->message = "All Stuff Removed!";
-      }
-      else if (cht_CheckCheat(&cheat_suicide, ev->data1))
-      {
-        P_DamageMobj(plyr->mo,NULL,plyr->mo,10000);
-        plyr->message = "Loser!";
-      }
-      else if (cht_CheckCheat(&cheat_killall, ev->data1))
-      {
-        int killcount=0;
-        thinker_t* currentthinker;
-
-        currentthinker = thinkercap.next;
-        while (currentthinker != &thinkercap)
-          {
-          if ( (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
-             && ((((((mobj_t *)currentthinker)->flags)&MF_COUNTKILL)==MF_COUNTKILL)||(((mobj_t *)currentthinker)->type==MT_SKULL))
-             && ((((mobj_t *)currentthinker)->health)>0) )
-               {
-               P_DamageMobj((mobj_t *)currentthinker,NULL,NULL,10000);
-               killcount++;
-               }
-          currentthinker = currentthinker->next;
-          }
-        sprintf(tmpmsgstring,"%d Monsters Killed",killcount);
-        plyr->message = tmpmsgstring;
-        }
-      // Simplified, accepting both "noclip" and "idspispopd".
-      // no clipping mode cheat
-      else if ( cht_CheckCheat(&cheat_noclip, ev->data1) 
-		|| cht_CheckCheat(&cheat_commercial_noclip,ev->data1) )
-      {	
-	plyr->cheats ^= CF_NOCLIP;
-	
-	if (plyr->cheats & CF_NOCLIP)
-	  plyr->message = STSTR_NCON;
-	else
-	  plyr->message = STSTR_NCOFF;
-      }
-
-      // 'behold?' power-up cheats
-      for (i=0;i<6;i++)
-      {
-	if (cht_CheckCheat(&cheat_powerup[i], ev->data1))
-	{
-	  if (!plyr->powers[i])
-	    P_GivePower( plyr, i);
-	  else if (i!=pw_strength)
-	    plyr->powers[i] = 1;
-	  else
-	    plyr->powers[i] = 0;
-	  
-	  plyr->message = STSTR_BEHOLDX;
-	}
-      }
-      
-      // 'behold' power-up menu
-      if (cht_CheckCheat(&cheat_powerup[6], ev->data1))
-      {
-	plyr->message = STSTR_BEHOLD;
-      }
-
-      // 'give?' power-up cheats
-      for (i=1;i<8;i++)
-      {
-	if (cht_CheckCheat(&cheat_giveweapon[i], ev->data1))
-	{
-         switch (i)
-         {
-          case 1: // chainsaw
-            plyr->weaponowned[wp_chainsaw] = true;
-            plyr->message = GOTCHAINSAW;
-            break;
-
-          case 2: // shotgun
-            plyr->weaponowned[wp_shotgun] = true;
-            plyr->ammo[am_shell] = maxammo[am_shell];
-            plyr->message = GOTSHOTGUN;
-            break;
-
-          case 3: // supershotgun
-            plyr->weaponowned[wp_supershotgun] = true;
-            plyr->ammo[am_shell] = maxammo[am_shell];
-            plyr->message = GOTSHOTGUN2;
-            break;
-
-          case 4: // chaingun
-            plyr->weaponowned[wp_chaingun] = true;
-            plyr->ammo[am_clip] = maxammo[am_clip];
-            plyr->message = GOTCHAINGUN;
-            break;
-
-          case 5: // missile
-            plyr->weaponowned[wp_missile] = true;
-            plyr->ammo[am_misl] = maxammo[am_misl];
-            plyr->message = GOTLAUNCHER;
-            break;
-
-          case 6: // plasma rifle
-            plyr->weaponowned[wp_plasma] = true;
-            plyr->ammo[am_cell] = maxammo[am_cell];
-            plyr->message = GOTPLASMA;
-            break;
-
-          case 7: // BFG9000
-            plyr->weaponowned[wp_bfg] = true;
-            plyr->ammo[am_cell] = maxammo[am_cell];
-            plyr->message = GOTBFG9000;
-            break;
-
-          
-          default: // this should not happen
-            break;
-         }
-	}
-      }
-
-      // 'choppers' invulnerability & chainsaw
-      if (cht_CheckCheat(&cheat_choppers, ev->data1))
-      {
-	plyr->weaponowned[wp_chainsaw] = true;
-	plyr->powers[pw_invulnerability] = true;
-	plyr->message = STSTR_CHOPPERS;
-      }
-
-      // 'mypos' for player position
-      else if (cht_CheckCheat(&cheat_mypos, ev->data1))
-      {
-	static char	buf[ST_MSGWIDTH];
-	sprintf(buf, "ang=0x%x;x,y=(0x%x,0x%x)",
-		players[consoleplayer].mo->angle,
-		players[consoleplayer].mo->x,
-		players[consoleplayer].mo->y);
-	plyr->message = buf;
-      }
-    }
-    
-    // 'clev' change-level cheat
-    if (cht_CheckCheat(&cheat_clev, ev->data1))
-    {
-      char		buf[9];
-      int		epsd;
-      int		map;
-      cht_GetParam(&cheat_clev, buf);
-
-        if (gamemission != doom) // - Kester
-        {
-          epsd = 1;
-          map = strtol(buf, NULL, 10);
-          sprintf(buf, "MAP%02d", map);
-        } else {
-          epsd = strtol(buf, NULL, 16);
-          map = epsd & 15;
-          epsd >>= 4;
-	  sprintf(buf, "E%xM%d", epsd, map);
-        }
-
-        if (W_CheckNumForName(buf) < 0) return false; // - Kester
-      
-        // So be it.
-        plyr->message = STSTR_CLEV;
-        G_DeferedInitNew(gamemission, gameskill, epsd, map);
-    }    
-  else if (cht_CheckCheat(&cheat_showstats, ev->data1))
-      {
-      showstats=!showstats;
-      }
-      // 'mus' cheat for changing music
-  else if (cht_CheckCheat(&cheat_mus, ev->data1))
-      {
-
-#ifdef DJGPP
-      if (cdaudio)
-        {
-        char buf[3];
-        int temptrack;
-
-        cht_GetParam(&cheat_mus, buf);
-        temptrack=(buf[0]-'0')*10 + buf[1]-'0';
-        CD_Play(temptrack, true);
-        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-        plyr->message = tmpmsgstring;
-        }
-      else
+#ifdef NOCHEATS
+  return false
+#else
+  if (currentmap->flags & MPF_NOCHEATS)
+    return false;
+  else
+    return M_CheatResponder(ev);
 #endif
 
-        {
-        char	buf[3];
-        int		musnum;
-	
-        plyr->message = STSTR_MUS;
-        cht_GetParam(&cheat_mus, buf);
-	
-        if (gamemode == commercial)
-          {
-          musnum = mus_runnin + (buf[0]-'0')*10 + buf[1]-'0' - 1;
-	  
-          if (((buf[0]-'0')*10 + buf[1]-'0') > 35)
-            plyr->message = STSTR_NOMUS;
-         else
-            S_ChangeMusic(musnum, 1);
-          }
-        else
-          {
-          musnum = mus_e1m1 + (buf[0]-'1')*9 + (buf[1]-'1');
-	  
-          if (((buf[0]-'1')*9 + buf[1]-'1') > 31)
-            plyr->message = STSTR_NOMUS;
-          else
-            S_ChangeMusic(musnum, 1);
-          }
-        }
-      }
-
-//the new cheat codes
-#ifdef DJGPP
-  else if (cht_CheckCheat(&cheat_cdnext, ev->data1))
-        {
-         if (!cdaudio)
-          plyr->message = "CD Audio disabled";
-         else
-         {
-          CD_Next();
-          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-          plyr->message = tmpmsgstring;
-         }
-        }
-  else if (cht_CheckCheat(&cheat_cdprev, ev->data1))
-        {
-         if (!cdaudio)
-          plyr->message = "CD Audio disabled";
-         else
-         {
-          CD_Prev();
-          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
-          plyr->message = tmpmsgstring;
-         }
-        }
-#endif
-
-  }
-  return false;
 }
-
 
 
 int ST_calcPainOffset(void)
@@ -1014,7 +465,7 @@ int ST_calcPainOffset(void)
 
 void ST_drawWidgets(boolean refresh)
 {
-    int		i;
+    int		i, j;
 
     // used by w_arms[] widgets
     st_armson = st_statusbaron && !deathmatch;
@@ -1035,8 +486,36 @@ void ST_drawWidgets(boolean refresh)
 
     STlib_updateBinIcon(&w_armsbg, refresh);
 
-    for (i=0;i<6;i++)
+    // -ACB- check for weapons widget update.
+    if (weaponupdate)
+    {
+     for (i=0;i<6;i++)
+     {
+        // -KM- 1998/11/25 Rewrote this for weapons.ddf
+        for (j = 0; j < weaponkey[i+2].numchoices; j++)
+        {
+           if (weaponkey[i+2].choice[j] == -1)
+             continue;
+           if (plyr->weaponowned[weaponkey[i+2].choice[j]])
+           {
+             weaponkey[i+2].available = true;
+             break;
+           }
+        }
+
+        if (j == weaponkey[i+2].numchoices)
+          weaponkey[i+2].available = false;
+
 	STlib_updateMultIcon(&w_arms[i], refresh);
+     }
+
+     weaponupdate = false;
+    }
+    else
+    {
+     for (i=0;i<6;i++)
+        STlib_updateMultIcon(&w_arms[i], refresh);
+    }
 
     STlib_updateMultIcon(&w_faces, refresh);
 
@@ -1081,7 +560,7 @@ void ST_updateFaceWidget(void)
 	    // picking up bonus
 	    doevilgrin = false;
 
-	    for (i=0;i<NUMWEAPONS;i++)
+	    for (i=0;i<numweapons;i++)
 	    {
 		if (oldweaponsowned[i] != plyr->weaponowned[i])
 		{
@@ -1109,7 +588,7 @@ void ST_updateFaceWidget(void)
 	    // being attacked
 	    priority = 7;
 	    
-	    if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    if ((st_oldhealth - plyr->health) > ST_MUCHPAIN)
 	    {
 		st_facecount = ST_TURNCOUNT;
 		st_faceindex = ST_calcPainOffset() + ST_OUCHOFFSET;
@@ -1162,7 +641,7 @@ void ST_updateFaceWidget(void)
 	// getting hurt because of your own damn stupidity
 	if (plyr->damagecount)
 	{
-	    if (plyr->health - st_oldhealth > ST_MUCHPAIN)
+	    if ((st_oldhealth - plyr->health) > ST_MUCHPAIN)
 	    {
 		priority = 7;
 		st_facecount = ST_TURNCOUNT;
@@ -1229,7 +708,8 @@ void ST_updateFaceWidget(void)
 void ST_updateWidgets(void)
 {
     static int	largeammo = 1994; // means "n/a"
-    int		i;
+    int	i;
+    int *cards;
 
     // must redirect the pointer if the ready weapon has changed.
     //  if (w_ready.data != plyr->readyweapon)
@@ -1254,13 +734,20 @@ void ST_updateWidgets(void)
     // refresh weapon change
     //  }
 
+    cards = (int *)plyr->cards;
+
     // update keycard multiple widgets
+    // -ACB- 1998/09/11 Include Combo Cards
     for (i=0;i<3;i++)
     {
-	keyboxes[i] = plyr->cards[i] ? i : -1;
-
-	if (plyr->cards[i+3])
-	    keyboxes[i] = i+3;
+      if (cards[i] && cards[i+3])
+	keyboxes[i] = i+6;
+      else if (cards[i+3])
+        keyboxes[i] = i+3;
+      else if (cards[i])
+        keyboxes[i] = i;
+      else
+        keyboxes[i] = -1;
     }
 
     // refresh everything if this is him coming back to life
@@ -1376,8 +863,6 @@ void ST_doRefresh(void)
 
 void ST_diffDraw(void)
 {
-
-
     // update all widgets
     ST_drawWidgets(false);
 }
@@ -1426,7 +911,8 @@ void ST_loadGraphics(void)
     tallpercent = (patch_t *) W_CacheLumpName("STTPRCNT", PU_STATIC);
 
     // key cards
-    for (i=0;i<NUMCARDS;i++)
+    // -ACB- 1998/09/11 Include dual card/skull graphics
+    for (i=0;i<NUMCARDS+3;i++)
     {
 	sprintf(namebuf, "STKEYS%d", i);
 	keys[i] = (patch_t *) W_CacheLumpName(namebuf, PU_STATIC);
@@ -1506,8 +992,8 @@ void ST_unloadGraphics(void)
     for (i=0;i<6;i++)
 	Z_ChangeTag(arms[i][0], PU_CACHE);
     
-    // unload the key cards
-    for (i=0;i<NUMCARDS;i++)
+    // unload the key cards (include combo widgets) -ACB- 1998/09/11
+    for (i=0;i<NUMCARDS+3;i++)
 	Z_ChangeTag(keys[i], PU_CACHE);
 
     Z_ChangeTag(sbar, PU_CACHE);
@@ -1516,8 +1002,7 @@ void ST_unloadGraphics(void)
     for (i=0;i<ST_NUMFACES;i++)
 	Z_ChangeTag(faces[i], PU_CACHE);
 
-    // Note: nobody ain't seen no unloading
-    //   of stminus yet. Dude.
+    // Note: nobody ain't seen no unloading of stminus yet. Dude.
     
 
 }
@@ -1548,7 +1033,7 @@ void ST_initData(void)
 
     st_oldhealth = -1;
 
-    for (i=0;i<NUMWEAPONS;i++)
+    for (i=0;i<numweapons;i++)
 	oldweaponsowned[i] = plyr->weaponowned[i];
 
     for (i=0;i<3;i++)
@@ -1597,10 +1082,11 @@ void ST_createWidgets(void)
     // weapons owned
     for(i=0;i<6;i++)
     {
-	STlib_initMultIcon(&w_arms[i],
+         STlib_initMultIcon(&w_arms[i],
 			   ST_ARMSX+(i%3)*ST_ARMSXSPACE,
 			   ST_ARMSY+(i/3)*ST_ARMSYSPACE,
-			   arms[i], (int *) &plyr->weaponowned[i+1],
+			   arms[i],
+                           (int *) &weaponkey[i+2].available,
 			   &st_armson);
     }
 
@@ -1744,9 +1230,24 @@ void ST_Stop (void)
     st_stopped = true;
 }
 
+
+//
+// ST_ReInit
+// Re-inits status bar after a resolution change.
+// -ES- 1998/08/20 Added this
+void ST_ReInit (void)
+{
+    screens[4] = (byte *) Z_ReMalloc(screens[4],SCREENDEPTH*ST_HEIGHT);
+    ST_loadData();
+    ST_Start ();
+}
+
+
 void ST_Init (void)
 {
     veryfirsttime = 0;
     ST_loadData();
     screens[4] = (byte *) Z_Malloc(SCREENWIDTH*ST_HEIGHT*BPP, PU_STATIC, 0);
+    oldweaponsowned = Z_Malloc(numweapons * sizeof(boolean), PU_STATIC, 0);
+    memset(oldweaponsowned, false, sizeof(boolean) * numweapons);
 }

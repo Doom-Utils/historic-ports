@@ -33,8 +33,8 @@
 
 
 
-#define MAXWADFILES             20
-extern char*		wadfiles[MAXWADFILES];
+extern int		maxwadfiles;
+extern char**		wadfiles;
 extern boolean redrawsbar;
 
 void D_AddFile (char *file);

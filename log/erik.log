@@ -1,0 +1,144 @@
+Erik Sandberg's Log
+
+1998/12/18
+
+Made 8-bit versions of Kester's R_DrawSpan16_KM and R_DrawColumn16_KM.
+
+1998/11/29
+
+Optimised the 16-bit translucency algorithm.
+
+1998/11/28
+
+Made the new teleport settings togglable from the menu. Fixed a few small
+bugs.
+
+1998/11/08
+
+Used the new translucency to improve the ColorXForm wipe algorithm. Also
+created slow 16-bit versions of the new translucency routines.
+
+1998/10/29
+
+Implemented a new translucency algorithm for 8-bit colour, and used it to
+create a fading effect at teleportation.
+
+1998/09/11
+
+Improved multires handling at startup: It now just does some first time stuff
+like transtable inits, followed by a R_ChangeResolution call.
+
+1998/08/25
+
+Added a -fast_startup parameter.
+Fixed the alignment of the R_Draw*_id routines
+
+1998/08/24
+
+Some minor cleanups
+
+1998/08/20
+
+Added dynamic resolution changing.
+
+1998/08/14
+
+Added a routine for run-time alignment in v_res.c. Changed r_span.S and
+r_column.S to get aligned run-time.
+
+1998/08/13
+
+i_system.c, i_system.h, v_res.c: Minor change in the cputype_t struct.
+Corrected some incorrect detections. Added -list parameter (lists all
+available routines).
+
+Added R_DrawSpan8_id and R_DrawSpan8_id_Erik, and optimised
+R_DrawColumn8_id_Erik further.
+
+1998/08/06
+
+Minor change in the MMX routines: Stack is used instead of mmxcomm variable,
+as a workaround for DJGPP's misalignment. Should speed up the routines on
+Intel MMX processors by either 0% or about 50% (randomly), and generally
+less on non-Intel MMX processors.
+
+1998/08/05
+
+Fixed bug in original R_DrawColumn16 asm version and moved the routine to
+r_column.S. Also simplified the screenwidth patching in r_draw2.c
+
+1998/08/05
+
+New CPU checking system. Each known CPU type (486, Pentium, K6, Pentium II...)
+now has its own struct telling its attributes (CPU name and which routines to
+use). Each CPU-specific routine also has an own struct, telling its name,
+location and MMX usage.
+
+Added cmd-line options "-UseCol" and "-UseSpan" to choose drawing routine,
+overriding the default. For example, -UseCol Rasem means that Rasem's asm
+version of R_DrawColumn is used.
+
+Files affected:
+i_system.c: CPU detecting code, routine choosing
+i_system.h: CPU structs
+v_res.c: Actual modification of function pointers
+
+1998/08/05
+
+Made the following .c files include their own .h files:
+d_net.c
+i_video.c
+lu_str.c
+m_argv.c
+m_random.c
+p_mobj.c
+p_saveg.c
+p_setup.c
+p_spec.c
+p_tick.c
+rad_trig.c
+r_bsp.c
+r_draw1.c
+r_draw2.c
+r_main.c
+r_plane.c
+r_segs.c
+r_things.c
+(ie. added #include "p_mobj.h" in p_mobj.c, etc)
+I do this because if any function prototype changes, and you forget to change
+that in the .h file, you'll now get a warning. Else it would result in a bug
+that may be hard to trace.
+
+1998/08/04
+
+Converted id's original R_DrawColumn code to .S format. This is
+self-modifying, which is very time-consuming on newer CPUs, but I guess it is
+fast on a 486. Also made a further optimised version of it, optimised
+according to the optimisation rules I know for 486. The names are
+R_DrawColumn8_id and R_DrawColumn8_id_Erik, respectively.
+
+Files affected:
+r_column.s: The routines
+r_draw1.h: Prototypes
+
+1998/08/01
+
+Optimised R_DrawColumn8 for Pentium and Pentium MMX. Moved all inline asm
+routines from r_draw1.c to r_column.s and r_span.s, and simplified the system
+for run-time screenwidth patching in r_draw1.c.
+
+Files affected:
+r_column.s
+r_span.s
+r_draw1.c
+r_draw1.h
+
+1998/07/24
+
+Optimised R_DrawSpan8 for MMX processors (K6, PII, PMMX).
+
+1998/07/05
+
+Optimised R_DrawColumn8 for K6/PII, using MMX instructions.
+
+

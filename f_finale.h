@@ -24,17 +24,9 @@
 #define __F_FINALE__
 
 
-#include "doomtype.h"
+#include "dm_type.h"
 #include "d_event.h"
 #include "p_mobj.h"
-//
-// FINALE
-//
-typedef struct
-{
-    char		*name;
-    mobjtype_t	type;
-} castinfo_t;
 
 // Called by main loop.
 boolean F_Responder (event_t* ev);
@@ -45,8 +37,8 @@ void F_Ticker (void);
 // Called by main loop.
 void F_Drawer (void);
 
-
-void F_StartFinale (void);
+// -KM- 1998/11/25 Finales generalised.
+void F_StartFinale (finale_t* f, gameaction_t newaction);
 
 
 

@@ -80,7 +80,7 @@ int M_Random (void)
 
 void M_ClearRandom (void)
 {
-    rndindex = prndindex = 0;
+    rndindex = prndindex = jrndindex = 0;
 }
 
 

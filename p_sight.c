@@ -25,7 +25,7 @@ static const char
 rcsid[] = "$Id: p_sight.c,v 1.3 1997/01/28 22:08:28 b1 Exp $";
 
 
-#include "doomdef.h"
+#include "dm_defs.h"
 
 #include "i_system.h"
 #include "p_local.h"
@@ -150,7 +150,7 @@ boolean P_CrossSubsector (int num)
     fixed_t		frac;
     fixed_t		slope;
 	
-#ifdef RANGECHECK
+#ifdef DEVELOPERS
     if (num>=numsubsectors)
 	I_Error ("P_CrossSubsector: ss %i with numss = %i",
 		 num,
@@ -292,14 +292,12 @@ boolean P_CrossBSPNode (int bspnum)
 
 //
 // P_CheckSight
-// Returns true
-//  if a straight line between t1 and t2 is unobstructed.
+//
+// Returns true if a straight line between t1 and t2 is unobstructed.
+//
 // Uses REJECT.
 //
-boolean
-P_CheckSight
-( mobj_t*	t1,
-  mobj_t*	t2 )
+boolean P_CheckSight ( mobj_t* t1, mobj_t* t2 )
 {
     int		s1;
     int		s2;
@@ -308,6 +306,10 @@ P_CheckSight
     int		bitnum;
     
     // First check for trivial rejection.
+
+    // -ACB- 1998/07/20 t2 is Invisible, t1 cannot possibly see it.
+    if (t2->invisibility == INVISIBLE)
+      return false;
 
     // Determine subsector entries in REJECT table.
     s1 = (t1->subsector->sector - sectors);
@@ -330,8 +332,10 @@ P_CheckSight
     sightcounts[1]++;
 
     validcount++;
-	
+
+    // The "eyes" of a thing is 75% of its height.
     sightzstart = t1->z + t1->height - (t1->height>>2);
+
     topslope = (t2->z+t2->height) - sightzstart;
     bottomslope = (t2->z) - sightzstart;
 	

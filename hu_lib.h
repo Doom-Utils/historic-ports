@@ -1,22 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Heads-up-display library Code (header)
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:  none
-//
-//-----------------------------------------------------------------------------
 
 #ifndef __HULIB__
 #define __HULIB__
@@ -24,11 +12,10 @@
 // We are referring to patches.
 #include "r_defs.h"
 
-
 // background and foreground screen numbers
 // different from other modules.
-#define BG			1
-#define FG			0
+#define BG 1
+#define FG 0
 
 // font stuff
 #define HU_CHARERASE	KEYD_BACKSPACE
@@ -50,7 +37,7 @@ typedef struct
     
     patch_t**	f;			// font
     int		sc;			// start character
-    char	l[HU_MAXLINELENGTH+1];	// line of text
+    unsigned char	l[HU_MAXLINELENGTH+1];	// line of text
     int		len;		      	// current line length
 
     // whether this line needs to be udpated
@@ -188,9 +175,8 @@ void HUlib_drawIText(hu_itext_t* it);
 // erases all itext lines
 void HUlib_eraseIText(hu_itext_t* it); 
 
+// -ACB- 1998/06/10
+void HUlib_drawTextLineTrans(hu_textline_t* l, boolean drawcursor, int index);
+
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log:$
-//
-//-----------------------------------------------------------------------------
+

@@ -28,14 +28,9 @@
 #pragma interface
 #endif
 
-
-// NOT called by W_Ticker. Fixme.
-void
-P_SetupLevel
-( int		episode,
-  int		map,
-  int		playermask,
-  skill_t	skill);
+// -KM- 1998/11/25 Added autotag.  Linedefs with this tag are automatically
+//   triggered.
+void P_SetupLevel(skill_t skill, int autotag);
 
 // Called by startup code.
 void P_Init (void);

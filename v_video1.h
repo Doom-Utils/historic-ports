@@ -1,37 +1,18 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Video Code for 8-Bit Colour. 
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//	Gamma correction LUT.
-//	Functions to draw patches (by post) directly to screen.
-//	Functions to blit a block to the screen.
-//
-//-----------------------------------------------------------------------------
-
-
-//this is for 8bpp modes
-
 #ifndef __V_VIDEO1__
 #define __V_VIDEO1__
 
-#include "doomtype.h"
-#include "doomdef.h"
+#include "dm_type.h"
+#include "dm_defs.h"
+
 // Needed because we are refering to patches.
 #include "r_data.h"
-
 
 // Allocates buffer screens, call before R_Init.
 void V_Init8 (void);
@@ -135,6 +116,10 @@ V_MarkRect8
   int		height );
 
 void V_DarkenScreen8(int scrn);
+
+// 98-7-10 KM Reduce code redundancy
+void V_TextureBackScreen8(char *flatname);
+
 
 #endif
 //-----------------------------------------------------------------------------

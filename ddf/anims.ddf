@@ -1,0 +1,144 @@
+{ Animations file.  You can define (new) animated wall textures and floor/ceiling
+  textures.
+
+  Format
+  [NAME] Name is arbitary, ignored.
+  FIRST = The first pic in the animation sequence
+  LAST = The last pic in the animation sequence
+  ISTEXTURE = If this is a wall texture, put 1 here.  If this is a floor/ceiling
+    texture (flat) put 0 here.
+  TICS = How long each pic lasts for.  There are 35 tics in a second.
+     - Kester. }
+
+[NUKAGE1]
+FIRST = NUKAGE1;
+LAST = NUKAGE3;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[FWATER1]
+FIRST = FWATER1;
+LAST = FWATER4;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[SWATER1]
+FIRST = SWATER1;
+LAST = SWATER4;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[LAVA1]
+FIRST = LAVA1;
+LAST = LAVA4;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[BLOOD1]
+FIRST = BLOOD1;
+LAST = BLOOD3;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[RROCK05]
+FIRST = RROCK05;
+LAST = RROCK08;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[SLIME01]
+FIRST = SLIME01;
+LAST = SLIME04;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[SLIME05]
+FIRST = SLIME05;
+LAST = SLIME08;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[SLIME09]
+FIRST = SLIME09;
+LAST = SLIME12;
+ISTEXTURE = 0;
+TICS = 8T;
+
+[BLODGR1]
+FIRST = BLODGR1;
+LAST = BLODGR4;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[SLADRIP1]
+FIRST = SLADRIP1;
+LAST = SLADRIP3;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[BLODRIP1]
+FIRST = BLODRIP1;
+LAST = BLODRIP4;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[FIREWALA]
+FIRST = FIREWALA;
+LAST = FIREWALL;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[GSTFONT1]
+FIRST = GSTFONT1;
+LAST = GSTFONT3;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[FIRELAV3]
+FIRST = FIRELAV3;
+LAST = FIRELAVA;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[FIREMAG1]
+FIRST = FIREMAG1;
+LAST = FIREMAG3;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[FIREBLU1]
+FIRST = FIREBLU1;
+LAST = FIREBLU2;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[ROCKRED1]
+FIRST = ROCKRED1;
+LAST = ROCKRED3;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[BFALL1]
+FIRST = BFALL1;
+LAST = BFALL4;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[SFALL1]
+FIRST = SFALL1;
+LAST = SFALL4;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[WFALL1]
+FIRST = WFALL1;
+LAST = WFALL4;
+ISTEXTURE = 1;
+TICS = 8T;
+
+[DBRAIN1]
+FIRST = DBRAIN1;
+LAST = DBRAIN4;
+ISTEXTURE = 1;
+TICS = 8T;
+

@@ -28,7 +28,6 @@
 // of other structs: items (internal inventory),
 // animation states (closely tied to the sprites
 // used to represent them, unfortunately).
-#include "d_items.h"
 #include "p_pspr.h"
 
 // In addition, the player is just a special
@@ -54,8 +53,10 @@ typedef enum
 {
     // Playing or camping.
     PST_LIVE,
+
     // Dead on the ground, view follows killer.
     PST_DEAD,
+
     // Ready to restart/respawn???
     PST_REBORN		
 
@@ -69,8 +70,10 @@ typedef enum
 {
     // No clipping, walk through barriers.
     CF_NOCLIP		= 1,
+
     // No damage, no health loss.
     CF_GODMODE		= 2,
+
     // Not really a cheat, just a debug aid.
     CF_NOMOMENTUM	= 4
 
@@ -90,10 +93,17 @@ typedef struct player_s
     //  including viewpoint bobbing during movement.
     // Focal origin above r.z
     fixed_t		viewz;
+
     // Base height above floor for viewz.
     fixed_t		viewheight;
+
     // Bob/squat speed.
     fixed_t         	deltaviewheight;
+
+    // This is the wanted viewz.  vertangle will move
+    // smoothly to this when changed.
+    fixed_t             deltaviewz;
+
     // bounded/scaled total momentum.
     fixed_t         	bob;	
 
@@ -101,6 +111,7 @@ typedef struct player_s
     // mo->health is used during levels.
     int			health;	
     int			armorpoints;
+
     // Armor type is 0-2.
     int			armortype;	
 
@@ -116,9 +127,11 @@ typedef struct player_s
     // Is wp_nochange if not changing.
     weapontype_t	pendingweapon;
 
-    boolean		weaponowned[NUMWEAPONS];
-    int			ammo[NUMAMMO];
-    int			maxammo[NUMAMMO];
+    // -KM- 1998/11/25 Dynamic allocation here.
+    boolean*		weaponowned;
+
+    int*		ammo;
+    int*		maxammo;
 
     // True if button down last tic.
     int			attackdown;
@@ -148,6 +161,7 @@ typedef struct player_s
     
     // So gun flashes light up areas.
     int			extralight;
+    boolean             flash;
 
     // Current PLAYPAL, ???
     //  can be set to REDCOLORMAP for pain, etc.
@@ -161,7 +175,11 @@ typedef struct player_s
     pspdef_t		psprites[NUMPSPRITES];
 
     // True if secret level has been done.
-    boolean		didsecret;	
+    boolean		didsecret;
+
+    // Implements a wait counter to prevent use jumping again
+    // -ACB- 1998/08/09
+    int                 jumpwait;
 
 } player_t;
 
@@ -186,14 +204,14 @@ typedef struct
 
 typedef struct
 {
-    int		epsd;	// episode # (0-2)
+    char*	level;	// episode # (0-2)
 
     // if true, splash the secret level
     boolean	didsecret;
     
     // previous and next levels, origin 0
-    int		last;
-    int		next;	
+    mapstuff_t*	last;
+    mapstuff_t*	next;
     
     int		maxkills;
     int		maxitems;
@@ -212,8 +230,4 @@ typedef struct
 
 
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log:$
-//
-//-----------------------------------------------------------------------------
+

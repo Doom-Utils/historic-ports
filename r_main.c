@@ -1,41 +1,20 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Main Rendering Organisation Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -KM- 1998/09/27 Dynamic Colourmaps
 //
-// $Log:$
-//
-// DESCRIPTION:
-//	Rendering main loop and setup functions,
-//	 utility functions (BSP, geometry, trigonometry).
-//	See tables.c, too.
-//
-//-----------------------------------------------------------------------------
-
-
-static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
-
-
-
 #include <math.h>
 
-
-#include "doomdef.h"
-#include "doomstat.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 #include "d_net.h"
 
 #include "m_bbox.h"
+#include "m_menu.h"
 
 #include "r_local.h"
 #include "r_sky.h"
@@ -43,31 +22,34 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 #include "i_system.h"
 
-
+// -ES- 1998/08/20 Need some stuff for ChangeResolution
+#include "r_main.h"
+#include "i_allegv.h"
+#include "i_video.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW		2048	
 
-fixed_t updownangle=0;
 fixed_t keylookspeed=1000/64;
-int mlookon=0;
 int invertmouse=0;
 
-int			viewangleoffset;
+//int viewangleoffset;
 
 // increment every time a check is made
-int			validcount = 1;		
+int validcount = 1;
 
+// -KM- 1998/09/27 Dynamic colourmaps
+lighttable_t* fixedcolormap;
+extern int* walllights;
 
-lighttable_t*		fixedcolormap;
-extern lighttable_t**	walllights;
+int centerx;
+int centery;
 
-int			centerx;
-int			centery;
-
-fixed_t			centerxfrac;
-fixed_t			centeryfrac;
-fixed_t			projection;
+fixed_t centerxfrac;
+fixed_t	centeryfrac;
+fixed_t	projection;
 
 // just for profiling purposes
 int			framecount;	
@@ -75,19 +57,16 @@ int			framecount;
 int			sscount;
 int			linecount;
 
-fixed_t			viewx;
-fixed_t			viewy;
-fixed_t			viewz;
+fixed_t	viewx;
+fixed_t	viewy;
+fixed_t	viewz;
 
-angle_t			viewangle;
+angle_t viewangle;
 
-fixed_t			viewcos;
-fixed_t			viewsin;
+fixed_t	viewcos;
+fixed_t viewsin;
 
-player_t*		viewplayer;
-
-// 0 = high, 1 = low
-//int			detailshift;
+player_t* viewplayer;
 
 //
 // precalculated math tables
@@ -98,32 +77,23 @@ angle_t			clipangle;
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X. 
-int			viewangletox[FINEANGLES/2];
+int viewangletox[FINEANGLES/2];
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t			*xtoviewangle;
+// -ES- 1998/08/20 Explicit init to NULL
+angle_t	*xtoviewangle = NULL;
 
+fixed_t* finecosine = &finesine[FINEANGLES/4];
 
-// UNUSED.
-// The finetangentgent[angle+FINEANGLES/4] table
-// holds the fixed_t tangent values for view angles,
-// ranging from MININT to 0 to MAXINT.
-// fixed_t		finetangent[FINEANGLES/2];
-
-// fixed_t		finesine[5*FINEANGLES/4];
-fixed_t*		finecosine = &finesine[FINEANGLES/4];
-
-
-lighttable_t*		scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-lighttable_t*		scalelightfixed[MAXLIGHTSCALE];
-lighttable_t*		zlight[LIGHTLEVELS][MAXLIGHTZ];
+// -KM- 1998/09/27 Dynamic colourmaps
+int scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
+int scalelightfixed[MAXLIGHTSCALE];
+int zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 // bumped light from gun blasts
-int			extralight;			
-
-
+int extralight;
 
 void (*colfunc) (void);
 void (*basecolfunc) (void);
@@ -131,18 +101,12 @@ void (*fuzzcolfunc) (void);
 void (*transcolfunc) (void);
 void (*spanfunc) (void);
 
-
-
 //
 // R_AddPointToBox
-// Expand a given bbox
-// so that it encloses a given point.
 //
-void
-R_AddPointToBox
-( int		x,
-  int		y,
-  fixed_t*	box )
+// Expand a given bbox so that it encloses a given point.
+//
+void R_AddPointToBox (int x, int y, fixed_t* box)
 {
     if (x< box[BOXLEFT])
 	box[BOXLEFT] = x;
@@ -157,15 +121,12 @@ R_AddPointToBox
 
 //
 // R_PointOnSide
-// Traverse BSP (sub) tree,
-//  check point against partition plane.
+//
+// Traverse BSP (sub) tree, check point against partition plane.
+//
 // Returns side 0 (front) or 1 (back).
 //
-int
-R_PointOnSide
-( fixed_t	x,
-  fixed_t	y,
-  node_t*	node )
+int R_PointOnSide (fixed_t x, fixed_t y, node_t* node)
 {
     fixed_t	dx;
     fixed_t	dy;
@@ -213,12 +174,7 @@ R_PointOnSide
     return 1;			
 }
 
-
-int
-R_PointOnSegSide
-( fixed_t	x,
-  fixed_t	y,
-  seg_t*	line )
+int R_PointOnSegSide(fixed_t x, fixed_t y, seg_t* line)
 {
     fixed_t	lx;
     fixed_t	ly;
@@ -279,22 +235,15 @@ R_PointOnSegSide
 
 //
 // R_PointToAngle
-// To get a global angle from cartesian coordinates,
-//  the coordinates are flipped until they are in
-//  the first octant of the coordinate system, then
-//  the y (<=x) is scaled and divided by x to get a
-//  tangent (slope) value which is looked up in the
-//  tantoangle[] table.
-
 //
-
-
-
-
-angle_t
-R_PointToAngle
-( fixed_t	x,
-  fixed_t	y )
+// To get a global angle from cartesian coordinates,
+// the coordinates are flipped until they are in
+// the first octant of the coordinate system, then
+// the y (<=x) is scaled and divided by x to get a
+// tangent (slope) value which is looked up in the
+// tantoangle[] table.
+//
+angle_t R_PointToAngle ( fixed_t x, fixed_t y )
 {	
     x -= viewx;
     y -= viewy;
@@ -376,13 +325,7 @@ R_PointToAngle
     return 0;
 }
 
-
-angle_t
-R_PointToAngle2
-( fixed_t	x1,
-  fixed_t	y1,
-  fixed_t	x2,
-  fixed_t	y2 )
+angle_t R_PointToAngle2 (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2 )
 {	
     viewx = x1;
     viewy = y1;
@@ -390,11 +333,7 @@ R_PointToAngle2
     return R_PointToAngle (x2, y2);
 }
 
-
-fixed_t
-R_PointToDist
-( fixed_t	x,
-  fixed_t	y )
+fixed_t R_PointToDist (fixed_t x, fixed_t y)
 {
     int		angle;
     fixed_t	dx;
@@ -415,42 +354,18 @@ R_PointToDist
     angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
 
     // use as cosine
-    dist = FixedDiv (dx, finesine[angle] );	
+    dist = FixedDiv (dx, finesine[angle] );
 	
     return dist;
 }
 
-
-
-
-//
-// R_InitPointToAngle
-//
-void R_InitPointToAngle (void)
-{
-    // UNUSED - now getting from tables.c
-#if 0
-    int	i;
-    long	t;
-    float	f;
-//
-// slope (tangent) to angle lookup
-//
-    for (i=0 ; i<=SLOPERANGE ; i++)
-    {
-	f = atan( (float)i/SLOPERANGE )/(3.141592657*2);
-	t = 0xffffffff*f;
-	tantoangle[i] = t;
-    }
-#endif
-}
-
-
 //
 // R_ScaleFromGlobalAngle
+//
 // Returns the texture mapping scale
-//  for the current line (horizontal span)
-//  at the given angle.
+// for the current line (horizontal span)
+// at the given angle.
+//
 // rw_distance must be calculated first.
 //
 fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
@@ -463,28 +378,11 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
     fixed_t		num;
     int			den;
 
-    // UNUSED
-#if 0
-{
-    fixed_t		dist;
-    fixed_t		z;
-    fixed_t		sinv;
-    fixed_t		cosv;
-	
-    sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT];	
-    dist = FixedDiv (rw_distance, sinv);
-    cosv = finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT];
-    z = abs(FixedMul (dist, cosv));
-    scale = FixedDiv(projection, z);
-    return scale;
-}
-#endif
-
     anglea = ANG90 + (visangle-viewangle);
     angleb = ANG90 + (visangle-rw_normalangle);
 
-    // both sines are allways positive
-    sinea = finesine[anglea>>ANGLETOFINESHIFT];	
+    // both sines are always positive
+    sinea = finesine[anglea>>ANGLETOFINESHIFT];
     sineb = finesine[angleb>>ANGLETOFINESHIFT];
     num = FixedMul(projection,sineb)<<detailshift;
     den = FixedMul(rw_distance,sinea);
@@ -503,43 +401,6 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 	
     return scale;
 }
-
-
-
-//
-// R_InitTables
-//
-void R_InitTables (void)
-{
-    // UNUSED: now getting from tables.c
-#if 0
-    int		i;
-    float	a;
-    float	fv;
-    int		t;
-    
-    // viewangle tangent table
-    for (i=0 ; i<FINEANGLES/2 ; i++)
-    {
-	a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
-	fv = FRACUNIT*tan (a);
-	t = fv;
-	finetangent[i] = t;
-    }
-    
-    // finesine table
-    for (i=0 ; i<5*FINEANGLES/4 ; i++)
-    {
-	// OPTIMIZE: mirror...
-	a = (i+0.5)*PI*2/FINEANGLES;
-	t = FRACUNIT*sin (a);
-	finesine[i] = t;
-    }
-#endif
-
-}
-
-
 
 //
 // R_InitTextureMapping
@@ -605,8 +466,6 @@ void R_InitTextureMapping (void)
     clipangle = xtoviewangle[0];
 }
 
-
-
 //
 // R_InitLightTables
 // Only inits the zlight table,
@@ -640,7 +499,7 @@ void R_InitLightTables (void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS-1;
 
-	    zlight[i][j] = colormaps + level*256*BPP;
+	    zlight[i][j] = level*256*BPP;
 	}
     }
 }
@@ -649,25 +508,23 @@ void R_InitLightTables (void)
 
 //
 // R_SetViewSize
+//
 // Do not really change anything here,
-//  because it might be in the middle of a refresh.
+// because it might be in the middle of a refresh.
+//
 // The change will take effect next refresh.
 //
 boolean		setsizeneeded;
 int		setblocks;
 int		setdetail;
+boolean         setresfailed = false;
 
-
-void
-R_SetViewSize
-( int		blocks,
-  int		detail )
+void R_SetViewSize (int	 blocks, int detail)
 {
     setsizeneeded = true;
     setblocks = blocks;
     setdetail = detail;
 }
-
 
 //
 // R_ExecuteSetViewSize
@@ -696,7 +553,6 @@ void R_ExecuteSetViewSize (void)
                                   SCREENHEIGHT-ST_HEIGHT;
     }
     
-//    detailshift = setdetail;
     viewwidth = scaledviewwidth>>detailshift;
 	
     centery = viewheight/2;
@@ -705,33 +561,19 @@ void R_ExecuteSetViewSize (void)
     centeryfrac = centery<<FRACBITS;
     projection = centerxfrac;
 
-//    if (!detailshift)
-//    {
-	colfunc = basecolfunc = R_DrawColumn;
-	fuzzcolfunc = R_DrawFuzzColumn;
-	transcolfunc = R_DrawTranslatedColumn;
-	spanfunc = R_DrawSpan;
-//    }
-//    else
-//    {
-//	colfunc = basecolfunc = R_DrawColumnLow;
-//	fuzzcolfunc = R_DrawFuzzColumn;
-//	transcolfunc = R_DrawTranslatedColumn;
-//	spanfunc = R_DrawSpanLow;
-//    }
+    colfunc = basecolfunc = R_DrawColumn;
+    fuzzcolfunc = R_DrawFuzzColumn;
+    transcolfunc = R_DrawTranslatedColumn;
+    spanfunc = R_DrawSpan;
 
     R_InitBuffer (scaledviewwidth, viewheight);
 	
     R_InitTextureMapping ();
     
-    // psprite scales
-//    pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-//    pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
     pspritescale = FRACUNIT*viewwidth/320;
     pspriteiscale = FRACUNIT*320/viewwidth;
     pspritescale2 = FRACUNIT*viewheight/200;
     pspriteiscale2 = FRACUNIT*200/viewheight;
-
 
     // thing clipping
     for (i=0 ; i<viewwidth ; i++)
@@ -767,12 +609,75 @@ void R_ExecuteSetViewSize (void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS-1;
 
-	    scalelight[i][j] = colormaps + level*256*BPP;
+	    scalelight[i][j] = level*256*BPP;
 	}
     }
 }
 
+//
+// R_ChangeResolution
+// Makes R_ExecuteChangeResolution execute at start of next refresh
+//
+// -ES- 1998/08/20 Added this
+//
+boolean changeresneeded = false;
+int setwidth,setheight,setbpp;
 
+void R_ChangeResolution (int width, int height, int bpp)
+{
+  changeresneeded = true;
+  setsizeneeded = true; // need to re-init some stuff
+
+  setwidth = width;
+  setheight = height;
+  setbpp = bpp;
+}
+
+
+//
+// R_ExecuteChangeResolution
+//
+// Do the resolution change
+//
+// -ES- 1998/08/20 Added this
+//
+boolean R_DoExecuteChangeResolution()
+{
+  changeresneeded = false;
+  BPP = setbpp;
+  SCREENWIDTH = setwidth;
+  SCREENHEIGHT = setheight;
+
+  colormaps = (BPP==1) ? colormaps8 : colormaps16;
+  V_InitResolution ();
+  R_InitPlanes ();
+  R_InitLightTables ();
+  R_InitSkyMap ();
+  R_InitTranslationTables ();
+  ST_ReInit ();
+  if (enter_graphics_mode ())
+    return true;
+
+  I_SetPalette(W_CacheLumpName("PLAYPAL",PU_CACHE),0);
+  return false;
+}
+
+void R_ExecuteChangeResolution ()
+{
+  int oldBPP = BPP, oldSCREENWIDTH = SCREENWIDTH, oldSCREENHEIGHT = SCREENHEIGHT;
+  if (R_DoExecuteChangeResolution())
+  {
+    setbpp = oldBPP;
+    setwidth = oldSCREENWIDTH;
+    setheight = oldSCREENHEIGHT;
+    setsizeneeded = true;
+    if (R_DoExecuteChangeResolution())
+      I_Error(DDF_LanguageLookup("ModeSelErrT"), SCREENWIDTH, SCREENHEIGHT, 1<<(BPP*8));
+    setresfailed = true;
+    return;
+  }
+  setresfailed = false;
+}
 
 //
 // R_Init
@@ -780,18 +685,12 @@ void R_ExecuteSetViewSize (void)
 extern int	detailLevel;
 extern int	screenblocks;
 
-
-
 void R_Init (void)
 {
     R_InitData ();
     I_Printf(".");
-    R_InitPointToAngle ();
-    I_Printf(".");
-    R_InitTables ();
     // viewwidth / viewheight / detailLevel are set by the defaults
     I_Printf(".");
-
     R_SetViewSize (screenblocks, detailLevel);
     R_InitPlanes ();
     I_Printf(".");
@@ -799,7 +698,8 @@ void R_Init (void)
     I_Printf(".");
     R_InitSkyMap ();
     I_Printf(".");
-    R_InitTranslationTables ();
+    // -ES- 1998/09/11 Removed InitTranslationTables call.
+//    R_InitTranslationTables ();
     I_Printf(".");
 	
     framecount = 0;
@@ -809,10 +709,7 @@ void R_Init (void)
 //
 // R_PointInSubsector
 //
-subsector_t*
-R_PointInSubsector
-( fixed_t	x,
-  fixed_t	y )
+subsector_t* R_PointInSubsector (fixed_t x, fixed_t y)
 {
     node_t*	node;
     int		side;
@@ -824,7 +721,7 @@ R_PointInSubsector
 		
     nodenum = numnodes-1;
 
-    while (! (nodenum & NF_SUBSECTOR) )
+    while (!(nodenum & NF_SUBSECTOR))
     {
 	node = &nodes[nodenum];
 	side = R_PointOnSide (x, y, node);
@@ -839,53 +736,59 @@ R_PointInSubsector
 //
 // R_SetupFrame
 //
+// -ACB- 1998/07/03 Added the mlook code and reworked it from R_RenderPlayerView
+//
 void R_SetupFrame (player_t* player)
-{		
-    int		i;
+{
+    int i;
+    int vertoffset;
     
     viewplayer = player;
+
     viewx = player->mo->x;
     viewy = player->mo->y;
-    viewangle = player->mo->angle + viewangleoffset;
+    viewangle = player->mo->angle + gameflags.viewangleoffset;
+    viewz = player->viewz;
     extralight = player->extralight;
 
-    viewz = player->viewz;
-    
-    viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
-    viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
+    i =  viewangle>>ANGLETOFINESHIFT;
+    viewsin = finesine[i];
+    viewcos = finecosine[i];
 	
     sscount = 0;
 	
     if (player->fixedcolormap)
     {
-	fixedcolormap =
-	    colormaps
-	    + player->fixedcolormap*256*sizeof(lighttable_t)*BPP;
+     fixedcolormap = colormaps + player->fixedcolormap*256*sizeof(lighttable_t)*BPP;
 	
-	walllights = scalelightfixed;
+     walllights = scalelightfixed;
 
-	for (i=0 ; i<MAXLIGHTSCALE ; i++)
-	    scalelightfixed[i] = fixedcolormap;
+     for (i=0 ; i<MAXLIGHTSCALE ; i++)
+	    scalelightfixed[i] = player->fixedcolormap*256*sizeof(lighttable_t)*BPP;
     }
     else
-	fixedcolormap = 0;
-	
+    {
+      fixedcolormap = 0;
+    }
+
+    // -ACB- 1998/09/01 Cleaned up a bit....
+    vertoffset  = (player->mo->vertangle*viewheight)>>16;
+    centery     = (viewheight/2)+vertoffset;
+    centeryfrac = centery<<FRACBITS;
+    yslope      = origyslope+(viewheight/2)-vertoffset;
+
     framecount++;
     validcount++;
 }
 
 
-
 //
 // R_RenderView
 //
+// -ACB- 1998/07/03 Remove the hacked-in mlook and reworked it in R_SetupFrame
+//
 void R_RenderPlayerView (player_t* player)
 {
-    //hack in mlook
-    centery=viewheight/2+(updownangle>>16);
-    centeryfrac=((viewheight/2)<<16)+updownangle;
-    yslope=origyslope+(viewheight/2)-(updownangle>>16);
-
     R_SetupFrame (player);
 
     // Clear buffers.
@@ -911,5 +814,5 @@ void R_RenderPlayerView (player_t* player)
     R_DrawMasked ();
 
     // Check for new console commands.
-    NetUpdate ();				
+    NetUpdate ();
 }

@@ -1,0 +1,1226 @@
+Andy Baker's Log
+
+DATE: 15/09/1998
+
+One of major problems with having to break an engine in-order to fix it
+properly is that it can quite often turn into a long slog of a job, one
+of the major things that needed to be fixed were the saved games, which
+had to be altered on a large scale to handle the additional pointers
+that otherwise would be left undeclared and a definite crash hazard.
+
+One of the many things that has been added to the program structures are
+linked-lists (attack types, current game objects (mobj_t) and so forth).
+The purpose was to make it easy to do a linear search, although the
+speed of a search is not the fastest possible.
+
+One of the possible solutions for pointers is to declare them as NULL and
+get the game to assign values again: however the problem that exist that
+some pointers would be looked for would be found to be NULL and in some
+cases will crash the game (due to the fact that the number of safeguards
+in the code is designed to prevent crashes on a running game and assumes
+that the procedures are correctly handling pointers) also monsters would
+be asleep when the game is resumed, since they have no knowledge of targets
+etc; the cheat ability is not good, so this option was scrapped.
+
+The second option and the one I have choosen to implement is to record the
+position in the linked-list of that type. Therefore the position of the
+target is the current mobj_t list is recorded and restored on loading the
+game. This works because the mobj_t list is stored in the save game using
+the same order as was present in the game on saving; the reconstruction
+order is the same as in the save game. The only flaw in this is that it
+assumes that the information lists (mobjinfo_t, attacktype_t etc..) are
+in the same order on loading as they were when saved, this is always
+correct if the procedures and files for DDF are the same. May be worth
+storing a checksum of the DDF Files within a savegame.
+
+The new warp parameter is: -Warp <DDF-NAME-OF-MAP>
+Since currently only Doom II is functional thats usually MAPxx, so
+for map 05, you would use -WARP MAP05.
+
+DATE: 13/09/1998
+
+Added Fixed and Time Functions to the DDF reader, it is now possible to
+use both time & fixed-point numbers using numbers with a decimal point:
+all commands that need such numbers have been altered. This was something
+that needed to be added to the reader for some time: Since in order to
+function remotely, DOSDoom requires information in the form of these
+numbers.
+
+Another minor change I made to the reader, was the that the file was read
+directly into memory and then examined as opposed to the reading and
+interpretation directly from the file.
+
+Teleports no longer use a set effect object for the start and exit points
+of a teleporting thing. They can be now be defined in sceneryDDF and
+are indicated by the linedeftype. The linedeftype can specify the effect
+object at the position left (in) and the position reached (out). SFX
+cannot be specificed directly, based on the fact that the teleport effect
+creates the noise. This new system allows for slient teleporters, invisible
+effects that just produce noise and different teleport types: the hardest
+trouble I had implementing this the hash table search :).
+
+Finished the final work on making the commands in linedef more friendly to
+the joe-dooming-public.
+
+DATE: 11/09/1998
+
+I probably not the best person to work with any type of graphics or the like
+and I very much tend not touch them with a barge pole, however I have been
+working with mobj->playxtra to test its effects when used with a DOSDoom
+defined creature. Originally Doom used to create alterate palettes
+(calculated at runtime) which were based on the base palette with the
+exception of altering 0x70->0x7f (Player Sprite Greens) to another group of
+colours: The original colours were GREY (called indigo), BROWN & RED; they
+were a form of re-indexing basically, so when a sprite was drawn and had
+the flags that setup GREY, BROWN or RED, they would use an the alternate
+palette instead of the base when the sprite was drawn - this translation
+(remapping) is done at DrawColumn level. Instead of using flags, JC's new
+8 player support had to use 4 more colours and as opposed to using more
+flags, he choose to use a byte (playxtra) that held the number of the
+translation table (an alternate palette). John Cole had purposed that we
+use an indexing system (start palette colour, number of colours used) for
+remapping patches, other multiplayer related stuff and I suppose the player
+sprite-greens also. I originally implemented the indexing code into patches
+code (the menu-colour alterations in V0.64 for example) - this system had
+only one real flaw: To work properly the base palette had to be set out in
+16 shades of one colour, 16 shades of another and so forth; continuing
+through the 256 colours (16 colours with 16 shades). Unfortunately the base
+palette was only organised in places like this, not all of it: this made
+any remapping limited, the problem was that to get any sharp contrasting
+colours, you would of had to remap spreading yourself through the palette.
+This disallowed I decent contrasting white shade and a few other colours!
+
+Note: The translation patching in V0.64 remapped all colours into the 16
+indexed.
+
+My solution is simple, have a pre-compiled remap lump that allows the maximum
+of 32 colours be re-indexed to create new translation tables. A table
+consists of 32 remaps, a remap consists of two bytes: the first held the
+number of the colour index to be replaced, the second held the colour index
+that would used in replacing. A single remap table would therefore take up
+only 64 bytes (although expansion to include remapping of the entire palette
+may be wise and would take up 512 bytes pre table). The wad entry lump that
+I have included to use this is called PALREMAP and consists of 21 remap
+tables:
+
+1)  Player Green -> Player Grey (Indigo?)
+2)  Player Green -> Player Brown
+3)  Player Green -> Player Dull Red
+4)  Player Green -> Orange
+5)  Player Green -> Light Grey
+6)  Player Green -> Bright Red
+7)  Player Green -> Pink
+8)  Player Green -> Gold
+9)  Player Green -> Blue
+10) Player Green -> Dark Blue
+11) Player Green -> Dark Green
+12) Player Green -> Dark Red
+13) Player Green -> Red Skin
+14) Player Green -> Pale Skin
+15) Player Green -> Grey
+16) Text Colour Red -> White
+17) Red Skin -> Pale Skin
+18) Red Skin -> Grey Skin
+19) Red Skin -> Blue Skin
+20) Red Skin -> Green Skin
+21) Red Skin -> Bright Red Skin
+
+The player-green remaps are for multiplayer sprites, the Text Colour Red
+remap is used for the white text and the Red-Skin remaps are test remaps,
+the red-skin types are used for virtually ever doom creature for skin or
+blood (most notable are the Demon (whole body), the Baron (Torso) and the
+Chaaingunner (Clothing); to demo this remapping use the commandline
+parameter '-andymagic'): I'm sure a skilled artist could do a more impressive
+job of this.
+
+Missing:
+Draw Translucent-Translated Column routine; This is something that is was
+never written from when the translucency code was added (before the team was
+created). The translucency is drawn, but none of the colour translation
+(remapping) is handled - NEEDED URGENTLY - would recommend C & ASM Versions;
+also I would recommend that someone ASM-codes the translucency code: those
+plasma firing games slow to a crawl.....
+
+Worked on an idea for expanding the key selection that I put to Kester, with
+his recent developments on linedefs. It is now possible to list the keys
+you need for a door and the suggest if you need either one of the listed keys
+or require all of the listed keys (you can now give a list of keys in the
+linesDDF file). It is now possible to say "you must have the red skull, blue
+card & yellow skull" or "you need either a red skull or a blue skull". I also
+had to alter the status bar (st_stuff.c) to show a combination graphic for
+having both the keys & cards of a specific colour. (added STKEYS6 -> 8 to
+DOSDoom.WAD) I recommend someone looks into better gfx for these!
+
+DATE: 09/09/1998
+
+More minor bug fixing: 1) many WAD's like TeamTNT's Eternal WAD use an
+effect which causes a floor, a set of stairs or a door to make an
+instant movement, unfortunately this effect is a WAD Hack, as opposed to
+design feature. Kester's code had correctly assumed the movement direction
+required, but the movement speed being used was the default and was not the
+instant effect required by the WADs. Therefore the different default of -1
+was used, which now represents instant movement and can be applied to any
+linedef. The problem here was the WAD trick used, not the code: it was
+correct.
+
+2) I mixed up the teleport stomp code, if the thing stomping was a player
+and the currentmap flags had MPF_NOSTOMP set, then no stomp would take
+place; should of been if the thing stomping was not player...oops.
+
+DATE: 07/09/1998
+
+Bug-fixes: "Stuck-to-a-special-line" monster bug was detected and prompty
+swatted, the problem was that P_TryMove was testing the movement over
+special lines and returning false only when the object was referencing
+a line that it was on the back of, it wasn't taking into account that
+the linedef could not be activited by the object in question. The
+solution was to that the activate procedure would return true or false
+to the question, is it possible for the action to happen, this is then
+used as the the return value for P_TryMove if the object-in-question was
+on the front side of a special line.
+
+"Changing sector ceiling/floor texture" bug, the problem was the movingPlane
+structure, it had a set definition for the texture - char tex[9] and due to
+use of void pointers, and error was not generated when an attempt at
+mallocing space for a string and giving it to tex; suffice to say that
+the string referencing was way off. fixed by changing tex[9]->*tex.
+
+Fixed two compiler warnings in lu_sound.c & i_sound.c.
+
+Formatting: I have a wierd tab setting which makes a lot of source files
+look odd. Its not unusual for me to go through the code and reformat code
+from:
+
+if (onenumber == anothernumber) {
+        anothernumber = 0;
+        onenumber = 10;
+}
+
+to:
+
+if (onenumber == anothernumber)
+{
+  anothernumber = 0;
+  onenumber = 10;
+}
+
+Its all spaces aswell, so no confusion arises...
+
+DATE: 06/09/1998
+
+Toyed with a few ideas, had a nice thought on a meandering state sequence
+and player supporting monsters, by midday I had all the imps ripping apart
+everything, but me on MAP18 of Doom II. Works very well. Will push it
+further and iron out any bugs; might be a useful extension to DDF.
+
+Received an update from Kester and merged my bugfixs from two days ago and
+the current new ideas with the codebase. Worked fine, I made a point of
+flicking through the linedef pages to make sure it all worked and I
+understood it: also I did some cleaning up of the code in general I viewed
+so I could understand it myself!
+
+Had to make a few modifications to the new mouse/joystick handling code. The
+Joystick code (in i_system.c) had a problem with joy_hat as a static int or
+anything for that matter, so I had to modify the code accordingly (everything
+names joy_hat became joy_ht); secondly, the two-stage turning (the first 6
+tics of turning are slow, the rest are done at the speed of the actual
+movement) was only designed to work with the Joystick and the keyboard, NOT
+the mouse. It makes playing with the mouse (as I do) very awkward: therefore
+I have added a two_stage turning option the analogue option menu. The menu
+has been renamed from mouseoptions -> analogueoptions.
+
+It seems that a lot of the code had been written to make any movements by
+the analogue object (be it mouse or joystick) to be greatly reduced, this
+meant that the mouse movement was so low that it became unplayable therefore
+I have set up a slider for forward/slide/turning movement, that allows the
+user to select the best choice. I did remember that this was once one of the
+reasons I used to play Doom95 over Doom in DOS: the mouse sensitivity was
+better arranged in Doom95, with this new method it allows for proper
+config of the mouse for each user. A well-choosen set of defaults would not
+go a miss here either.
+
+"The Transporters are off-line" bug; not a bug really, just an oversight,
+the teleport procedure in P_telept.C was looking for MT_TELEPORTMAN in
+every sector for its destination - oops, again - the type references are
+no longer relevant to any object created within the game, therefore no
+destination points were being found. I fixed the problem by using the mobj
+linked list to find an mobj (referencing the specials[]) in that sector,
+the other bug I found in the code was for some reason the distance of the fog
+from the teleporting object was 40*FRACUNIT, when it should be 20*FRACUNIT.
+
+DATE: 04/09/1998
+
+Fixed two irrating bugs I made with the P_ActShotAttack: first I was
+not setting the correct source angle, which meant that targeting wasn't
+happening. most notable on MAP29 of Doom II; where the chaingunner on the
+opposite ledge should hit the guys in front of you at the beginning of the
+level, however he spent most the time firing above our heads (the enemy and
+the player object). I made the mistake of subtituting (zero) for the object
+angle, oops. Error number 2: If the horzaccshift was zero that the
+objangles angle would be altered by (Random Number - Random Number)
+bit shifted left (<<) by horzaccshift - yes I should make sure I'm awake
+before coding. oops again. In my process of missing the object, I did solve
+the problem of bullets hitting the base of wall with a backsector that had
+a sky-hack ceiling.
+
+Sorted the demo recording and playback. The problem was that the startskill
+was nor being stored at all, when you started. Not a good thing, sorted that.
+Also the demos now record the DDF Name of the level, so that its not limited
+by the gamemap/episode system...
+
+Just a note: the top bugfix about when the bullets don't show up against a
+wall is a good example why demo support of V1.9 is not a good idea. Spawning
+smoke/puff from a wall uses P_Random(), immediately de-syncing any demo
+on the spot because the Random Number Generator is now out of sync. 
+
+DATE: 05/08/1998 -> 29/08/1998
+
+Remember to update often or you leave yourself a hell of Log to write and
+a lot to remember. During the last fortnight I have began to implement
+some more major parts of DDF: Creatures/levels/game-setup/languages. For
+Languages, lu_str.h & lu_str.c have been replaced by ddf_lang.c. This file
+uses an external file - an LDF (not a DDF) file - which holds the definitions
+for a language, when DOSDoom looks for a language definition it uses
+DDF_LanguageLookup(char *ref). The reference it gives is checked against the
+Language linked list and if the ref is found it will return a pointer to
+the string referenced itself.
+
+In order to do this I had to add a string reading function to the DDF_Reader,
+as like all parsers it relys on characters to direct it, the string function
+uses the normal '"' action, that when one is found it reads every character
+for what it is: ignoring nothing, the only exception is that the DDF Parser
+will detect the '\n' sequence and substitute a carriage return: when another
+'"' is found the parser returns to normal operation.
+
+An LDF is formatted like this:
+<DefinitionName>=<String>
+
+so:
+MAP01Desc="MAP01: ENTRYWAY";
+
+defines "MAP01Desc" as a reference for "MAP01: ENTRYWAY", which means
+that DDF_LanguageLookup("MAP01Desc") returns a pointer to "MAP01: ENTRYWAY"
+obviously. This is used when a DDF needs a string, for example: Items.ddf
+needs a message to display when an item is picked up, this entry is added
+to an item in items.ddf:
+
+PICKUP_MESSAGE=GotMediKit;
+
+would ref this in an LDF:
+GotMediKit="Picked up a medikit, hey!";
+
+so that when this object was picked up it would ref "GotMediKit" in an LDF
+and for the example LDF "Picked up a medikit, hey!" would be printed.
+
+I have implemented a linked list to replace to current set array for the
+mobjinfo table, with the removal of the type enum (soon to be effected). The
+number of mobjinfo types in now "limitless". There is a small table
+of (mobjinfo_t *specials[NUMMOBJSPEC]) pointers to the specials in the list
+that will be needed regardless of what other things are added.
+
+The specials are: Player, Smoke, Blood, Puff, Teleport Fog, Respawn Fog and
+the teleport-end position.
+
+This work has taken place now as it is a requirement that needs to be
+achieved for DDF, the handling of set down - thing related must be
+dealt with a reference to its info ref. 90% of this work was done on the 6th
+so if need to view the changes: look for -ACB- 1998/08/06 in the files
+P_Enemy.C, P_Map.C & Rad_Trig.C.
+
+Implemented and setup the map structure; A map has the following attributes:
+
+typedef struct mapstuff_s
+{
+  char *name;                    // DDF Name
+  char *description;             // Description (automap etc..)
+  char graphicname[9];           // Name used in Intermission
+  char lump[9];                  // lump name in the WAD
+  char sky[9];                   // graphic sky name
+  char music[9];                 // music name
+  char surround[9];              // flat used for the surround 
+  int flags;                     // flags (see below)
+  int partime;                   // par-time
+  struct intermis_s *interscr;   // intermission screen type
+  struct mapstuff_s *next;       // next in the maplist
+  struct mapstuff_s *nextlevel;  // next level to go
+  char *nextmapname;             // name of the next normal level
+  char *secretmapname;           // name of the secret level
+}
+mapstuff_t;
+
+The pointer nextlevel is set when an exit is reached at the end of the
+currentmap: if the secret exit is used, the name is secretmapname is searched
+for (compared against each DDF name) and when a match is found, a pointer
+to it is passed to nextlevel, the nextmapname is used in the same fashion
+when the level is exited normally.
+
+Map Handling FLAGS:
+Each map has a set of flags, with the id levels only MPF_NOSTOMP is set
+(with the exception of Map30 of DoomII/TNT/Plutonia, because monsters
+can stomp you). For new levels, designers have the option to disable such
+features that effect gameplay or force others. A purist can disable all
+the new features: these flags override the gameplay menu; if a designer
+forces a setting, the option menu will not change it.
+
+typedef enum
+{
+  MPF_NOJUMPING   = 1,             // Disable Jumping
+  MPF_NOMLOOK     = 2,             // Disable Freelook
+  MPF_NOTRANSLUC  = 4,             // Disable Translucency
+  MPF_NOCHEATS    = 8,             // Disable Cheats
+  MPF_ITEMRESPAWN = 16,            // Force Item Respawn
+  MPF_NOITEMRESPN = 32,            // Disable Item Respawn
+  MPF_FAST        = 64,            // Force Fast Monsters
+  MPF_RESMONSTER  = 128,           // Force Resurrect Monsters
+  MPF_TELMONSTER  = 256,           // Force Teleport Monsters
+  MPF_STRETCHSKY  = 512,           // Force Stretch Sky
+  MPF_NORMALSKY   = 1024,          // Force Normal Sky
+  MPF_NOTRUE3D    = 2048,          // Disable True 3D Gameplay
+  MPF_NOSTOMP     = 4096,          // Monsters cannot stomp players
+  MPF_NORMBLOOD   = 8192           // Use Normal Blood activity
+}
+mapsettings_t;
+
+ATTACKS...
+I have finished through the creature.ddf/attacks.ddf files, which handle the
+movement/actions of the other moving objects in DOSDoom. Formally in a attack
+frame, the procedure called was specific: an A_* procedure. All new
+DDF code is P_Act*.* and is used within P_Action.C. The difference between
+the original code and DDF handling is that you setup a ranged attack and/or
+close combat attack and called a procedure during a state that calls the
+individual attack or make a choice between each one. Normally, the object
+would use a very specific routine, i.e for a baron-of-hell it would fire
+the item enumed MT_BRUISERSHOT which did a damage in the range of 1-to-8 and
+multiplied by a number (depending on the missile itself), 8 for our example.
+The only thing that defined what the objects attack was the very specific
+attack routines used by the object states, Unfortunately this wasn't very
+useful for defining and handling of attacks. Instead we have a new attack
+structure that defines an attack and represents the choosen form of
+aggression by an object:
+
+typedef struct attacktype_s
+{
+  char *name;                    // Attack name (referencing)
+  int attackstyle;               // Attackstyle
+  int initsound;                 // Initialisation Sound
+  int sound;                     // Misc Sound
+  int accuracy;                  // Accuracy of the attack
+  int xoffset;                   // X-offset relative to the obj (proj only)
+  int yoffset;                   // Y-offset relative to the obj (proj only)
+  int height;                    // Height from the floor (proj only)
+  int range;                     // Maximum range of the assault
+  int speed;                     // Speed (Launch-self assault only)
+  int flags;                     // Flags
+  int count;                     // Count (Shot attacks, multiple blasts)
+  int tooclose;                  // If less than, close to target for attack
+  int damage;                    // Set Damage Value
+  int damagerange;               // Damage Range (Doom Damage Calc)
+  int damagemulti;               // Damage Multiplier (Doom Damage Calc)
+  int objinitstate;              // Spawned object initial state
+  int notracechance;             // Chance of no tracing (Tracers only)
+  struct mobjinfo_s *projectile; // Object to create
+  struct attacktype_s *next;     // Next in the list of attacks.
+}
+attacktype_t;
+
+Attack->Name:
+^^^^^^^^^^^^^
+Used for descriptive and reference purposes, stores the name given to it by the
+user (in attacks.ddf) and is referenced by the creatures in creatures.ddf.
+
+Attack->Attackstyle:
+^^^^^^^^^^^^^^^^^^^^
+An attackstyle can be any of the following:
+
+typedef enum
+{
+  ATK_PROJECTILE,    // Projectile: some sort of flying object
+  ATK_SPAWNER,       // Spawner: Spawns a defined object in targets direction
+  ATK_TRIPLESPAWNER, // Spawner: Spawns a defined object in three directions
+  ATK_SPREADER,      // Spreader: shoots projectiles in a spread (fixed)
+  ATK_RANDOMSPREAD,  // Spreader: shoots projectiles in a spread (random)
+  ATK_SHOT,          // Shot: Pellet Warfare, traces line to target
+  ATK_TRACKER,       // Tracker: Launch an attack that follows
+  ATK_CLOSECOMBAT,   // Close-combat: do damage direct
+  ATK_SKULLFLY,      // Launch Self: Attack using self as the missile
+  NUMATKCLASS
+}
+attackstyle_t;
+
+ATK_PROJECTILE: Launchs an attack at the object's target; Uses the
+                attack->height, attack->xoffset & attack->yoffset to
+                define where the projectile starts from. The positions
+                are relative to the object firing, the height is got
+                from object->z + attack->height. A minus xoffset gives
+                a position to the left of the object, a positive one
+                gives a position to the right of the object. A minus
+                yoffset gives a position behind the object, a positive
+                one in front of an object. Normally both xoffset and
+                yoffset are 0. Note: if there is a blocking line
+                between the object and the projectile pos, it will not
+                be fired.
+
+ATK_SPAWNER: Launches a spawned object towards its target and the new
+             object's initial state is held in attack->objinitstate. This
+             can be used to a good advantage: the pain elemental uses the
+             second attack frame of a lost soul to make sure it hurtles
+             towards the target when it is spawned.
+
+ATK_TRIPLESPAWNER: Same as above, but spawns an object behind, to the left
+                   and to the right of the attacker; this was purely
+                   designed for the spawning of the lost souls upon death
+                   of a pain elemental. However It can be put to an
+                   inventive use me thinks.
+
+ATK_SPREADER: A Spreader is an project that is aimed at its target and then
+              the angle is then offset. The purpose of this is to counter
+              balance the movement of the object's target. The Doom user of
+              this is the Mancubus. The goes through a fixed cycle:
+                1) Object angle is altered by 11.25 degrees.
+                2) Projectile angle is altered by 11.25 degrees.
+                3) Object angle is altered by -11.25 degrees.
+                4) Projectile angle is altered by 22.5 degrees.
+                5) Projectile angle is altered by -5.625 degrees.
+                6) Projectile angle is altered by 5.625 degrees.
+
+              The action RESET_SPREADER (P_ActResetSpreadCount) resets the
+              order to 1 should it be required.
+
+ATK_RANDOMSPREADER: Same as the above, except that the projectile only is
+                    altered by an angle offset that is the numeric value for
+                    90 degrees divided by a "random-number" between 1 and 64.
+                    More unpredictable this is.
+
+ATK_SHOT: Bullet warfare; This is the attack that covers shotting with
+          pistols, shotguns & chainguns etc. How it works is by tracing a
+          path from the source and following it until it hits a wall or
+          another object. If it is a thing the relevant damage is done and
+          the relevant effect takes place (blood or smoke depending on the
+          thing), if it hits a wall, floor or ceiling, then smoke is
+          generated. The ACCURACY setting is something that comes into play
+          here: multiple firing objects cannot be accurate or they would do
+          some serious damage, so making the shots less then accurate
+          simulates reality as any machine gun will not have the accuracy of
+          a sniper rifle.
+
+ATK_TRACKER: Spawns the attack->projectile at the position of the target,
+             what happens next is dependent on both the projectile and
+             the attacker. This attack was designed upon the Arch-Vile
+             attack. To emulate the arch-vile attack, the tracker
+             (attack->projectile) would use the TRACKER_FOLLOW actions
+             where it would follow its assigned target if it the attacker
+             can see its target, thats all the tracker will do. The action
+             now happens where the attacker uses EFFECT_TRACKER: This
+             basically causes the explosion damage; If the tracker for one
+             reason or another does not exist, the explosion damage is not
+             done, but the basic damage is done. The explosion damage is
+             obviously done if the tracker still exists. Although this
+             is the primary purpose of the tracker, it can be used to
+             spawn an explosion at the target area. In true you can spawn
+             any projectile at its target.
+
+ATK_CLOSECOMBAT: Does calculated damage to the attackers target if the
+                 attacker is within meleerange of it's target. Nice
+                 and simple. 
+
+ATK_SKULLFLY: Launchs its self at speed towards its target and does damage
+              on collision. This is called SKULLFLY because it is the
+              attack used by the lost-soul.
+
+Attack->initsound:
+^^^^^^^^^^^^^^^^^^
+This is the SFX number used when an attack is being attempted, it is called
+automatically using (P_ActSkullAttack - ATK_SKULLFLY) or can be called using
+actions CLOSEATTEMPTSND (P_ActMakeCloseAttemptSound) & RANGEATTEMPTSND
+(P_ActMakeRangeAttemptSound).
+
+Attack->sound:
+^^^^^^^^^^^^^^
+SFX Number referenced when an attack takes place. This is different for
+each attack:
+
+ ATK_CLOSECOMBAT - Sound made when closecombat damage is done.
+ ATK_SHOT        - Sound made when attack is made.
+ ATK_SKULLFLY    - Sound made when attacker hits target.
+ ATK_TRACKER     - Sound made when tracker is put into effect.
+
+ ATK_SPREADER       }
+ ATK_RANDOMSPREADER }- Sound made when projectile is launched.
+ ATK_PROJECTILE     }
+
+ ATK_SPAWNER / ATK_TRIPLESPAWNER - Sound made when object is spawned.
+
+Attack->accuracy
+^^^^^^^^^^^^^^^^
+Accuracy level, if zero the shot is perfect, otherwise it performs an
+random offset bitshifted varied by the accuracy level. This effects
+the angle of the attack. 
+
+To be completed.....
+
+
+DATE: 04/08/1998
+
+Added source (struct mobj_s*) to the mobj_t: it is clear trying to make
+any sense of the procedures was difficult with confusing references. For
+example: the spawn missile procedure places the source of the procedure in
+mobj->target, its makes things worse when tracers (revenant missiles) &
+fires have to know their targets. The original id solution was to add a
+new struct mobj_s* tracer to hold it - suffice to say it was bloody confusing
+when reading the code through, the new suitation is:
+
+* mobj->source - holds the source of the missile/fire
+* mobj->target - holds the target of any object
+* mobj->tracer - holds the fire for the source mobj (normally an arch-vile)
+
+P_Mobj.C, P_Map.C & P_Enemy.C require changes.
+
+It worth noting for all those people who use DOSDoom as a base and stops them
+getting as confused as me :).
+
+Implemented a fix from Erik Sandberg to allocate space for stateinfo in
+DDF_MainSplitIntoState: so moron who remain nameless (i.e. me) forgot
+to allocate space for it, something that Win95 appeared to let me get
+away with. In DOS it would crash out with a page fault (for obvious reasons).
+
+Fixed the problem within the resurrect code that cause monsters to
+start up and head off in one direction and do nothing until it hit
+a wall: The movecount was not being reset to Zero, movecount is
+being used as a counter until respawn. (In P_Mobj.C).
+
+Added P_MobjCreateObject, this procedure is the same as P_SpawnMobj
+with the exception of using a pointer to an mobjinfo_t as opposed
+to a enum reference. Eventually P_SpawnMobj will be removed. As a lot
+of new procedures, or modified versions of existing ones come into play,
+the original ones will be deleted as they are not needed. This is for
+the transition to DDF from the fixed style originally used. I'm looking
+at naming procedures with a ref to the file they are in aswell as the
+type of procedure they are..for example:
+
+P_RemoveFlyingMissile -> P_MobjRemoveMissile
+P_itemRespawn         -> P_MobjItemRespawn
+
+has been done: P_Mobj is the file, the latter is a description. Its good for
+people who need to pick up the source and educational purposes.
+
+Added/Finalised the attacktype_t which will be used when a mobj goes on the
+offensive, the mobj_t has a currentattack and mobjinfo_t holds two:
+closecombat and rangeattack.
+
+Added new procedures to P_action.C for the attacks side of DDF:
+P_ActLaunchMissile is like P_SpawnMissile, however the type of missile
+launched is an mobjinfo_t* not an enum plus uses the new attacktype_t
+to discern what projectile is fired, offsets used, height of attack etc..
+P_ActCheckMissileSpawn is the same as P_CheckMissileSpawn in P_enemy.C:
+the code is placed here as eventually P_CheckMissileSpawn will be
+removed for P_enemy.C as it will no longer be needed.
+
+Moved the #define BASEYCENTER to a global variable that is calculated in
+multires setup. BASEYCENTER is used player weapons. There was a minor offset
+that "fixed" weapon heights for 400x300 and 800x600 because of the different
+aspect ratio, the offset being an increase. This caused weapons in a res of
+640x400 to appear one pixel above the bottom of the screen, this is fixed by
+reducing the offset, if this is not done by half a FRACUNIT the weapon
+clipping is wrong for 400x300 and 800x600.
+
+DATE: 31/07/1998
+
+Rewrote the entire Items.DDF & Scenery.DDF files to pick the sprite at
+each state this was necessary, because I had not anticipated the combinations
+of sprites that have occured, one name for the spawned object and a
+different name for the death frames.
+
+All the DDF_*.* have been changed to reflect the use of a void pointer in
+commandlist_t: it was previously a int pointer, I had made the mistake of
+not setting this as void earlier, so that it is generic. allows the use
+of any data type pointer in commandlist_t third parameter.
+
+A dummy procedure exists to replace procedures that have no useful function
+on certain DDF files (switches and animations for example, they do not need
+to read the name).
+
+P_RemoveFlyingMissile was added to p_mobj.c, this was to handle missiles
+that went through the sky properly. The missile should remove itself, but
+it should not stop the sound it is playing, the fact it is the sky doesn't
+mean you cannot hear the sound. New code has been added to handle a
+missile hitting a floor or ceiling that is a sky-hack (P_Z & P_XYMovement).
+
+Added in Kester's additional code: DDF_Anim.C has been added.
+
+DATE: 30/07/1998
+
+Bug fixes mostly: Ghosting BUG caused when an arch-vile or new nightmare
+respawn raises a creature that was gibbed (Height and Radius of Zero) and
+the radius and height remain like this, height and radius are now restored
+from the info table, not the fallen mobj.
+
+Fixed the spawning of a stasis imp at 0,0 - P_KillMobj was not setting
+the mobj with a MF_DROPPED flag and when the item was attempting to respawn
+an object that held no info on its original status or position.
+
+Itemrespawn-que was made "limitless" and different respawn times
+are now possible, this has been added to Items DDF. As opposed to
+two set lists of time and mapthings, it is now a double-linked list of
+items. item-in-que being the entry.
+
+newnmrespawn, respawnparm & respawnmonsters have been replaced with
+respawnsetting; Nice and easy with one.
+
+Added these files to cover DDF Requirements:
+      * DDF_ATK.C  - Attack types
+      * DDF_CTRE.C - Creature types
+      * DDF_GAME.C - Game Configuration
+      * DDF_LEVL.C - Level Configuration
+      * DDF_LINE.C - Linedefs
+      * DDF_SECT.C - Sector Definitions
+      * DDF_SWTH.C - Switch Definitions
+      * DDF_WEAP.C - Player Weapons
+
+DATE: 29/07/1998
+
+Removed some of those awful goto's that existed in P_Map.C; trying to trace
+a goto is a bastard most of time, without it being badly done. I also
+removed A_ChaseNoMissile from P_Enemy.C, this was an earlier replacement
+for several goto's within A_Chase and found a more understandable way
+of writing the code. Found a bug in D_IdentifyVersion, it was adding Plutonia
+in DOSDoom mode (it should only add Doom.wad & Doom2.wad); I reworked
+an old version of the code I had written and replaced the existing that
+works, looks in the correct directory and loads the right wads (sorry,
+Kester - had to nuke your code again).
+
+Heres a description of the DDF Parser, which is long overdue.
+
+The DDF Parser is a simple reader that is very limited in error checking,
+however it can adapt to most tasks, as is required for the variety of stuff
+need to be loaded in order to configure the DOSDoom Engine.
+
+The parser will read an ascii file, character by character an interpret each
+depending in which mode it is in; Unless an error is encountered or a called
+procedure stops the parser, it will read everything until EOF is encountered.
+
+When the parser function is called, a pointer to a readinfo_t is passed and
+contains all the info needed, it contains:
+
+* message               - message displayed on the screen.
+* filename              - filename to be read, returns error if NULL
+* DDF_MainCheckName     - function called when a def has been just began
+* DDF_MainCreateEntry   - function called when a def has been completed
+* DDF_MainFinishingCode - function called when EOF is read
+* currentcmdlist        - Current list of commands
+
+Also when commands are referenced, they use currentcmdlist, which is
+a pointer to a list of entries, the entries are formatted like this:
+
+* name - name of command
+* routine - function called to interpret info
+* numeric - pointer to an int value (possibly changed by routine)
+
+name is compared with the read command, to see if it matchs.
+routine called to interpret info, if command name matches read command.
+numeric is used if a numeric value needs to be changed, by routine.
+
+The different parser modes are:
+  waiting_newdef
+  reading_newdef
+  reading_command
+  reading_data
+  reading_remark
+
+'waiting_newdef' is only set at the start of the code, At this point every
+character with the exception of DEFSTART is ignored. When DEFSTART is
+encounted, the parser will switch to reading_newdef. DEFSTART the parser
+will only switches modes and sets firstgo to false.
+
+'reading_newdef' reads all alphanumeric characters and the '_' character -
+which substitudes for a space character (whitespace is ignored) - until
+DEFSTOP is read. DEFSTOP passes the read string to DDF_MainCheckName and
+then clears the string. Mode reading_command is now set.
+All read stuff is passed to char *buffer.
+
+'reading_command' picks out all the alphabetic characters and passes them to
+buffer as soon as COMMANDREAD is encountered; DDF_MainReadCommand looks
+through for a matching command, if none is found a fatal error is returned.
+If a matching command is found, this function returns a function pointer
+(into DDF_ReadFunction which is used to interpret the data), a command
+reference number to command ref and sets the mode to reading_data. if
+DEFSTART is encountered the procedure will clear the buffer, run
+DDF_MainCreateEntry (called this as it reflects that in Items & Scenery if
+starts a new mobj type, in truth it can do anything procedure wise) and then
+switch mode to reading_newdef.
+
+'reading_data' passes alphanumeric characters, plus a few other characters
+that are also needed. It continues to feed buffer until a SEPERATOR or a
+TERMINATOR is found. The difference between SEPERATOR and TERMINATOR is that
+a TERMINATOR uses the DDF_ReadFunction and then sets the mode to
+reading_command, whereas SEPERATOR uses the DDF_ReadFunction and a looks for
+more data on the same command. This is how the multiply states and specials
+are defined.
+
+'reading_remark' does not process any chars except REMARKSTOP, everything
+else is ignored. This mode is only set when REMARKSTART is found, when this
+happens the current mode is held in formerstatus, which is restored when
+REMARKSTOP is found.
+
+The maximum size of BUFFER is set in the BUFFERSIZE define.
+
+DDF_MainReadFile & DDF_MainProcessChar handle the main processing of the
+file, all the procedures in the other DDF files (which the exceptions of the
+Inits) are called directly or indirectly. DDF_MainReadFile handles to opening,
+closing and calling of procedures, DDF_MainProcessChar makes sense from the
+character read from the file.
+
+DATE: 27/07/1998
+
+Cleaned up P_Local.H to be understandable (just) and rewrote the
+P_CalcHeight in P_User.C so that when dead, you don't bob. Also only
+calculates bobbing when your are alive. Freelook is now limited by
+two defines: LOOKUPLIMIT & LOOKDOWNLIMIT; Makes this readable.
+
+New Action Procedures are now contained in new file P_Action.c; So all
+the new action code was transfered from P_Enemy.c and use a prefix of
+P_Act* as opposed to A_*. I hope to include all the new generic action
+code with P_Action.C. DDF_Main.C's Action Pointer Table was changed to
+reflect this.
+
+DATE: 26/07/1998
+
+Stream-lined the existing DDF Code; I was still using some virtually
+identical functions for some things, so DDF_MainGetNumeric,
+DDF_MainLookupSound & DDF_MainCheckCommand replaced their ddf_item &
+ddf_scen counterparts; passed a pointer to the respective commandlists also,
+that being was the only difference in code. DDF_MainLoadStates also
+had a minor revamp. Added the additional bits and pieces to sceneryDDF
+for explosive items, now complete. Can be variable or set damage from
+explosions.
+
+DATE: 25/07/1998
+
+Worked on the networking code, developed the extended options and made
+the display more friendly. Continued expanding sceneryDDF to include
+the explosive items (which at the moment stands at a barrel). I had
+a lot a played with the idea of key selection. Looks like this
+will need some changes to networking code. I have tested the networking
+code and believe the problem caused by a true3d option. Will need to further
+investigate that little problem.
+
+DATE: 24/07/1998
+
+Recieved ASM code from Rasem for the R_DrawColumn & R_DrawSpan; Very
+impressed as it shaved a huge 4.7fps off the current speed in hicolour mode.
+Although bits and pieces can be slower. DrawSpan is faster, allowing
+for a noticable difference. 
+
+DATE: 21/07/1998
+
+Removed the fatal error in P_SpawnMapThing (where it reads a thing that
+is not defined, i.e. no matching doomednum in mobjinfo_t) for JDS Compliance,
+this only makes a report to the debugfile when DEVELOPERS is defined.
+
+Fixed the bug in P_FindNextHighestFloor: The procedure was not taking
+into account floors of the same height, it should have been returning
+this value.
+
+DATE: 20/07/1998
+
+Rethought a lot of the plans for DDF in DOSDoom, it was clearly apparent that
+certain things need to be generalised (DDF) procedures; The "pellet
+warfare" attacks should all be one procedure for example. Removed Menu Shade
+Selections: maybe that wasn't such a great idea :). There are now two control
+menus (standard & extended) based on the space and also the two distinctive
+sets of controls. Standard Controls are need to play the game; Extended
+Controls are assistance controls.
+
+DATE: 19/07/1998
+
+Fixed the flicking weapons bug (my fault, not resetting centerfrac in
+r_things) and completed the integration of M Howe's Work. I have also
+added in the NightVision code and added it to Items.ddf.
+
+Continued by clean-up of the DDF Parser and added DDF_MainFinishingCode which
+is called when the EOF is found on the current DDF File.
+
+Added the following files:
+        DDF_Scen.C      -       Scenery Objects Parser Code
+        D_Debug.H       -       Kester's Debug File
+
+Removed the 'offensive' end messages from dstrings.h (Note: fix the filename)
+I was getting an increasing number of mails on this, so i removed it and
+cleaned up the code in M_Menu.c.
+
+Cleaned up DDF_Main.C & H again:
+       * Removed any scenery items
+       * Removed any unused states
+       * Corrected the enums
+       * Added the actions table  (straight string comparison)
+       * Added the specials table (straight string comparison)
+       * Made states & sprite checking code generic, moved for ddf_items.c
+       * Added addition action code to p_enemy.c (add new file to place this)
+       * God knows what else.... :).
+
+Added Kester's major bugfix to V_Init8 and V_Init16.
+
+Added the i_love_bill setting in: use '-ihatebill' to switch it off.
+
+DATE: 17/07/1998
+
+The demos work fine, but the networking is completely up the creek which is
+something I did anticipate and will need to spend some time fixing. I have
+spent a lot of time playing around with the menus and decided that the menu
+shades had to go and seperated the controls menu into standard and extended
+controls. There is still a lot of work to be done on the menu system. I took
+a look at the true3d stuff (putting Martin Howe's stuff in) and realised that
+there are a few things that were not anticipated by Kilbert the person
+who originally sent in the code and I will need to talk to Martin on this.
+
+The Debug File stuff in d_net.c, now has DEVELOPERS wrappers around and
+uses the debug_Printf system from d_debug.h.
+
+I attempted to add the code by Erik Sandberg for new Code for MMX, but it
+sadly was not designed for a normal Pentium with MMX (K6 more like) and
+even with the MMX code disabled it caused havoc with my sister's P120. So
+I have remarked it out, until Erik can find the problem, also there are 
+problems with using it with an AWE64. However he did manage to get the
+original ASM working with the limitless screen allocation bits (great!).
+
+I will include More of Erik's, Dave's and Martin's work when I continue the
+work on networking, cause it affects a lot of the work.
+
+DATE: 13/07/1998
+
+With Kester removal of the demolimit and made the required changes to
+the ticcmd_t, vertangle and extbuttons added: vertangle is the change in
+the vertical angle of a player weapon, extbuttons used for new dosdoom only
+stuff; JUMPING etc. I had to add an entry to mobj_t also, vertangle again -
+it is actually easier putting it here than in the player structure; DOSDoom
+had a very hacked approach: it set a global variable that was altered
+directly, It seems to work a lot better than it did before and mlook is now
+record in demos and passed over the network, which breaks compatibility with
+the original EXE. This compatiability is a pain, I feel that when ID released
+a new version they cared little for compatibility with older version so why
+should we?
+
+DDF code got reworked, The code was rigged to only work for items DDF and
+did not allow any flexability. The call to DDF_MainReadFile now passes a
+pointer to a struct with the filename, message and the functions required.
+
+I will be continuing my efforts to clean up the DDF parser code.
+
+Took a dive into the Radius Trigger Parser, had to make some adjustments so
+that DDF and Rad_triggers work together, the object generated is referenced
+by its mapnumber (so the docs will need updating) and also corrected an error
+where an object was being generated and its was not checking whether it landed
+on something, therefore the object does not generate if it lands on something.
+
+DATE: 04/07/1998
+
+Spent the entire week learning how NOT to fix certain problems; I have been
+looking at getting the demos to sync properly: mlook is not recorded in the
+demo as its implementation would require an few changes to ticcmd_t; I do not
+know whether we should support original demos: this causes problems as
+DOSDoom's handling of events is sufficently different that of the id EXE.
+This requires further thought, One of the major problems that always crops up
+is maintaining compatibility and I am having my doubts about the wisdom of
+doing so.
+
+Fixed a minor bug with weapon selection; Games without the double-barrel now
+do not have a key to select them.
+
+DATE: 02/07/1998
+
+Demos now record as with a Version number of 065, the additional features
+that would effect gameplay are now stored within the demo. Will be adding
+the additional mlook code to it. Mlook will auto-aim if it can find a target:
+if not the weapons shoots it the direction it was fired.
+
+DATE: 30/06/1998
+
+Apart from three bugs..is what I should have said: I was trying to compare
+an unknown pointer with a string (amatuerish mistake). I have been looking
+at at syncing the demos: Doom V1.9 sync without problem, assuming you haven't
+got any of the features enabled, DOSDoom does not record its addition features
+and this does cause some hiccups along the way. I need to investigate further
+and solve any more problems that crop up. Also added a CPU check at the
+beginning to assist the asm coders: it will allow us to choose the specific
+routine optimial for that processor.
+
+DATE: 29/06/1998
+
+Hooked in the DDF Reader and apart from 2 bugs, if worked fine! The items
+that are picked up are now defined in the items DDF. I need to do more ground
+work to complete this for all functions, however I am a bit happy. The
+work here was rewriting/writing the reader functions and the correct handling
+for all of it. I'm too tired to explain the whole bunch of things.
+
+DATE: 27/06/1998
+
+Finally got round to updating this log after numerous hic-cups. The
+Ground work for weapon selection and DDF Items has been done, all that needs
+to be done is the reader and the file itself.
+
+I have had chance to add in code from:
+
+Kester: Contined work of removing of limits, ddbug12.wad (Ian Wilson) &
+runbuddy.wad (Chris Dale sent this) both now work! Hey, hey.
+
+Martin: Ground work for a jetpack, added this as a benefit type for DDF Items.
+
+File changes:
+
+        LU_INFO.*  => DDF_MAIN.*
+        DOOMSTAT.* => DM_STATE.*
+        DOOMDEF.*  => DM_DEFS.*
+        DOOMDATA.* => DM_DATA.*
+        DOOMTYPE.* => DM_TYPE.*
+        LIBAMP.H   => MUS_LIB1.H
+        JGMOD.H    => MUS_LIB2.H
+        D_ITEMS.*  => OBLIVION (got removed, table moved to DDF_MAIN.*)
+        OBLIVION   => DDF_ITEM.* (New DDF Features)  
+
+SOURCE DIRECTORY CHANGES:
+        Removed DJGPP dir, moved contents back into Main directory.
+         (Since we have no time to work on LINUX Version, lets make things
+          as simple as possible).
+        Added MAKEFILE for all those who don't like RHIDE.
+        Added LIBS directory and placed the LIBJGMOD.a & LIBAMP.a files.
+         (The purpose of this is that we should limit the size of src zip
+          where possible, post sources at the website).
+
+P_INTER.C has been changed on a major scale, P_TouchSpecialThing has been
+altered to give the benefit from the mobjinfo_t table as opposed to checking
+to see what sprite the thing has (it was sprite-ist!).
+
+All the procedures have been altered to accept actual amounts from the things
+and also the limits imposed. The duration of each benefit can be specfied
+assuming that the benefit is judged in length of time: as opposed to the old
+method of a LUT, there is also a limit to the benefit time, which is specified
+in the thing, to use the original effect you have give the same amount as the
+limit (no higher, no lower - that value or else), making bigger limits
+gives the user chance to top-up on the time they have left on a benefit.
+
+The Ammo amount is give directly, as opposed to number of clips for that ammo.
+
+If the armour value given is bigger than 100 the armour type is 2 (blue armour
+class), else it is 1 (green armour class) - limit for this is specified in
+the thing.
+
+mobjinfo_t has a new addition - backpack_t (a pointer to), which contains
+info on weapons held, ammo for all types, the most ammo carried for all types,
+the keys carried, armour and the armour type. This allows multiple different
+backpacks to be generated by DDF-Items.
+
+P_SpawnPlayerBackpack (new Procedure in P_INTER.C) is a bit experimental,
+it gives all the stuff a dead player died with and generates a backpack with
+all this stuff in. It does work, but until the Multi-player works properly
+I can't tell you if it works in deathmatch. 
+
+P_USER.C/ST_STUFF.C/P_INTER.C: Keys 1->7 have a mapping system, you can choose
+a primary and secondary weapon for each key, if you have a weaponed mapped to
+a specfic key it will show up on the weapons owned table. It has no menu so
+far (working on it). It does mean that if the Double-Barrel is owned, but the
+single-barrel is not then the number 3 will show up (which it did not before).
+
+Changed the weapon enum order in to a logical order and gave the weaponinfo_t
+a new entry - weapon name. This will be used in the M_Option.C file for
+selecting weapons as described before-hand.
+
+weaponupdate is the flags that tells the weapon widgets on the status bar to
+update.
+
+DDF_MAIN.C (DDF_OldThingInit) just sents up the benefits info for the existing
+things, When I get the reader sorted, I will removed these and their entries
+within mobjinfo[] and state[] tables.
+
+DATE: 18/06/1998
+
+Lesson: Don't bugger about with something you don't fully understand. The
+modifications to I_ALLEGV.C cause more problems than it solved. I've
+tracked the problem down to the use of allegblit(). When this is used
+it treats black as being see-through, subed the use bankedblit instead.
+
+added SCREENDEPTH a global variable that holds the calculation of
+SCREENHEIGHT*BPP.
+
+DATE: 14/06/1998 
+
+Reworked the PatchIndirect system, it normally scales the graphics up to the
+actual res, which when your running 400x300 or 512x384 it looks somewhat
+tackly, instead downsized the graphics to a ratio of 320x200. Anything that
+is between 320x200 and 640x400 has a scaled res of 320x200, anything between
+640x400 and 800x600 has a scaled res of 640x400 and so forth.
+
+Attempt to fix the dodgy resolutions by forcing either the use of VGA or
+VESA2L modes (which seemed to work for me) in I_ALLEGV.C.
+
+The Options Menu and other text menus center themselves vertically.
+
+New Mouse Options menu.
+
+DATE: 10/06/1998
+
+Add HUlib_drawTextLineTrans(), just like HUlib_drawTextLine() except it
+uses the translation table for colour by JC. First Change: In Rad_trig.C
+changed HUlib_drawTextLine() to HUlib_drawTextLineTrans() with grey as the
+colour (TIP_DisplayTips).
+
+Forced the status bar to refresh when a key is picked up. Fixes problem
+when a key picked-up did not show up on the status bar. (P_GiveCard) in
+P_Inter.C.
+
+Added Linedefs #9000-9006 (scrolling walls), coded passed to me by JC.
+P_SPEC.C (P_SpawnSpecials & P_UpdateSpecials). Piece of advice, don't enable
+all of these at one room - does your head in! May have to change to linedef
+number as not to impose on those already used by other ports.
+
+DATE: 09/06/1998
+
+Fixed the error with selecting the supershotgun in doom/utlimate doom.
+added check for the gamemode in ST_STUFF.C. If the user tries 'idgive3'
+nothing will happen, 'idfa' and 'idkfa' do not make the supershotgun
+available.
+
+Users can no longer try 'idgive6' & 'idgive7' when in shareware doom (also
+in ST_STUFF.C).
+
+Removed all references to '-cdrom' parameter on account that noone should
+be playing this from a CDROM.
+
+Fixed the 'You haven't picked a quicksave slot yet!cD' Bug (also the
+French Nightmare Message Bug). Insufficent space allocated from the display
+string in m_menu.c (m_drawer), increase size from 40 to 50 chars.
+
+Set he length of tips in rad_trig.c to 50 (56 is too big).
+
+Fixed to problem with displaying HU_text at High Resolutions - Wasn't not
+displaying the text (only half). (HU_LIB.C).
+
+DATE: 30/05/1998 
+
+DOOMSTAT.H - Added lostsoulability & spectreability as extern ints.
+
+D_MAIN.C   - Added lostsoulability & Spectreability as ints.
+
+P_ENEMY.C  - (A_Look, A_StandardRefire, A_FaceTarget)
+                added invisibility decrease check (if thing stealth)
+
+             (A_Chase)
+                added invisibility increase check (if thing stealth)
+
+             (A_Fall)
+                set invisibility = 0 (visible).
+
+P_INTER.C  - (P_DamageMobj),
+                added invisibility decrease check (if thing stealth).
+
+P_MOBJ.H   - Removed MF_TRANSLUC25 / 50 / 75 flags in the flags enum.
+             Added   MF_STEALTH flag to the flags enum.
+             Added invisibility setting to mobj_t
+                (0=Visible >> stages of translucency >> 4=invisible)
+
+R_THINGS   - (R_ProjectSprite)
+               setup that if thing is invisible ignore (return).
+
+             (R_DrawVisSprite)
+               if transluc then use transluc 50% draw.
+               check vis->invisibility to set transluc draw.
+
+P_MOBJ.C   - (P_MobjThinker) Add sections of code to change lost souls and
+             spectre flags for their visibility/ability.
+
+M_OPTION.C - Two New Procedures:
+               (M_ChangeLostAbility & M_ChangeSpectreAbility), alters the
+               info->flags of lost souls/spectres respectively. If also sets
+               the update flag so that P_MobjThinker will update all the
+               relevant things when they "think".
+
+               Added the options to the options menu. Re-ordered the
+               look-up table colours. Doom-Red is now default.
+
+               Translucency is now only on and off.
+
+               Spectres and Lost souls can be:
+                Visible/part-invis/translucent/stealth.
+
+             Renamed all local procedures M_* to be consistent.
+
+G_GAME.C   - Unremarked translucent settings and picked out things that were
+             requested to be translucent. Added code to change the flags of
+             lost souls and spectres according to lostsoulability &
+             spectreability respectively. 
+
+DATE: 26/05/1998 
+
+Notes:
+   Temporary fixes for all DDF altered stuff (i.e. correct damage done).
+
+   Added Global Video Variables:
+       SCREENWMULTIPLIER, SCREENHMULTIPLIER,
+       SCREENWDIVISIER, SCREENHDIVISIER for deltax? and deltay? in the
+       V_Video?.? so that program does not calculate these each time -
+       InDirectPatch procedures.
+
+   Added:
+      V_DrawPatchTrans8() + V_DrawPatchInDirectTrans8() in V_Video1.C
+      V_DrawPatchTrans16() + V_DrawPatchInDirectTrans16() in V_Video2.C
+      V_Trans.H added (colour translation)
+      M_WriteTextTrans() in M_Menu.C
+      Menu Colour Configuration in Menu
+      (All above code from John Cole - cheers).
+
+      Options, Video, Control and Gameplay have new graphical title
+                                                        (in dosdoom.wad)
+      Options, Video and Gameplay menu centered.
+
+      Options Menu has new functions:
+        Zombie Targeting (uses lessaccuratezom which is default....
+                ...be a psycho, put zombie targeting on perfect!)
+                (Uses code for DDF STUFF)
+
+        Monster Respawn (None/Teleport/Resurrect Style)
+
+      ST_STUFF.C:
+        Added the new cheat codes (see dosdoom.his)
+
+      Pre-DDF Hacks added.
+
+      A LOT OF CODE CLEANUP!
+
+DATE: 26/04/1998
+
+   Notes:
+        Human Madness REMOVED
+        Human Explosions REMOVED
+        New AI Temporarily Removed
+        mobjinfo_t in INFO.H has new items - (Definable things) continuning
+
+   * P_ENEMY.C & INFO.C (new procedures):-
+        A_ChaseNoMissile       - program re-structuring
+        A_ZombiePistolAttack   - replaces A_POSATTACK (Definable things)
+        A_ZombieShotgunAttack  - replaces A_SPOSATTACK (Definable things)
+        A_ZombieChaingunAttack - replaces A_CPOSATTACK (Definable things)
+        A_DeadlyPistolAttack   - new accurate enemy pistol attack
+        A_DeadlyShotgunAttack  - new accurate enemy shotgun attack
+        A_DeadlyChaingunAttack - new accurate enemy chaingun attack
+        A_StandardAttack       - replaces normal enemy attack (not complete)
+        A_StandardRefire       - replaces refire for CPOS, BSPI & SPID 
+
+   Overview of changes:
+        Human Madness & explosions removed (crap I did earlier).
+
+        New AI was temp. removed - to be added to the definable thing.
+
+        The new procedures are added and existing ones are replaced to make
+        the doom engine more dynamic. The aim is to have all the thing info
+        loaded at runtime from a ASCII file - this will make dehacked obsolete
+        as you can directly tell the engine all the info for a thing and
+        modify it accordingly. This is the earliest very stable version I have
+        and the definable thing is well on its way to completion. Hopefully
+        doom with a -game parameter is possible. INFO.H is also the focus for
+        change. NB: Until I complete the standard attack procedure, all close
+        combat damage will be that of a Baron of Hell! A standard attack is
+        the normal attack used by imps, cacodemons, barons, hellknights,
+        cyberdemons and arachnotrons, it takes the missile type from the
+        actor->info, I have to work on a closecombat attacks - where
+        applicable.
+
+        A_ChaseNoMissile replaced a goto statement - I may try to get
+        a C++ compile out of this.

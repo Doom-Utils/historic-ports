@@ -1,36 +1,20 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Status Bar Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by Id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// DESCRIPTION:
-//	Status bar code.
-//	Does the face/direction indicator animatin.
-//	Does palette indicators as well (red pain/berserk, bright pickup)
-//
-//-----------------------------------------------------------------------------
 
 #ifndef __STSTUFF_H__
 #define __STSTUFF_H__
 
-#include "doomtype.h"
+#include "dm_type.h"
 #include "d_event.h"
 
 // Size of statusbar.
 // Now sensitive for scaling.
 #define ST_HEIGHT	32*SCREEN_MUL
-//#define ST_WIDTH	SCREENWIDTH
 #define ST_WIDTH 320
 #define ST_Y		(SCREENHEIGHT - ST_HEIGHT)
 
@@ -50,6 +34,9 @@ void ST_Drawer (boolean fullscreen, boolean refresh);
 
 // Called when the console player is spawned on each level.
 void ST_Start (void);
+
+// Called when changing resolution
+void ST_ReInit (void);
 
 // Called by startup code.
 void ST_Init (void);

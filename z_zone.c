@@ -1,40 +1,29 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Zone Memory Allocation Code 
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//      Zone Memory Allocation. Neat.
-//
-//-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id: z_zone.c,v 1.4 1997/02/03 16:47:58 b1 Exp $";
 
 #include "z_zone.h"
 #include "i_system.h"
-#include "doomdef.h"
-#include "doomstat.h"
+#include "dm_defs.h"
+#include "dm_state.h"
+#include "d_debug.h"
 
-
+// -KM- 1998/10/29 Try optimising for pentium-pro :-)
+#ifdef i686
+#define ZONE_ALIGNMENT 32
+#else
+#define ZONE_ALIGNMENT 4
+#endif
 //
 // ZONE MEMORY ALLOCATION
 //
 // There is never any space between memblocks,
 //  and there will never be two contiguous free memblocks.
+//
 // The rover can be left pointing at a non-empty block.
 //
 // It is of no value to free a cachable block,
@@ -43,24 +32,19 @@ rcsid[] = "$Id: z_zone.c,v 1.4 1997/02/03 16:47:58 b1 Exp $";
  
 #define ZONEID  0x1d4a11
 
-
 typedef struct
 {
-    // total bytes malloced, including header
-    int         size;
+  // total bytes malloced, including header
+  int size;
 
-    // start / end cap for linked list
-    memblock_t  blocklist;
+  // start / end cap for linked list
+  memblock_t blocklist;    
+  memblock_t* rover;
     
-    memblock_t* rover;
-    
-} memzone_t;
-
-
+}
+memzone_t;
 
 memzone_t*      mainzone;
-
-
 
 //
 // Z_ClearZone
@@ -86,8 +70,6 @@ void Z_ClearZone (memzone_t* zone)
     block->size = zone->size - sizeof(memzone_t);
 }
 
-
-
 //
 // Z_Init
 //
@@ -97,6 +79,12 @@ void Z_Init (void)
     int         size;
 
     mainzone = (memzone_t *)I_ZoneBase (&size);
+
+    // -KM- 1998/07/31 Added an error message; handle cleanly instead
+    //                 of crash + traceback
+    if (!mainzone)
+      I_Printf("Couldn't allocate memory for zone\n");
+
     mainzone->size = size;
 
     // set the entire zone to one free block
@@ -180,12 +168,7 @@ void Z_Free (void* ptr)
 //
 #define MINFRAGMENT             64
 
-
-void*
-Z_Malloc
-( int           size,
-  int           tag,
-  void*         user )
+void* Z_Malloc (int size, int tag, void* user)
 {
     int         extra;
     memblock_t* start;
@@ -193,7 +176,7 @@ Z_Malloc
     memblock_t* newblock;
     memblock_t* base;
 
-    size = (size + 3) & ~3;
+    size = (size + ZONE_ALIGNMENT-1) & ~(ZONE_ALIGNMENT-1);
     
     // scan through the block list,
     // looking for the first free block
@@ -208,7 +191,7 @@ Z_Malloc
     base = mainzone->rover;
     
     if (!base->prev->user)
-	base = base->prev;
+      base = base->prev;
 	
     rover = base;
     start = base->prev;
@@ -274,7 +257,7 @@ Z_Malloc
     else
     {
 	if (tag >= PU_PURGELEVEL)
-	    I_Error ("Z_Malloc: an owner is required for purgable blocks");
+	  I_Error ("Z_Malloc: an owner is required for purgable blocks");
 
 	// mark as in use, but unowned  
 	base->user = (void *)2;         
@@ -294,10 +277,7 @@ static inline int min(int a, int b)
   return (a < b) ? a : b;
 }
 
-void
-*Z_ReMalloc
-( void	*ptr,
-  int	size )
+void *Z_ReMalloc (void *ptr, int size)
 {
     memblock_t*         block;
     memblock_t*         other;
@@ -306,49 +286,54 @@ void
     // If this pointer is unitialised...
     if (!ptr) return Z_Malloc(size, PU_STATIC, NULL);
 
-    size = ((size + 3) & ~3);
+    size = ((size + ZONE_ALIGNMENT-1) & ~(ZONE_ALIGNMENT-1));
     block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
 
     if (block->id != ZONEID)
 	I_Error ("Z_ReMalloc: no ZONEID");
 
-    other = block->next;
-    extra = other->size + block->size - size - sizeof(memblock_t);
-    if ((!other->user) && (extra >= 0)) // Next block fits
-      {
-	// merge with next free block
-	block->next = other->next;
-        block->next->prev = block;
-        block->size += other->size;
-
-	if (other == mainzone->rover)
-	    mainzone->rover = block->next;
-    } else {
-      other = block->prev;
+    // 23-6-98 KM Added downsizing ability.
+    extra = block->size - size - sizeof(memblock_t);
+    if (extra < 0)
+    {
+      other = block->next;
       extra = other->size + block->size - size - sizeof(memblock_t);
-      if ((!other->user) && (extra >= 0)) // Prev block fits
-      {
-	// merge with prev free block
-	other->next = block->next;
-        other->next->prev = other;
-        other->user = block->user;
-        other->tag = block->tag;
-        other->id = ZONEID;
-        other->size += block->size;
-        if (other->user > (void **) 0x100) *(other->user) = (void *) ((byte *) other + sizeof(memblock_t));
-
-	if (block == mainzone->rover)
-	    mainzone->rover = block->next;
-        // Copy data
-        memmove((byte *) other + sizeof(memblock_t), (byte *) block + sizeof(memblock_t), block->size - sizeof(memblock_t));
-        block = other;
-      } else { // Do it the slow way
-        byte *new_space;
-        new_space = Z_Malloc(size, block->tag, (block->user > (void **) 0x100) ? block->user : NULL);
-        memmove(new_space, ptr, min(block->size - sizeof(memblock_t), size));
-        block->user = (void **) 2;
-        Z_Free(ptr);
-        return new_space;
+      if ((!other->user) && (extra >= 0)) // Next block fits
+        {
+  	// merge with next free block
+  	block->next = other->next;
+          block->next->prev = block;
+          block->size += other->size;
+  
+  	if (other == mainzone->rover)
+  	    mainzone->rover = block->next;
+      } else {
+        other = block->prev;
+        extra = other->size + block->size - size - sizeof(memblock_t);
+        if ((!other->user) && (extra >= 0)) // Prev block fits
+        {
+  	// merge with prev free block
+  	other->next = block->next;
+          other->next->prev = other;
+          other->user = block->user;
+          other->tag = block->tag;
+          other->id = ZONEID;
+          other->size += block->size;
+          if (other->user > (void **) 0x100) *(other->user) = (void *) ((byte *) other + sizeof(memblock_t));
+  
+  	if (block == mainzone->rover)
+  	    mainzone->rover = block->next;
+          // Copy data
+          memmove((byte *) other + sizeof(memblock_t), (byte *) block + sizeof(memblock_t), block->size - sizeof(memblock_t));
+          block = other;
+        } else { // Do it the slow way
+          byte *new_space;
+          new_space = Z_Malloc(size, block->tag, (block->user > (void **) 0x100) ? block->user : NULL);
+          memmove(new_space, ptr, min(block->size - sizeof(memblock_t), size));
+          block->user = (void **) 2;
+          Z_Free(ptr);
+          return new_space;
+        }
       }
     }
     if (extra > MINFRAGMENT)
@@ -357,6 +342,15 @@ void
        block->size = size + sizeof(memblock_t);
        // there will be a free fragment after the allocated block
        newblock = (memblock_t *) ((byte *)block + size + sizeof(memblock_t));
+       other = block->next;
+       if (!other->user)
+       {
+         extra += other->size;
+         block->next = other->next;
+         other->next->prev = block;
+         if (mainzone->rover == other)
+           mainzone->rover = newblock;
+       }
        newblock->size = extra;
        
        // NULL indicates free block.
@@ -380,10 +374,7 @@ void
 //
 // Z_FreeTags
 //
-void
-Z_FreeTags
-( int           lowtag,
-  int           hightag )
+void Z_FreeTags (int lowtag, int hightag)
 {
     memblock_t* block;
     memblock_t* next;
@@ -496,15 +487,16 @@ void Z_CheckHeap (void)
 	}
 	
 	if ( (byte *)block + block->size != (byte *)block->next)
-	    I_Error ("Z_CheckHeap: block size does not touch the next block\n");
+	  I_Error ("Z_CheckHeap: block size does not touch the next block\n");
 
 	if ( block->next->prev != block)
-	    I_Error ("Z_CheckHeap: next block doesn't have proper back link\n");
+	  I_Error ("Z_CheckHeap: next block doesn't have proper back link\n");
 
 	if (!block->user && !block->next->user)
-	    I_Error ("Z_CheckHeap: two consecutive free blocks\n");
+	  I_Error ("Z_CheckHeap: two consecutive free blocks\n");
+
 	if (!block->user || block->tag >= PU_PURGELEVEL)
-	    free += block->size;
+	  free += block->size;
     }
     Debug_Printf("%d/%d bytes free.\n", free, mainzone->size);
 }
@@ -515,10 +507,7 @@ void Z_CheckHeap (void)
 //
 // Z_ChangeTag
 //
-void
-Z_ChangeTag2
-( void*         ptr,
-  int           tag )
+void Z_ChangeTag2(void* ptr, int tag)
 {
     memblock_t* block;
 	

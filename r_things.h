@@ -28,11 +28,12 @@
 #pragma interface
 #endif
 
-//#define MAXVISSPRITES  	128
-#define MAXVISSPRITES  	1024
+#define MAXVISSPRITES  	128
+//#define MAXVISSPRITES  	1024
 
-extern vissprite_t	vissprites[MAXVISSPRITES];
-extern vissprite_t*	vissprite_p;
+extern int		maxvissprites;
+extern vissprite_t*	vissprites;
+extern int		vissprite_p;
 extern vissprite_t	vsprsortedhead;
 
 // Constant arrays used for psprite clipping
@@ -51,10 +52,7 @@ extern fixed_t		pspriteiscale;
 extern fixed_t		pspritescale2;
 extern fixed_t		pspriteiscale2;
 
-
 void R_DrawMaskedColumn (column_t* column);
-
-
 void R_SortVisSprites (void);
 
 void R_AddSprites (sector_t* sec);
@@ -64,11 +62,7 @@ void R_InitSprites (char** namelist);
 void R_ClearSprites (void);
 void R_DrawMasked (void);
 
-void
-R_ClipVisSprite
-( vissprite_t*		vis,
-  int			xl,
-  int			xh );
+void R_ClipVisSprite (vissprite_t* vis, int xl, int xh);
 
 
 #endif

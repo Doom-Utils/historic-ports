@@ -1,32 +1,14 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom BSP Handling Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code,
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -KM- 1998/09/27 Special sector colourmap changing
 //
-// $Log:$
-//
-// DESCRIPTION:
-//	BSP traversal, handling of LineSegs for rendering.
-//
-//-----------------------------------------------------------------------------
 
-
-static const char
-rcsid[] = "$Id: r_bsp.c,v 1.4 1997/02/03 22:45:12 b1 Exp $";
-
-
-#include "doomdef.h"
+#include "dm_defs.h"
 
 #include "m_bbox.h"
 
@@ -37,10 +19,11 @@ rcsid[] = "$Id: r_bsp.c,v 1.4 1997/02/03 22:45:12 b1 Exp $";
 #include "r_things.h"
 
 // State.
-#include "doomstat.h"
+#include "dm_state.h"
 #include "r_state.h"
 
-//#include "r_local.h"
+// 23-6-98 KM Dynamic mem allocation
+#include "z_zone.h"
 
 
 
@@ -50,8 +33,9 @@ line_t*		linedef;
 sector_t*	frontsector;
 sector_t*	backsector;
 
-drawseg_t	drawsegs[MAXDRAWSEGS];
-drawseg_t*	ds_p;
+int		maxdrawsegs = MAXDRAWSEGS;
+drawseg_t*	drawsegs = NULL;
+int		ds_p;
 
 
 void
@@ -67,7 +51,7 @@ R_StoreWallRange
 //
 void R_ClearDrawSegs (void)
 {
-    ds_p = drawsegs;
+    ds_p = 0;
 }
 
 
@@ -85,11 +69,12 @@ typedef	struct
 } cliprange_t;
 
 
-#define MAXSEGS		32
-
+// 98-6-21 KM Removing solidsegs limit
+#define MAXSEGS 32
 // newend is one past the last valid seg
-cliprange_t*	newend;
-cliprange_t	solidsegs[MAXSEGS];
+int		newend;
+int		maxsolidsegs = MAXSEGS;
+cliprange_t*	solidsegs = NULL;
 
 
 
@@ -107,10 +92,19 @@ R_ClipSolidWallSegment
 {
     cliprange_t*	next;
     cliprange_t*	start;
+    cliprange_t*	end;
 
+    // 98-6-21 KM  Removing solidsegs limit
+    // -KM- 1998/07/31 Perhaps Solid segs go up somewhere else?
+    if (newend >= maxsolidsegs)
+    {
+      maxsolidsegs += newend - maxsolidsegs;
+      solidsegs = Z_ReMalloc(solidsegs, ++maxsolidsegs * sizeof(cliprange_t));
+    }
     // Find the first range that touches the range
     //  (adjacent pixels are touching).
     start = solidsegs;
+    end   = solidsegs + newend;
     while (start->last < first-1)
 	start++;
 
@@ -121,7 +115,7 @@ R_ClipSolidWallSegment
 	    // Post is entirely visible (above start),
 	    //  so insert a new clippost.
 	    R_StoreWallRange (first, last);
-	    next = newend;
+	    next = end;
 	    newend++;
 	    
 	    while (next != start)
@@ -175,13 +169,14 @@ R_ClipSolidWallSegment
     }
     
 
-    while (next++ != newend)
+    while (next++ != end)
     {
 	// Remove a post.
 	*++start = *next;
     }
 
-    newend = start+1;
+    newend = start-solidsegs;
+    newend++;
 }
 
 
@@ -244,11 +239,14 @@ R_ClipPassWallSegment
 //
 void R_ClearClipSegs (void)
 {
+    // 98-6-21 KM Removing solidsegs limit
+    if (!solidsegs)
+      solidsegs = Z_Malloc(sizeof(cliprange_t) * maxsolidsegs, PU_STATIC, &solidsegs);
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;
     solidsegs[1].first = viewwidth;
     solidsegs[1].last = 0x7fffffff;
-    newend = solidsegs+2;
+    newend = 2;
 }
 
 //
@@ -320,39 +318,28 @@ void R_AddLine (seg_t*	line)
     backsector = line->backsector;
 
     // Single sided line?
-    if (!backsector)
-	goto clipsolid;		
-
-    // Closed door.
-    if (backsector->ceilingheight <= frontsector->floorheight
-	|| backsector->floorheight >= frontsector->ceilingheight)
-	goto clipsolid;		
+    if ((!backsector)
+        // Closed door.
+        || (backsector->ceilingheight <= frontsector->floorheight
+	|| backsector->floorheight >= frontsector->ceilingheight))
+      {
+          R_ClipSolidWallSegment (x1, x2-1);
+          return;
+      }
 
     // Window.
-    if (backsector->ceilingheight != frontsector->ceilingheight
+    if ((backsector->ceilingheight != frontsector->ceilingheight
 	|| backsector->floorheight != frontsector->floorheight)
-	goto clippass;	
-		
-    // Reject empty lines used for triggers
-    //  and special events.
-    // Identical floor and ceiling on both sides,
-    // identical light levels on both sides,
-    // and no middle texture.
-    if (backsector->ceilingpic == frontsector->ceilingpic
-	&& backsector->floorpic == frontsector->floorpic
-	&& backsector->lightlevel == frontsector->lightlevel
-	&& curline->sidedef->midtexture == 0)
-    {
-	return;
-    }
-    
-				
-  clippass:
-    R_ClipPassWallSegment (x1, x2-1);	
-    return;
-		
-  clipsolid:
-    R_ClipSolidWallSegment (x1, x2-1);
+        // Reject empty lines used for triggers
+        //  and special events.
+        // Identical floor and ceiling on both sides,
+        // identical light levels on both sides,
+        // and no middle texture.
+        || !(backsector->ceilingpic == frontsector->ceilingpic
+    	&& backsector->floorpic == frontsector->floorpic
+    	&& backsector->lightlevel == frontsector->lightlevel
+    	&& curline->sidedef->midtexture == 0))
+            R_ClipPassWallSegment (x1, x2-1);
 }
 
 
@@ -500,7 +487,7 @@ void R_Subsector (int num)
     seg_t*		line;
     subsector_t*	sub;
 	
-#ifdef RANGECHECK
+#ifdef DEVELOPERS
     if (num>=numsubsectors)
 	I_Error ("R_Subsector: ss %i with numss = %i",
 		 num,
@@ -517,20 +504,25 @@ void R_Subsector (int num)
     {
 	floorplane = R_FindPlane (frontsector->floorheight,
 				  frontsector->floorpic,
-				  frontsector->lightlevel);
+				  frontsector->lightlevel,
+                                  frontsector->colourmaplump,
+                                  frontsector->colourmap);
     }
     else
-	floorplane = NULL;
+        // -KM- 1998/07/31 Try to fix those wads...
+	floorplane = -1;
     
     if (frontsector->ceilingheight > viewz 
 	|| frontsector->ceilingpic == skyflatnum)
     {
 	ceilingplane = R_FindPlane (frontsector->ceilingheight,
 				    frontsector->ceilingpic,
-				    frontsector->lightlevel);
+				    frontsector->lightlevel,
+                                    frontsector->colourmaplump,
+                                    frontsector->colourmap);
     }
     else
-	ceilingplane = NULL;
+	ceilingplane = -1;
 		
     R_AddSprites (frontsector);	
 

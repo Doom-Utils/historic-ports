@@ -1,35 +1,13 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
 //
-// $Id:$
+// DOSDoom Misc: PCX Screenshots, Menu and defaults Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Based on the Doom Source Code
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -MH- 1998/07/02  Added key_flyup and key_flydown
+// -MH- 1998/07/02 "shootupdown" --> "true3dgameplay"
 //
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Main loop menu stuff.
-//	Default Config File.
-//	PCX Screenshots.
-//
-//-----------------------------------------------------------------------------
-// 07-Apr-98  Eduardo Casino <eduardo@medusa.es)
-//       Added "video" and "vid_path" options. Removed SNDSERV stuff
-// 09-Apr-98  Eduardo Casino <eduardo@medusa.es)
-//       Added "darken_screen" option
-
-static const char
-rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,18 +15,25 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #ifdef DJGPP
+// For screen shots.
 #include <allegro.h>
 #endif
 
 #include <ctype.h>
 
-#include "doomdef.h"
+#include "dm_defs.h"
 
 #include "z_zone.h"
 
 #include "m_swap.h"
 #include "m_argv.h"
+
+// 98-7-10 KM For non critical errors
+#include "m_menu.h"
+
+#include "f_wipe.h"
 
 #include "w_wad.h"
 
@@ -59,7 +44,7 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "hu_stuff.h"
 
 // State.
-#include "doomstat.h"
+#include "dm_state.h"
 
 // Data.
 #include "dstrings.h"
@@ -80,12 +65,17 @@ M_DrawText
   boolean	direct,
   char*		string )
 {
-    int 	c;
+    int 	c = 0;
     int		w;
 
     while (*string)
     {
-	c = toupper(*string) - HU_FONTSTART;
+        if (c < 128)
+	  c = toupper(*string);
+        else
+          c = *string;
+
+        c -= HU_FONTSTART;
 	string++;
 	if (c < 0 || c> HU_FONTSIZE)
 	{
@@ -116,11 +106,7 @@ M_DrawText
 #define O_BINARY 0
 #endif
 
-boolean
-M_WriteFile
-( char const*	name,
-  void*		source,
-  int		length )
+boolean M_WriteFile (char const* name, void* source, int length)
 {
     int		handle;
     int		count;
@@ -143,10 +129,7 @@ M_WriteFile
 //
 // M_ReadFile
 //
-int
-M_ReadFile
-( char const*	name,
-  byte**	buffer )
+int M_ReadFile (char const* name, byte** buffer)
 {
     int	handle, count, length;
     struct stat	fileinfo;
@@ -189,18 +172,13 @@ extern int	darken_screen;
 
 extern int	showMessages;
 
+// -KM- 1998/07/21 Save the blood setting
+extern boolean blood;
+
 // machine-independent sound params
 int	numChannels;
 
-//machie-dependant
-int snd_musicdevice;
-int snd_sfxdevice;
-int snd_sbport;
-int snd_sbirq;
-int snd_sbdma;
-int snd_mport;
 int showmessages;
-int comport;
 
 #ifdef LINUX
 char*		mousetype;
@@ -210,9 +188,6 @@ char*		vid_path;
 #endif
 
 extern char*	chat_macros[];
-
-
-
 
 default_t	defaults[] =
 {
@@ -233,6 +208,10 @@ default_t	defaults[] =
     {"key_strafeleft",&key_strafeleft, ','},
     {"key_straferight",&key_straferight, '.'},
 
+    // -ACB- for -MH- 1998/07/02 Flying Keys
+    {"key_flyup",&key_flyup, KEYD_INSERT},
+    {"key_flydown",&key_flydown, KEYD_DELETE},
+
     {"key_fire",&key_fire, KEYD_RCTRL},
     {"key_use",&key_use, ' '},
     {"key_strafe",&key_strafe, KEYD_RALT},
@@ -244,28 +223,29 @@ default_t	defaults[] =
     {"key_talk",&key_talk, 't'},
 
     {"swapstereo",(int *) &swapstereo,0},
-    {"mlookon",&mlookon,0},
     {"invertmouse",&invertmouse,0},
     {"mlookspeed",&keylookspeed,1000/64},
-    {"translucency",&transluc,1},
-    {"spectreability",&spectreability,1},
-    {"lostsoulability",&lostsoulability,0},
+    {"translucency",(int *) &settingflags.trans,1},
+    // -ES- 1998/11/28 Save fade settings
+    {"faded_teleportation",&faded_teleportation,0},
+    {"wipe_method",&wipe_method,wipe_Melt},
     {"crosshair",&crosshair,0},
-    {"stretchsky",&stretchsky,1},
+    {"stretchsky",(int *) &settingflags.stretchsky,1},
     {"rotatemap",&rotatemap,0},
     {"newhud",&newhud,0},
-    {"newnmrespawn",&newnmrespawn,0},
-    {"itemrespawn",&itemrespawn,0},
-    {"infight",&infight,0},
-    {"lessaccuratemon",&lessaccuratemon,0},
-    {"lessaccuratezom",&lessaccuratezom,1},
-    {"grav",&grav,8},
-    {"shootupdown",&shootupdown,0},
+    {"respawnsetting",(int *) &settingflags.respawnsetting,0},
+    {"itemrespawn",(int *) &settingflags.itemrespawn,0},
+    {"respawn",(int *) &settingflags.respawn, 0},
+    {"fastparm", (int *) &settingflags.fastparm, 0},
+//    {"infight",&infight,0},
+//    {"lessaccuratemon",&lessaccuratemon,0},
+//    {"lessaccuratezom",&lessaccuratezom,1},
+    {"grav",&settingflags.grav,8},
+    {"true3dgameplay",(int *) &settingflags.true3dgameplay,0},
     {"missileteleport",&missileteleport,0}, 
     {"teleportdelay",&teleportdelay,0},     
-    {"menuoptionshade",&menuoptionshade,0},
-    {"menunameshade",&menunameshade,0},
-
+    // -KM- 1998/07/21 Save the blood setting
+    {"blood",(int *) &settingflags.blood,0},
 
 
 #ifdef LINUX
@@ -275,36 +255,37 @@ default_t	defaults[] =
     {"video", (int*)&videoInterface, (int)"x"},
     {"vid_path", (int*)&vid_path, (int)"/usr/lib/games/doom"},
 #endif
+
     {"novert",&novert, 0},
+
+    // -KM- 1998/09/01 Useless mouse/joy stuff removed,
+    //                 analogue binding added
     {"use_mouse",&usemouse, 1},
-    {"mouseb_fire",&mousebfire,0},
-    {"mouseb_strafe",&mousebstrafe,1},
-    {"mouseb_forward",&mousebforward,2},
+    {"mouse_xaxis",&mouse_xaxis, AXIS_TURN},
+    {"mouse_yaxis",&mouse_yaxis, AXIS_FORWARD},
+
+    // -ACB- 1998/09/06 Two-stage turning & Speed controls added
+    {"twostage_turning",(int *)&stageturn, 0},
+    {"forwardmove_speed",&forwardmovespeed, 0},
+    {"angleturn_speed",&angleturnspeed, 0},
+    {"sidemove_speed",&sidemovespeed, 0 },
 
     {"use_joystick",&usejoystick, 0},
-    {"joyb_fire",&joybfire,0},
-    {"joyb_strafe",&joybstrafe,1},
-    {"joyb_use",&joybuse,3},
-    {"joyb_speed",&joybspeed,2},
+    {"joy_xaxis",&joy_xaxis, AXIS_TURN},
+    {"joy_yaxis",&joy_yaxis, AXIS_FORWARD},
 
     {"screenblocks",&screenblocks, 9},
     {"detaillevel",&detailLevel, 0},
     {"vsync",&retrace, 0},
+    {"screenwidth", &SCREENWIDTH, 320},
+    {"screenheight",&SCREENHEIGHT, 200},
+    {"bpp",&BPP, 1},
 
     {"darken_screen",&darken_screen, 1},
 
     {"snd_channels",&numChannels, 3},
 
-    //this is just to preserve dos's settings
-    {"snd_musicdevice",&snd_musicdevice, 0},
-    {"snd_sfxdevice",&snd_sfxdevice, 0},
-    {"snd_sbport",&snd_sbport, 0},
-    {"snd_sbirq",&snd_sbirq, 0},
-    {"snd_sbdma",&snd_sbdma, 0},
-    {"snd_mport",&snd_mport, 0},
     {"showmessages",&showmessages, 1},
-    {"comport",&comport, 1},
-    //end of new stuff
 
     {"usegamma",&usegamma, 0},
 
@@ -334,6 +315,11 @@ void M_SaveDefaults (void)
   int		v;
   FILE*	f;
 	
+  // Don't want to save settings in a network game: might not
+  // be ours.
+  if (netgame)
+    return;
+
   f = fopen (defaultfile, "w");
   if (!f)
     return; // can't write the file, but don't complain
@@ -549,8 +535,11 @@ WritePCXfile
 //
 void M_ScreenShot (void)
 {
-    int		i;
-    char	lbmname[12];
+    static int		i = 0;
+
+    // 25-6-98 KM Allow for 10000 screen shots.
+    char	lbmname[13];
+    static char *nopcx = NULL;
 
 #ifdef DJGPP
     BITMAP *tempbitmap;
@@ -559,20 +548,28 @@ void M_ScreenShot (void)
     byte*	linear;
 #endif
     
-    
-    // find a file name to save it to
-    strcpy(lbmname,"DOOM00.pcx");
-		
-    for (i=0 ; i<=99 ; i++)
+    for (; i<10000 ; i++)
     {
-	lbmname[4] = i/10 + '0';
-	lbmname[5] = i%10 + '0';
+    // find a file name to save it to
+        sprintf(lbmname, "DOOM%04d.pcx", i);
 	if (access(lbmname,0) == -1)
 	    break;	// file doesn't exist
     }
-    if (i==100)
-	I_Error ("M_ScreenShot: Couldn't create a PCX");
-    
+    if (i==10000)
+    {
+        // Errors suck.  Lets print a warning instead. 25-6-98 KM
+        if (!nopcx)
+        {
+          // -ES- 10/08/19 Proper size of allocated block, for translation
+          nopcx = Z_Malloc(24+strlen(DDF_LanguageLookup("PressAKey")),
+                            PU_STATIC, &nopcx); // -ACB- LanguageLookup Used
+          sprintf(nopcx,
+                   "Couldn't create a PCX\n\n%s",
+                     DDF_LanguageLookup("PressAKey")); // -ACB- LanguageLookup Used
+        }
+	M_StartMessage (nopcx, NULL, false);
+        return;
+    }
 #ifdef DJGPP
     tempbitmap=create_sub_bitmap(screen,0,0,SCREENWIDTH,SCREENHEIGHT);
     get_palette(temppal);

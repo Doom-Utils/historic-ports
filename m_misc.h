@@ -18,13 +18,16 @@
 //
 //    
 //-----------------------------------------------------------------------------
+//
+// 1998/07/02 -MH- Added key_flyup and key_flydown
+//
 
 
 #ifndef __M_MISC__
 #define __M_MISC__
 
 
-#include "doomtype.h"
+#include "dm_type.h"
 //
 // MISC
 //
@@ -75,6 +78,10 @@ extern int	key_down;
 
 extern int	key_strafeleft;
 extern int	key_straferight;
+
+// -ACB- for -MH- 1998/07/19 Flying keys
+extern int      key_flyup;
+extern int      key_flydown;
 
 extern int	key_fire;
 extern int	key_use;

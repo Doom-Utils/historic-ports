@@ -1,32 +1,25 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Networking Code (OS independend parts)
 //
-// $Id:$
+// Based on the Doom Source Code,
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT)
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// -MH- 1998/07/02 "shootupdown" --> "true3dgameplay"
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
+// -ACB- 1998/07/25 DEVELOPERS define for debugging
+//                  Extended Settings output more descriptive
 //
-// $Log:$
+// -ACB- 1998/09/06 Removed the startmap/startepisode stuff
 //
-// DESCRIPTION:
-//	DOOM Network game communication and protocol,
-//	all OS independend parts.
+// -KM- 1998/12/21 3 monitor view works.
+// TODO: Make sure DDF/RTS files are the same on all PC's on a network
 //
-//-----------------------------------------------------------------------------
 
+#include <stdlib.h>
 
-static const char rcsid[] = "$Id: d_net.c,v 1.3 1997/02/03 22:01:47 b1 Exp $";
-
-
-#include "m_menu.h"
+#include "m_fixed.h"
+#include "ddf_main.h"
 #include "i_system.h"
 #ifdef DJGPP
 #include "i_music.h"
@@ -34,10 +27,11 @@ static const char rcsid[] = "$Id: d_net.c,v 1.3 1997/02/03 22:01:47 b1 Exp $";
 #include "i_video.h"
 #include "i_net.h"
 #include "g_game.h"
-#include "doomdef.h"
-#include "doomstat.h"
-#include "lu_str.h"
-
+#include "d_debug.h"
+#include "dm_defs.h"
+#include "dm_state.h"
+#include "m_argv.h"
+#include "m_menu.h"
 #define	NCMD_EXIT		0x80000000
 #define	NCMD_RETRANSMIT		0x40000000
 #define	NCMD_SETUP		0x20000000
@@ -106,11 +100,6 @@ unsigned NetbufferChecksum (void)
 
     c = 0x1234567;
 
-    // FIXME -endianess?
-#ifdef LINUX
-    return 0;			// byte order problems
-#endif
-
     l = (NetbufferSize () - (int)&(((doomdata_t *)0)->retransmitfrom))/4;
     for (i=0 ; i<l ; i++)
 	c += ((unsigned *)&netbuffer->retransmitfrom)[i] * (i+1);
@@ -148,6 +137,13 @@ HSendPacket
  (int	node,
   int	flags )
 {
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+    int i;
+    int realretrans;
+#endif
+
     netbuffer->checksum = NetbufferChecksum () | flags;
 
     if (!node)
@@ -166,25 +162,23 @@ HSendPacket
     doomcom->command = CMD_SEND;
     doomcom->remotenode = node;
     doomcom->datalength = NetbufferSize ();
-	
-    if (debugfile)
-    {
-	int		i;
-	int		realretrans;
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
 	if (netbuffer->checksum & NCMD_RETRANSMIT)
 	    realretrans = ExpandTics (netbuffer->retransmitfrom);
 	else
 	    realretrans = -1;
 
-	fprintf (debugfile,"send (%i + %i, R %i) [%i] ",
+	Debug_Printf("send (%i + %i, R %i) [%i] ",
 		 ExpandTics(netbuffer->starttic),
 		 netbuffer->numtics, realretrans, doomcom->datalength);
 	
 	for (i=0 ; i<doomcom->datalength ; i++)
-	    fprintf (debugfile,"%i ",((byte *)netbuffer)[i]);
+	    Debug_Printf("%i ",((byte *)netbuffer)[i]);
 
-	fprintf (debugfile,"\n");
-    }
+	Debug_Printf("\n");
+#endif
 
     I_NetCmd ();
 }
@@ -194,7 +188,13 @@ HSendPacket
 // Returns false if no packet is waiting
 //
 boolean HGetPacket (void)
-{	
+{
+
+#ifdef DEVELOPERS
+    int realretrans;
+    int i;
+#endif
+
     if (reboundpacket)
     {
 	*netbuffer = reboundstore;
@@ -217,25 +217,31 @@ boolean HGetPacket (void)
 
     if (doomcom->datalength != NetbufferSize ())
     {
-   if (debugfile)
-	    fprintf (debugfile,"bad packet length %i\n",doomcom->datalength);
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+	Debug_Printf("bad packet length %i\n",doomcom->datalength);
+#endif
+
 	return false;
     }
 	
     if (NetbufferChecksum () != (netbuffer->checksum&NCMD_CHECKSUM) )
     {
-	if (debugfile)
-	    fprintf (debugfile,"bad packet checksum\n");
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+	Debug_Printf("bad packet checksum %i\n",doomcom->datalength);
+#endif
+
 	return false;
     }
 
-    if (debugfile)
-    {
-	int		realretrans;
-	int	i;
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
 			
 	if (netbuffer->checksum & NCMD_SETUP)
-	    fprintf (debugfile,"setup packet\n");
+	    Debug_Printf("setup packet\n");
 	else
 	{
 	    if (netbuffer->checksum & NCMD_RETRANSMIT)
@@ -243,16 +249,17 @@ boolean HGetPacket (void)
 	    else
 		realretrans = -1;
 	    
-	    fprintf (debugfile,"get %i = (%i + %i, R %i)[%i] ",
+	    Debug_Printf("get %i = (%i + %i, R %i)[%i] ",
 		     doomcom->remotenode,
 		     ExpandTics(netbuffer->starttic),
 		     netbuffer->numtics, realretrans, doomcom->datalength);
 
 	    for (i=0 ; i<doomcom->datalength ; i++)
-		fprintf (debugfile,"%i ",((byte *)netbuffer)[i]);
-	    fprintf (debugfile,"\n");
+		Debug_Printf("%i ",((byte *)netbuffer)[i]);
+	    Debug_Printf("\n");
 	}
-    }
+#endif
+
     return true;	
 }
 
@@ -276,8 +283,11 @@ void GetPackets (void)
 	    continue;		// extra setup packet
 			
 	netconsole = netbuffer->player & ~PL_DRONE;
+        if (netbuffer->player & PL_DRONE)
+           doomcom->drone |= 1<<netconsole;
+
 	netnode = doomcom->remotenode;
-	
+
 	// to save bytes, only the low byte of tic numbers are sent
 	// Figure out what the rest of the bytes are
 	realstart = ExpandTics (netbuffer->starttic);		
@@ -290,11 +300,11 @@ void GetPackets (void)
 		continue;
 	    nodeingame[netnode] = false;
 	    playeringame[netconsole] = false;
-/*	    strcpy (exitmsg, "Player 1 left the game");
-	    exitmsg[7] += netconsole;
-          */
-            sprintf(exitmsg, "Player %d left the game", netconsole);
+
+            // -KM- 1998/12/21 netconsole is 0 based, add 1.
+            sprintf(exitmsg, "Player %d left the game", netconsole + 1);
 	    players[consoleplayer].message = exitmsg;
+
 	    if (demorecording)
 		G_CheckDemoStatus ();
 	    continue;
@@ -311,8 +321,12 @@ void GetPackets (void)
 	     && (netbuffer->checksum & NCMD_RETRANSMIT) )
 	{
 	    resendto[netnode] = ExpandTics(netbuffer->retransmitfrom);
-	    if (debugfile)
-		fprintf (debugfile,"retransmit from %i\n", resendto[netnode]);
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+            Debug_Printf("retransmit from %i\n", resendto[netnode]);
+#endif
+
 	    resendcount[netnode] = RESENDCOUNT;
 	}
 	else
@@ -324,10 +338,13 @@ void GetPackets (void)
 			
 	if (realend < nettics[netnode])
 	{
-	    if (debugfile)
-		fprintf (debugfile,
-			 "out of order packet (%i + %i)\n" ,
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+                Debug_Printf("out of order packet (%i + %i)\n" ,
 			 realstart,netbuffer->numtics);
+#endif
+
 	    continue;
 	}
 	
@@ -335,10 +352,14 @@ void GetPackets (void)
 	if (realstart > nettics[netnode])
 	{
 	    // stop processing until the other system resends the missed tics
-	    if (debugfile)
-		fprintf (debugfile,
+
+// -ACB- 1998/07/17 Use DEVELOPERS define
+#ifdef DEVELOPERS
+                Debug_Printf(
 			 "missed tics from %i (%i - %i)\n",
 			 netnode, realstart, nettics[netnode]);
+#endif
+
 	    remoteresend[netnode] = true;
 	    continue;
 	}
@@ -384,8 +405,12 @@ void NetUpdate (void)
     newtics = nowtime - gametime;
     gametime = nowtime;
 	
+    // -ACB- 1998/07/17 removed goto - educational note: GOTO's are best avoided.
     if (newtics <= 0) 	// nothing new to update
-	goto listen; 
+    {
+     GetPackets ();
+     return;
+    }
 
     if (skiptics <= newtics)
     {
@@ -398,8 +423,9 @@ void NetUpdate (void)
 	newtics = 0;
     }
 	
-		
     netbuffer->player = consoleplayer;
+    if (gameflags.drone)
+      netbuffer->player |= PL_DRONE;
     
     // build new ticcmds for console player
     gameticdiv = gametic/ticdup;
@@ -446,8 +472,7 @@ void NetUpdate (void)
 	    }
 	}
     
-    // listen for other packets
-  listen:
+    // -ACB- 1998/07/17 removed goto - educational note: GOTO's are best avoided.
     GetPackets ();
 }
 
@@ -479,123 +504,152 @@ void CheckAbort (void)
 //
 // D_ArbitrateNetStart
 //
+// -ACB- 1998/07/25 Cleaned up the extended settings; Output more descriptive.
+//
 void D_ArbitrateNetStart (void)
 {
     int		i;
     boolean	gotinfo[MAXNETNODES];
-    extern int oldsetup; //-jc-
+    byte buffer=0; //-jc-
 	
     autostart = true;
     memset (gotinfo,0,sizeof(gotinfo));
-	
+
     if (doomcom->consoleplayer)
     {
 	// listen for setup info from key player
-	I_Printf (NETLISTEN);
+	I_Printf (DDF_LanguageLookup("ListenNet"));
 	while (1)
 	{
 	    CheckAbort ();
+
 	    if (!HGetPacket ())
 		continue;
+
 	    if (netbuffer->checksum & NCMD_SETUP)
 	    {
-//		if (netbuffer->player != VERSION)
-//		    I_Error ("Different DOOM versions cannot play a net game!");
-		startskill = netbuffer->retransmitfrom & 15;
-		deathmatch = (netbuffer->retransmitfrom & 0xc0) >> 6;
-		nomonsters = (netbuffer->retransmitfrom & 0x20) > 0;
-		respawnparm = (netbuffer->retransmitfrom & 0x10) > 0;
-		startmap = netbuffer->starttic & 0x3f;
-		startepisode = netbuffer->starttic >> 6;
+                if (netbuffer->player != DEMOVERSION)
+		    I_Error ("DOSDoom Versions are incompatiable!");
 
-                if (!oldsetup) {
-                   shootupdown    =(netbuffer->cmds->chatchar&1);
-                   newnmrespawn   =(netbuffer->cmds->chatchar&2)>>1;
-                   itemrespawn    =(netbuffer->cmds->chatchar&4)>>2;
-                   infight        =(netbuffer->cmds->chatchar&8)>>3;
-                   lessaccuratemon=(netbuffer->cmds->chatchar&16)>>4;
-                   missileteleport=(netbuffer->cmds->buttons&14)>>1;
-                   teleportdelay  =(netbuffer->cmds->buttons&112)>>3;
-                   grav           =(netbuffer->cmds->angleturn);
+		// Read Ticcmd for all the gameplay settings
+                settingflags.true3dgameplay = netbuffer->cmds->chatchar&1;
+                settingflags.itemrespawn = netbuffer->cmds->chatchar&2;
+                settingflags.respawnsetting = netbuffer->cmds->chatchar&4;
+                settingflags.respawn = netbuffer->cmds->chatchar&8;
+                settingflags.fastparm = netbuffer->cmds->chatchar&16;
+                settingflags.blood = netbuffer->cmds->chatchar&32;
+                settingflags.jump = netbuffer->cmds->chatchar&64;
+                settingflags.freelook = netbuffer->cmds->chatchar&128;
+                settingflags.trans=netbuffer->cmds->buttons&1;
 
-                   I_Printf("%d, %d, %d\n", netbuffer->cmds->chatchar,
-                                          netbuffer->cmds->buttons,
-                                          netbuffer->cmds->angleturn);
-                   I_Printf("shootupdown      = %d\n",shootupdown );
-                   I_Printf("newnmrespawn     = %d\n",newnmrespawn);
-                   I_Printf("itemRespawn      = %d\n",itemrespawn );
-                   I_Printf("infight          = %d\n",infight );
-                   I_Printf("lessaccuratemon  = %d\n",lessaccuratemon );
-                   I_Printf("missileteleport  = %d\n",missileteleport );
-                   I_Printf("teleportdelay    = %d\n",teleportdelay );
-                   I_Printf("grav             = %d\n",grav );
-                }
+                settingflags.grav=netbuffer->cmds->angleturn;
+
+		startskill = netbuffer->retransmitfrom&31;
+
+                deathmatch = netbuffer->retransmitfrom >> 6;
+		settingflags.nomonsters = netbuffer->retransmitfrom & 0x20;
+
+                // -ACB- 1998/07/25 Display the current settings
+                I_Printf("             True3D: %s\n",
+                                       settingflags.true3dgameplay ? "On" : "Off" );
+                I_Printf("   Enemy Respawning: ");
+                if (settingflags.respawnsetting == RS_RESURRECT)
+                  I_Printf("Resurrection ");
+                else if (settingflags.respawnsetting == RS_TELEPORT)
+                  I_Printf("Teleport     ");
+                I_Printf(settingflags.respawn?"On\n":"Off\n");
+        
+                // Shows enabled even if not set with altdeath
+                I_Printf("       Item Respawn: %s\n",
+                                       settingflags.itemrespawn ? "On" : "Off" );
+        
+                I_Printf("      Gravity Level: %d\n",settingflags.grav );
+                I_Printf("           Fastparm: %s\n", settingflags.fastparm?"On":"Off");
+                I_Printf("              Blood: %s\n", settingflags.blood?"On":"Off");
+                I_Printf("            Jumping: %s\n", settingflags.jump?"On":"Off");
+                I_Printf("           Freelook: %s\n", settingflags.freelook?"On":"Off");
+                I_Printf("       Translucency: %s\n", settingflags.trans?"On":"Off");
+                I_Printf("           Monsters: %s\n", settingflags.nomonsters?"Off":"On");
 
 		return;
-	    }
+	    } else if (netbuffer->player & PL_DRONE)
+            {
+              doomcom->drone |= 1<<(netbuffer->player&0x7f);
+            }
 	}
     }
     else
     {
-        byte tmp=0; //-jc-
-
 	// key player, send the setup info
-	I_Printf (NETSEND);
+	I_Printf (DDF_LanguageLookup("SendNet"));
+        // -ACB- 1998/07/25 Display the current settings
+        // -KM- 1998/12/21 Moved Display Here, so it only gets displayed once.
+        I_Printf("                   True3D: %s\n",
+                               settingflags.true3dgameplay ? "On" : "Off" );
+                //                         :
+        I_Printf(" %13s Respawning: ", settingflags.respawnsetting == RS_RESURRECT?"Resurrection":"Teleport");
+        I_Printf(settingflags.respawn?"On\n":"Off\n");
+        // Shows enabled even if not set with altdeath
+        I_Printf("       Item Respawn: %s\n",
+                               settingflags.itemrespawn ? "On" : "Off" );
+        I_Printf("      Gravity Level: %d\n",settingflags.grav );
+        I_Printf("           Fastparm: %s\n", settingflags.fastparm?"On":"Off");
+        I_Printf("              Blood: %s\n", settingflags.blood?"On":"Off");
+        I_Printf("            Jumping: %s\n", settingflags.jump?"On":"Off");
+        I_Printf("           Freelook: %s\n", settingflags.freelook?"On":"Off");
+        I_Printf("       Translucency: %s\n", settingflags.trans?"On":"Off");
+        I_Printf("           Monsters: %s\n", settingflags.nomonsters?"Off":"On");
 	do
 	{
 	    CheckAbort ();
 	    for (i=0 ; i<doomcom->numnodes ; i++)
 	    {
-                if (!oldsetup) {
-                   tmp=0;
-                   tmp=tmp|(shootupdown    <<0);
-                   tmp=tmp|(newnmrespawn   <<1);
-                   tmp=tmp|(itemrespawn    <<2);
-                   tmp=tmp|(infight        <<3);
-                   tmp=tmp|(lessaccuratemon<<4);
-                   netbuffer->cmds->chatchar=tmp; 
+                buffer=settingflags.true3dgameplay?1:0;
+                buffer|=settingflags.itemrespawn?2:0;
+                buffer|=settingflags.respawnsetting?4:0;
+                buffer|=settingflags.respawn?8:0;
+                buffer|=settingflags.fastparm?16:0;
+                buffer|=settingflags.blood?32:0;
+                buffer|=settingflags.jump?64:0;
+                buffer|=settingflags.freelook?128:0;
+                netbuffer->cmds->chatchar=buffer;
 
-                   tmp=0;
-                   tmp=tmp|(missileteleport<<1);
-                   tmp=tmp|(teleportdelay  <<3);
-                   netbuffer->cmds->buttons=tmp;
+                buffer=settingflags.trans?1:0;
+                netbuffer->cmds->buttons=buffer;
 
-                   netbuffer->cmds->angleturn=grav;
-                }
+                netbuffer->cmds->angleturn=settingflags.grav;
 
 		netbuffer->retransmitfrom = startskill;
-		if (deathmatch)
-		    netbuffer->retransmitfrom |= (deathmatch<<6);
-		if (nomonsters)
+
+                if (deathmatch)
+                  netbuffer->retransmitfrom |= (deathmatch<<6);
+		if (settingflags.nomonsters)
 		    netbuffer->retransmitfrom |= 0x20;
-		if (respawnparm)
-		    netbuffer->retransmitfrom |= 0x10;
-		netbuffer->starttic = startepisode * 64 + startmap;
-		netbuffer->player = 109;
+
+//		netbuffer->starttic = startepisode * 64 + startmap;
+		netbuffer->player = DEMOVERSION;
+
 
                 // Fake 1 tic if not using "-oldset" this will hold the
                 // extended startup information.
-		netbuffer->numtics = (!oldsetup)?1:0; //-JC- WAS 0
+                netbuffer->numtics = 1; //-JC- WAS 0
 
 		HSendPacket (i, NCMD_SETUP);
+
+
 	    }
 
-#if 1
-	    for(i = 10 ; i  &&  HGetPacket(); --i)
-	    {
-		if((netbuffer->player&0x7f) < MAXNETNODES)
-		    gotinfo[netbuffer->player&0x7f] = true;
-	    }
-#else
 	    while (HGetPacket ())
 	    {
 		gotinfo[netbuffer->player&0x7f] = true;
+                if (netbuffer->player & PL_DRONE)
+                  doomcom->drone |= 1<<(netbuffer->player&0x7f);
 	    }
-#endif
 
 	    for (i=1 ; i<doomcom->numnodes ; i++)
 		if (!gotinfo[i])
 		    break;
+
 	} while (i < doomcom->numnodes);
     }
 }
@@ -604,8 +658,6 @@ void D_ArbitrateNetStart (void)
 // D_CheckNetGame
 // Works out player numbers among the net participants
 //
-extern	int			viewangleoffset;
-
 void D_CheckNetGame (void)
 {
     int             i;
@@ -625,11 +677,11 @@ void D_CheckNetGame (void)
     
     netbuffer = &doomcom->data;
     consoleplayer = displayplayer = doomcom->consoleplayer;
+
     if (netgame)
 	D_ArbitrateNetStart ();
 
-    I_Printf ("startskill %i  deathmatch: %i  startmap: %i  startepisode: %i\n",
-	    startskill, deathmatch, startmap, startepisode);
+    I_Printf ("startskill %i  deathmatch: %i ", startskill, deathmatch);
 	
     // read values out of doomcom
     ticdup = doomcom->ticdup;
@@ -641,10 +693,27 @@ void D_CheckNetGame (void)
 	playeringame[i] = true;
     for (i=0 ; i<doomcom->numnodes ; i++)
 	nodeingame[i] = true;
-	
+
+    i = M_CheckParm("-viewangle");
+    if (i && i < myargc-1)
+    {
+      settingflags.viewangleoffset = 0xB60B60 * atoi(myargv[i+1]);
+      if (netgame)
+      {
+        settingflags.drone = true;
+        doomcom->drone |= 1<<consoleplayer;
+      }
+      // -KM- 1998/12/21 Find the display player.
+      //  DOSDoom has enough network players for
+      //  more than one persone with 3 monitors each.
+      if (i < myargc-2)
+        displayplayer = atoi(myargv[i+2]);
+      else
+        displayplayer = 0;
+    }
+
     I_Printf ("player %i of %i (%i nodes)\n",
 	    consoleplayer+1, doomcom->numplayers, doomcom->numnodes);
-
 }
 
 
@@ -656,15 +725,14 @@ void D_CheckNetGame (void)
 void D_QuitNetGame (void)
 {
     int             i, j;
-	
-    if (debugfile)
-	fclose (debugfile);
 		
     if (!netgame || !usergame || consoleplayer == -1 || demoplayback)
 	return;
 	
     // send a bunch of packets for security
     netbuffer->player = consoleplayer;
+    if (gameflags.drone)
+      netbuffer->player |= PL_DRONE;
     netbuffer->numtics = 0;
     for (i=0 ; i<4 ; i++)
     {
@@ -731,10 +799,10 @@ void TryRunTics (void)
 		
     frameon++;
 
-    if (debugfile)
-	fprintf (debugfile,
-		 "=======real: %i  avail: %i  game: %i\n",
-		 realtics, availabletics,counts);
+#ifdef DEVELOPERS
+        Debug_Printf("=======real: %i  avail: %i  game: %i\n",
+                       realtics, availabletics, counts);
+#endif
 
     if (!demoplayback)
     {	
@@ -743,11 +811,8 @@ void TryRunTics (void)
 	for (i=0 ; i<MAXPLAYERS ; i++)
 	    if (playeringame[i])
 		break;
-	if (consoleplayer == i)
-	{
-	    // the key player does not adapt
-	}
-	else
+        // the key player does not adapt
+	if (consoleplayer != i)
 	{
             if (nettics[0] <= nettics[nodeforplayer[i]])
                 gametime--;
@@ -777,9 +842,7 @@ void TryRunTics (void)
 	    M_Ticker ();
 	    return;
 	}
-#ifdef DJGPP
         I_MusicTicker2();
-#endif
     }
     
     // run the count * ticdup dics
@@ -813,8 +876,6 @@ void TryRunTics (void)
 	    }
 	}
 	NetUpdate ();	// check for new console commands
-#ifdef DJGPP
         I_MusicTicker2();
-#endif
     }
 }

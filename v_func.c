@@ -1,15 +1,20 @@
-////////////////////////////////////////////////////////////////////////
-//These are where the function pointers are actually delared (not extern)
-////////////////////////////////////////////////////////////////////////
+//
+// DOSDoom Video Virtual Functions Code
+//
+// Original Author: Chi Hoang
+//
+// By the DOSDoom Team
+//
 
-#include "doomtype.h"
-#include "doomdef.h"
+//
+// These are where the function pointers are actually delared (not extern)
+//
+
+#include "dm_type.h"
+#include "dm_defs.h"
+
 // Needed because we are refering to patches.
 #include "r_data.h"
-
-///////////////////////////////////
-//first for the v_video functions:
-///////////////////////////////////
 
 // Allocates buffer screens, call before R_Init.
 void (*V_Init) (void);
@@ -62,14 +67,14 @@ void
   int		scrn,
   patch_t*	patch );
 
-void  //stretches to fill screen
+void
 (*V_DrawPatchInDirect)
 ( int		x,
   int		y,
   int		scrn,
   patch_t*	patch );
 
-void  //stretches to fill screen
+void
 (*V_DrawPatchInDirectFlipped)
 ( int		x,
   int		y,
@@ -113,10 +118,9 @@ void
 
 void (*V_DarkenScreen)(int scrn);
 
+// 98-7-10 KM Reduce code redundancy
+void (*V_TextureBackScreen)(char *flatname);
 
-///////////////////////////////////
-//now for the r_draw functions:
-///////////////////////////////////
 void (*resinit_r_draw_c)(void);
 
 // The span blitting interface.
@@ -127,13 +131,10 @@ void 	(*R_DrawColumn) (void);
 // The Spectre/Invisibility effect.
 void 	(*R_DrawFuzzColumn) (void);
 
-void 	(*R_DrawTranslucentColumn25) (void);
-void 	(*R_DrawTranslucentColumn50) (void);
-void 	(*R_DrawTranslucentColumn75) (void);
-// Draw with color translation tables,
-//  for player sprite rendering,
-//  Green/Red/Blue/Indigo shirts.
-void	(*R_DrawTranslatedColumn) (void);
+// -KM- 1998/11/25 All the 75%/50%/25% funcs have been removed.
+void (*R_DrawTranslucentColumn) (void);
+void (*R_DrawTranslucentTranslatedColumn) (void);
+void (*R_DrawTranslatedColumn) (void);
 
 void
 (*R_VideoErase)

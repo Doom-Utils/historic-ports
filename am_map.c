@@ -26,12 +26,13 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 #include <stdio.h>
 
 #include "z_zone.h"
-#include "doomdef.h"
+#include "dm_defs.h"
 #include "st_stuff.h"
 #include "p_local.h"
 #include "w_wad.h"
 
 #include "m_cheat.h"
+#include "i_alleg.h"
 #include "i_system.h"
 #include "m_argv.h"
 
@@ -39,7 +40,7 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 #include "v_res.h"
 
 // State.
-#include "doomstat.h"
+#include "dm_state.h"
 #include "r_state.h"
 
 // Data.
@@ -47,7 +48,6 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 
 #include "am_map.h"
 #include "m_misc.h"
-
 
 // For use if I do walls with outsides/insides
 #define REDS		(256-5*16)
@@ -295,33 +295,28 @@ cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 static boolean stopped = true;
 
 extern boolean viewactive;
-//extern byte screens[][SCREENWIDTH*SCREENHEIGHT];
 int newhud=false;
 boolean newhupd=false;
 
-void
-AM_rotate
-( fixed_t*	x,
-  fixed_t*	y,
-  angle_t	a );
+void AM_rotate (fixed_t* x, fixed_t* y, angle_t a);
+void AM_LevelInit(void); // -ES- 1998/08/20
 
 void resinit_am_map_c(void)
-  {
+{
   finit_width = SCREENWIDTH;
   finit_height = SCREENHEIGHT - 32;
 
+  AM_LevelInit(); // -ES- 1998/08/20
+
   if (M_CheckParm("-newmap"))
     newhud=true;
-  }
+}
 
 // Calculates the slope and slope according to the x-axis of a line
 // segment in map coordinates (with the upright y-axis n' all) so
 // that it can be used with the brain-dead drawing stuff.
 
-void
-AM_getIslope
-( mline_t*	ml,
-  islope_t*	is )
+void AM_getIslope (mline_t* ml, islope_t* is)
 {
     int dx, dy;
 
@@ -561,9 +556,13 @@ void AM_LevelInit(void)
     AM_clearMarks();
 
     AM_findMinMaxBoundaries();
-    scale_mtof = FixedDiv(min_scale_mtof, (int) (0.7*FRACUNIT));
+
+    // -KM- 1998/12/16 Changed this from float.
+    scale_mtof = FixedDiv(min_scale_mtof, (7*FRACUNIT)/10);
+
     if (scale_mtof > max_scale_mtof)
-	scale_mtof = min_scale_mtof;
+      scale_mtof = min_scale_mtof;
+
     scale_ftom = FixedDiv(FRACUNIT, scale_mtof);
 }
 
@@ -588,16 +587,20 @@ void AM_Stop (void)
 //
 void AM_Start (void)
 {
-    static int lastlevel = -1, lastepisode = -1;
+   // static int lastlevel = -1, lastepisode = -1;
 
-    if (!stopped) AM_Stop();
+    if (!stopped)
+      AM_Stop();
+
     stopped = false;
-    if (lastlevel != gamemap || lastepisode != gameepisode)
-    {
+
+    //if (lastlevel != gamemap || lastepisode != gameepisode)
+    //{
 	AM_LevelInit();
-	lastlevel = gamemap;
-	lastepisode = gameepisode;
-    }
+//	lastlevel = gamemap;
+//	lastepisode = gameepisode;
+ //   }
+
     AM_initVariables();
     AM_loadPics();
 }
@@ -626,9 +629,7 @@ void AM_maxOutWindowScale(void)
 //
 // Handle events (user inputs) in automap mode
 //
-boolean
-AM_Responder
-( event_t*	ev )
+boolean AM_Responder ( event_t*	ev )
 {
 
     int rc;
@@ -690,20 +691,32 @@ AM_Responder
 	  case AM_FOLLOWKEY:
 	    followplayer = !followplayer;
 	    f_oldloc.x = MAXINT;
-	    plr->message = followplayer ? AMSTR_FOLLOWON : AMSTR_FOLLOWOFF;
-	    break;
+            // -ACB- 1998/08/10 Use DDF Lang Reference
+            if (followplayer)
+              plr->message = DDF_LanguageLookup("AutoMapFollowOn");
+            else
+              plr->message = DDF_LanguageLookup("AutoMapFollowOff");
+            break;
 	  case AM_GRIDKEY:
 	    grid = !grid;
-	    plr->message = grid ? AMSTR_GRIDON : AMSTR_GRIDOFF;
-	    break;
+	    // -ACB- 1998/08/10 Use DDF Lang Reference
+            if (grid)
+              plr->message = DDF_LanguageLookup("AutoMapGridOn");
+            else
+              plr->message = DDF_LanguageLookup("AutoMapGridOff");
+            break;
 	  case AM_MARKKEY:
-	    sprintf(buffer, "%s %d", AMSTR_MARKEDSPOT, markpointnum);
+	    // -ACB- 1998/08/10 Use DDF Lang Reference
+            sprintf(buffer, "%s %d",
+                     DDF_LanguageLookup("AutoMapMarkedSpot"),
+                      markpointnum);
 	    plr->message = buffer;
 	    AM_addMark();
 	    break;
 	  case AM_CLEARMARKKEY:
 	    AM_clearMarks();
-	    plr->message = AMSTR_MARKSCLEARED;
+	    // -ACB- 1998/08/10 Use DDF Lang Reference
+            plr->message = DDF_LanguageLookup("AutoMapMarksClear");
 	    break;
 	  default:
             if ((ev->data1==(AM_ENDKEY>>16))||(ev->data1==(AM_ENDKEY&0xffff)))
@@ -726,7 +739,7 @@ AM_Responder
 	      rc = false;
               }
 	}
-	if (!deathmatch && cht_CheckCheat(&cheat_amap, ev->data1))
+	if (!deathmatch && M_CheckCheat(&cheat_amap, ev->data1))
 	{
 	    rc = false;
 	    cheating = (cheating+1) % 3;

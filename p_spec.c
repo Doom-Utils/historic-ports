@@ -1,56 +1,29 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Specials Lines & Floor Code
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
+// -KM- 1998/09/01 Lines.ddf
 //
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Implements special effects:
-//	Texture animation, height or lighting changes
-//	 according to adjacent sectors, respective
-//	 utility functions, etc.
-//	Line Tag handling. Line and Sector triggers.
-//
-//-----------------------------------------------------------------------------
-
-static const char
-rcsid[] = "$Id: p_spec.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 
 #include <stdlib.h>
-
-#include "doomdef.h"
-#include "doomstat.h"
-
+#include "dm_defs.h"
+#include "dm_state.h"
+#include "g_game.h"
 #include "i_system.h"
-#include "z_zone.h"
+#include "lu_sound.h"
 #include "m_argv.h"
 #include "m_random.h"
-#include "w_wad.h"
-
-#include "r_local.h"
 #include "p_local.h"
-
-#include "g_game.h"
-
-#include "s_sound.h"
-
-// State.
+#include "r_local.h"
 #include "r_state.h"
+#include "s_sound.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
-// Data.
-#include "lu_sound.h"
+#include "ddf_main.h" // -KM- 98/07/31 Need animation definitions
 
 
 //
@@ -59,156 +32,145 @@ rcsid[] = "$Id: p_spec.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 //
 typedef struct
 {
-    boolean	istexture;
-    int		picnum;
-    int		basepic;
-    int		numpics;
-    int		speed;
-    
-} anim_t;
-
-//
-//      source animation definition
-//
-typedef struct
-{
-    boolean	istexture;	// if false, it is a flat
-    char	endname[9];
-    char	startname[9];
-    int		speed;
-} animdef_t;
-
-
+  boolean istexture;
+  int picnum;
+  int basepic;
+  int numpics;
+  int speed;    
+}
+anim_t;
 
 #define MAXANIMS                32
+//extern int	maxanims;
+//extern int	lastanim;
+//extern anim_t*	anims;
 
-extern anim_t	anims[MAXANIMS];
-extern anim_t*	lastanim;
-
-//
-// P_InitPicAnims
-//
-
-// Floor/ceiling animation sequences,
-//  defined by first and last frame,
-//  i.e. the flat (64x64 tile) name to
-//  be used.
-// The full animation sequence is given
-//  using all the flats between the start
-//  and end entry, in the order found in
-//  the WAD file.
-//
-animdef_t		animdefs[] =
-{
-    {false,	"NUKAGE3",	"NUKAGE1",	8},
-    {false,	"FWATER4",	"FWATER1",	8},
-    {false,	"SWATER4",	"SWATER1", 	8},
-    {false,	"LAVA4",	"LAVA1",	8},
-    {false,	"BLOOD3",	"BLOOD1",	8},
-
-    // DOOM II flat animations.
-    {false,	"RROCK08",	"RROCK05",	8},		
-    {false,	"SLIME04",	"SLIME01",	8},
-    {false,	"SLIME08",	"SLIME05",	8},
-    {false,	"SLIME12",	"SLIME09",	8},
-
-    {true,	"BLODGR4",	"BLODGR1",	8},
-    {true,	"SLADRIP3",	"SLADRIP1",	8},
-
-    {true,	"BLODRIP4",	"BLODRIP1",	8},
-    {true,	"FIREWALL",	"FIREWALA",	8},
-    {true,	"GSTFONT3",	"GSTFONT1",	8},
-    {true,	"FIRELAVA",	"FIRELAV3",	8},
-    {true,	"FIREMAG3",	"FIREMAG1",	8},
-    {true,	"FIREBLU2",	"FIREBLU1",	8},
-    {true,	"ROCKRED3",	"ROCKRED1",	8},
-
-    {true,	"BFALL4",	"BFALL1",	8},
-    {true,	"SFALL4",	"SFALL1",	8},
-    {true,	"WFALL4",	"WFALL1",	8},
-    {true,	"DBRAIN4",	"DBRAIN1",	8},
-	
-    {-1}
-};
-
-anim_t		anims[MAXANIMS];
-anim_t*		lastanim;
+// -KM- 98/07/31 Moved init to ddf_anim.h
+int		maxanims = MAXANIMS;
+anim_t*		anims;
+int		lastanim;
 
 
 //
-//      Animating line specials
+// Animating line specials
 //
 #define MAXLINEANIMS            64
 
-extern  short	numlinespecials;
-extern  line_t*	linespeciallist[MAXLINEANIMS];
+extern  int		numlinespecials;
+extern  line_t**	linespeciallist;
 
+boolean P_DoSectorsFromTag(int tag, void* p1, void* p2, boolean (*func)(sector_t*, void*, void*));
 
 
 void P_InitPicAnims (void)
 {
-    int		i;
-
+  int i;
+  anim_t* addanim;
     
-    //	Init animation
-    lastanim = anims;
-    for (i=0 ; animdefs[i].istexture != -1 ; i++)
+  //	Init animation
+  addanim = anims = Z_Malloc(sizeof(anim_t) * maxanims, PU_STATIC, NULL);
+  lastanim = 0;
+  for (i=0 ; animdefs[i].istexture != -1 ; i++)
+  {
+    addanim = &anims[lastanim];
+    if (animdefs[i].istexture)
     {
-	if (animdefs[i].istexture)
-	{
-	    // different episode ?
-	    if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
-		continue;	
+      if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
+ 	continue;
 
-	    lastanim->picnum = R_TextureNumForName (animdefs[i].endname);
-	    lastanim->basepic = R_TextureNumForName (animdefs[i].startname);
-	}
-	else
-	{
-	    if (W_CheckNumForName(animdefs[i].startname) == -1)
-		continue;
-
-	    lastanim->picnum = R_FlatNumForName (animdefs[i].endname);
-	    lastanim->basepic = R_FlatNumForName (animdefs[i].startname);
-	}
-
-	lastanim->istexture = animdefs[i].istexture;
-	lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
-
-	if (lastanim->numpics < 2)
-	    I_Error ("P_InitPicAnims: bad cycle from %s to %s",
-		     animdefs[i].startname,
-		     animdefs[i].endname);
-	
-	lastanim->speed = animdefs[i].speed;
-	lastanim++;
+      addanim->picnum = R_TextureNumForName (animdefs[i].endname);
+      addanim->basepic = R_TextureNumForName (animdefs[i].startname);
     }
+    else
+    {
+      if (W_CheckNumForName(animdefs[i].startname) == -1)
+  	continue;
+
+      addanim->picnum = R_FlatNumForName (animdefs[i].endname);
+      addanim->basepic = R_FlatNumForName (animdefs[i].startname);
+    }
+
+    addanim->istexture = animdefs[i].istexture;
+    addanim->numpics = addanim->picnum - addanim->basepic + 1;
+
+    if (addanim->numpics < 2)
+    {
+      I_Error ("P_InitPicAnims: bad cycle from %s to %s",
+                             animdefs[i].startname, animdefs[i].endname);
+    }
+
+    addanim->speed = animdefs[i].speed;
+    lastanim++;
+
+    if (lastanim == maxanims)
+      anims = Z_ReMalloc(anims, sizeof(anim_t) * ++maxanims);
+  }
 	
 }
 
+typedef struct
+{
+  thinker_t thinker;
+  sector_t* sector;
+  sfx_t*     sfx;
+  boolean   sfxstarted;
+  int       count;
+} sectorsfx_t;
+
+//
+// T_SectorSFX
+//
+// -KM- 1998/09/27
+//
+// This function is called every so often to keep a sector's ambient
+// sound going.  The sound should be looped.
+//
+void T_SectorSFX(sectorsfx_t *sec)
+{
+  if (--sec->count)
+    return;
+
+  sec->count = 7;
+
+  if (!sec->sfxstarted)
+  {
+    if (P_AproxDistance(players[displayplayer].mo->x - sec->sector->soundorg.x,
+                        players[displayplayer].mo->y - sec->sector->soundorg.y)
+                        < (S_CLIPPING_DIST<<FRACBITS))
+    {
+      int channel = S_StartSound((mobj_t *)&sec->sector->soundorg,
+                                 sec->sfx);
+      if (channel >= 0)
+          sec->sfxstarted = true;
+    }
+  }
+  else
+  {
+    if (P_AproxDistance(players[displayplayer].mo->x - sec->sector->soundorg.x,
+                        players[displayplayer].mo->y - sec->sector->soundorg.y)
+                        > (S_CLIPPING_DIST<<FRACBITS))
+    {
+      S_StopSound((mobj_t *)&sec->sector->soundorg);
+      sec->sfxstarted = false;
+    }
+  }
+}
 
 
 //
 // UTILITIES
 //
 
-
-
 //
 // getSide()
-// Will return a side_t*
-//  given the number of the current sector,
-//  the line number, and the side (0/1) that you want.
 //
-side_t*
-getSide
-( int		currentSector,
-  int		line,
-  int		side )
+// Will return a side_t* given the number of the current sector,
+// the line number, and the side (0/1) that you want.
+//
+side_t* getSide (int currentSector, int line, int side)
 {
-    return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
+  return &sides[ (sectors[currentSector].lines[line])->sidenum[side] ];
 }
-
 
 //
 // getSector()
@@ -216,52 +178,37 @@ getSide
 //  given the number of the current sector,
 //  the line number and the side (0/1) that you want.
 //
-sector_t*
-getSector
-( int		currentSector,
-  int		line,
-  int		side )
+sector_t* getSector (int currentSector, int line, int side)
 {
-    return sides[ (sectors[currentSector].lines[line])->sidenum[side] ].sector;
+  return sides[ (sectors[currentSector].lines[line])->sidenum[side] ].sector;
 }
-
 
 //
 // twoSided()
-// Given the sector number and the line number,
-//  it will tell you whether the line is two-sided or not.
 //
-int
-twoSided
-( int	sector,
-  int	line )
+// Given the sector number and the line number, it will tell you whether the
+// line is two-sided or not.
+//
+int twoSided (int sector, int line)
 {
-    return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
+  return (sectors[sector].lines[line])->flags & ML_TWOSIDED;
 }
-
-
-
 
 //
 // getNextSector()
-// Return sector_t * of sector next to current.
-// NULL if not two-sided line
 //
-sector_t*
-getNextSector
-( line_t*	line,
-  sector_t*	sec )
+// Return sector_t * of sector next to current; NULL if not two-sided line
+//
+sector_t* getNextSector(line_t* line, sector_t* sec)
 {
-    if (!(line->flags & ML_TWOSIDED))
-	return NULL;
+  if (!(line->flags & ML_TWOSIDED))
+    return NULL;
 		
-    if (line->frontsector == sec)
-	return line->backsector;
+  if (line->frontsector == sec)
+    return line->backsector;
 	
-    return line->frontsector;
+  return line->frontsector;
 }
-
-
 
 //
 // P_FindLowestFloorSurrounding()
@@ -269,110 +216,129 @@ getNextSector
 //
 fixed_t	P_FindLowestFloorSurrounding(sector_t* sec)
 {
-    int			i;
-    line_t*		check;
-    sector_t*		other;
-    fixed_t		floor = sec->floorheight;
+  int i;
+  line_t* check;
+  sector_t* other;
+  fixed_t floor = sec->floorheight;
 	
-    for (i=0 ;i < sec->linecount ; i++)
-    {
-	check = sec->lines[i];
-	other = getNextSector(check,sec);
+  for (i=0 ;i < sec->linecount ; i++)
+  {
+    check = sec->lines[i];
+    other = getNextSector(check,sec);
 
-	if (!other)
-	    continue;
+    if (!other)
+      continue;
 	
-	if (other->floorheight < floor)
-	    floor = other->floorheight;
-    }
-    return floor;
+    if (other->floorheight < floor)
+      floor = other->floorheight;
+  }
+
+  return floor;
 }
 
+//
+// P_FindRaiseToTexture()
+//
+// FIND THE SHORTEST BOTTOM TEXTURE SURROUNDING sec
+// AND RETURN IT'S TOP HEIGHT
+//
+// -KM- 1998/09/01 Lines.ddf; used to be inlined in p_floors
+//
+fixed_t P_FindRaiseToTexture(sector_t*  sec)
+{
+  int i;
+  side_t* side;
+  fixed_t minsize = MAXINT;
+  int secnum = sec - sectors;
+
+  for (i = 0; i < sec->linecount; i++)
+  {
+    if (twoSided (secnum, i) )
+    {
+      side = getSide(secnum,i,0);
+
+      if (side->bottomtexture >= 0)
+      {
+        if (textureheight[side->bottomtexture] < minsize)
+          minsize = textureheight[side->bottomtexture];
+      }
+
+      side = getSide(secnum,i,1);
+
+      if (side->bottomtexture >= 0)
+      {
+        if (textureheight[side->bottomtexture] < minsize)
+          minsize = textureheight[side->bottomtexture];
+      }
+    }
+  }
+
+  return sec->floorheight + minsize;
+}
 
 
 //
 // P_FindHighestFloorSurrounding()
+//
 // FIND HIGHEST FLOOR HEIGHT IN SURROUNDING SECTORS
 //
 fixed_t	P_FindHighestFloorSurrounding(sector_t *sec)
 {
-    int			i;
-    line_t*		check;
-    sector_t*		other;
-    fixed_t		floor = -500*FRACUNIT;
+  int i;
+  line_t* check;
+  sector_t* other;
+  fixed_t floor = -500*FRACUNIT;
 	
-    for (i=0 ;i < sec->linecount ; i++)
-    {
-	check = sec->lines[i];
-	other = getNextSector(check,sec);
+  for (i=0 ;i < sec->linecount ; i++)
+  {
+    check = sec->lines[i];
+    other = getNextSector(check,sec);
 	
-	if (!other)
-	    continue;
+    if (!other)
+      continue;
 	
-	if (other->floorheight > floor)
-	    floor = other->floorheight;
-    }
-    return floor;
+    if (other->floorheight > floor)
+      floor = other->floorheight;
+  }
+
+  return floor;
 }
 
 
 
 //
 // P_FindNextHighestFloor
+//
 // FIND NEXT HIGHEST FLOOR IN SURROUNDING SECTORS
-// Note: this should be doable w/o a fixed array.
-
-// 20 adjoining sectors max!
-#define MAX_ADJOINING_SECTORS    	20
-
-fixed_t
-P_FindNextHighestFloor
-( sector_t*	sec,
-  int		currentheight )
+//
+// 23-6-98 KM, done without a fixed array, based on
+// the other find next thingys, fixed by ACB.
+//
+// -ACB- 1998/07/21 if no sectors of greater height found, set min to currentheight.
+//
+fixed_t P_FindNextHighestFloor ( sector_t* sec, fixed_t	height )
 {
     int			i;
-    int			h;
-    int			min;
-    line_t*		check;
+    int			min = MAXINT;
     sector_t*		other;
-    fixed_t		height = currentheight;
 
-    
-    fixed_t		heightlist[MAX_ADJOINING_SECTORS];		
-
-    for (i=0, h=0 ;i < sec->linecount ; i++)
+    for (i=0; i < sec->linecount ; i++)
     {
-	check = sec->lines[i];
-	other = getNextSector(check,sec);
+	other = getNextSector(sec->lines[i],sec);
 
 	if (!other)
 	    continue;
-	
-	if (other->floorheight > height)
-	    heightlist[h++] = other->floorheight;
 
-	// Check for overflow. Exit.
-	if ( h >= MAX_ADJOINING_SECTORS )
-	{
-	    I_Printf("Sector with more than 20 adjoining sectors\n" );
-	    break;
-	}
+        if ((other->floorheight > height) && (other->floorheight < min))
+          min = other->floorheight;
     }
-    
-    // Find lowest height in list
-    if (!h)
-	return currentheight;
-		
-    min = heightlist[0];
-    
-    // Range checking? 
-    for (i = 1;i < h;i++)
-	if (heightlist[i] < min)
-	    min = heightlist[i];
-			
+
+    // -ACB- 1998/07/21 if No sectors of great height found, set min to currentheight.
+    if (min == MAXINT)
+      min = height;
+
     return min;
 }
-
 
 //
 // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
@@ -427,19 +393,19 @@ fixed_t	P_FindHighestCeilingSurrounding(sector_t* sec)
 
 
 //
-// RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
+// RETURN NEXT SECTOR # THAT TAG REFERS TO
 //
-int
-P_FindSectorFromLineTag
-( line_t*	line,
-  int		start )
+// -KM- 1998/09/27 Doesn't need a line.
+int P_FindSectorFromTag (int tag, int start)
 {
     int	i;
-	
+
     for (i=start+1;i<numsectors;i++)
-	if (sectors[i].tag == line->tag)
+    {
+	if (sectors[i].tag == tag)
 	    return i;
-    
+    }
+
     return -1;
 }
 
@@ -449,10 +415,7 @@ P_FindSectorFromLineTag
 //
 // Find minimum light from an adjacent sector
 //
-int
-P_FindMinSurroundingLight
-( sector_t*	sector,
-  int		max )
+int P_FindMinSurroundingLight (sector_t* sector, int max)
 {
     int		i;
     int		min;
@@ -478,31 +441,722 @@ P_FindMinSurroundingLight
 
 //
 // EVENTS
+//
 // Events are operations triggered by using, crossing,
 // or shooting special lines, or by timed thinkers.
 //
 
+
 //
+// P_ActivateSpecialLine
+//
+// Called when a special line is activated.
+//
+// line is the line to be activated, side is the side activated from,
+// as lines can only be activated from the right thing is the thing
+// activating, to check for player/monster only lines trig is how it
+// was activated, ie shot/crossed/pushed.
+//
+// -KM- 1998/09/01 Procedure Written.
+//
+boolean P_ActivateSpecialLine (line_t* line, int side, mobj_t* thing, trigger_e trig)
+{
+  linedeftype_t* special;
+  boolean texSwitch = false;
+  boolean failedsecurity = true; // -ACB- 1998/09/11 Security pass/fail check
+
+#ifdef DEVELOPERS
+  if (!line->special)
+    I_Error("P_ActivateSpecialLine: Line: %ld is not Special\n", line - lines);
+#endif
+
+  special = DDF_GetFromLineHashTable(line->special);
+
+  if (special->type != trig)
+    return false; // -ACB- 1998/09/11 Return Success or Failure
+
+  // Check for use once.
+  if (!line->count)
+    return false; // -ACB- 1998/09/11 Return Success or Failure
+
+  // Single sided line
+  if (special->singlesided && side == 1)
+    return false;
+
+  if (special->lumpcheck)
+  {
+    if (special->lumpcheck[0] == '!')
+    {
+      if (W_CheckNumForName(special->lumpcheck + 1) != -1)
+        return false;
+    }
+    else
+    {
+      if (W_CheckNumForName(special->lumpcheck) == -1)
+        return false;
+    }
+  }
+
+  if (thing)
+  {
+    // Check this type of thing can trigger
+    if (!thing->player) // Missile / Monster
+    {
+      // Monsters/Missiles don't trigger secrets
+      if (line->flags & ML_SECRET)
+        return false; // -ACB- 1998/09/11 Return Success or Failure
+  
+      // -ACB- 1998/09/07 Remove missileteleport check, not needed.
+      if (thing->flags & MF_MISSILE)
+      {
+        // Missiles can only trigger linedefs with the trig_projectile flag set
+        if (!(special->obj & trig_projectile))
+          return false; // -ACB- 1998/09/11 Return Success or Failure
+      }
+      else
+      {
+        // Monsters can only trigger if the trig_monster flag is set
+        if (!(special->obj & trig_monster))
+          return false; // -ACB- 1998/09/11 Return Success or Failure
+      }
+    }
+    else
+    {
+      // Players can only trigger if the trig_player is set
+      if (!(special->obj & trig_player))
+        return false; // -ACB- 1998/09/11 Return Success or Failure
+    }
+  
+    // Check for keys
+    // -ACB- 1998/09/11 Key possibilites extended
+    if (special->keys != KF_NONE)
+    {
+      // Monsters/Missiles have no keys
+      if (!thing->player)
+        return false; // -ACB- 1998/09/11 Return Success or Failure
+  
+      //
+      // New Security Checks, allows for any combination of keys in
+      // an AND or OR function. Therefore it extends the possibilities
+      // of security above 3 possible combinations..
+      //
+      // Could be better, but cheap and effective.
+      if ((special->keys & KF_BLUECARD) && thing->player->cards[it_bluecard])
+        failedsecurity = false;
+  
+      if ((special->keys & KF_YELLOWCARD) && thing->player->cards[it_yellowcard])
+        failedsecurity = false;
+  
+      if ((special->keys & KF_REDCARD) && thing->player->cards[it_redcard])
+        failedsecurity = false;
+  
+      if ((special->keys & KF_BLUESKULL) && thing->player->cards[it_blueskull])
+        failedsecurity = false;
+  
+      if ((special->keys & KF_YELLOWSKULL) && thing->player->cards[it_yellowskull])
+        failedsecurity = false;
+  
+      if ((special->keys & KF_REDSKULL) && thing->player->cards[it_redskull])
+        failedsecurity = false;
+  
+      if ((special->keys & (KF_BLUECARD<<8)) && !thing->player->cards[it_bluecard])
+        failedsecurity = true;
+  
+      if ((special->keys & (KF_YELLOWCARD<<8)) && !thing->player->cards[it_yellowcard])
+        failedsecurity = true;
+  
+      if ((special->keys & (KF_REDCARD<<8)) && !thing->player->cards[it_redcard])
+        failedsecurity = true;
+  
+      if ((special->keys & (KF_BLUESKULL<<8)) && !thing->player->cards[it_blueskull])
+        failedsecurity = true;
+  
+      if ((special->keys & (KF_YELLOWSKULL<<8)) && !thing->player->cards[it_yellowskull])
+        failedsecurity = true;
+  
+      if ((special->keys & (KF_REDSKULL<<8)) && !thing->player->cards[it_redskull])
+        failedsecurity = true;
+  
+      if (failedsecurity)
+      {
+        if (special->failedmessage)
+          thing->player->message = DDF_LanguageLookup(special->failedmessage);
+  
+        return false; // -ACB- 1998/09/11 Return Success or Failure
+      }
+  
+    }
+  }
+  // Do lights
+  // -KM- 1998/09/27 Generalised light types.
+  switch (special->l.type)
+  {
+    case lite_set:
+      EV_LightTurnOn(line, special->l.light);
+      texSwitch = true;
+      break;
+
+    case lite_none:
+      break;
+
+    default:
+      texSwitch = P_DoSectorsFromTag(line->tag, &special->l, NULL,
+                                         (boolean (*)(sector_t*, void*, void*))EV_Lights);
+      break;
+  }
+
+  // -ACB- 1998/09/13 Use teleport define..
+  if (special->t.teleport)
+  {
+    texSwitch = EV_Teleport(line, 1, thing, special->t.delay,
+                              special->t.inspawnobj, special->t.outspawnobj);
+  }
+
+  if (special->e_exit == 1)
+  {
+    G_ExitLevel(5);
+    texSwitch = true;
+  }
+  else if (special->e_exit == 2)
+  {
+    G_SecretExitLevel(5);
+    texSwitch = true;
+  }
+
+  if (special->d.dodonut)
+  {
+    sfx_t* sfx[4] = {special->d.d_sfxout, special->d.d_sfxoutstop,
+                  special->d.d_sfxin, special->d.d_sfxinstop};
+    texSwitch = P_DoSectorsFromTag(line->tag, sfx, NULL, (boolean (*)(sector_t*, void*, void*))EV_DoDonut);
+  }
+
+  // - Plats/Floors -
+  if (special->f.type != mov_undefined)
+  {
+    if (!line->tag)
+    {
+      texSwitch = EV_Manual(line, thing, &special->f);
+    }
+    else
+    {
+      texSwitch = P_DoSectorsFromTag(line->tag, &special->f, line->frontsector,
+                                     (boolean (*)(sector_t*, void*, void*)) EV_DoSector);
+    }
+  }
+
+  // - Doors/Ceilings -
+  if (special->c.type != mov_undefined)
+  {
+    if (!line->tag)
+    {
+      texSwitch = EV_Manual(line, thing, &special->c);
+    }
+    else
+    {
+      texSwitch = P_DoSectorsFromTag(line->tag, &special->c, line->frontsector,
+                                         (boolean (*)(sector_t*, void*, void*))EV_DoSector);
+    }
+  }
+
+  if (special->colourmaplump[0])
+  {
+    int colourmaplump = W_GetNumForName(special->colourmaplump);
+    int		secnum = -1;
+  	
+    while ((secnum = P_FindSectorFromTag(line->tag,secnum)) >= 0)
+    {
+      sectors[secnum].colourmaplump = colourmaplump;
+      texSwitch = true;
+    }
+  }
+
+  if (special->colourmap >= 0)
+  {
+    int		secnum = -1;
+  	
+    while ((secnum = P_FindSectorFromTag(line->tag,secnum)) >= 0)
+    {
+      sectors[secnum].colourmap = special->colourmap;
+      texSwitch = true;
+    }
+  }
+
+  if (special->gravity)
+  {
+    int		secnum = -1;
+  	
+    while ((secnum = P_FindSectorFromTag(line->tag,secnum)) >= 0)
+    {
+      sectors[secnum].gravity = special->gravity * 1024;
+      texSwitch = true;
+    }
+  }
+
+  if (special->friction)
+  {
+    int		secnum = -1;
+  	
+    while ((secnum = P_FindSectorFromTag(line->tag,secnum)) >= 0)
+    {
+      sectors[secnum].friction = special->friction;
+      texSwitch = true;
+    }
+  }
+
+  if (special->sfx)
+  {
+    int		secnum = -1;
+  	
+    while ((secnum = P_FindSectorFromTag(line->tag,secnum)) >= 0)
+    {
+      sectorsfx_t* sfx = Z_Malloc(sizeof(*sfx), PU_LEVSPEC, NULL);
+ 
+      P_AddThinker(&sfx->thinker);
+ 
+      sfx->count = 7;
+      sfx->sector = &sectors[secnum];
+      sfx->sfx = special->sfx;
+      sfx->sfxstarted = false;
+      sfx->thinker.function.acp1 = (actionf_p1)T_SectorSFX;
+
+      texSwitch = true;
+    }
+  }
+
+  if (special->music[0])
+  {
+    S_ChangeMusic(special->music, true);
+    texSwitch = true;
+  }
+
+
+  // reduce count & clear special if necessary
+  if (texSwitch)
+  {
+    if (line->count != -1)
+    {
+      line->count--;
+      if (!line->count)
+        line->special = 0;
+    }
+    // -KM- 1998/09/27 Reversable linedefs.
+    if (line->special && special->newtrignum)
+      line->special = special->newtrignum;
+
+    P_ChangeSwitchTexture(line, line->special && !special->newtrignum ? true : false);
+  }
+
+  return true;
+}
+
+//
+// P_CrossSpecialLine - TRIGGER
+//
+// Called every time a thing origin is about
+// to cross a line with a non 0 special.
+//
+// -KM- 1998/09/01 Now much simpler
+// -ACB- 1998/09/12 Return success/failure
+//
+boolean P_CrossSpecialLine (int linenum, int side, mobj_t* thing)
+{
+  return P_ActivateSpecialLine (&lines[linenum], side, thing, line_walkable);
+}
+
+
+//
+// P_ShootSpecialLine - IMPACT SPECIALS
+// Called when a thing shoots a special line.
+//
+void P_ShootSpecialLine (mobj_t* thing, line_t*	line)
+{
+  P_ActivateSpecialLine(line, 0, thing, line_shootable);
+}
+
+//
+// P_PlayerInSpecialSector
+//
+// Called every tic frame that the player origin is in a special sector
+//
+// -KM- 1998/09/27 Generalised for sectors.ddf
+void P_PlayerInSpecialSector (player_t* player)
+{
+    sector_t*	sector;
+    specialsector_t* special;
+	
+    sector = player->mo->subsector->sector;
+
+    // Falling, not all the way down yet?
+    if (player->mo->z != sector->floorheight)
+	return;	
+
+    special = DDF_GetFromSectHashTable(sector->special);
+
+    if (special->damage)
+      if (!player->powers[pw_ironfeet])
+        if (!(leveltime % special->damagetime))
+          P_DamageMobj (player->mo, NULL, NULL, special->damage);
+
+    if (special->secret)
+    {
+      player->secretcount++;
+      sector->special = 0;
+    }
+
+    if (special->exit == 1)
+    {
+      player->cheats &= ~CF_GODMODE;
+      if (player->health <= special->damage)
+      {
+        S_StartSound(player->mo, player->mo->info->deathsound);
+        // -KM- 1998/12/16 We don't want to alter the special type,
+        //   modify the sector's attributes instead.
+        sector->special = 0;
+        G_ExitLevel(1);
+      }
+    } else if (special->exit == 2)
+    {
+      player->cheats &= ~CF_GODMODE;
+      if (player->health <= special->damage)
+      {
+        S_StartSound(player->mo, player->mo->info->deathsound);
+        sector->special = 0;
+        G_SecretExitLevel(1);
+      }
+    }
+}
+
+
+
+
+//
+// P_UpdateSpecials
+// Animate planes, scroll walls, etc.
+//
+boolean		levelTimer;
+int		levelTimeCount;
+
+void P_UpdateSpecials (void)
+{
+    anim_t*	anim;
+    int		pic;
+    int		i;
+    line_t*	line;
+    linedeftype_t*   special;
+
+    
+    //	LEVEL TIMER
+    if (levelTimer == true)
+    {
+	levelTimeCount--;
+	if (!levelTimeCount)
+	    G_ExitLevel(1);
+    }
+    
+    //	ANIMATE FLATS AND TEXTURES GLOBALLY
+    for (anim = &anims[lastanim] ; anim-- != &anims[0];)
+    {
+	for (i=anim->basepic ; i<anim->basepic+anim->numpics ; i++)
+	{
+	    pic = anim->basepic + ( (leveltime/anim->speed + i)%anim->numpics );
+	    if (anim->istexture)
+		texturetranslation[i] = pic;
+	    else
+		flattranslation[i] = pic;
+	}
+    }
+
+    
+    //	ANIMATE LINE SPECIALS
+    // -KM- 1998/09/01 Lines.ddf
+    for (i = 0; i < numlinespecials; i++)
+    {
+      line = linespeciallist[i];
+      special = DDF_GetFromLineHashTable(line->special);
+      if (special->scroller)
+      {
+        if (special->scroller & dir_horiz)
+          sides[line->sidenum[0]].textureoffset +=
+            special->scroller & dir_left ? special->s_speed : -special->s_speed;
+        if (special->scroller & dir_vert)
+          sides[line->sidenum[0]].rowoffset +=
+            special->scroller & dir_up   ? special->s_speed : -special->s_speed;
+      }
+    }
+
+    
+    //	DO BUTTONS
+    for (i = 0; i < maxbuttons; i++)
+	if (buttonlist[i].btimer)
+	{
+	    buttonlist[i].btimer--;
+	    if (!buttonlist[i].btimer)
+	    {
+		switch(buttonlist[i].where)
+		{
+		  case top:
+		    sides[buttonlist[i].line->sidenum[0]].toptexture =
+			buttonlist[i].btexture;
+		    break;
+		    
+		  case middle:
+		    sides[buttonlist[i].line->sidenum[0]].midtexture =
+			buttonlist[i].btexture;
+		    break;
+		    
+		  case bottom:
+		    sides[buttonlist[i].line->sidenum[0]].bottomtexture =
+			buttonlist[i].btexture;
+		    break;
+		}
+		S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
+		memset(&buttonlist[i],0,sizeof(button_t));
+	    }
+	}
+	
+}
+
+//
+// SPECIAL SPAWNING
+//
+
+//
+// P_SpawnSpecials
+// After the map has been loaded, scan for specials
+//  that spawn thinkers
+//
+int		maxlinespecials = MAXLINEANIMS;
+int		numlinespecials;
+line_t**	linespeciallist = NULL;
+
+
+//
+// P_SpawnSpecials
+//
+// This function is called at the start of every level.  It parses command line
+// parameters for level timer, spawns passive special sectors, (ie sectors that
+// act even when a player is not in them, and counts total secrets) spawns
+// passive lines, (ie scrollers) and resets floor/ceiling movement.
+//
+// (-ACB- 1998/09/06 Its parses command line parameters? really? cool. I going to
+//                   to get my C book out and see how this works [:)]. )
+// -KM- 1998/09/27 Generalised for sectors.ddf
+// -KM- 1998/11/25 Lines with auto tag are automatically triggered.
+void P_SpawnSpecials (int autotag)
+{
+     sector_t*	sector;
+     specialsector_t* secSpecial;
+     int i;
+     int episode;
+     line_t* line;
+     linedeftype_t* special;
+
+     episode = 1;
+     if (W_CheckNumForName("texture2") >= 0)
+       episode = 2;
+
+    
+     // See if -TIMER needs to be used.
+     levelTimer = false;
+	
+     i = M_CheckParm("-avg");
+     if (i && deathmatch)
+     {
+	levelTimer = true;
+	levelTimeCount = 20 * 60 * 35;
+     }
+	
+     i = M_CheckParm("-timer");
+
+     if (i && deathmatch)
+     {
+	int	time;
+	time = atoi(myargv[i+1]) * 60 * 35;
+	levelTimer = true;
+	levelTimeCount = time;
+     }
+    
+     //	Init other misc stuff
+     P_ResetActiveSecs();
+
+     for (i = 0;i < maxbuttons;i++)
+       memset(&buttonlist[i],0,sizeof(button_t));
+
+     //	Init special SECTORs.
+     sector = sectors;
+     for (i=0 ; i<numsectors ; i++, sector++)
+     {
+        sector->colourmaplump = -1;
+        sector->colourmap = -1;
+        sector->gravity = 8192;
+        sector->friction = FRICTION;
+        sector->viscosity = 0;
+
+	if (!sector->special)
+          continue;
+
+        secSpecial = DDF_GetFromSectHashTable(sector->special);
+
+        if (secSpecial->lumpcheck)
+        {
+          if (secSpecial->lumpcheck[0] == '!')
+          {
+            if (W_CheckNumForName(secSpecial->lumpcheck + 1) != -1)
+              continue;
+          }
+          else
+          {
+            if (W_CheckNumForName(secSpecial->lumpcheck) == -1)
+              continue;
+          }
+        }
+
+        if (secSpecial->l.type != lite_none)
+          EV_Lights(sector, &secSpecial->l, NULL);
+
+        if (secSpecial->secret)
+          totalsecret++;
+
+        if (secSpecial->colourmaplump[0])
+          sector->colourmaplump = W_GetNumForName(secSpecial->colourmaplump);
+
+        sector->colourmap = secSpecial->colourmap;
+
+        if (secSpecial->sfx)
+        {
+          sectorsfx_t* sfx = Z_Malloc(sizeof(*sfx), PU_LEVSPEC, NULL);
+
+          P_AddThinker(&sfx->thinker);
+
+          sfx->count = 7;
+          sfx->sector = sector;
+          sfx->sfx = secSpecial->sfx;
+          sfx->sfxstarted = false;
+          sfx->thinker.function.acp1 = (actionf_p1)T_SectorSFX;
+        }
+
+        // - Plats/Floors -
+        if (secSpecial->f.type != mov_undefined)
+          EV_DoSector(sector, &secSpecial->f, sector);
+      
+        // - Doors/Ceilings -
+        if (secSpecial->c.type != mov_undefined)
+          EV_DoSector(sector, &secSpecial->c, sector);
+
+        sector->gravity = secSpecial->gravity * 1024;
+
+        sector->friction = secSpecial->friction;
+     }
+
+     // Init line EFFECTs
+     //
+     // -ACB- & -JC- 1998/06/10 Implemented additional scroll effects
+     //
+     // -ACB- Added the code
+     // -JC-  Designed and contributed code
+     // -KM-  Removed Limit
+     // -KM- 1998/09/01 Added lines.ddf support
+     //
+     numlinespecials = 0;
+     if (!linespeciallist)
+       linespeciallist = Z_Malloc(sizeof(line_t *) * maxlinespecials, PU_STATIC, &linespeciallist);
+     for (i = 0;i < numlines; i++)
+     {
+       if (lines[i].special)
+       {
+         special = DDF_GetFromLineHashTable(lines[i].special);
+
+         lines[i].count = special->count;
+         if (special->scroller)
+         {
+            linespeciallist[numlinespecials] = &lines[i];
+            if (++numlinespecials == maxlinespecials)
+              linespeciallist = Z_ReMalloc(linespeciallist, sizeof(line_t *) * ++maxlinespecials);
+         }
+         if (special->autoline)
+           P_ActivateSpecialLine(&lines[i], 0, NULL, line_pushable);
+
+         // -KM- 1998/11/25 This line should be pushed automatically (MAP07)
+         if (autotag && lines[i].tag == autotag)
+           P_ActivateSpecialLine(&lines[i], 0, NULL, line_pushable);
+       }
+       else
+       {
+         lines[i].count = 0;
+       }
+     }
+
+     // ANIMATE LINE SPECIALS
+     //
+     // -ACB- & -JC- 1998/06/10 Implemented additional scroll effects
+     //
+     // -ACB- Attached the code
+     // -JC-  Designed and contributed code originally.
+     // -KM- 1998/09/01 Reimplemented with DDF
+     //
+     for (i = 0; i < numlinespecials; i++)
+     {
+       line = linespeciallist[i];
+       special = DDF_GetFromLineHashTable(line->special);
+
+       if (!special) continue;
+
+       if (special->scroller)
+       {
+         if (special->scroller & dir_horiz)
+           sides[line->sidenum[0]].textureoffset +=
+              special->scroller & dir_left ? special->s_speed : -special->s_speed;
+
+         if (special->scroller & dir_vert)
+           sides[line->sidenum[0]].rowoffset +=
+              special->scroller & dir_up   ? special->s_speed : -special->s_speed;
+       }
+
+     }
+    
+     // UNUSED: no horizonal sliders.
+     //	P_InitSlidingDoorFrames();
+}
+
+// -KM- 1998/09/27 This helper function is used to do stuff to all the sectors
+// with the specified line's tag.
+boolean P_DoSectorsFromTag(int tag, void* p1, void* p2, boolean (*func)(sector_t*, void*, void*))
+{
+  int		secnum;
+  sector_t*	sec;
+  boolean     rtn = false, rtn2 = false;
+	
+  secnum = -1;
+  while ((secnum = P_FindSectorFromTag(tag,secnum)) >= 0)
+  {
+	sec = &sectors[secnum];
+        rtn2 = func(sec, p1, p2);
+        rtn = rtn2 ? rtn2 : rtn;
+  }
+  return rtn;
+}
+#if 0
+// -KM- 1998/09/01 Old code
 // P_CrossSpecialLine - TRIGGER
 // Called every time a thing origin is about
 //  to cross a line with a non 0 special.
 //
-void
-P_CrossSpecialLine
-( int		linenum,
-  int		side,
-  mobj_t*	thing )
+void P_CrossSpecialLine ( int linenum, int side, mobj_t* thing )
 {
     line_t*	line;
     int		ok;
 
     line = &lines[linenum];
+
+    if (!line->special)
+      I_Error("DOH!");
     
     //	Triggers that other things can activate
     if (!thing->player)
     {
 	// Things that NOW CAN trigger specials...
-        if (!missileteleport) {                                          //-JC-
+/*      if (!missileteleport)
+        {                                          //-JC-
 	   switch(thing->type)
 	   {
 	      case MT_ROCKET:
@@ -513,10 +1167,10 @@ P_CrossSpecialLine
 
 	      default: break;
            }
-        }
+        }    */
 
 	// Things that should NOT trigger specials...
-	switch(thing->type)
+/*	switch(thing->type)
 	{
 	  case MT_TROOPSHOT:
 	  case MT_HEADSHOT:
@@ -525,7 +1179,7 @@ P_CrossSpecialLine
 	    break;
 	    
 	  default: break;
-	}
+	}            */
 		
 	ok = 0;
 	switch(line->special)
@@ -1009,364 +1663,4 @@ P_ShootSpecialLine
     }
 }
 
-
-
-//
-// P_PlayerInSpecialSector
-// Called every tic frame
-//  that the player origin is in a special sector
-//
-void P_PlayerInSpecialSector (player_t* player)
-{
-    sector_t*	sector;
-	
-    sector = player->mo->subsector->sector;
-
-    // Falling, not all the way down yet?
-    if (player->mo->z != sector->floorheight)
-	return;	
-
-    // Has hitten ground.
-    switch (sector->special)
-    {
-      case 5:
-	// HELLSLIME DAMAGE
-	if (!player->powers[pw_ironfeet])
-	    if (!(leveltime&0x1f))
-		P_DamageMobj (player->mo, NULL, NULL, 10);
-	break;
-	
-      case 7:
-	// NUKAGE DAMAGE
-	if (!player->powers[pw_ironfeet])
-	    if (!(leveltime&0x1f))
-		P_DamageMobj (player->mo, NULL, NULL, 5);
-	break;
-	
-      case 16:
-	// SUPER HELLSLIME DAMAGE
-      case 4:
-	// STROBE HURT
-	if (!player->powers[pw_ironfeet]
-	    || (P_Random()<5) )
-	{
-	    if (!(leveltime&0x1f))
-		P_DamageMobj (player->mo, NULL, NULL, 20);
-	}
-	break;
-			
-      case 9:
-	// SECRET SECTOR
-	player->secretcount++;
-	sector->special = 0;
-	break;
-			
-      case 11:
-	// EXIT SUPER DAMAGE! (for E1M8 finale)
-	player->cheats &= ~CF_GODMODE;
-
-	if (!(leveltime&0x1f))
-	    P_DamageMobj (player->mo, NULL, NULL, 20);
-
-	if (player->health <= 10)
-	    G_ExitLevel();
-	break;
-			
-      default:
-	I_Error ("P_PlayerInSpecialSector: "
-		 "unknown special %i",
-		 sector->special);
-	break;
-    };
-}
-
-
-
-
-//
-// P_UpdateSpecials
-// Animate planes, scroll walls, etc.
-//
-boolean		levelTimer;
-int		levelTimeCount;
-
-void P_UpdateSpecials (void)
-{
-    anim_t*	anim;
-    int		pic;
-    int		i;
-    line_t*	line;
-
-    
-    //	LEVEL TIMER
-    if (levelTimer == true)
-    {
-	levelTimeCount--;
-	if (!levelTimeCount)
-	    G_ExitLevel();
-    }
-    
-    //	ANIMATE FLATS AND TEXTURES GLOBALLY
-    for (anim = anims ; anim < lastanim ; anim++)
-    {
-	for (i=anim->basepic ; i<anim->basepic+anim->numpics ; i++)
-	{
-	    pic = anim->basepic + ( (leveltime/anim->speed + i)%anim->numpics );
-	    if (anim->istexture)
-		texturetranslation[i] = pic;
-	    else
-		flattranslation[i] = pic;
-	}
-    }
-
-    
-    //	ANIMATE LINE SPECIALS
-    for (i = 0; i < numlinespecials; i++)
-    {
-	line = linespeciallist[i];
-	switch(line->special)
-	{
-	  case 48:
-	    // EFFECT FIRSTCOL SCROLL +
-	    sides[line->sidenum[0]].textureoffset += FRACUNIT;
-	    break;
-	}
-    }
-
-    
-    //	DO BUTTONS
-    for (i = 0; i < MAXBUTTONS; i++)
-	if (buttonlist[i].btimer)
-	{
-	    buttonlist[i].btimer--;
-	    if (!buttonlist[i].btimer)
-	    {
-		switch(buttonlist[i].where)
-		{
-		  case top:
-		    sides[buttonlist[i].line->sidenum[0]].toptexture =
-			buttonlist[i].btexture;
-		    break;
-		    
-		  case middle:
-		    sides[buttonlist[i].line->sidenum[0]].midtexture =
-			buttonlist[i].btexture;
-		    break;
-		    
-		  case bottom:
-		    sides[buttonlist[i].line->sidenum[0]].bottomtexture =
-			buttonlist[i].btexture;
-		    break;
-		}
-		S_StartSound((mobj_t *)&buttonlist[i].soundorg,sfx_swtchn);
-		memset(&buttonlist[i],0,sizeof(button_t));
-	    }
-	}
-	
-}
-
-
-
-//
-// Special Stuff that can not be categorized
-//
-int EV_DoDonut(line_t*	line)
-{
-    sector_t*		s1;
-    sector_t*		s2;
-    sector_t*		s3;
-    int			secnum;
-    int			rtn;
-    int			i;
-    floormove_t*	floor;
-	
-    secnum = -1;
-    rtn = 0;
-    while ((secnum = P_FindSectorFromLineTag(line,secnum)) >= 0)
-    {
-	s1 = &sectors[secnum];
-		
-	// ALREADY MOVING?  IF SO, KEEP GOING...
-	if (s1->specialdata)
-	    continue;
-			
-	rtn = 1;
-	s2 = getNextSector(s1->lines[0],s1);
-	for (i = 0;i < s2->linecount;i++)
-	{
-	    if ((!s2->lines[i]->flags & ML_TWOSIDED) ||
-		(s2->lines[i]->backsector == s1))
-		continue;
-	    s3 = s2->lines[i]->backsector;
-	    
-	    //	Spawn rising slime
-	    floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
-	    P_AddThinker (&floor->thinker);
-	    s2->specialdata = floor;
-	    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-	    floor->type = donutRaise;
-	    floor->crush = false;
-	    floor->direction = 1;
-	    floor->sector = s2;
-	    floor->speed = FLOORSPEED / 2;
-	    floor->texture = s3->floorpic;
-	    floor->newspecial = 0;
-	    floor->floordestheight = s3->floorheight;
-	    
-	    //	Spawn lowering donut-hole
-	    floor = Z_Malloc (sizeof(*floor), PU_LEVSPEC, 0);
-	    P_AddThinker (&floor->thinker);
-	    s1->specialdata = floor;
-	    floor->thinker.function.acp1 = (actionf_p1) T_MoveFloor;
-	    floor->type = lowerFloor;
-	    floor->crush = false;
-	    floor->direction = -1;
-	    floor->sector = s1;
-	    floor->speed = FLOORSPEED / 2;
-	    floor->floordestheight = s3->floorheight;
-	    break;
-	}
-    }
-    return rtn;
-}
-
-
-
-//
-// SPECIAL SPAWNING
-//
-
-//
-// P_SpawnSpecials
-// After the map has been loaded, scan for specials
-//  that spawn thinkers
-//
-short		numlinespecials;
-line_t*		linespeciallist[MAXLINEANIMS];
-
-
-// Parses command line parameters.
-void P_SpawnSpecials (void)
-{
-    sector_t*	sector;
-    int		i;
-    int		episode;
-
-    episode = 1;
-    if (W_CheckNumForName("texture2") >= 0)
-	episode = 2;
-
-    
-    // See if -TIMER needs to be used.
-    levelTimer = false;
-	
-    i = M_CheckParm("-avg");
-    if (i && deathmatch)
-    {
-	levelTimer = true;
-	levelTimeCount = 20 * 60 * 35;
-    }
-	
-    i = M_CheckParm("-timer");
-    if (i && deathmatch)
-    {
-	int	time;
-	time = atoi(myargv[i+1]) * 60 * 35;
-	levelTimer = true;
-	levelTimeCount = time;
-    }
-    
-    //	Init special SECTORs.
-    sector = sectors;
-    for (i=0 ; i<numsectors ; i++, sector++)
-    {
-	if (!sector->special)
-	    continue;
-	
-	switch (sector->special)
-	{
-	  case 1:
-	    // FLICKERING LIGHTS
-	    P_SpawnLightFlash (sector);
-	    break;
-
-	  case 2:
-	    // STROBE FAST
-	    P_SpawnStrobeFlash(sector,FASTDARK,0);
-	    break;
-	    
-	  case 3:
-	    // STROBE SLOW
-	    P_SpawnStrobeFlash(sector,SLOWDARK,0);
-	    break;
-	    
-	  case 4:
-	    // STROBE FAST/DEATH SLIME
-	    P_SpawnStrobeFlash(sector,FASTDARK,0);
-	    sector->special = 4;
-	    break;
-	    
-	  case 8:
-	    // GLOWING LIGHT
-	    P_SpawnGlowingLight(sector);
-	    break;
-	  case 9:
-	    // SECRET SECTOR
-	    totalsecret++;
-	    break;
-	    
-	  case 10:
-	    // DOOR CLOSE IN 30 SECONDS
-	    P_SpawnDoorCloseIn30 (sector);
-	    break;
-	    
-	  case 12:
-	    // SYNC STROBE SLOW
-	    P_SpawnStrobeFlash (sector, SLOWDARK, 1);
-	    break;
-
-	  case 13:
-	    // SYNC STROBE FAST
-	    P_SpawnStrobeFlash (sector, FASTDARK, 1);
-	    break;
-
-	  case 14:
-	    // DOOR RAISE IN 5 MINUTES
-	    P_SpawnDoorRaiseIn5Mins (sector, i);
-	    break;
-	    
-	  case 17:
-	    P_SpawnFireFlicker(sector);
-	    break;
-	}
-    }
-
-    
-    //	Init line EFFECTs
-    numlinespecials = 0;
-    for (i = 0;i < numlines; i++)
-    {
-	switch(lines[i].special)
-	{
-	  case 48:
-	    // EFFECT FIRSTCOL SCROLL+
-	    linespeciallist[numlinespecials] = &lines[i];
-	    numlinespecials++;
-	    break;
-	}
-    }
-
-    
-    //	Init other misc stuff
-    for (i = 0;i < MAXCEILINGS;i++)
-	activeceilings[i] = NULL;
-
-    for (i = 0;i < MAXPLATS;i++)
-	activeplats[i] = NULL;
-    
-    for (i = 0;i < MAXBUTTONS;i++)
-	memset(&buttonlist[i],0,sizeof(button_t));
-
-    // UNUSED: no horizonal sliders.
-    //	P_InitSlidingDoorFrames();
-}
+#endif

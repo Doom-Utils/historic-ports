@@ -1,27 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom WAD Support Code
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Handles WAD file header, directory, lump I/O.
-//
-//-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
 // This file contains various levels of support 
 // for using sprites and flats directly from a PWAD as well as some minor
@@ -30,14 +12,8 @@
 // work (at least, not until I become aware of them and support them) and
 // so this feature can be turned off from the command line if necessary.
 //
-// See the file README.sprites for details.
+// -MH- 1998/03/04
 //
-// Martin Howe (martin.howe@dial.pipex.com), March 4th 1998
-//
-
-static const char
-rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
-
 
 #include <ctype.h>
 #include <sys/types.h>
@@ -51,10 +27,14 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #define O_BINARY              0
 #endif
 
-#include "doomtype.h"
+#include "dm_type.h"
 #include "m_swap.h"
 #include "m_argv.h"
 #include "i_system.h"
+// -KM- 1998/07/31 For the groovy little disk
+#include "i_video.h"
+#include "d_player.h"
+#include "rad_trig.h"
 #include "z_zone.h"
 
 #ifdef __GNUG__
@@ -77,9 +57,9 @@ void**			lumpcache;
 #define strcmpi strcasecmp
 
 void strupr(char* s)
-  {
+{
   while (*s) {*s=toupper(*s);s++;}
-  }
+}
 #endif
 
 
@@ -677,7 +657,8 @@ ExtractFileBase
     // back up until a \ or the start
     while (src != path
 	   && *(src-1) != '\\'
-	   && *(src-1) != '/')
+	   && *(src-1) != '/'
+           && *(src-1) != ':') // Kester added :
     {
 	src--;
     }
@@ -695,8 +676,36 @@ ExtractFileBase
     }
 }
 
+wadtex_resource_t*	wadtex = NULL;
+int			maxwadtex = 1;
 
+void RegisterTexLumps (int mission, int pnames, int texture1, int texture2)
+{
+  if (!wadtex)
+  {
+    wadtex =
+      (wadtex_resource_t *)
+         Z_Malloc(sizeof(wadtex_resource_t)*maxwadtex,PU_STATIC,&wadtex);
+  }
+  else
+  {
+    wadtex =
+      (wadtex_resource_t *)Z_ReMalloc(wadtex, sizeof(wadtex_resource_t)*++maxwadtex);
+  }
 
+  wadtex[maxwadtex - 1].mission = mission;
+  wadtex[maxwadtex - 1].pnames  = pnames;
+  wadtex[maxwadtex - 1].texture[0] = texture1;
+  wadtex[maxwadtex - 1].texture[1] = texture2;
+}
+
+wadtex_resource_t*
+W_GetTextureResources(void)
+{
+   wadtex = (wadtex_resource_t *) Z_ReMalloc(wadtex, sizeof(wadtex_resource_t) * (maxwadtex + 1));
+   wadtex[maxwadtex].mission = -1;
+   return wadtex;
+}
 
 
 //
@@ -719,18 +728,44 @@ ExtractFileBase
 int			reloadlump;
 char*			reloadname;
 
+static int wadfile = -1;
+
+static struct
+{
+  char* name;
+  void (*func)(void *, int);
+} DDF_Readers[] = {
+  {"DDFANIM", DDF_ReadAnims },
+  {"DDFATK", DDF_ReadAtks },
+  {"DDFGAME", DDF_ReadGames },
+  {"DDFLANG", DDF_ReadLangs },
+  {"DDFLEVL", DDF_ReadLevels },
+  {"DDFLINE", DDF_ReadLines },
+  {"DDFCRTR", DDF_ReadCreatures },
+  {"DDFITEM", DDF_ReadItems },
+  {"DDFCNRY", DDF_ReadScenery },
+  {"DDFSECT", DDF_ReadSectors },
+  {"DDFSFX", DDF_ReadSFX },
+  {"DDFSWTH", DDF_ReadSW },
+  {"DDFWEAP", DDF_ReadWeapons }
+};
 
 void W_AddFile (char *filename)
 {
-    wadinfo_t		header;
-    lumpinfo_t*		lump_p;
-    unsigned		i;
-    int			handle;
-    int			length;
-    int			startlump;
-    filelump_t*		fileinfo;
-    filelump_t		singleinfo;
-    int			storehandle;
+  wadinfo_t header;
+  lumpinfo_t* lump_p;
+  unsigned i;
+  int handle;
+  int length;
+  int startlump;
+  int storehandle;
+  int mission = 0; // useless, but here
+  int pnames = -1;
+  int texture1 = -1;
+  int texture2 = -1;
+  filelump_t* fileinfo;
+  filelump_t singleinfo;
+  int j;
     
     // open the file and add to directory
 
@@ -748,8 +783,9 @@ void W_AddFile (char *filename)
 	return;
     }
 
-    I_Printf (" adding %s\n",filename);
+    I_Printf (" adding %s",filename);
     startlump = numlumps;
+    wadfile ++;
 	
     if (strcmpi (filename+strlen(filename)-3 , "wad" ) )
     {
@@ -800,7 +836,40 @@ void W_AddFile (char *filename)
 	lump_p->handle = storehandle;
 	lump_p->position = LONG(fileinfo->filepos);
 	lump_p->size = LONG(fileinfo->size);
+        lump_p->wadfile = wadfile;
 	strncpy (lump_p->name, fileinfo->name, 8);
+
+        // 98-7-10 KM Improve gamemission detection
+        if (!strncmp(lump_p->name, "MAP", 3) && !lump_p->size)
+        {
+          mission = 999; // both missions
+        }
+        else if ((lump_p->name[0] == 'E') && (lump_p->name[2] == 'M') && !lump_p->size)
+        {
+          mission = 999;
+        }
+        else if (!strncmp(lump_p->name, "PNAMES", 8)) pnames = i;
+        else if (!strncmp(lump_p->name, "TEXTURE1", 8)) texture1 = i;
+        else if (!strncmp(lump_p->name, "TEXTURE2", 8)) texture2 = i;
+        // -KM- 1998/11/25 Load radius triggers.
+        else if (!strncmp(lump_p->name, "RSCRIPT", 8))
+          RAD_LoadScript(NULL, i);
+        // -KM- 1998/12/16 Load DDF file from wad.
+        else
+        {
+          for (j = 0; j < sizeof(DDF_Readers)/sizeof(DDF_Readers[0]); j++)
+          {
+            if (!strncmp(lump_p->name, DDF_Readers[j].name, 8))
+            {
+              char *data;
+              data = Z_Malloc(lump_p->size+1, PU_STATIC, NULL);
+              W_ReadLump (i, data);
+              data[lump_p->size] = 0;
+              DDF_Readers[j].func(data, lump_p->size);
+            }
+          }
+        }
+
         if (group_sprites)
         {
           sprite_lists += (W_IsS_START(lump_p->name));
@@ -819,11 +888,88 @@ void W_AddFile (char *filename)
     }
 	
     if (reloadname)
-	close (handle);
+      close (handle);
+
+    RegisterTexLumps(mission, pnames, texture1, texture2);
+    I_Printf("\n");
 }
 
+int *W_GetList(char *name, int *num)
+{
+  int i, j, *list = NULL;
+  int in_list = 0, count = 0;
+  boolean flag;
 
+  // I love Gnu...
+  char sstart[9] = { [0 ... 8] = 0}, send[9] = { [0 ... 8] = 0 };
 
+  // Create the start and end markers
+  sprintf(sstart, "%s_START", name);
+  sprintf(send,   "%s_END",   name);
+
+  for (i = numlumps; i--;)
+  {
+    if (!strncmp(lumpinfo[i].name, send, 8))
+    {
+      in_list++;
+      continue;
+    }
+    else if (!strncmp(lumpinfo[i].name, sstart, 8))
+    {
+      in_list--;
+      continue;
+    }
+    else if (in_list > 0)  // If we are currently in the sprite list, add lumps
+      count++;
+  }
+
+  in_list = 0;
+  list = Z_Malloc(sizeof(int) * count, PU_STATIC, NULL);
+  count = 0;
+
+  // Search all lumps, forwards, cause backwards screws up
+  // animations.
+  for (i = 0; i < numlumps; i++)
+  {
+    // If it is a marker, begin adding lumps
+    if (!strncmp(lumpinfo[i].name, send, 8))
+    {
+      in_list--;
+      continue;
+    }
+    else if (!strncmp(lumpinfo[i].name, sstart, 8))
+    {
+      in_list++;
+      continue;
+    }
+    else if (lumpinfo[i].size == 0)
+    {
+      continue;
+    }
+    else if (in_list > 0) // If we are currently in the sprite list, add lumps
+    {
+      flag = true;
+
+      for (j = 0; (j < count) && flag; j++) // Check to make sure we have no duplicates
+      {
+        if (!strncasecmp(lumpinfo[i].name, lumpinfo[list[j]].name, 8))
+        {
+          list[j] = i;
+          flag = false;
+        }
+      }
+
+      // Increase the count
+      if (flag)
+        list[count++] = i;
+    }
+  }
+
+  *num = count;
+  list = Z_ReMalloc(list, count * sizeof(int));
+
+  return list;
+}
 
 //
 // W_Reload
@@ -871,9 +1017,16 @@ void W_Reload (void)
     close (handle);
 }
 
-
-
-
+extern char **wadfiles;
+int
+W_GetWadFileForName (const char *name)
+{
+  int i;
+  for (i = 0; wadfiles[i]; i++)
+     if (!strcmp(name, wadfiles[i]))
+       return i;
+  return -1;
+}
 
 //
 // W_InitMultipleFiles
@@ -979,14 +1132,7 @@ int W_NumLumps (void)
     return numlumps;
 }
 
-
-
-//
-// W_CheckNumForName
-// Returns -1 if name not found.
-//
-
-int W_CheckNumForName (const char* name)
+int W_SearchNumForName (const char *name, int wadfile, int from, int to)
 {
     union {
 	char	s[9];
@@ -996,6 +1142,7 @@ int W_CheckNumForName (const char* name)
     
     int		v1;
     int		v2;
+    int		dir = from > to ? -1 : 1;
     lumpinfo_t*	lump_p;
 
     // make the name into two integers for easy compares
@@ -1010,6 +1157,50 @@ int W_CheckNumForName (const char* name)
     v1 = name8.x[0];
     v2 = name8.x[1];
 
+
+    // scan backwards so patch lump files take precedence
+    lump_p = lumpinfo + from;
+
+    for (lump_p = &lumpinfo[from]; lump_p != &lumpinfo[to]; lump_p += dir)
+    {
+        if ((wadfile >= 0) && (lump_p->wadfile != wadfile))
+          continue;
+	if ( *(int *)lump_p->name == v1
+	     && *(int *)&lump_p->name[4] == v2)
+	    return lump_p - lumpinfo;
+    }
+
+    // TFB. Not found.
+    return -1;
+}
+//
+// W_CheckNumForName
+// Returns -1 if name not found.
+//
+// -ACB- 1998/08/09 Removed ifdef 0 stuff.
+//
+
+int W_CheckNumForName2 (char* name)
+{
+    union
+    {
+	char	s[8];
+	int	x[2];
+    }
+    name8;
+    
+    int		v1;
+    int		v2;
+    lumpinfo_t*	lump_p;
+
+    // case insensitive
+    strupr (name);
+
+    // make the name into two integers for easy compares
+    strncpy (name8.s,name,8);
+
+    v1 = name8.x[0];
+    v2 = name8.x[1];
 
     // scan backwards so patch lump files take precedence
     lump_p = lumpinfo + numlumps;
@@ -1034,14 +1225,12 @@ int W_CheckNumForName (const char* name)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (const char* name)
+int W_GetNumForName2 (char* name)
 {
-    int	i;
-
-    i = W_CheckNumForName (name);
+    int i;
     
-    if (i == -1)
-      I_Error ("W_GetNumForName: %s not found!", name);
+    if ((i = W_CheckNumForName2 (name)) == -1)
+      I_Error ("W_GetNumForName: \'%.8s\' not found!", name);
       
     return i;
 }
@@ -1059,49 +1248,47 @@ int W_LumpLength (int lump)
     return lumpinfo[lump].size;
 }
 
-
-
 //
 // W_ReadLump
-// Loads the lump into the given buffer,
-//  which must be >= W_LumpLength().
 //
-void
-W_ReadLump
-( int		lump,
-  void*		dest )
+// Loads the lump into the given buffer,
+// which must be >= W_LumpLength().
+//
+void W_ReadLump (int lump, void* dest)
 {
-    int		c;
-    lumpinfo_t*	l;
-    int		handle;
+  int c;
+  int handle;
+  lumpinfo_t* l;
 	
-    if (lump >= numlumps)
-	I_Error ("W_ReadLump: %i >= numlumps",lump);
+  if (lump >= numlumps)
+    I_Error ("W_ReadLump: %i >= numlumps",lump);
 
-    l = lumpinfo+lump;
+  l = lumpinfo+lump;
 	
-    // ??? I_BeginRead ();
+  // -KM- 1998/07/31 This puts the loading icon in the corner of the screen :-)
+  I_BeginRead ();
 	
-    if (l->handle == -1)
-    {
-	// reloadable file, so use open / read / close
-	if ( (handle = open (reloadname,O_RDONLY | O_BINARY)) == -1)
-	    I_Error ("W_ReadLump: couldn't open %s",reloadname);
-    }
-    else
-	handle = l->handle;
+  if (l->handle == -1)
+  {
+    // reloadable file, so use open / read / close
+    if ((handle = open (reloadname,O_RDONLY | O_BINARY)) == -1)
+      I_Error ("W_ReadLump: couldn't open %s", reloadname);
+  }
+  else
+  {
+    handle = l->handle;
+  }
 		
-    lseek (handle, l->position, SEEK_SET);
-    c = read (handle, dest, l->size);
+  lseek (handle, l->position, SEEK_SET);
+  c = read (handle, dest, l->size);
 
-    if (c < l->size)
-	I_Error ("W_ReadLump: only read %i of %i on lump %i",
-		 c,l->size,lump);	
+  if (c < l->size)
+    I_Error ("W_ReadLump: only read %i of %i on lump %i", c,l->size,lump);
 
-    if (l->handle == -1)
-	close (handle);
+  if (l->handle == -1)
+    close (handle);
 		
-    // ??? I_EndRead ();
+  // ??? I_EndRead ();
 }
 
 
@@ -1111,7 +1298,7 @@ W_ReadLump
 // W_CacheLumpNum
 //
 void*
-W_CacheLumpNum
+W_CacheLumpNum2
 ( int		lump,
   int		tag )
 {
@@ -1142,11 +1329,11 @@ W_CacheLumpNum
 // W_CacheLumpName
 //
 void*
-W_CacheLumpName
-( const char*		name,
+W_CacheLumpName2
+( char*		name,
   int		tag )
 {
-    return W_CacheLumpNum (W_GetNumForName(name), tag);
+    return W_CacheLumpNum2 (W_GetNumForName2(name), tag);
 }
 
 

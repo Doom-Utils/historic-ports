@@ -1,74 +1,42 @@
-// Emacs style mode select   -*- C++ -*- 
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Player User Code 
 //
-// $Id:$
+// Based on the Doom Source Code
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
+// Released by id Software, (c) 1993-1996 (see DOOMLIC.TXT) 
 //
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Player related stuff.
-//	Bobbing POV/weapon, movement.
-//	Pending weapon.
-//
-//-----------------------------------------------------------------------------
-
-
-static const char
-rcsid[] = "$Id: p_user.c,v 1.3 1997/01/28 22:08:29 b1 Exp $";
-
-
-#include "doomdef.h"
 #include "d_event.h"
-
-#include "p_local.h"
-
-#include "doomstat.h"
-
+#include "dm_defs.h"
+#include "dm_state.h"
+#include "i_system.h"
 #include "rad_trig.h"
+#include "p_local.h"
+#include "s_sound.h"
+#include "w_wad.h"
 
-// Index of the special effects (INVUL inverse) map.
-#define INVERSECOLORMAP		32
-
-
-//
-// Movement.
-//
+#define INVERSECOLORMAP         32
+#define NIGHTVISIONCOLORMAP     33 // -ACB- 1998/07/15 NightVision Code
 
 // 16 pixels of bob
-#define MAXBOB	0x100000	
+#define MAXBOB	      0x100000
+#define JUMPHEIGHT    player->mo->info->jumpheight
+#define JUMPBREATHER  1*TICRATE   // -ACB- 1998/08/09 Gap before next jump
+#define LOOKUPLIMIT   32768
+#define LOOKDOWNLIMIT -32768
 
 boolean		onground;
-
 
 //
 // P_Thrust
 // Moves the given origin along a given angle.
 //
-void
-P_Thrust
-( player_t*	player,
-  angle_t	angle,
-  fixed_t	move ) 
+void P_Thrust (player_t* player, angle_t angle, fixed_t move)
 {
     angle >>= ANGLETOFINESHIFT;
     
     player->mo->momx += FixedMul(move,finecosine[angle]); 
     player->mo->momy += FixedMul(move,finesine[angle]);
 }
-
-
-
 
 //
 // P_CalcHeight
@@ -78,22 +46,8 @@ void P_CalcHeight (player_t* player)
 {
     int		angle;
     fixed_t	bob;
-    
-    // Regular movement bobbing
-    // (needs to be calculated for gun swing
-    // even if not on ground)
-    // OPTIMIZE: tablify angle
-    // Note: a LUT allows for effects
-    //  like a ramp with low health.
-    player->bob =
-	FixedMul (player->mo->momx, player->mo->momx)
-	+ FixedMul (player->mo->momy,player->mo->momy);
-    
-    player->bob >>= 2;
 
-    if (player->bob>MAXBOB)
-	player->bob = MAXBOB;
-
+    // Check for cheat.
     if ((player->cheats & CF_NOMOMENTUM) || !onground)
     {
 	player->viewz = player->mo->z + VIEWHEIGHT;
@@ -104,14 +58,31 @@ void P_CalcHeight (player_t* player)
 	player->viewz = player->mo->z + player->viewheight;
 	return;
     }
-		
-    angle = (FINEANGLES/20*leveltime)&FINEMASK;
-    bob = FixedMul ( player->bob/2, finesine[angle]);
 
-    
-    // move viewheight
+    //
+    // Sorted this, bob and viewheight are only calculated when
+    // player is alive. -ACB- 1998/07/27
+    //
     if (player->playerstate == PST_LIVE)
     {
+        // ----CALCULATE BOB EFFECT----
+        angle = (FINEANGLES/20*leveltime)&FINEMASK;
+
+        // Regular movement bobbing (needs to be calculated for gun swing even
+        // if not on ground) OPTIMIZE: tablify angle; Note: a LUT allows for
+        // effects like a ramp with low health.
+        player->bob =
+	   FixedMul (player->mo->momx, player->mo->momx)
+	    + FixedMul (player->mo->momy,player->mo->momy);
+    
+        player->bob >>= 2;
+
+        if (player->bob>MAXBOB)
+	  player->bob = MAXBOB;
+
+        bob = FixedMul ( player->bob/2, finesine[angle]);
+
+        // ----CALCULATE VIEWHEIGHT----
 	player->viewheight += player->deltaviewheight;
 
 	if (player->viewheight > VIEWHEIGHT)
@@ -133,11 +104,20 @@ void P_CalcHeight (player_t* player)
 	    if (!player->deltaviewheight)
 		player->deltaviewheight = 1;
 	}
-    }
-    player->viewz = player->mo->z + player->viewheight + bob;
 
+        player->viewz = player->mo->z + player->viewheight + bob;
+
+    }
+    else
+    {
+        // If one is dead, one looks from the floor with no effects.
+        player->viewz = player->mo->z + player->viewheight;
+    }
+
+    // No heads above the ceiling
     if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-	player->viewz = player->mo->ceilingz-4*FRACUNIT;
+	  player->viewz = player->mo->ceilingz-4*FRACUNIT;
+
 }
 
 
@@ -151,26 +131,71 @@ void P_MovePlayer (player_t* player)
 	
     cmd = &player->cmd;
 	
-    player->mo->angle += (cmd->angleturn<<16);
+    player->mo->angle += FixedMul(cmd->angleturn<<16, player->mo->speed);
 
-    // Do not let the player control movement
-    //  if not onground.
+    // Do not let the player control movement if not onground.
+    // -MH- 1998/06/18  unless he has the JetPack!
     onground = (player->mo->z <= player->mo->floorz);
-	
-    if (cmd->forwardmove && onground)
-	P_Thrust (player, player->mo->angle, cmd->forwardmove*2048);
-    
-    if (cmd->sidemove && onground)
-	P_Thrust (player, player->mo->angle-ANG90, cmd->sidemove*2048);
+    if (player->powers[pw_jetpack])
+      {
+       if (player->powers[pw_jetpack]<=(5*TICRATE))
+       {
+         if (!(leveltime & 10))
+           S_StartSound(player->mo,sfx_jpflow); 	// fuel low
+       } else {
+          if (cmd->upwardmove>0)
+            S_StartSound(player->mo,sfx_jprise);
+          else
+            {
+             if (cmd->upwardmove<0)
+               S_StartSound(player->mo,sfx_jpdown);
+             else
+               {
+                if (cmd->forwardmove || cmd->sidemove)
+                   S_StartSound(player->mo,(onground?sfx_jpidle:sfx_jpmove));
+                else
+                   S_StartSound(player->mo,sfx_jpidle);
+               }
+            }
+         }
+      }
+
+    // -MH- 1998/08/18  do vertical move
+    if (cmd->upwardmove)
+    {
+       if (player->powers[pw_jetpack])
+         player->mo->momz += FixedMul(cmd->upwardmove*2048,player->mo->speed);
+       else
+         player->mo->momz += FixedMul(player->mo->subsector->sector->viscosity,
+                                      FixedMul(cmd->upwardmove*2048,player->mo->speed));
+    }
+
+    // -MH- 1998/06/18  ...or has the JetPack
+    if (cmd->forwardmove)
+    {
+      if (onground || player->powers[pw_jetpack])
+        P_Thrust (player, player->mo->angle, FixedMul(cmd->forwardmove*2048,player->mo->speed));
+      else
+        P_Thrust (player, player->mo->angle,
+                  FixedMul(player->mo->subsector->sector->viscosity, FixedMul(cmd->forwardmove*2048,player->mo->speed)));
+    }
+
+    // -MH- 1998/06/18  ...or has the JetPack
+    if (cmd->sidemove)
+    {
+      if (onground || player->powers[pw_jetpack])
+	P_Thrust (player, player->mo->angle-ANG90, FixedMul(cmd->sidemove*2048, player->mo->speed));
+      else
+	P_Thrust (player, player->mo->angle-ANG90,
+                  FixedMul(player->mo->subsector->sector->viscosity, FixedMul(cmd->sidemove*2048, player->mo->speed)));
+    }
 
     if ( (cmd->forwardmove || cmd->sidemove) 
-	 && player->mo->state == &states[S_PLAY] )
+	 && player->mo->state == &states[player->mo->info->spawnstate] )
     {
-	P_SetMobjState (player->mo, S_PLAY_RUN1);
+	P_SetMobjState (player->mo, player->mo->info->seestate);
     }
 }	
-
-
 
 //
 // P_DeathThink
@@ -236,7 +261,7 @@ void P_DeathThink (player_t* player)
 void P_PlayerThink (player_t* player)
 {
     ticcmd_t*		cmd;
-    weapontype_t	newweapon;
+    int	key;
 	
     // fixme: do this in the cheat code
     if (player->cheats & CF_NOCLIP)
@@ -253,8 +278,7 @@ void P_PlayerThink (player_t* player)
 	cmd->sidemove = 0;
 	player->mo->flags &= ~MF_JUSTATTACKED;
     }
-			
-	
+				
     if (player->playerstate == PST_DEAD)
     {
 	P_DeathThink (player);
@@ -272,9 +296,9 @@ void P_PlayerThink (player_t* player)
     P_CalcHeight (player);
 
     if (player->mo->subsector->sector->special)
-	P_PlayerInSpecialSector (player);
+    	P_PlayerInSpecialSector (player);
 
-    DoRadiTrigger(player);
+    RAD_DoRadiTrigger(player);
 
     // Check for weapon change.
 
@@ -282,41 +306,83 @@ void P_PlayerThink (player_t* player)
     if (cmd->buttons & BT_SPECIAL)
 	cmd->buttons = 0;			
 		
-    if ((cmd->buttons & BT_CHANGE)&&(!(cmd->buttons&BT_DOSDOOM)))
+    if (cmd->buttons & BT_CHANGE)
     {
+        int newweapon = wp_none;
+        int i, j;
+        weaponkey_t* wk;
 	// The actual changing of the weapon is done
 	//  when the weapon psprite can do it
 	//  (read: not in the middle of an attack).
-	newweapon = (cmd->buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT;
-	
-	if (newweapon == wp_fist
-	    && player->weaponowned[wp_chainsaw]
-	    && !(player->readyweapon == wp_chainsaw
-		 && player->powers[pw_strength]))
-	{
-	    newweapon = wp_chainsaw;
-	}
-	
-	if ( newweapon == wp_shotgun
-	    && player->weaponowned[wp_supershotgun]
-	    && player->readyweapon != wp_supershotgun)
-	{
-	    newweapon = wp_supershotgun;
-	}
-	
+	key = (cmd->buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT;
+        wk = &weaponkey[key];
 
-	if (player->weaponowned[newweapon]
-	    && newweapon != player->readyweapon)
-	{
-	    // Do not go to plasma or BFG in shareware,
-	    //  even if cheated.
-	    if ((newweapon != wp_plasma
-		 && newweapon != wp_bfg)
-		|| (gamemode != shareware) )
-	    {
-		player->pendingweapon = newweapon;
-	    }
-	}
+        // -KM- 1998/11/25 Make choice based on weapons.ddf
+        for ( i = j = wk->choiceon; i < (j + wk->numchoices); i++)
+        {
+           if (wk->choice[i%wk->numchoices] == -1)
+             continue;
+           if (player->weaponowned[wk->choice[i%wk->numchoices]]
+               && wk->choice[i%wk->numchoices] != player->readyweapon)
+           {
+             // -KM- 1998/12/16 Added check to make sure sprites exist.
+             char wSprite[9];
+             sprintf(wSprite, "%sA0", sprnames[states[weaponinfo[wk->choice[i%wk->numchoices]].upstate].sprite]);
+             if (W_CheckNumForName(wSprite) != -1)
+             {
+               player->pendingweapon = wk->choice[i%wk->numchoices];
+               wk->choiceon = i%wk->numchoices;
+               break;
+             } else
+               player->weaponowned[i%wk->numchoices] = false;
+           }
+        }
+        if (newweapon != player->readyweapon
+            && newweapon != wp_none)
+          player->pendingweapon = newweapon;
+    /*
+        newchoice = wp_none;
+
+        if (newweaponone == player->readyweapon)
+        {
+         if (player->weaponowned[newweapontwo])
+           newchoice = newweapontwo;
+        }
+    	else if (newweapontwo == player->readyweapon)
+        {
+         if (player->weaponowned[newweaponone])
+           newchoice = newweaponone;
+        }
+        else
+        {
+         if (player->weaponowned[newweaponone])
+           newchoice = newweaponone;
+         else if (player->weaponowned[newweapontwo])
+           newchoice = newweapontwo;
+        }
+
+        // None of the below with the correct sprite.
+        if (newchoice==wp_supershotgun)
+        {
+          if (W_CheckNumForName("SHT2A0")<0)
+            newchoice = wp_none;
+        }
+
+        if (newchoice==wp_plasma)
+        {
+          if (W_CheckNumForName("PLASA0")<0)
+            newchoice = wp_none;
+        }
+
+        if (newchoice==wp_bfg)
+        {
+          if (W_CheckNumForName("BFUGA0")<0)
+            newchoice = wp_none;
+        }
+
+        if (newchoice != wp_none)
+          player->pendingweapon = newchoice;
+      */
     }
     
     // check for use
@@ -331,14 +397,51 @@ void P_PlayerThink (player_t* player)
     else
 	player->usedown = false;
 
-    //check for jump
-    if ((cmd->buttons & BT_JUMP)==BT_JUMP)
+    // DOSDoom Feature: Jump Code
+    //
+    // -ACB- 1998/08/09 Check that jumping is allowed in the currentmap
+    //                  Make player pause before jumping again
+    //
+    if (cmd->extbuttons & EBT_JUMP)
+    {
+      if ((!(currentmap->flags & MPF_NOJUMPING)) && (!player->jumpwait))
       {
-      int onground;
-      onground = (player->mo->z <= player->mo->floorz);
-      if (onground)
-        player->mo->momz+=65536*8;
+        if (player->mo->z <= player->mo->floorz)
+        {
+          player->mo->momz += JUMPHEIGHT;
+          player->jumpwait = JUMPBREATHER;
+        }
       }
+    }
+
+    // DOSDoom Feature: Vertical Look (Mlook)
+    //
+    // -ACB- 1998/07/02 New Code used, rerouted via Ticcmd
+    // -ACB- 1998/07/27 Used defines for look limits.
+    //
+    if (gameflags.freelook && (cmd->extbuttons & EBT_VERTLOOK))
+    {
+      player->deltaviewz += (cmd->vertangle<<8);
+
+      if (player->deltaviewz > LOOKUPLIMIT)
+        player->deltaviewz = LOOKUPLIMIT;
+
+      if (player->deltaviewz < LOOKDOWNLIMIT)
+        player->deltaviewz = LOOKDOWNLIMIT;
+    }
+
+    // DOSDoom Feature: Vertical Look (Mlook)
+    //
+    // -ACB- 1998/07/02 Re-routed via Ticcmd
+    //
+    if (cmd->extbuttons & EBT_CENTER)
+        player->deltaviewz = 0;
+
+    player->mo->vertangle = (player->deltaviewz + 2*player->mo->vertangle) / 3;
+
+    // decrement jumpwait counter
+    if (player->jumpwait)
+      player->jumpwait--;
 
     // cycle psprites
     P_MovePsprites (player);
@@ -347,50 +450,63 @@ void P_PlayerThink (player_t* player)
 
     // Strength counts up to diminish fade.
     if (player->powers[pw_strength])
-	player->powers[pw_strength]++;	
+      player->powers[pw_strength]++;
 		
+    // -MH- 1998/06/18  jetpack "fuel" counter
+    if (player->powers[pw_jetpack])
+      player->powers[pw_jetpack]--;
+
+    // -ACB- 1998/07/16  nightvision counter decrementation
+    if (player->powers[pw_nightvision])
+      player->powers[pw_nightvision]--;
+
     if (player->powers[pw_invulnerability])
-	player->powers[pw_invulnerability]--;
+      player->powers[pw_invulnerability]--;
 
     if (player->powers[pw_invisibility])
 	if (! --player->powers[pw_invisibility] )
 	    player->mo->flags &= ~MF_SHADOW;
 			
     if (player->powers[pw_infrared])
-	player->powers[pw_infrared]--;
+      player->powers[pw_infrared]--;
 		
     if (player->powers[pw_ironfeet])
-	player->powers[pw_ironfeet]--;
+      player->powers[pw_ironfeet]--;
 		
     if (player->damagecount)
-	player->damagecount--;
+      player->damagecount--;
 		
     if (player->bonuscount)
-	player->bonuscount--;
+      player->bonuscount--;
 
     
     // Handling colormaps.
     if (player->powers[pw_invulnerability])
     {
-	if (player->powers[pw_invulnerability] > 4*32
-	    || (player->powers[pw_invulnerability]&8) )
+	if (player->powers[pw_invulnerability]>128 ||
+           (player->powers[pw_invulnerability]&8) )
 	    player->fixedcolormap = INVERSECOLORMAP;
 	else
 	    player->fixedcolormap = 0;
     }
     else if (player->powers[pw_infrared])	
     {
-	if (player->powers[pw_infrared] > 4*32
-	    || (player->powers[pw_infrared]&8) )
-	{
-	    // almost full bright
-	    player->fixedcolormap = 1;
-	}
+	if (player->powers[pw_infrared]>128 || (player->powers[pw_infrared]&8))
+	  player->fixedcolormap = 1;
 	else
-	    player->fixedcolormap = 0;
+	  player->fixedcolormap = 0;
+    }
+    else if (player->powers[pw_nightvision]) // -ACB- 1998/07/15 NightVision Code
+    {
+	if (player->powers[pw_nightvision]>128 || (player->powers[pw_nightvision]&8))
+	  player->fixedcolormap = NIGHTVISIONCOLORMAP;
+	else
+	  player->fixedcolormap = 0;
     }
     else
+    {
 	player->fixedcolormap = 0;
+    }
 }
 
 

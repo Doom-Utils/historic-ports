@@ -1,246 +1,188 @@
-// Emacs style mode select   -*- C++ -*-
-//-----------------------------------------------------------------------------
+//  
+// DOSDoom Video Code for 16-Bit Colour. 
 //
-// $Id:$
+// Based on the Doom Source Code released by id Software, (c) 1993-1996
+// (see DOOMLIC.TXT).
 //
-// Copyright (C) 1993-1996 by id Software, Inc.
-//
-// This source is available for distribution and/or modification
-// only under the terms of the DOOM Source Code License as
-// published by id Software. All rights reserved.
-//
-// The source is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
-// for more details.
-//
-// $Log:$
-//
-// DESCRIPTION:
-//	Gamma correction LUT stuff.
-//	Functions to draw patches (by post) directly to screen.
-//	Functions to blit a block to the screen.
-//
-//-----------------------------------------------------------------------------
-
-//this is for 16bpp modes
-
-static const char
-rcsid[] = "$Id: v_video2.c,v 1.5 1997/02/03 22:45:13 b1 Exp $";
-
 
 #include <stdio.h>
 
-#include	"i_system.h"
-#include	"r_local.h"
+#include "dm_data.h"
+#include "dm_defs.h"
+#include "dm_state.h"
 
-#include	"doomdef.h"
-#include	"doomdata.h"
-#include	"doomstat.h"
+#include "d_main.h"
+#include "i_alleg.h"
+#include "i_system.h"
+#include "r_local.h"
+#include "m_bbox.h"
+#include "m_swap.h"
+#include "v_res.h"
+#include "v_video2.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
-#include	"m_bbox.h"
-#include	"m_swap.h"
-
-#include	"v_video2.h"
-#include	"w_wad.h"
-#include	"z_zone.h"
-#include        "d_main.h"
-
-#include        "v_res.h"
-
-extern struct { int ploc; int numc;} pdecode[MAXTRANSLATIONS]; //-JC-
-
-int				dirtybox[4];
+int dirtybox[4];
 
 //
 // V_MarkRect16
 // 
-void
-V_MarkRect16
-( int		x,
-  int		y,
-  int		width,
-  int		height )	
+void V_MarkRect16 (int x, int y, int width, int height)
 { 
-	 M_AddToBox	(dirtybox, x, y);	
-	 M_AddToBox	(dirtybox, x+width-1, y+height-1); 
+  M_AddToBox(dirtybox, x, y);
+  M_AddToBox(dirtybox, x+width-1, y+height-1);
 } 
- 
 
 //
 // V_CopyRect16
 // 
-void
-V_CopyRect16
-( int		srcx,
-  int		srcy,
-  int		srcscrn,
-  int		width,
-  int		height,
-  int		destx,
-  int		desty,
-  int		destscrn	) 
+void V_CopyRect16 (int srcx, int srcy, int srcscrn,
+                    int width, int height, int destx, int desty, int destscrn)
 { 
-	 byte*	src;
-	 byte*	dest;	
+  byte* src;
+  byte* dest;
 	 
-	 V_MarkRect16	(destx, desty,	width, height);
+  V_MarkRect16(destx, desty, width, height);
 	 
-	 src = screens[srcscrn]+(SCREENWIDTH*srcy+srcx)*2;
-	 dest	= screens[destscrn]+(SCREENWIDTH*desty+destx)*2;
+  src = screens[srcscrn]+(SCREENWIDTH*srcy+srcx)*2;
+  dest = screens[destscrn]+(SCREENWIDTH*desty+destx)*2;
 
-	 for ( ;	height>0	; height--)	
-	 {	
-	memcpy (dest, src, width*2);
-	src += SCREENWIDTH*2;
-	dest += SCREENWIDTH*2;
-	 }	
+  while (height--)
+  {
+    memcpy (dest, src, width*2);
+    src += SCREENWIDTH*2;
+    dest += SCREENWIDTH*2;
+  }
 } 
- 
 
 //
 // V_DrawPatch16
-// Masks a column based masked pic to the screen. 
 //
-void
-V_DrawPatch16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	) 
+void V_DrawPatch16 (int x, int y, int scrn, patch_t* patch)
 { 
-
-	 int		count;
-	 int		col; 
-	 column_t*	column; 
-	 short*	desttop;
-	 short*	dest;
-	 byte*	source; 
-	 int		w;	
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
+  byte*	source;
+  int w;
 	 
-	 y	-=	SHORT(patch->topoffset); 
-	 x	-=	SHORT(patch->leftoffset); 
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
 
-	 if (!scrn)
-	  V_MarkRect16 (x,	y,	SHORT(patch->width),	SHORT(patch->height));
+  if (!scrn)
+    V_MarkRect16 (x, y, SHORT(patch->width), SHORT(patch->height));
 
-	 col = 0; 
-	 desttop	= (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
-	 
-	 w	= SHORT(patch->width); 
+  col = 0;
+  desttop = (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
 
-	 for ( ;	col<w	; x++, col++, desttop++)
-	 {	
-	column =	(column_t *)((byte *)patch	+ LONG(patch->columnofs[col])); 
+  for (w = SHORT(patch->width); col<w; x++, col++, desttop++)
+  {
+    column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
  
-	// step through the posts in a column 
-	while	(column->topdelta	!=	0xff ) 
-	{ 
-		 source = (byte *)column +	3;	
-		 dest	= desttop +	column->topdelta*SCREENWIDTH;
-		 count =	column->length; 
+    // step through the posts in a column
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column + 3;
+      dest = desttop + column->topdelta*SCREENWIDTH;
+      count = column->length;
 			 
-		 while (count--) 
-		 {	
-		*dest	= palette_color[*source++];
-		dest += SCREENWIDTH;
-		 }	
-		 column = (column_t *)(	 (byte *)column +	column->length	
-					 +	4 ); 
-	} 
-	 }			 
+      while (count--)
+      {
+        *dest = palette_color[*source++];
+        dest += SCREENWIDTH;
+      }
+
+      column = (column_t *)((byte *)column+column->length+4);
+    }
+  }
 } 
  
 //
 // V_DrawPatchFlipped16
+//
 // Masks a column based masked pic to the screen.
 // Flips horizontally, e.g. to mirror face.
 //
-void
-V_DrawPatchFlipped16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	) 
+void V_DrawPatchFlipped16 (int x, int y, int scrn, patch_t* patch)
 { 
-
-	 int		count;
-	 int		col; 
-	 column_t*	column; 
-	 short*	desttop;
-	 short*	dest;
-	 byte*	source; 
-	 int		w;	
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
+  byte* source;
+  int w;
 	 
-	 y	-=	SHORT(patch->topoffset); 
-	 x	-=	SHORT(patch->leftoffset); 
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
  
-	 if (!scrn)
-	V_MarkRect16 (x,	y,	SHORT(patch->width),	SHORT(patch->height));
+  if (!scrn)
+    V_MarkRect16 (x, y, SHORT(patch->width), SHORT(patch->height));
 
-	 col = 0; 
-	 desttop	= (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
-	 
-	 w	= SHORT(patch->width); 
+  col = 0;
+  desttop = (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
 
-	 for ( ;	col<w	; x++, col++, desttop++) 
-	 {	
-	column =	(column_t *)((byte *)patch	+ LONG(patch->columnofs[w-1-col]));	
+  for (w=SHORT(patch->width); col<w; x++, col++, desttop++)
+  {
+    column = (column_t *)((byte *)patch+LONG(patch->columnofs[w-1-col]));
  
-	// step through the posts in a column 
-	while	(column->topdelta	!=	0xff ) 
-	{ 
-		 source = (byte *)column +	3;	
-		 dest	= desttop +	column->topdelta*SCREENWIDTH;
-		 count =	column->length; 
+    // step through the posts in a column
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column + 3;
+      dest = desttop+column->topdelta*SCREENWIDTH;
+      count = column->length;
 			 
-		 while (count--) 
-		 {	
-		*dest	= palette_color[*source++];
-		dest += SCREENWIDTH;	
-		 }	
-		 column = (column_t *)(	 (byte *)column +	column->length	
-					 +	4 ); 
-	} 
-	 }			 
-} 
- 
+      while (count--)
+      {
+        *dest = palette_color[*source++];
+        dest += SCREENWIDTH;
+      }
 
+      column = (column_t *)((byte *)column + column->length + 4);
+    }
+  }
+} 
 
 //
 // V_DrawPatchDirect16
-// Draws directly to the screen on the pc. 
 //
-void
-V_DrawPatchDirect16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	) 
+void V_DrawPatchDirect16 (int x, int y, int scrn, patch_t* patch)
 {
-	 V_DrawPatch16 (x,y,scrn,	patch);
+ V_DrawPatch16 (x,y,scrn,	patch);
 }
- 
-void	//stretches bitrmap to fill screen
-V_DrawPatchInDirect16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	)
-  {
-  int		count;
-  int		col;
-  column_t*	column;
-  short*	desttop;
-  short*	dest;
+
+//
+// V_DrawPatchInDirect16
+//
+// The co-ordinates for this procedure are always based upon a
+// 320x200 screen and multiplies the size of the patch by the
+// scaledwidth & scaledheight. The purpose of this is to produce
+// a clean and undistorted patch opon the screen, The scaled screen
+// size is based upon the nearest whole number ratio from the
+// current screen size to 320x200.
+//
+void V_DrawPatchInDirect16 (int x, int y, int scrn, patch_t* patch)
+{
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
   byte*	source;
-  int		w;
+  int w;
 
   int stretchx,stretchy;
-  int srccol,collen;
+  int srccol;
 	 
-  y	-=	SHORT(patch->topoffset);
-  x	-=	SHORT(patch->leftoffset);
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
+
+  // -ACB- 1998/06/14 Adjusts coordinates to scale.
+  x += X_OFFSET;
+  y += Y_OFFSET;
 
   stretchx = (x*DX)>>16;
   stretchy = (y*DY)>>16;
@@ -250,51 +192,62 @@ V_DrawPatchInDirect16
 
   col = 0;
   desttop = (short *)(screens[scrn]+(stretchy*SCREENWIDTH+stretchx)*2);
-	 
-  w = (patch->width)<<16;
 
-  for (;col<w;x++,col+=DXI,desttop++)
-    {
-    column=(column_t *)((byte *)patch	+ LONG(patch->columnofs[col>>16]));
+  for (w = (patch->width)<<16; col<w; x++, col+=DXI, desttop++)
+  {
+    column=(column_t *)((byte *)patch + LONG(patch->columnofs[col>>16]));
  
     // step through the posts in a column
-    while	(column->topdelta	!=	0xff )
-      {
-  	   source = (byte *)column +	3;
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column + 3;
       dest=desttop+((column->topdelta*DY)>>16)*SCREENWIDTH;
-	   collen=count=(column->length*DY)>>16;
+      count=(column->length*DY)>>16;
       srccol=0;
-	   while (count--)
-        {
-		  *dest=palette_color[source[srccol>>16]];
-		  dest += SCREENWIDTH;
+
+      while (count--)
+      {
+        *dest=palette_color[source[srccol>>16]];
+	dest += SCREENWIDTH;
         srccol+=DYI;
-		  }
-	   column = (column_t *)((byte *)column+(column->length)+4);
-	   }
+      }
+
+      column = (column_t *)((byte *)column+(column->length)+4);
     }
   }
+}
 
-void	//stretches bitrmap to fill screen
-V_DrawPatchInDirectFlipped16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	)
-  {
-  int		count;
-  int		col;
-  column_t*	column;
-  short*	desttop;
-  short*	dest;
+//
+// V_DrawPatchInDirectFlipped16
+//
+// The co-ordinates for this procedure are always based upon a
+// 320x200 screen and multiplies the size of the patch by the
+// scaledwidth & scaledheight. The purpose of this is to produce
+// a clean and undistorted patch opon the screen, The scaled screen
+// size is based upon the nearest whole number ratio from the
+// current screen size to 320x200.
+//
+// This Procedure flips the patch horizontally.
+//
+void V_DrawPatchInDirectFlipped16 (int x, int y, int scrn, patch_t* patch)
+{
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
   byte*	source;
-  int		w;
+  int w;
 
   int stretchx,stretchy;
-  int srccol,collen;
+  int srccol;
 	 
-  y	-=	SHORT(patch->topoffset);
-  x	-=	SHORT(patch->leftoffset);
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
+
+  // -ACB- 1998/06/14 Adjusts coordinates to scale.
+  x += X_OFFSET;
+  y += Y_OFFSET;
 
   stretchx = (x*DX)>>16;
   stretchy = (y*DY)>>16;
@@ -304,51 +257,57 @@ V_DrawPatchInDirectFlipped16
 
   col = 0;
   desttop = (short *)(screens[scrn]+(stretchy*SCREENWIDTH+stretchx)*2);
-	 
-  w = (patch->width)<<16;
 
-  for (;col<w;x++,col+=DXI,desttop++)
-    {
-    column=(column_t *)((byte *)patch	+ LONG(patch->columnofs[patch->width-1-(col>>16)]));
+  for (w = (patch->width)<<16; col<w; x++, col+=DXI, desttop++)
+  {
+    column=(column_t*)((byte*)patch+LONG(patch->columnofs[patch->width-1-(col>>16)]));
  
     // step through the posts in a column
-    while	(column->topdelta	!=	0xff )
-      {
-  	   source = (byte *)column +	3;
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column +	3;
       dest=desttop+((column->topdelta*DY)>>16)*SCREENWIDTH;
-	   collen=count=(column->length*DY)>>16;
+      count=(column->length*DY)>>16;
       srccol=0;
-	   while (count--)
-        {
-		  *dest=palette_color[source[srccol>>16]];
-		  dest += SCREENWIDTH;
+
+      while (count--)
+      {
+        *dest=palette_color[source[srccol>>16]];
+        dest += SCREENWIDTH;
         srccol+=DYI;
-		  }
-	   column = (column_t *)((byte *)column+(column->length)+4);
-	   }
+      }
+
+      column = (column_t *)((byte *)column+(column->length)+4);
     }
   }
+}
 
-void	//stretches bitrmap to fill screen
-V_DrawPatchShrink16
-( int		x,
-  int		y,
-  int		scrn,
-  patch_t*	patch	)
-  {
-  int		count;
-  int		col;
-  column_t*	column;
-  short*	desttop;
-  short*	dest;
+//
+// V_DrawPatchShrink16
+//
+// Shrinks a patch to half its size; again this uses the
+// scaled size. It amounts to a cheap hack for the thermometers
+// on the text menus.
+//
+void V_DrawPatchShrink16 (int x, int y, int scrn, patch_t* patch)
+{
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
   byte*	source;
-  int		w;
+  int w;
 
   int stretchx,stretchy;
-  int srccol,collen;
+  int srccol;
 	 
-  y	-=	SHORT(patch->topoffset);
-  x	-=	SHORT(patch->leftoffset);
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
+
+  // -ACB- 1998/06/14 Adjusts coordinates to scale.
+  x += X_OFFSET;
+  y += Y_OFFSET;
 
   stretchx = (x*DX)>>16;
   stretchy = (y*DY)>>16;
@@ -358,107 +317,119 @@ V_DrawPatchShrink16
 
   col = 0;
   desttop = (short *)(screens[scrn]+(stretchy*SCREENWIDTH+stretchx)*2);
-	 
-  w = (patch->width)<<16;
 
-  for (;col<w;x++,col+=DXI,desttop++)
-    {
-    column=(column_t *)((byte *)patch	+ LONG(patch->columnofs[col>>16]));
+  for (w = (patch->width)<<16; col<w; x++, col+=DXI, desttop++)
+  {
+    column=(column_t *)((byte *)patch + LONG(patch->columnofs[col>>16]));
  
     // step through the posts in a column
-    while	(column->topdelta	!=	0xff )
-      {
-  	   source = (byte *)column +	3;
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column+3;
       dest=desttop+((column->topdelta*DY2)>>16)*SCREENWIDTH;
-	   collen=count=(column->length*DY2)>>16;
+      count=(column->length*DY2)>>16;
       srccol=0;
-	   while (count--)
-        {
-		  *dest=palette_color[source[srccol>>16]];
-		  dest += SCREENWIDTH;
+
+      while (count--)
+      {
+        *dest=palette_color[source[srccol>>16]];
+        dest += SCREENWIDTH;
         srccol+=DYI2;
-		  }
-	   column = (column_t *)((byte *)column+(column->length)+4);
-	   }
+      }
+
+      column = (column_t *)((byte *)column+(column->length)+4);
     }
   }
+}
 
 //
 // V_DrawPatchTrans16
-// Masks a column based masked pic to the screen. 
 //
-void
-V_DrawPatchTrans16
-( int		x,
-  int		y,
-  int           index,
-  int		scrn,
-  patch_t*	patch	) 
+// This the same as V_DrawPatch16, but it uses the PALREMAP translation
+// tables to alter the necessary colours. Reference by Index.
+//
+// -ACB- 1998/09/11 Use PALREMAP translation tables
+//
+void V_DrawPatchTrans16 (int x, int y, int index, int scrn, patch_t* patch)
 { 
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
+  byte* remaptable;
+  byte* source;
+  int w;
 
-	 int		count;
-	 int		col; 
-	 column_t*	column; 
-	 short*	desttop;
-	 short*	dest;
-	 byte*	source; 
-	 int		w;	
+  remaptable = &translationtables[256*index];
 
-	 y	-=	SHORT(patch->topoffset); 
-	 x	-=	SHORT(patch->leftoffset); 
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
  
-	 if (!scrn)
-	V_MarkRect16 (x,	y,	SHORT(patch->width),	SHORT(patch->height));
+  if (!scrn)
+    V_MarkRect16 (x, y, SHORT(patch->width), SHORT(patch->height));
 
-	 col = 0; 
-	 desttop	= (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
-	 
-	 w	= SHORT(patch->width); 
+  col = 0;
+  desttop = (short *)(screens[scrn]+(y*SCREENWIDTH+x)*2);
 
-	 for ( ;	col<w	; x++, col++, desttop++)
-	 {	
-	column =	(column_t *)((byte *)patch	+ LONG(patch->columnofs[col])); 
+  for (w = SHORT(patch->width); col<w; x++, col++, desttop++)
+  {
+    column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
  
-	// step through the posts in a column 
-	while	(column->topdelta	!=	0xff ) 
-	{ 
-		 source = (byte *)column +	3;	
-		 dest	= desttop +	column->topdelta*SCREENWIDTH;
-		 count =	column->length; 
+    // step through the posts in a column
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column + 3;
+      dest = desttop + column->topdelta*SCREENWIDTH;
+      count = column->length;
 			 
-		 while (count--) 
-		 {	
-		*dest	= palette_color[pdecode[index].ploc+(*source++ & pdecode[index].numc)];
-		dest += SCREENWIDTH;
-		 }	
-		 column = (column_t *)(	 (byte *)column +	column->length	
-					 +	4 ); 
-	} 
-	 }			 
+      while (count--)
+      {
+        *dest = remaptable[*source++];
+	dest += SCREENWIDTH;
+      }
+
+      column = (column_t *)((byte *)column+column->length+4);
+    }
+  }
 } 
 
-
-void	//stretches bitrmap to fill screen
-V_DrawPatchInDirectTrans16
-( int		x,
-  int		y,
-  int           index,
-  int		scrn,
-  patch_t*	patch	)
-  {
-  int		count;
-  int		col;
-  column_t*	column;
-  short*	desttop;
-  short*	dest;
+//
+// V_DrawPatchInDirectTrans16
+//
+// The co-ordinates for this procedure are always based upon a
+// 320x200 screen and multiplies the size of the patch by the
+// scaledwidth & scaledheight. The purpose of this is to produce
+// a clean and undistorted patch opon the screen, The scaled screen
+// size is based upon the nearest whole number ratio from the
+// current screen size to 320x200. The procedure uses the PALREMAP
+// translation tables to alter the necessary colours, the table
+// is selected by index.
+//
+// -ACB- 1998/09/11 Use PALREMAP translation tables
+//
+void V_DrawPatchInDirectTrans16 (int x, int y, int index, int scrn, patch_t* patch)
+{
+  int count;
+  int col;
+  column_t* column;
+  short* desttop;
+  short* dest;
   byte*	source;
-  int		w;
+  byte* remaptable;
+  int w;
 
   int stretchx,stretchy;
-  int srccol,collen;
+  int srccol;
+
+  remaptable = &translationtables[256*index];
 	 
-  y	-=	SHORT(patch->topoffset);
-  x	-=	SHORT(patch->leftoffset);
+  y -= SHORT(patch->topoffset);
+  x -= SHORT(patch->leftoffset);
+
+  // -ACB- 1998/06/14 Adjusts coordinates to scale.
+  x += X_OFFSET;
+  y += Y_OFFSET;
 
   stretchx = (x*DX)>>16;
   stretchy = (y*DY)>>16;
@@ -468,126 +439,136 @@ V_DrawPatchInDirectTrans16
 
   col = 0;
   desttop = (short *)(screens[scrn]+(stretchy*SCREENWIDTH+stretchx)*2);
-	 
-  w = (patch->width)<<16;
 
-  for (;col<w;x++,col+=DXI,desttop++)
-    {
-    column=(column_t *)((byte *)patch	+ LONG(patch->columnofs[col>>16]));
+  for (w = (patch->width)<<16; col<w; x++, col+=DXI, desttop++)
+  {
+    column=(column_t *)((byte *)patch + LONG(patch->columnofs[col>>16]));
  
     // step through the posts in a column
-    while	(column->topdelta	!=	0xff )
-      {
-  	   source = (byte *)column +	3;
+    while (column->topdelta != 0xff)
+    {
+      source = (byte *)column + 3;
       dest=desttop+((column->topdelta*DY)>>16)*SCREENWIDTH;
-	   collen=count=(column->length*DY)>>16;
+      count=(column->length*DY)>>16;
       srccol=0;
-	   while (count--)
-        {
-		  *dest=palette_color[pdecode[index].ploc+(source[srccol>>16] & pdecode[index].numc)];
-		  dest += SCREENWIDTH;
-        	  srccol+=DYI;
-		  }
-	   column = (column_t *)((byte *)column+(column->length)+4);
-	   }
+
+      while (count--)
+      {
+        *dest=palette_color[remaptable[source[srccol>>16]]];
+	dest += SCREENWIDTH;
+        srccol+=DYI;
+      }
+
+      column = (column_t *)((byte *)column+(column->length)+4);
     }
   }
-
+}
 
 //
 // V_DrawBlock16
+//
 // Draw a linear block of pixels into the view buffer.
 //
-void
-V_DrawBlock16
-( int		x,
-  int		y,
-  int		scrn,
-  int		width,
-  int		height,
-  byte*		src )	
+void V_DrawBlock16 (int x, int y, int scrn, int width, int height, byte* src)
 { 
-	byte*	dest;
+  byte* dest;
 	 
-	 V_MarkRect16	(x, y, width, height);
+  V_MarkRect16 (x, y, width, height);
  
-	 dest	= screens[scrn] +	(y*SCREENWIDTH+x)*2;
+  dest = screens[scrn] + (y*SCREENWIDTH+x)*2;
 
-	 while (height--)	
-      {
-      memcpy (dest, src, width*2);
-      src += width*2;
-      dest += SCREENWIDTH*2;
-      }
+  while (height--)
+  {
+    memcpy (dest, src, width*2);
+    src += width*2;
+    dest += SCREENWIDTH*2;
+  }
 } 
- 
-
 
 //
 // V_GetBlock16
+//
 // Gets a linear block of pixels from the view buffer.
 //
-void
-V_GetBlock16
-( int		x,
-  int		y,
-  int		scrn,
-  int		width,
-  int		height,
-  byte*		dest ) 
+void V_GetBlock16 (int x, int y, int scrn, int width, int height, byte* dest)
 { 
-	 byte*	src; 
+  byte* src;
 	  
-	 src = screens[scrn]	+ (y*SCREENWIDTH+x)*2;
+  src = screens[scrn] + (y*SCREENWIDTH+x)*2;
 
-	 while (height--)	
-	 {	
-	memcpy (dest, src, width*2);
-	src += SCREENWIDTH*2;
-	dest += width*2;
-	 }	
+  while (height--)
+  {
+    memcpy (dest, src, width*2);
+    src += SCREENWIDTH*2;
+    dest += width*2;
+  }
 } 
-
-
-
 
 //
 // V_Init16
 // 
-void V_Init16	(void)
+// -KM- 1998/07/10 Prepare for dynamic screen sizing
+// -ACB- 1998/07/19 Implemented KM's Bugfix
+//
+void V_Init16 (void)
 { 
-	 int		i;
-	 byte*	base;
-		
-	 // stick these in low dos memory on PCs
+  int  i;
+  byte* base = screens[1];
 
-	 base	= I_AllocLow (SCREENWIDTH*SCREENHEIGHT*4*2+255);
-    base= (byte *)((((int)base)+255)&~0xff);  //alignment
+  // stick these in low dos memory on PCs
+  // screens[0] is set by allegro in i_allegv.c
+  base = realloc (base, SCREENWIDTH*SCREENHEIGHT*3*2+255);
 
-
-	 for (i=0 ;	i<4 ;	i++)
-	screens[i] = base	+ i*SCREENWIDTH*SCREENHEIGHT*2;
+  for (i=0; i<3; i++)
+    screens[i + 1] = base + i*SCREENWIDTH*SCREENHEIGHT*2;
 }
 
+//
+// V_DarkenScreen16
+//
+// Darkens the background screen in menus etc...
+//
+// -ES- 1998/08/17 Darkens screen to 22/32 (about 70%) of RGB values
+//
 void V_DarkenScreen16(int scrn)
-  {
+{
   short *lineptr;
-  int i,j;
+  int i,j,c;
 
   redrawsbar=true;
   lineptr=(short *)screens[scrn];
-  for (i=0;i<SCREENHEIGHT;i+=2)
+  for (i=0;i<SCREENHEIGHT;i++)
+  {
+    for (j=0;j<SCREENWIDTH;j++)
     {
-    for (j=0;j<SCREENWIDTH;j+=4)
-      {
-      lineptr[j+1]=lineptr[j+2]=lineptr[j+3]=0;
-      }
+      c = lineptr[j];
+      lineptr[j] =
+       ((((((c>>_rgb_r_shift_16)&0x1F)*11)>>4) << _rgb_r_shift_16) |
+        (((((c>>_rgb_g_shift_16)&0x3F)*11)>>4) << _rgb_g_shift_16) |
+        (((((c>>_rgb_b_shift_16)&0x1F)*11)>>4) << _rgb_b_shift_16));
+    }
     lineptr+=SCREENWIDTH;
-    for (j=0;j<SCREENWIDTH;j+=4)
-      {
-      lineptr[j+0]=lineptr[j+1]=lineptr[j+3]=0;
-      }
-    lineptr+=SCREENWIDTH;
+  }
+}
+
+//
+// -KM- 1998-07-10 Reduce code redundancy
+//
+void V_TextureBackScreen16(char *flatname)
+{
+  int x, y;
+  byte *src;
+  short *dest;
+  src = W_CacheLumpName(flatname, PU_CACHE);
+  dest = (short *)(screens[0]);
+
+  for (y=0; y<SCREENHEIGHT; y++)
+  {
+    for (x=0;x<SCREENWIDTH;x++)
+    {
+      *dest=palette_color[src[((y&63)<<6) + (x&63)]];
+      dest++;
     }
   }
+}
 

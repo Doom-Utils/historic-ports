@@ -1,13 +1,56 @@
+//
+// DOSDoom Option Menu Modification
+//
+// Original Author: Chi Hoang
+//
+// -ACB- 1998/06/15 All functions are now m_* to follow doom standard.
+//
+// -MH-  1998/07/01 Shoot Up/Down becomes "True 3D Gameplay"
+//                  Added keys for fly up and fly down
+//
+// -KM-  1998/07/10 Used better names :-) (Controls Menu)
+//
+// -ACB- 1998/07/10 Print screen is now possible in this menu
+//
+// -ACB- 1998/07/12 Removed Lost Soul/Spectre Ability Menu Entries
+//
+// -ACB- 1998/07/15 Changed menu structure for graphic titles
+//
+// -ACB- 1998/07/30 Remove M_SetRespawn and the newnmrespawn &
+//                  respawnmonsters. Used new respawnsetting variable.
+//
+// -ACB- 1998/08/10 Edited the menu's to reflect the fact that currentmap
+//                  flags can prevent changes.
+//
+// -ES-  1998/08/21 Added resolution options
+//
+// -ACB- 1998/08/29 Modified Resolution menus for user-friendlyness
+//
+// -ACB- 1998/09/06 MouseOptions renamed to AnalogueOptions
+//
+// -ACB- 1998/09/11 Cleaned up and used new white text colour for menu
+//                  selections
+// -KM- 1998/11/25 You can scroll backwards through the resolution list!
+//
+// -ES- 1998/11/28 Added faded teleportation option
+//
+//
+
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include "doomstat.h"
+
+#include "dm_state.h"
+
+#include "g_game.h"
 #include "hu_stuff.h"
 #include "i_video.h"
+#include "i_music.h"
 #include "i_system.h"
 #include "lu_sound.h"
 #include "m_menu.h"
 #include "m_misc.h"
+#include "m_option.h"
 #include "p_local.h"
 #include "r_main.h"
 #include "s_sound.h"
@@ -15,157 +58,300 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
+#define OPTSHADE 15
+
 int optionsmenuon=0;
-int respawnmode=0; // set by respawnmonsters & newnmrespawn
+
+// 98-7-10 KM For turning mouse/joystick on/off
+extern int usejoystick;
+extern int usemouse;
 
 //submenus
-void M_VideoOptions();
-void M_GameplayOptions();
-void M_CustomizeOptions();
+static void M_StandardControlOptions();
+static void M_ExtendedControlOptions();
 
-void M_ResetToDefaults();
-void M_ResetToOrigDoom();
-void M_SetRespawn();
-void M_ChangeSpectreAbility();
-void M_ChangeLostAbility();
+static void M_VideoOptions();
+static void M_GameplayOptions();
+static void M_AnalogueOptions();
 
-void Key2String(int key, char *deststring);
+static void M_CalibrateJoystick(void);
+
+static void M_ResetToDefaults();
+static void M_ResetToOrigDoom();
+
+static void M_Key2String(int key, char *deststring);
+
+// -ACB- 1998/08/09 "Does Map allow these changes?" procedures.
+static void M_ChangeMonsterRespawn(void);
+static void M_ChangeItemRespawn(void);
+static void M_ChangeStretchSky(void);
+static void M_ChangeTransluc(void);
+static void M_ChangeTrue3d(void);
+static void M_ChangeFastparm(void);
+static void M_ChangeRespawn(void);
 
 //Special function declarations
-int screenSize,Respawn;
-void ChangeScreenSize() {R_SetViewSize(screenSize+3,0);}
-void ChangeSfxVol()     {S_SetSfxVolume(snd_SfxVolume);}
-void ChangeMusVol()     {S_SetMusicVolume(snd_MusicVolume);}
-void ChangeCDMusVol()   {S_SetCDMusicVolume(snd_CDMusicVolume);}
-void ChangeGamma()      {I_SetPalette(W_CacheLumpName("PLAYPAL",PU_CACHE),0);}
+int screenSize;
+static void M_ChangeScreenSize() {R_SetViewSize(screenSize+3,0);}
+static void M_ChangeSfxVol()     {S_SetSfxVolume(snd_SfxVolume);}
+static void M_ChangeMusVol()     {S_SetMusicVolume(snd_MusicVolume);}
+static void M_ChangeCDMusVol()   {S_SetCDMusicVolume(snd_CDMusicVolume);}
+static void M_SetCDAudio(void);
+
+static void M_ChangeBlood(void);
+
+static void M_ChangeGamma()      {I_SetPalette(W_CacheLumpName("PLAYPAL",PU_CACHE),0);}
+
+// -ES- 1998/08/20
+// -ACB- 1998/08/29 Resolution changes stuff, modified from -ES- code.
+static int optwidth, oldwidth;
+static int optheight, oldheight;
+static int optbpp, oldbpp;
+static int ressize;
+static int testticker = -1;
+extern boolean setresfailed;
+static char setreserror[128];
+
+// -ES- 1998/08/20 Added resolution options
+// -ACB- 1998/08/29 Moved to top and tried different system
+void R_ChangeResolution(int, int, int);
+
+static void M_ResolutionOptions(void);
+static void M_OptionSetResolution(void);
+static void M_OptionTestResolution(void);
+static void M_RestoreResSettings();
+static void M_ChangeStoredRes(void);
+//void M_ChangeStoredBpp(void) {optbpp = !optbpp;};
 
 //now, the menus themselves
-char YesNo[]="Off/On";                   // basic on/off
-char ImPer[]="Perfect/Imperfect";        // Targeting: imperfect/perfect
-char CrosO[]="None/Cross/Dot/Angle";     // crosshair options
-char Infig[]="None/Low/High";            // monster infighting
-char Respw[]="None/Teleport/Resurrect";  // monster respawning
-char MTele[]="Off/On/Silent";            // missile teleport
-char TelDl[]="Normal/Fast/Quickest";     // player teleport
+static char YesNo[]="Off/On";                   // basic on/off
+//static char ImPer[]="Perfect/Imperfect";        // Targeting: imperfect/perfect
+static char CrosO[]="None/Cross/Dot/Angle";     // crosshair options
+//static char Infig[]="None/Low/High";            // monster infighting
+static char Respw[]="Teleport/Resurrect";  // monster respawning
+//static char MTele[]="Off/On/Silent";            // missile teleport
+//static char TelDl[]="Normal/Fast/Quickest";     // player teleport
+// -KM- 1998/09/27  Analogue binding. Add Fly axis.
+static char Axis[]="Turn/Forward/Strafe/MLook/Fly/Disable";
+static char CD[]="Off/On/Atmosphere/Atmosphere";
+static char* Resolutions = NULL;
+static char Colours[]="8 bit/16 bit";
+// -ES- 1998/11/28 Wipe and Faded teleportation options
+static char FadeT[]="Off/On, w flash/On, wo flash";
+static char WipeM[]="Fade/Melt";
 
-char Visib[]=                            // Visibility
-  "None/Part visibility/Translucency/Stealth";
-
-char Shade[]=                            // shades for the menu
-  "Doom Red/Green/Blue/Orange/Brown/Light Grey/Dark Grey/Dull Orange/Pink/Dark Red/Dull Brown";
-
-struct menuinfo
+typedef struct menuinfo_s
 {
   int menusize;
   int menucenter;
-  char menuname[80];
-};
+  int titleposx;
+  char menutitlename[9];
+}
+menuinfo_t;
 
-struct optmenuitem
-  {
+typedef struct optmenuitem_s
+{
   int type; //0 means plain text, 1 is change a switch, 2 is call a function,
             //3 is a slider, 4 is a key config
   char name[48];
-  char *typenames;
+  const char *typenames;
   int numtypes;
   int dosdoomdefault;
   int origdoomdefault;
   int* switchvar;
   void (*routine)();
-  };
+  char* help;
+}
+optmenuitem_t;
 
-struct specialkey
-  {
+typedef struct specialkey_s
+{
   int keycode;
   char keystring[20];
-  };
+}
+specialkey_t;
 
-#define mainmenusize 20
-struct menuinfo mainmenuinfo={mainmenusize,164,""};
-struct optmenuitem mainmenu[mainmenusize]=
- {{2,"Video Options",           NULL, 0, 0, 0, NULL,M_VideoOptions},
-  {2,"Gameplay Options",        NULL, 0, 0, 0, NULL,M_GameplayOptions},
-  {2,"Customize Controls",      NULL, 0, 0, 0, NULL,M_CustomizeOptions},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {1,"Messages",                YesNo,2, 1, 1, &showMessages,NULL},
-  {1,"Swap Stereo",             YesNo,2, 0, 0, (int *) &swapstereo,NULL},
-  {3,"Sound Volume",            NULL, 16,12,12,&snd_SfxVolume,ChangeSfxVol},
-  {3,"Music Volume",            NULL, 16,12,12,&snd_MusicVolume,ChangeMusVol},
-  {3,"CD Music Volume",         NULL, 16,12,12,&snd_CDMusicVolume,ChangeCDMusVol},
-  {3,"MouseSpeed",              NULL, 20,8, 8, &mouseSensitivity,NULL},
-  {1,"FreeLook",                YesNo,2, 1, 0, &mlookon,NULL},
-  {1,"Invert Mouse",            YesNo,2, 0, 0, &invertmouse,NULL},
-  {3,"Mlook Speed",             NULL, 20,8, 0, &keylookspeed,NULL},
-  {1,"No Vert",                 YesNo,2, 0, 0, &novert,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {1,"Menu Option Shade",       Shade,11,3, 3, &menuoptionshade,NULL},
-  {1,"Menu Name Shade",         Shade,11,3, 3, &menunameshade,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {2,"Reset to Recommended",    NULL, 0, 0, 0, NULL,M_ResetToDefaults},
-  {2,"Reset to Original Doom",  NULL, 0, 0, 0, NULL,M_ResetToOrigDoom}};
+typedef struct
+{
+  int width;
+  int height;
+}
+scrres_t;
 
-#define vidoptionssize 11
-struct menuinfo vidoptionsinfo={vidoptionssize,150,"Video Options"};
-struct optmenuitem vidoptions[vidoptionssize]=
- {{3,"Screensize",              NULL, 9, 7, 7, &screenSize,ChangeScreenSize},
-  {3,"Brightness",              NULL, 5, 0, 0, &usegamma,ChangeGamma},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {1,"Translucency",            YesNo,2, 1, 0, &transluc,NULL},
-  {1,"Crosshair",               CrosO,4, 2, 0, &crosshair,NULL},
-  {1,"Stretch Sky",             YesNo,2, 1, 0, &stretchsky,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {1,"Map Rotation",            YesNo,2, 1, 0, &rotatemap,NULL},
-  {1,"Map Overlay",             YesNo,2, 1, 0, &newhud,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {1,"Vertical Retrace",        YesNo,2, 0, 0, &retrace,NULL}};
+// -KM- 1998/11/25 Removed extreme aspect modes.
+scrres_t screenres[] = {
+   { 320,   200}, //0.625
+   { 320,   240}, //0.75
+   { 360,   200}, //0.5555555
+   { 360,   240}, //0.666
+   { 360,   270}, //0.75
+   { 360,   360}, //1.0
+   { 376,   282}, //0.75
+   { 376,   308}, //0.819
+   { 400,   300}, //0.75
+   { 512,   384}, //0.75
+   { 640,   400}, //0.625
+   { 640,   480}, //0.75
+   { 800,   600}, //0.75
+   { 1024,  768}, //0.75
+   { 1280,  1024},//0.8
+   { 1600,  1200},//0.75
+   {  -1,    -1}
+};
 
-#define playoptionssize 15
-struct menuinfo playoptionsinfo={playoptionssize,160,"Gameplay Options"};
-struct optmenuitem playoptions[playoptionssize]=
- {{3,"Gravity",                 NULL, 20,8, 8, &grav,NULL},
-  {1,"Shoot up/down",           YesNo,2, 1, 0, &shootupdown,NULL},
+#define mainmenusize 17
+
+// -ACB- 1998/07/15 Altered menu structure
+menuinfo_t mainmenuinfo={mainmenusize,164,108,"M_OPTTTL"};
+
+optmenuitem_t mainmenu[mainmenusize]=
+ {{2,"Standard Controls",       NULL, 0, 0, 0, NULL,M_StandardControlOptions,"Controls"},
+  {2,"Extended Controls",       NULL, 0, 0, 0, NULL,M_ExtendedControlOptions,"Controls2"},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {2,"Video Options",           NULL, 0, 0, 0, NULL,M_VideoOptions, "VideoOptions"},
+  {2,"Gameplay Options",        NULL, 0, 0, 0, NULL,M_GameplayOptions, "GameplayOptions"},
+  {2,"Analogue Options",        NULL, 0, 0, 0, NULL,M_AnalogueOptions, "AnalogueOptions"},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Messages",                YesNo,2, 1, 1, &showMessages,NULL,"Messages"},
+  {1,"Swap Stereo",             YesNo,2, 0, 0, (int *) &swapstereo,NULL,"SwapStereo"},
+  {3,"Sound Volume",            NULL, 16,12,12,&snd_SfxVolume,M_ChangeSfxVol,NULL},
+  {3,"Music Volume",            NULL, 16,12,12,&snd_MusicVolume,M_ChangeMusVol, NULL},
+  {3,"CD Music Volume",         NULL, 16,12,12,&snd_CDMusicVolume,M_ChangeCDMusVol, NULL},
+  {1,"CD Audio",                CD, 3, 0, 0, (int *) &cdaudio, M_SetCDAudio, "CDOptions"},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
+  {2,"Reset to Recommended",    NULL, 0, 0, 0, NULL,M_ResetToDefaults, "ResetDOSDoom"},
+  {2,"Reset to Original Doom",  NULL, 0, 0, 0, NULL,M_ResetToOrigDoom, "ResetDoom"}};
+
+#define vidoptionssize 15
+
+// -ACB- 1998/07/15 Altered menu structure
+menuinfo_t vidoptionsinfo={vidoptionssize,150,77,"M_VIDEO"};
+
+optmenuitem_t vidoptions[vidoptionssize]=
+ {{2,"Set Resolution",          NULL, 0, 0, 0, NULL,M_ResolutionOptions, "ChangeRes"},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {3,"Screensize",              NULL, 9, 7, 7, &screenSize,M_ChangeScreenSize,NULL},
+  {3,"Brightness",              NULL, 5, 0, 0, &usegamma,M_ChangeGamma,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Translucency",            YesNo,2, 1, 0, (int *) &settingflags.trans,M_ChangeTransluc,NULL},
+  {1,"Faded teleportation",     FadeT,3, 2, 0, &faded_teleportation,NULL,NULL},
+  {1,"Wipe method",             WipeM,2, 1, 0, &wipe_method,NULL,NULL},
+  {1,"Crosshair",               CrosO,4, 2, 0, &crosshair,NULL,NULL},
+  {1,"Stretch Sky",             YesNo,2, 1, 0, (int *) &settingflags.stretchsky,M_ChangeStretchSky,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Vertical Retrace",        YesNo,2, 1, 0, &retrace,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Map Rotation",            YesNo,2, 1, 0, &rotatemap,NULL,NULL},
+  {1,"Map Overlay",             YesNo,2, 1, 0, &newhud,NULL,NULL}};
+
+#define resoptionssize 11
+menuinfo_t resoptionsinfo={resoptionssize,150,77,"M_VIDEO"};
+
+optmenuitem_t resoptions[resoptionssize]=
+ {{0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Change Size",             NULL, 0, 0, 0, &ressize,M_ChangeStoredRes,NULL},
+  {1,"Change Depth",            Colours, 2, 0, 0, &optbpp, NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {2,"Set Resolution",          NULL, 0, 0, 0, NULL,M_OptionSetResolution,NULL},
+  {2,"Test Resolution",         NULL, 0, 0, 0, NULL,M_OptionTestResolution,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL}};
+  
+// -ACB- 1998/06/15 Added new mouse menu
+// -KM- 1998/09/01 Changed to an analogue menu.  Must change those names
+#define analogueoptionssize 15
+
+// -ACB- 1998/07/15 Altered menu structure
+menuinfo_t analogueoptionsinfo={analogueoptionssize,150,75,"M_MSETTL"};
+
+optmenuitem_t analogueoptions[analogueoptionssize]=
+ {{1,"Invert Mouse",            YesNo,2, 0, 0, &invertmouse,NULL,NULL},
+  {1,"Mouse X Axis",            Axis, 6, AXIS_TURN, AXIS_TURN, &mouse_xaxis, NULL,NULL},
+  {1,"Mouse Y Axis",            Axis, 6, AXIS_FORWARD, AXIS_MLOOK, &mouse_yaxis, NULL,NULL},
+  {3,"MouseSpeed",              NULL, 20,8, 8, &mouseSensitivity,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
+  {3,"FreeLook Speed",          NULL, 20,8, 0, &keylookspeed,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
+  {1,"Two-Stage Turning",       YesNo,2, 0, 0, (int *)&stageturn,NULL,NULL},
+  {3,"Turning Speed",           NULL, 9, 0, 0, &angleturnspeed,NULL,NULL},
+  {3,"Side Move Speed",         NULL, 9, 0, 0, &sidemovespeed,NULL,NULL},
+  {3,"Forward Move Speed",      NULL, 9, 0, 0, &forwardmovespeed,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Joystick X Axis",         Axis, 6, AXIS_TURN, AXIS_TURN, &joy_xaxis, NULL,NULL},
+  {1,"Joystick Y Axis",         Axis, 6, AXIS_FORWARD, AXIS_FORWARD, &joy_yaxis, NULL,NULL},
+  {2,"Calibrate Joystick",      NULL, 0, 0, 0, NULL, M_CalibrateJoystick,NULL}};
+  
+#define playoptionssize 9
+
+// -ACB- 1998/07/15 Altered menu structure
+menuinfo_t playoptionsinfo={playoptionssize,160,46,"M_GAMEPL"};
+
+// -KM- 1998/07/21 Change blood to switch
+optmenuitem_t playoptions[playoptionssize]=
+ {{3,"Gravity",                 NULL, 20,8, 8, &settingflags.grav,NULL,"Gravity"},
+  {1,"Blood",			YesNo,2 ,0, 0, (int *) &settingflags.blood, M_ChangeBlood,"Blood"},
+  {1,"True 3D Gameplay",        YesNo,2, 1, 0, (int *) &settingflags.true3dgameplay, M_ChangeTrue3d,"True3d"},
   {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
-  {1,"Enemy Respawn",           Respw,3, 1, 0, &respawnmode,M_SetRespawn},
-  {1,"Enemy Infighting",        Infig,3, 0, 0, &infight,NULL},
+  {1,"Enemy Respawn Mode",      Respw,2, 1, 0, (int *) &settingflags.respawnsetting,M_ChangeMonsterRespawn,NULL},
+/*  {1,"Enemy Infighting",        Infig,3, 0, 0, &infight,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
   {1,"Monster Targeting",       ImPer,2, 0, 0, &lessaccuratemon,NULL},
   {1,"Zombie Targeting",        ImPer,2, 1, 1, &lessaccuratezom,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
-  {1,"Item Respawn",            YesNo,2, 0, 0, &itemrespawn,NULL},
-  {1,"Teleport Missiles",       MTele,3, 0, 0, &missileteleport,NULL},
-  {1,"Teleport Delay",          TelDl,3, 0, 0, &teleportdelay,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},              
-  {1,"Spectre Ability",         Visib,4, 3, 1, &spectreability,M_ChangeSpectreAbility},
-  {1,"Lost Soul Ability",       Visib,4, 2, 0, &lostsoulability,M_ChangeLostAbility}};
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL},            */
+  {1,"Item Respawn",            YesNo,2, 0, 0, (int *) &settingflags.itemrespawn,M_ChangeItemRespawn,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {1,"Fast Monsters",           YesNo,2, 0, 0, (int *) &settingflags.fastparm,M_ChangeFastparm,NULL},
+  {1,"Respawn",                 YesNo,2, 0, 0, (int *) &settingflags.respawn,M_ChangeRespawn,NULL}
+//  {1,"Teleport Missiles",       MTele,3, 0, 0, &missileteleport,NULL},
+//  {1,"Teleport Delay",          TelDl,3, 0, 0, &teleportdelay,NULL}
+};
   
-#define keyconfigsize 19
-struct menuinfo keyconfiginfo={keyconfigsize,110,"Customize Controls"};
-struct optmenuitem keyconfig[keyconfigsize]=
- {{0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {0,"",                        NULL, 0, 0, 0, NULL,NULL},
-  {4,"Attack",                  NULL, 0, KEYD_RCTRL, 0, &key_fire,NULL},
-  {4,"Use",                     NULL, 0, ' ',0,&key_use,NULL},
-  {4,"Walk Forward",            NULL, 0, KEYD_UPARROW,0, &key_up,NULL},
-  {4,"Backpedal",               NULL, 0, KEYD_DOWNARROW, 0, &key_down,NULL},
+#define stdkeyconfigsize 15
 
-  {4,"Turn Left",               NULL, 0, KEYD_LEFTARROW, 0, &key_left,NULL},
-  {4,"Turn Right",              NULL, 0, KEYD_RIGHTARROW, 0, &key_right,NULL},
-  {4,"180 deg turn",            NULL, 0, 0, 0, &key_180,NULL},
-  {4,"Run",                     NULL, 0, KEYD_RSHIFT, 0, &key_speed,NULL},
-  {4,"Step Left",               NULL, 0, ',', 0, &key_strafeleft,NULL},
-  {4,"Step Right",              NULL, 0, '.', 0, &key_straferight,NULL},
+// -ACB- 1998/07/15 Altered menuinfo struct
+menuinfo_t stdkeyconfiginfo={stdkeyconfigsize,110,98,"M_CONTRL"};
 
-  {4,"Sidestep",                NULL, 0, KEYD_RALT, 0, &key_strafe,NULL},
-  {4,"Look Up",                 NULL, 0, KEYD_PGUP, 0, &key_lookup,NULL},
-  {4,"Look Down",               NULL, 0, KEYD_PGDN, 0, &key_lookdown,NULL},
-  {4,"Center View",             NULL, 0, KEYD_HOME, 0, &key_lookcenter,NULL},
-  {4,"Map Toggle",              NULL, 0, KEYD_TAB,0,&key_map,NULL},
-  {4,"Multiplay Talk",          NULL, 0, 't',0,&key_talk,NULL},
-  {4,"Jump",                    NULL, 0, 0, 0, &key_jump,NULL}};
+// -KM- 1998/07/10 Used better names :-)
+optmenuitem_t stdkeyconfig[stdkeyconfigsize]=
+ {{0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {4,"Attack",                  NULL, 0, KEYD_RCTRL, 0, &key_fire,NULL,NULL},
+  {4,"Use",                     NULL, 0, ' ',0,&key_use,NULL,NULL},
+  {4,"Walk Forward",            NULL, 0, KEYD_UPARROW,0, &key_up,NULL,NULL},
+  {4,"Walk Backwards",          NULL, 0, KEYD_DOWNARROW, 0, &key_down,NULL,NULL},
+  {4,"Turn Left",               NULL, 0, KEYD_LEFTARROW, 0, &key_left,NULL,NULL},
+  {4,"Turn Right",              NULL, 0, KEYD_RIGHTARROW, 0, &key_right,NULL,NULL},
+  {4,"Fly Up",                  NULL, 0, KEYD_INSERT, 0, &key_flyup,NULL,NULL},
+  {4,"Fly Down",                NULL, 0, KEYD_DELETE, 0, &key_flydown,NULL,NULL},
+  {4,"Run",                     NULL, 0, KEYD_RSHIFT, 0, &key_speed,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {4,"Strafe Left",             NULL, 0, ',', 0, &key_strafeleft,NULL,NULL},
+  {4,"Strafe Right",            NULL, 0, '.', 0, &key_straferight,NULL,NULL},
+  {4,"Strafe",                  NULL, 0, KEYD_RALT, 0, &key_strafe,NULL,NULL}};
+
+#define extkeyconfigsize 9
+
+// -ACB- 1998/07/15 Altered menuinfo struct
+menuinfo_t extkeyconfiginfo={extkeyconfigsize,110,98,"M_CONTRL"};
+
+optmenuitem_t extkeyconfig[extkeyconfigsize]=
+ {{0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {0,"",                        NULL, 0, 0, 0, NULL,NULL,NULL},
+  {4,"Look Up",                 NULL, 0, KEYD_PGUP, 0, &key_lookup,NULL,NULL},
+  {4,"Look Down",               NULL, 0, KEYD_PGDN, 0, &key_lookdown,NULL,NULL},
+  {4,"Center View",             NULL, 0, KEYD_HOME, 0, &key_lookcenter,NULL,NULL},
+  {4,"180 degree turn",         NULL, 0, 0, 0, &key_180,NULL,NULL},
+  {4,"Jump",                    NULL, 0, 0, 0, &key_jump,NULL,NULL},
+  {4,"Map Toggle",              NULL, 0, KEYD_TAB,0,&key_map,NULL,NULL},
+  {4,"Multiplay Talk",          NULL, 0, 't',0,&key_talk,NULL,NULL}};
 
 char keystring1[]="Enter to change, Backspace to Clear";
 char keystring2[]="Press a key for this action";
 
-struct specialkey specialkeylist[]= //terminate on -1
+specialkey_t specialkeylist[]= //terminate on -1
  {{KEYD_RIGHTARROW, "Right Arrow"},
   {KEYD_LEFTARROW,  "Left Arrow"},
   {KEYD_UPARROW,    "Up Arrow"},
@@ -191,6 +377,8 @@ struct specialkey specialkeylist[]= //terminate on -1
   {KEYD_RSHIFT,     "Shift"},
   {KEYD_RCTRL,      "Ctrl"},
   {KEYD_RALT,       "Alt"},
+  {KEYD_INSERT,     "Insert"},
+  {KEYD_DELETE,     "Delete"},
   {KEYD_PGDN,       "PageDown"},
   {KEYD_PGUP,       "PageUp"},
   {KEYD_HOME,       "Home"},
@@ -205,62 +393,118 @@ struct specialkey specialkeylist[]= //terminate on -1
   {KEYD_JOY2,       "Joystick2"},
   {KEYD_JOY3,       "Joystick3"},
   {KEYD_JOY4,       "Joystick4"},
+  {KEYD_JOY5,       "Joystick5"},
+  {KEYD_JOY6,       "Joystick6"},
+  {KEYD_JOY7,       "Joystick7"},
+  {KEYD_JOY8,       "Joystick8"},
+
+  // -KM- 1998/09/01 Joystick Hat support
+  {KEYD_HATW,       "Hat Left"},
+  {KEYD_HATS,       "Hat Down"},
+  {KEYD_HATE,       "Hat Right"},
+  {KEYD_HATN,       "Hat Up"},
   {-1,              ""}};
 
-struct optmenuitem* currmenu;
-struct menuinfo* currmenuinfo;
-int cursorpos,mainmenupos;
+optmenuitem_t* currmenu;
+menuinfo_t* currmenuinfo;
+int cursorpos,mainmenupos,numberofentries,keyscan;
 
-int keyscan;
-
-void InitOptmenu()
-  {
+void M_InitOptmenu()
+{
   optionsmenuon=0;
   screenSize=screenblocks-3;
   currmenu=mainmenu; currmenuinfo=&mainmenuinfo;
   cursorpos=mainmenupos=0;
   keyscan=0;
-  }
+  numberofentries=mainmenusize;
+  // Restore the config setting.
+  M_ChangeBlood();
+}
 
-void Opt_Drawer()
+void M_OptTicker(void)
+{
+  if (setresfailed)
   {
+    sprintf(setreserror, DDF_LanguageLookup("ModeSelErr"), optwidth, optheight, 1<<((optbpp + 1) * 8));
+    M_StartMessage(setreserror, NULL, false);
+    testticker = -1;
+    setresfailed = false;
+  }
+  if (testticker > 0)
+  {
+    testticker --;
+  } else if (!testticker)
+  {
+    testticker --;
+    M_RestoreResSettings();
+  }
+}
+void M_OptDrawer()
+{
   char tempstring[80];
-  int curry,deltay;
+  int curry,deltay,menutop;
   int i,j,k;
 
-  //first, draw the title
-  if      (currmenu == mainmenu)
-     V_DrawPatchInDirect (108,7,0,W_CacheLumpName("M_OPTTTL",PU_CACHE));
-  else if (currmenu == vidoptions)
-     V_DrawPatchInDirect (77,15,0,W_CacheLumpName("M_VIDEO",PU_CACHE));
-  else if (currmenu == playoptions)
-     V_DrawPatchInDirect (46,15,0,W_CacheLumpName("M_GAMEPL",PU_CACHE));
-  else if (currmenu == keyconfig)
-     V_DrawPatchInDirect (98,15,0,W_CacheLumpName("M_CONTRL",PU_CACHE));
-  else
-     M_WriteText(160-(M_StringWidth(currmenuinfo->menuname)/2),22,currmenuinfo->menuname);
+  // -ACB- 1998/06/15 Calculate height for menu and then center it.
+  menutop = 68 - ((numberofentries*hu_font[0]->height)/2);
+
+  V_DrawPatchInDirect(currmenuinfo->titleposx,menutop,0,
+                       W_CacheLumpName(currmenuinfo->menutitlename,PU_CACHE));
 
   //now, draw all the menuitems
   deltay=1+hu_font[0]->height;
 
-  // hack for options menu - do fix soon...
-  if (currmenu == mainmenu)
-   curry=32;
-  else
-   curry=40;
+  curry=menutop + 25;
 
-  if (currmenu==keyconfig)
-    {
+  // here we hack again........
+  if (currmenu==stdkeyconfig || currmenu==extkeyconfig)
+  {
     if (keyscan)
-      M_WriteText(160-(M_StringWidth(keystring2)/2),40,keystring2);
-    else
-      M_WriteText(160-(M_StringWidth(keystring1)/2),40,keystring1);
-    }
-  for (i=0;i<(currmenuinfo->menusize);i++)
     {
-    M_WriteTextTrans((currmenuinfo->menucenter)-M_StringWidth(currmenu[i].name),curry,(menunameshade+32),currmenu[i].name);
+      M_WriteText(160-(M_StringWidth(keystring2)/2),curry,keystring2);
+    }
+    else
+    {
+      M_WriteText(160-(M_StringWidth(keystring1)/2),curry,keystring1);
+    }
+  }
+  else if (currmenu==resoptions)
+  {
+    i = curry;
+    sprintf(tempstring,"Current Resolution:");
+    M_WriteText(160-(M_StringWidth(tempstring)/2), i, tempstring);
+
+    i += deltay;
+    sprintf(tempstring,"%d x %d in %d-bit mode",
+              SCREENWIDTH, SCREENHEIGHT, (BPP<2?8:16));
+    M_WriteTextTrans(160-(M_StringWidth(tempstring)/2), i, OPTSHADE, tempstring);
+
+    i = curry + (deltay * (resoptionssize-2));
+    sprintf(tempstring,"Selected Resolution:");
+    M_WriteText(160-(M_StringWidth(tempstring)/2), i, tempstring);
+
+    i += deltay;
+    sprintf(tempstring,"%d x %d in %d-bit mode",
+              optwidth, optheight, (optbpp<1?8:16));
+    M_WriteTextTrans(160-(M_StringWidth(tempstring)/2), i, OPTSHADE, tempstring);
+  }
+
+  for (i=0;i<(currmenuinfo->menusize);i++)
+  {
+    M_WriteText((currmenuinfo->menucenter)-M_StringWidth(currmenu[i].name),
+                  curry,currmenu[i].name);
+
+    // -ACB- 1998/07/15 Menu Cursor is colour indexed.
     if (i==cursorpos)
+    {
       M_WriteText((currmenuinfo->menucenter+5),curry,"*");
+      if (currmenu[i].help)
+      {
+        char* help = DDF_LanguageLookup(currmenu[i].help);
+        M_WriteText(160-(M_StringWidth(help)/2),200-deltay,help);
+      }
+    }
+
     switch (currmenu[i].type)
       {
       case 1: //a switch
@@ -271,17 +515,17 @@ void Opt_Drawer()
             k++;
           k++;
           }
-        if (k>=strlen(currmenu[i].typenames))
-          I_Error("Invalid Switch Name");
+        if (k<strlen(currmenu[i].typenames))
+        {
         j=0;
         while ((currmenu[i].typenames[k]!='/')&&(k<strlen(currmenu[i].typenames)))
-          {
+        {
           tempstring[j]=currmenu[i].typenames[k];
           j++; k++;
-          }
+        }
         tempstring[j]=0;
-        M_WriteTextTrans
-            ( (currmenuinfo->menucenter)+15,curry,(menuoptionshade+32),tempstring);
+        } else sprintf(tempstring, "Invalid");
+        M_WriteTextTrans((currmenuinfo->menucenter)+15,curry, OPTSHADE, tempstring);
         break;
       case 3:  //a slider
         V_DrawPatchShrink ((currmenuinfo->menucenter+15),curry,0,W_CacheLumpName("M_THERML",PU_CACHE));
@@ -293,19 +537,18 @@ void Opt_Drawer()
         break;
       case 4:  //a keycode
         k=(*(currmenu[i].switchvar));
-        Key2String(k,tempstring);
-        M_WriteTextTrans
-            ( (currmenuinfo->menucenter+15),curry,(menuoptionshade+32),tempstring);
+        M_Key2String(k,tempstring);
+        M_WriteTextTrans((currmenuinfo->menucenter+15),curry, OPTSHADE,tempstring);
         break;
       }
     curry+=deltay;
-    }
-  }
+   }
+}
 
-boolean Opt_Responder (event_t *ev, int ch)
-  {
+boolean M_OptResponder (event_t *ev, int ch)
+{
   if (keyscan)
-    {
+  {
     if (ev->type==ev_keydown)
       {
       int* blah;
@@ -339,6 +582,15 @@ boolean Opt_Responder (event_t *ev, int ch)
     }
   switch (ch)
     {
+    case KEYD_PRTSCR: // -ACB- 1998/07/10 Allow printing screen in text menu
+      G_ScreenShot();
+      return true;
+    case KEYD_F1:
+      if (devparm)
+      {
+       G_ScreenShot();
+       return true;
+      }
     case KEYD_BACKSPACE:
       if (currmenu[cursorpos].type==4)
         *(currmenu[cursorpos].switchvar)=0;
@@ -349,6 +601,7 @@ boolean Opt_Responder (event_t *ev, int ch)
         if (cursorpos>=(currmenuinfo->menusize))
           cursorpos=0;
         } while (currmenu[cursorpos].type==0);
+      S_StartSound(NULL, sfx_pstop);
       return true;
     case KEYD_UPARROW:
       do{
@@ -356,6 +609,7 @@ boolean Opt_Responder (event_t *ev, int ch)
         if (cursorpos<0)
           cursorpos=(currmenuinfo->menusize)-1;
         } while (currmenu[cursorpos].type==0);
+      S_StartSound(NULL, sfx_pstop);
       return true;
     case KEYD_LEFTARROW:
       if (currmenu[cursorpos].type==3)
@@ -386,11 +640,6 @@ boolean Opt_Responder (event_t *ev, int ch)
         {
         case 0:
           return false;
-        case 2:
-          if (currmenu[cursorpos].routine!=NULL)
-            currmenu[cursorpos].routine();
-          S_StartSound(NULL,sfx_pistol);
-          return true;
         case 1:
           (*(currmenu[cursorpos].switchvar))++;
           if ((*(currmenu[cursorpos].switchvar))>=currmenu[cursorpos].numtypes)
@@ -398,6 +647,11 @@ boolean Opt_Responder (event_t *ev, int ch)
           S_StartSound(NULL,sfx_pistol);
           if (currmenu[cursorpos].routine!=NULL)
             currmenu[cursorpos].routine();
+          return true;
+        case 2:
+          if (currmenu[cursorpos].routine!=NULL)
+            currmenu[cursorpos].routine();
+          S_StartSound(NULL,sfx_pistol);
           return true;
         case 3:
           if ((*(currmenu[cursorpos].switchvar))<(currmenu[cursorpos].numtypes-1))
@@ -417,91 +671,158 @@ boolean Opt_Responder (event_t *ev, int ch)
       if (currmenu==mainmenu)
         optionsmenuon=0;
       else
-        {
+      {
         currmenu=mainmenu; currmenuinfo=&mainmenuinfo;
         cursorpos=mainmenupos;
-        }
+        numberofentries=mainmenusize;
+      }
       S_StartSound(NULL,sfx_swtchx);
       return true;
     }
   return false;
   }
 
-void M_VideoOptions()
-  {
+static void M_VideoOptions()
+{
   mainmenupos=cursorpos;
   cursorpos=0;
   currmenu=vidoptions; currmenuinfo=&vidoptionsinfo;
+  numberofentries=vidoptionssize;
+}
+
+// -ES- 1998/08/20 Added resolution menu
+static void M_ResolutionOptions()
+{
+
+  ressize=0;
+  optbpp = BPP-1;
+
+  if (!Resolutions)
+  {
+    char temp[16];
+    while (screenres[ressize].width != -1) ressize++;
+  
+    Resolutions = Z_Malloc(ressize*10, PU_STATIC, NULL);
+
+    sprintf(Resolutions, "%dx%d", screenres[0].width, screenres[0].height);
+    for (ressize = 1; screenres[ressize].width != -1; ressize++)
+    {
+      sprintf(temp, "/%dx%d", screenres[ressize].width, screenres[ressize].height);
+      strcat(Resolutions, temp);
+    }
+
+    resoptions[3].typenames = Resolutions;
+    resoptions[3].numtypes = ressize;
+
+    ressize = 0;
+  }
+  //--------------------------------------------------------------------
+  // -ACB- 1998/08/29 Default the size
+  while (screenres[ressize].width != -1)
+  {
+    if (SCREENWIDTH == screenres[ressize].width &&
+         SCREENHEIGHT == screenres[ressize].height)
+    {
+      optwidth = SCREENWIDTH;
+      optheight = SCREENHEIGHT;
+      break;
+    }
+    ressize++;
   }
 
-void M_GameplayOptions()
+  if (screenres[ressize].width == -1)
   {
+    optwidth = 320;
+    optheight = 200;
+    ressize = 0;
+  }
+  //--------------------------------------------------------------------
+
+  mainmenupos=cursorpos;
+  cursorpos=3;
+  currmenu=resoptions; currmenuinfo=&resoptionsinfo;
+  numberofentries=resoptionssize;
+}
+
+static void M_AnalogueOptions()
+{
+  mainmenupos=cursorpos;
+  cursorpos=0;
+  currmenu=analogueoptions; currmenuinfo=&analogueoptionsinfo;
+  numberofentries=analogueoptionssize;
+}
+
+static void M_GameplayOptions()
+{
   if (netgame) return;
 
   mainmenupos=cursorpos;
   cursorpos=0;
   currmenu=playoptions; currmenuinfo=&playoptionsinfo;
+  numberofentries=playoptionssize;
 
-  // monster respawn hack....
-  if (respawnmonsters)
-  {
-   if (newnmrespawn)
-     respawnmode = 2;
-   else
-     respawnmode = 1;
-  }
-  else
-  {
-   respawnmode = 0;
-  }
 }
 
-void M_CustomizeOptions()
+static void M_StandardControlOptions()
 {
   mainmenupos=cursorpos;
   cursorpos=2;
-  currmenu=keyconfig; currmenuinfo=&keyconfiginfo;
+  currmenu=stdkeyconfig; currmenuinfo=&stdkeyconfiginfo;
+  numberofentries=stdkeyconfigsize;
 }
 
-void M_ResetToDefaults()
+static void M_ExtendedControlOptions()
+{
+  mainmenupos=cursorpos;
+  cursorpos=2;
+  currmenu=extkeyconfig; currmenuinfo=&extkeyconfiginfo;
+  numberofentries=extkeyconfigsize;
+}
+
+static void M_ResetToDefaults()
 {
   int i;
 
   for (i=0;i<mainmenusize;i++)
     if ((mainmenu[i].type==1)||(mainmenu[i].type==3))
       (*(mainmenu[i].switchvar))=mainmenu[i].dosdoomdefault;
+
   for (i=0;i<vidoptionssize;i++)
     if ((vidoptions[i].type==1)||(vidoptions[i].type==3))
       (*(vidoptions[i].switchvar))=vidoptions[i].dosdoomdefault;
+
   for (i=0;i<playoptionssize;i++)
     if ((playoptions[i].type==1)||(playoptions[i].type==3))
       (*(playoptions[i].switchvar))=playoptions[i].dosdoomdefault;
-  for (i=0;i<keyconfigsize;i++)
-    if ((keyconfig[i].type==4))
-      (*(keyconfig[i].switchvar))=keyconfig[i].dosdoomdefault;
+
+  for (i=0;i<stdkeyconfigsize;i++)
+    if ((stdkeyconfig[i].type==4))
+         (*(stdkeyconfig[i].switchvar))=stdkeyconfig[i].dosdoomdefault;
 }
 
-void M_ResetToOrigDoom()
+static void M_ResetToOrigDoom()
 {
   int i;
 
   for (i=0;i<mainmenusize;i++)
     if ((mainmenu[i].type==1)||(mainmenu[i].type==3))
       (*(mainmenu[i].switchvar))=mainmenu[i].origdoomdefault;
+
   for (i=0;i<vidoptionssize;i++)
     if ((vidoptions[i].type==1)||(vidoptions[i].type==3))
       (*(vidoptions[i].switchvar))=vidoptions[i].origdoomdefault;
+
   for (i=0;i<playoptionssize;i++)
     if ((playoptions[i].type==1)||(playoptions[i].type==3))
       (*(playoptions[i].switchvar))=playoptions[i].origdoomdefault;
-  for (i=0;i<keyconfigsize;i++)
-    if ((keyconfig[i].type==4))
-      (*(keyconfig[i].switchvar))=keyconfig[i].dosdoomdefault;
-  I_Printf("abba\n");
+
+  for (i=0;i<stdkeyconfigsize;i++)
+    if ((stdkeyconfig[i].type==4))
+         (*(stdkeyconfig[i].switchvar))=stdkeyconfig[i].dosdoomdefault;
 
 }
 
-void Key2String(int key, char *deststring)
+static void M_Key2String(int key, char *deststring)
   {
   int key1,key2;
   char key2string[100];
@@ -564,83 +885,113 @@ void Key2String(int key, char *deststring)
   return;
   }
 
-void M_SetRespawn()
+// -KM- 1998/07/21 Change blood to a boolean
+// -ACB- 1998/08/09 Check map setting allows this
+static void M_ChangeBlood(void)
 {
-
- switch (respawnmode)
- {
-  case 0:      
-    newnmrespawn = 0;     
-    respawnmonsters = false;
-    break;
-
-  case 1:
-    newnmrespawn = 0;
-    respawnmonsters = true;
-    break;
-
-  case 2:
-    newnmrespawn = 1;
-    respawnmonsters = true;
-    break;
- }
- 
+ if (!(currentmap->flags & MPF_NORMBLOOD))
+   gameflags.blood = settingflags.blood;
 }
 
-void M_ChangeSpectreAbility()
+// 98-7-10 KM Recalibration of Joystick
+static void M_CalibrateJoystick(void)
 {
- mobjinfo[13].flags &= ~MF_SHADOW;
- mobjinfo[13].flags &= ~MF_STEALTH;
- mobjinfo[13].flags &= ~MF_TRANSLUC;
-
- switch (spectreability)
- {
-
-  case 1:
-    mobjinfo[13].flags |= MF_SHADOW;
-    break;
-
-  case 2:
-    mobjinfo[13].flags |= MF_TRANSLUC;
-    break;
-
-  case 3:
-    mobjinfo[13].flags |= MF_STEALTH;
-    break;
-
-  default:
-   break;
- }
-
- updatespectreflags = true;
-
+  I_CalibrateJoystick(0);
 }
 
-void M_ChangeLostAbility()
+// -ACB- 1998/08/09 New DDF settings, check that map allows the settings
+static void M_ChangeMonsterRespawn(void)
 {
- mobjinfo[18].flags &= ~MF_SHADOW;
- mobjinfo[18].flags &= ~MF_STEALTH;
- mobjinfo[18].flags &= ~MF_TRANSLUC;
-
- switch (lostsoulability)
- {
-
-  case 1:
-    mobjinfo[18].flags |= MF_SHADOW;
-    break;
-
-  case 2:
-    mobjinfo[18].flags |= MF_TRANSLUC;
-    break;
-
-  case 3:
-    mobjinfo[18].flags |= MF_STEALTH;
-    break;
-
-  default:
-   break;
- }
-
- updatelostsoulflags = true;
-
+  if (!(currentmap->flags & (MPF_RESMONSTER|MPF_TELMONSTER)))
+    gameflags.respawnsetting = settingflags.respawnsetting;
 }
+
+static void M_ChangeItemRespawn(void)
+{
+  if (!(currentmap->flags & (MPF_ITEMRESPAWN|MPF_NOITEMRESPN)))
+    gameflags.itemrespawn = settingflags.itemrespawn;
+}
+
+static void M_ChangeStretchSky(void)
+{
+  if (!(currentmap->flags & (MPF_NORMALSKY|MPF_STRETCHSKY)))
+    gameflags.stretchsky = settingflags.stretchsky;
+}
+
+static void M_ChangeTransluc(void)
+{
+  if (!(currentmap->flags & MPF_NOTRANSLUC))
+    gameflags.trans = settingflags.trans;
+}
+
+static void M_ChangeTrue3d(void)
+{
+  if (!(currentmap->flags & MPF_NOTRUE3D))
+    gameflags.true3dgameplay = settingflags.true3dgameplay;
+}
+
+static void M_ChangeRespawn(void)
+{
+  if ((gameskill != sk_nightmare) && !(currentmap->flags & (MPF_RESPAWN|MPF_NORESPAWN)))
+    gameflags.respawn = settingflags.respawn;
+}
+
+static void M_ChangeFastparm(void)
+{
+  if ((gameskill != sk_nightmare) && !(currentmap->flags & MPF_FAST))
+    gameflags.fastparm = settingflags.fastparm;
+}
+// -ACB- 1998/08/29 Resolution Changes...
+//
+// New idea based on -ES- original work:
+// so long as it does not borrow from quake
+//
+static void M_ChangeStoredRes(void)
+{
+  optwidth = screenres[ressize].width;
+  optheight = screenres[ressize].height;
+}
+
+static void M_OptionSetResolution()
+{
+  oldwidth = SCREENWIDTH;
+  oldheight = SCREENHEIGHT;
+  oldbpp = BPP;
+  R_ChangeResolution(optwidth, optheight, optbpp+1);
+}
+
+static void M_OptionTestResolution()
+{
+  oldwidth = SCREENWIDTH;
+  oldheight = SCREENHEIGHT;
+  oldbpp = BPP;
+
+  R_ChangeResolution(optwidth, optheight, optbpp+1);
+  testticker = TICRATE * 5;
+}
+
+static void M_RestoreResSettings()
+{
+  R_ChangeResolution(oldwidth, oldheight, oldbpp);
+}
+
+
+static void M_SetCDAudio(void)
+{
+ static int oldcdaudio = -1;
+
+ if (oldcdaudio == -1)
+   oldcdaudio = -1;
+
+ if (cdaudio == 2)
+ {
+   if (oldcdaudio < cdaudio)
+    cdaudio = 3;
+   else
+    cdaudio = 1;
+ }
+ oldcdaudio = cdaudio;
+
+  I_StartCDAudio();
+}
+

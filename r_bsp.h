@@ -45,8 +45,9 @@ extern boolean		markceiling;
 
 extern boolean		skymap;
 
-extern drawseg_t	drawsegs[MAXDRAWSEGS];
-extern drawseg_t*	ds_p;
+extern int		maxdrawsegs;
+extern drawseg_t*	drawsegs;
+extern int		ds_p;
 
 extern lighttable_t**	hscalelight;
 extern lighttable_t**	vscalelight;

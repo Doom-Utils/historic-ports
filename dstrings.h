@@ -23,39 +23,18 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __DSTRINGS__
-#define __DSTRINGS__
-
-
-// All important printed strings.
-// Language selection (message strings).
-#include "lu_str.h"
-void LU_InitLanguage();
+#ifndef __DOOM_STRINGS__
+#define __DOOM_STRINGS__
 
 // Misc. other strings.
-#define SAVEGAMENAME	"doomsav"
+// 98-7-10 KM Support for more savegame slots.
+#define SAVEGAMENAME	"save"
+#define SAVEGAMEDIR	"savegame"
+#define NETSAVEDIR	"savegame.net"
 
-
-//
-// File locations,
-//  relative to current position.
-// Path names are OS-sensitive.
-//
 #define DEVMAPS "devmaps"
 #define DEVDATA "devdata"
 
-
-// Not done in french?
-
-// QuitDOOM messages
-#define NUM_QUITMESSAGES   22
-
 extern char* endmsg[];
 
-
 #endif
-//-----------------------------------------------------------------------------
-//
-// $Log:$
-//
-//-----------------------------------------------------------------------------
