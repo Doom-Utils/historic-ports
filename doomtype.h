@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: doomtype.h,v 1.3 1998/05/03 23:24:33 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,15 +15,14 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Simple basic typedefs, isolated here to make it easier
-//	 separating modules.
-//    
+//      Simple basic typedefs, isolated here to make it easier
+//       separating modules.
+//
 //-----------------------------------------------------------------------------
 
 
 #ifndef __DOOMTYPE__
 #define __DOOMTYPE__
-
 
 #ifndef __BYTEBOOL__
 #define __BYTEBOOL__
@@ -36,31 +35,21 @@ typedef enum {false, true} boolean;
 typedef unsigned char byte;
 #endif
 
-
-// Predefined with some OS.
-//#ifdef LINUX
 #include <values.h>
-//#else
-#define MAXCHAR		((char)0x7f)
-//#define MAXSHORT	((short)0x7fff)
-
-// Max pos 32-bit int.
-//#define MAXINT		((int)0x7fffffff)
-//#define MAXLONG		((long)0x7fffffff)
-#define MINCHAR		((char)0x80)
-//#define MINSHORT	((short)0x8000)
-
-// Max negative 32-bit integer.
-//#define MININT		((int)0x80000000)
-//#define MINLONG		((long)0x80000000)
-//#endif
-
-
-
-
+#define MAXCHAR         ((char)0x7f)
+#define MINCHAR         ((char)0x80)
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: doomtype.h,v $
+// Revision 1.3  1998/05/03  23:24:33  killough
+// beautification
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:26:43  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:51  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

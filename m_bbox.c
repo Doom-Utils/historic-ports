@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: m_bbox.c,v 1.4 1998/05/05 19:55:56 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,18 +14,17 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
-//	Main loop menu stuff.
-//	Random number LUT.
-//	Default Config File.
-//	PCX Screenshots.
+//      Main loop menu stuff.
+//      Random number LUT.
+//      Default Config File.
+//      PCX Screenshots.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
+rcsid[] = "$Id: m_bbox.c,v 1.4 1998/05/05 19:55:56 phares Exp $";
 
 
 #ifdef __GNUG__
@@ -33,32 +32,38 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #endif
 #include "m_bbox.h"
 
-
-
-
 void M_ClearBox (fixed_t *box)
-{
-    box[BOXTOP] = box[BOXRIGHT] = MININT;
-    box[BOXBOTTOM] = box[BOXLEFT] = MAXINT;
-}
+  {
+  box[BOXTOP] = box[BOXRIGHT] = MININT;
+  box[BOXBOTTOM] = box[BOXLEFT] = MAXINT;
+  }
 
-void
-M_AddToBox
-( fixed_t*	box,
-  fixed_t	x,
-  fixed_t	y )
-{
-    if (x<box[BOXLEFT])
-	box[BOXLEFT] = x;
-    else if (x>box[BOXRIGHT])
-	box[BOXRIGHT] = x;
-    if (y<box[BOXBOTTOM])
-	box[BOXBOTTOM] = y;
-    else if (y>box[BOXTOP])
-	box[BOXTOP] = y;
-}
+void M_AddToBox(fixed_t* box,fixed_t x,fixed_t y)
+  {
+  if (x<box[BOXLEFT])
+    box[BOXLEFT] = x;
+  else if (x>box[BOXRIGHT])
+    box[BOXRIGHT] = x;
+  if (y<box[BOXBOTTOM])
+    box[BOXBOTTOM] = y;
+  else if (y>box[BOXTOP])
+    box[BOXTOP] = y;
+  }
 
-
-
-
-
+//----------------------------------------------------------------------------
+//
+// $Log: m_bbox.c,v $
+// Revision 1.4  1998/05/05  19:55:56  phares
+// Formatting and Doc changes
+//
+// Revision 1.3  1998/05/03  22:52:12  killough
+// beautification
+//
+// Revision 1.2  1998/01/26  19:23:42  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:58  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

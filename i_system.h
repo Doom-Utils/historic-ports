@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: i_system.h,v 1.7 1998/05/03 22:33:43 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,35 +15,30 @@
 // for more details.
 //
 // DESCRIPTION:
-//	System specific interface stuff.
+//      System specific interface stuff.
 //
 //-----------------------------------------------------------------------------
-
 
 #ifndef __I_SYSTEM__
 #define __I_SYSTEM__
 
 #include "d_ticcmd.h"
-#include "d_event.h"
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-
 // Called by DoomMain.
-void I_Init (void);
-
-// Called by startup code
-// to get the ammount of memory to malloc
-// for the zone management.
-byte*	I_ZoneBase (int *size);
-
+void I_Init(void);
 
 // Called by D_DoomLoop,
 // returns current time in tics.
-int I_GetTime (void);
+// int I_GetTime (void);
 
+int (*I_GetTime)();           // killough
+int I_GetTime_RealTime();     // killough
+int I_GetTime_Adaptive(void); // killough 4/10/98
+extern int GetTime_Scale;
 
 //
 // Called by D_DoomLoop,
@@ -53,14 +48,15 @@ int I_GetTime (void);
 // are performed here (joystick reading).
 // Can call D_PostEvent.
 //
-void I_StartFrame (void);
 
+void I_StartFrame (void);
 
 //
 // Called by D_DoomLoop,
 // called before processing each tic in a frame.
 // Quick syncronous operations are performed here.
 // Can call D_PostEvent.
+
 void I_StartTic (void);
 
 // Asynchronous interrupt functions should maintain private queues
@@ -71,27 +67,59 @@ void I_StartTic (void);
 // or calls a loadable driver to build it.
 // This ticcmd will then be modified by the gameloop
 // for normal input.
+
 ticcmd_t* I_BaseTiccmd (void);
 
+// atexit handler -- killough
 
-// Called by M_Responder when quit is selected.
-// Clean exit, displays sell blurb.
 void I_Quit (void);
 
+// Allocates from low memory under dos, just mallocs under unix
 
-// Allocates from low memory under dos,
-// just mallocs under unix
-byte* I_AllocLow (int length);
+#define I_AllocLow(length) calloc((length),1)            /* killough */
+#define I_Tactile(on, off, total)
 
-void I_Tactile (int on, int off, int total);
+// killough 3/20/98: add const
+// killough 4/25/98: add gcc attributes
+void I_Error(const char *error, ...) __attribute__((format(printf,1,2)));
 
+extern int mousepresent;                // killough
 
-void I_Error (char *error, ...);
+void I_EndDoom(void);         // killough 2/22/98: endgame screen
 
+// killough 3/21/98: keyboard queue
+
+#define KQSIZE 256
+
+extern struct keyboard_queue_s {
+  volatile int head,tail,queue[KQSIZE];
+} keyboard_queue;
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: i_system.h,v $
+// Revision 1.7  1998/05/03  22:33:43  killough
+// beautification, remove unnecessary #includes
 //
-//-----------------------------------------------------------------------------
+// Revision 1.6  1998/04/27  01:52:47  killough
+// Add __attribute__ to I_Error for gcc checking
+//
+// Revision 1.5  1998/04/10  06:34:07  killough
+// Add adaptive gametic timer
+//
+// Revision 1.4  1998/03/23  03:17:19  killough
+// Add keyboard FIFO queue and make I_Error arg const
+//
+// Revision 1.3  1998/02/23  04:28:30  killough
+// Add ENDOOM support
+//
+// Revision 1.2  1998/01/26  19:26:59  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:10  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

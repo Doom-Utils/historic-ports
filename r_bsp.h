@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: r_bsp.h,v 1.5 1998/05/03 22:48:03 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,10 +15,9 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Refresh module, BSP traversal and handling.
+//      Refresh module, BSP traversal and handling.
 //
 //-----------------------------------------------------------------------------
-
 
 #ifndef __R_BSP__
 #define __R_BSP__
@@ -27,46 +26,52 @@
 #pragma interface
 #endif
 
+extern seg_t    *curline;
+extern side_t   *sidedef;
+extern line_t   *linedef;
+extern sector_t *frontsector;
+extern sector_t *backsector;
+extern int      rw_x;
+extern int      rw_stopx;
+extern boolean  segtextured;
+extern boolean  markfloor;      // false if the back side is the same plane
+extern boolean  markceiling;
 
-extern seg_t*		curline;
-extern side_t*		sidedef;
-extern line_t*		linedef;
-extern sector_t*	frontsector;
-extern sector_t*	backsector;
+// old code -- killough:
+// extern drawseg_t drawsegs[MAXDRAWSEGS];
+// new code -- killough:
+extern drawseg_t *drawsegs;
+extern unsigned maxdrawsegs;
 
-extern int		rw_x;
-extern int		rw_stopx;
+extern drawseg_t *ds_p;
 
-extern boolean		segtextured;
+void R_ClearClipSegs(void);
+void R_ClearDrawSegs(void);
+void R_RenderBSPNode(int bspnum);
+int R_DoorClosed(void);   // killough 1/17/98
 
-// false if the back side is the same plane
-extern boolean		markfloor;		
-extern boolean		markceiling;
-
-extern boolean		skymap;
-
-extern drawseg_t	drawsegs[MAXDRAWSEGS];
-extern drawseg_t*	ds_p;
-
-extern lighttable_t**	hscalelight;
-extern lighttable_t**	vscalelight;
-extern lighttable_t**	dscalelight;
-
-
-typedef void (*drawfunc_t) (int start, int stop);
-
-
-// BSP?
-void R_ClearClipSegs (void);
-void R_ClearDrawSegs (void);
-
-
-void R_RenderBSPNode (int bspnum);
-
+// killough 4/13/98: fake floors/ceilings for deep water / fake ceilings:
+sector_t *R_FakeFlat(sector_t *, sector_t *, int *, int *, boolean);
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: r_bsp.h,v $
+// Revision 1.5  1998/05/03  22:48:03  killough
+// beautification, use new headers, change decls
 //
-//-----------------------------------------------------------------------------
+// Revision 1.4  1998/04/14  08:16:15  killough
+// Fix light levels on 2s textures
+//
+// Revision 1.3  1998/02/02  13:31:53  killough
+// Add HOM detector
+//
+// Revision 1.2  1998/01/26  19:27:33  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:10  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

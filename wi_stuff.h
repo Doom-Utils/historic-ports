@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: wi_stuff.h,v 1.3 1998/05/04 21:36:12 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -30,9 +30,9 @@
 
 typedef enum
 {
-    NoState = -1,
-    StatCount,
-    ShowNextLoc
+  NoState = -1,
+  StatCount,
+  ShowNextLoc
 
 } stateenum_t;
 
@@ -44,11 +44,21 @@ void WI_Ticker (void);
 void WI_Drawer (void);
 
 // Setup for an intermission screen.
-void WI_Start(wbstartstruct_t*	 wbstartstruct);
+void WI_Start(wbstartstruct_t*   wbstartstruct);
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: wi_stuff.h,v $
+// Revision 1.3  1998/05/04  21:36:12  thldrmn
+// commenting and reformatting
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:28:03  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:05  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

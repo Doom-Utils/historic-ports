@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: r_defs.h,v 1.18 1998/04/27 02:12:59 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -19,10 +19,11 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __R_DEFS__
 #define __R_DEFS__
 
+// sqrt, etc.-- killough
+#include <math.h>
 
 // Screenwidth.
 #include "doomdef.h"
@@ -34,29 +35,22 @@
 // We rely on the thinker data struct
 // to handle sound origins in sectors.
 #include "d_think.h"
+
 // SECTORS do store MObjs anyway.
 #include "p_mobj.h"
-
-
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-
-
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
-#define SIL_NONE		0
-#define SIL_BOTTOM		1
-#define SIL_TOP			2
-#define SIL_BOTH		3
+#define SIL_NONE    0
+#define SIL_BOTTOM  1
+#define SIL_TOP     2
+#define SIL_BOTH    3
 
-#define MAXDRAWSEGS		256
-
-
-
-
+#define MAXDRAWSEGS   256
 
 //
 // INTERNAL MAP TYPES
@@ -66,76 +60,73 @@
 //
 // Your plain vanilla vertex.
 // Note: transformed values not buffered locally,
-//  like some DOOM-alikes ("wt", "WebView") did.
+// like some DOOM-alikes ("wt", "WebView") do.
 //
 typedef struct
 {
-    fixed_t	x;
-    fixed_t	y;
-    
+  fixed_t x, y;
 } vertex_t;
 
-
-// Forward of LineDefs, for Sectors.
-struct line_s;
-
-// Each sector has a degenmobj_t in its center
-//  for sound origin purposes.
-// I suppose this does not handle sound from
-//  moving objects (doppler), because
-//  position is prolly just buffered, not
-//  updated.
+// Each sector has a degenmobj_t in its center for sound origin purposes.
 typedef struct
 {
-    thinker_t		thinker;	// not used for anything
-    fixed_t		x;
-    fixed_t		y;
-    fixed_t		z;
-
+  thinker_t thinker;  // not used for anything
+  fixed_t x, y, z;
 } degenmobj_t;
 
 //
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
 //
-typedef	struct
+
+typedef struct
 {
-    fixed_t	floorheight;
-    fixed_t	ceilingheight;
-    short	floorpic;
-    short	ceilingpic;
-    short	lightlevel;
-    short	special;
-    short	tag;
+  fixed_t floorheight;
+  fixed_t ceilingheight;
+  short floorpic;
+  short ceilingpic;
+  short lightlevel;
+  short special;
+  short oldspecial;      //jff 2/16/98 remembers if sector WAS secret (automap)
+  short tag;
+  int nexttag,firsttag;  // killough 1/30/98: improves searches for tags.
+  int soundtraversed;    // 0 = untraversed, 1,2 = sndlines-1
+  mobj_t *soundtarget;   // thing that made a sound (or null)
+  int blockbox[4];       // mapblock bounding box for height changes
+  degenmobj_t soundorg;  // origin for any sounds played by the sector
+  int validcount;        // if == validcount, already checked
+  mobj_t *thinglist;     // list of mobjs in sector
 
-    // 0 = untraversed, 1,2 = sndlines -1
-    int		soundtraversed;
+  // thinker_t for reversable actions
+  void *floordata;    // jff 2/22/98 make thinkers on
+  void *ceilingdata;  // floors, ceilings, lighting,
+  void *lightingdata; // independent of one another
 
-    // thing that made a sound (or null)
-    mobj_t*	soundtarget;
+  // jff 2/26/98 lockout machinery for stairbuilding
+  int stairlock;   // -2 on first locked -1 after thinker done 0 normally
+  int prevsec;     // -1 or number of sector for previous step
+  int nextsec;     // -1 or number of next step sector
+  
+  // killough 3/7/98: floor and ceiling texture offsets
+  fixed_t   floor_xoffs,   floor_yoffs;
+  fixed_t ceiling_xoffs, ceiling_yoffs;
 
-    // mapblock bounding box for height changes
-    int		blockbox[4];
+  // killough 3/7/98: support flat heights drawn at another sector's heights
+  int heightsec;    // other sector, or -1 if no other sector
 
-    // origin for any sounds played by the sector
-    degenmobj_t	soundorg;
+  // killough 4/11/98: support for lightlevels coming from another sector
+  int floorlightsec, ceilinglightsec;
 
-    // if == validcount, already checked
-    int		validcount;
+  int bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
 
-    // list of mobjs in sector
-    mobj_t*	thinglist;
+  // list of mobjs that are at least partially in the sector
+  // thinglist is a subset of touching_thinglist
+  struct msecnode_s *touching_thinglist;               // phares 3/14/98  
 
-    // thinker_t for reversable actions
-    void*	specialdata;
+  int linecount;
+  struct line_s **lines;
 
-    int			linecount;
-    struct line_s**	lines;	// [linecount] size
-    
 } sector_t;
-
-
-
 
 //
 // The SideDef.
@@ -143,79 +134,49 @@ typedef	struct
 
 typedef struct
 {
-    // add this to the calculated texture column
-    fixed_t	textureoffset;
-    
-    // add this to the calculated texture top
-    fixed_t	rowoffset;
+  fixed_t textureoffset; // add this to the calculated texture column
+  fixed_t rowoffset;     // add this to the calculated texture top
+  short toptexture;      // Texture indices. We do not maintain names here. 
+  short bottomtexture;
+  short midtexture;
+  sector_t* sector;      // Sector the SideDef is facing.
 
-    // Texture indices.
-    // We do not maintain names here. 
-    short	toptexture;
-    short	bottomtexture;
-    short	midtexture;
+  // killough 4/4/98, 4/11/98: highest referencing special linedef's type,
+  // or lump number of special effect. Allows texture names to be overloaded
+  // for other functions.
 
-    // Sector the SideDef is facing.
-    sector_t*	sector;
-    
+  int special;
+
 } side_t;
-
-
 
 //
 // Move clipping aid for LineDefs.
 //
 typedef enum
 {
-    ST_HORIZONTAL,
-    ST_VERTICAL,
-    ST_POSITIVE,
-    ST_NEGATIVE
-
+  ST_HORIZONTAL,
+  ST_VERTICAL,
+  ST_POSITIVE,
+  ST_NEGATIVE
 } slopetype_t;
-
-
 
 typedef struct line_s
 {
-    // Vertices, from v1 to v2.
-    vertex_t*	v1;
-    vertex_t*	v2;
-
-    // Precalculated v2 - v1 for side checking.
-    fixed_t	dx;
-    fixed_t	dy;
-
-    // Animation related.
-    short	flags;
-    short	special;
-    short	tag;
-
-    // Visual appearance: SideDefs.
-    //  sidenum[1] will be -1 if one sided
-    short	sidenum[2];			
-
-    // Neat. Another bounding box, for the extent
-    //  of the LineDef.
-    fixed_t	bbox[4];
-
-    // To aid move clipping.
-    slopetype_t	slopetype;
-
-    // Front and back sector.
-    // Note: redundant? Can be retrieved from SideDefs.
-    sector_t*	frontsector;
-    sector_t*	backsector;
-
-    // if == validcount, already checked
-    int		validcount;
-
-    // thinker_t for reversable actions
-    void*	specialdata;		
+  vertex_t *v1, *v2;     // Vertices, from v1 to v2.
+  fixed_t dx, dy;        // Precalculated v2 - v1 for side checking.
+  short flags;           // Animation related.
+  short special;         
+  short tag;
+  short sidenum[2];      // Visual appearance: SideDefs.
+  fixed_t bbox[4];       // A bounding box, for the linedef's extent
+  slopetype_t slopetype; // To aid move clipping.
+  sector_t *frontsector; // Front and back sector.
+  sector_t *backsector; 
+  int validcount;        // if == validcount, already checked
+  void *specialdata;     // thinker_t for reversable actions
+  int tranlump;          // killough 4/11/98: translucency filter, -1 == none
+  int firsttag,nexttag;  // killough 4/17/98: improves searches for tags.
 } line_t;
-
-
-
 
 //
 // A SubSector.
@@ -224,83 +185,78 @@ typedef struct line_s
 //  indicating the visible walls that define
 //  (all or some) sides of a convex BSP leaf.
 //
+
 typedef struct subsector_s
 {
-    sector_t*	sector;
-    short	numlines;
-    short	firstline;
-    
+  sector_t *sector;
+  short numlines, firstline;
 } subsector_t;
 
+// phares 3/14/98
+//
+// Sector list node showing all sectors an object appears in.
+//
+// There are two threads that flow through these nodes. The first thread
+// starts at touching_thinglist in a sector_t and flows through the m_snext
+// links to find all mobjs that are entirely or partially in the sector.
+// The second thread starts at touching_sectorlist in an mobj_t and flows
+// through the m_tnext links to find all sectors a thing touches. This is
+// useful when applying friction or push effects to sectors. These effects
+// can be done as thinkers that act upon all objects touching their sectors.
+// As an mobj moves through the world, these nodes are created and
+// destroyed, with the links changed appropriately.
+//
+// For the links, NULL means top or end of list.
 
+typedef struct msecnode_s
+{
+  sector_t          *m_sector; // a sector containing this object
+  struct mobj_s     *m_thing;  // this object
+  struct msecnode_s *m_tprev;  // prev msecnode_t for this thing
+  struct msecnode_s *m_tnext;  // next msecnode_t for this thing
+  struct msecnode_s *m_sprev;  // prev msecnode_t for this sector
+  struct msecnode_s *m_snext;  // next msecnode_t for this sector
+  boolean visited; // killough 4/4/98, 4/7/98: used in search algorithms
+} msecnode_t;
 
 //
 // The LineSeg.
 //
 typedef struct
 {
-    vertex_t*	v1;
-    vertex_t*	v2;
-    
-    fixed_t	offset;
+  vertex_t *v1, *v2;
+  fixed_t offset;
+  angle_t angle;
+  side_t* sidedef;
+  line_t* linedef;
+  
+  // Sector references.
+  // Could be retrieved from linedef, too
+  // (but that would be slower -- killough)
+  // backsector is NULL for one sided lines
 
-    angle_t	angle;
-
-    side_t*	sidedef;
-    line_t*	linedef;
-
-    // Sector references.
-    // Could be retrieved from linedef, too.
-    // backsector is NULL for one sided lines
-    sector_t*	frontsector;
-    sector_t*	backsector;
-    
+  sector_t *frontsector, *backsector;
 } seg_t;
-
-
 
 //
 // BSP node.
 //
 typedef struct
 {
-    // Partition line.
-    fixed_t	x;
-    fixed_t	y;
-    fixed_t	dx;
-    fixed_t	dy;
-
-    // Bounding box for each child.
-    fixed_t	bbox[2][4];
-
-    // If NF_SUBSECTOR its a subsector.
-    unsigned short children[2];
-    
+  fixed_t  x,  y, dx, dy;        // Partition line.
+  fixed_t bbox[2][4];            // Bounding box for each child.
+  unsigned short children[2];    // If NF_SUBSECTOR its a subsector.
 } node_t;
-
-
-
 
 // posts are runs of non masked source pixels
 typedef struct
 {
-    byte		topdelta;	// -1 is the last post in a column
-    byte		length; 	// length data bytes follows
+  byte topdelta; // -1 is the last post in a column
+  byte length;   // length data bytes follows
 } post_t;
 
 // column_t is a list of 0 or more post_t, (byte)-1 terminated
-typedef post_t	column_t;
-
-
-
-// PC direct to screen pointers
-//B UNUSED - keep till detailshift in r_draw.c resolved
-//extern byte*	destview;
-//extern byte*	destscreen;
-
-
-
-
+typedef post_t column_t;
 
 //
 // OTHER TYPES
@@ -308,108 +264,73 @@ typedef post_t	column_t;
 
 // This could be wider for >8 bit display.
 // Indeed, true color support is posibble
-//  precalculating 24bpp lightmap/colormap LUT.
-//  from darkening PLAYPAL to all black.
-// Could even us emore than 32 levels.
-typedef byte	lighttable_t;	
+// precalculating 24bpp lightmap/colormap LUT.
+// from darkening PLAYPAL to all black.
+// Could use even more than 32 levels.
 
-
-
+typedef byte  lighttable_t; 
 
 //
-// ?
+// Masked 2s linedefs
 //
+
 typedef struct drawseg_s
 {
-    seg_t*		curline;
-    int			x1;
-    int			x2;
+  seg_t *curline;
+  int x1, x2;
+  fixed_t scale1, scale2, scalestep;
+  int silhouette;                       // 0=none, 1=bottom, 2=top, 3=both
+  fixed_t bsilheight;                   // do not clip sprites above this
+  fixed_t tsilheight;                   // do not clip sprites below this
 
-    fixed_t		scale1;
-    fixed_t		scale2;
-    fixed_t		scalestep;
+  // Pointers to lists for sprite clipping,
+  // all three adjusted so [x1] is first value.
 
-    // 0=none, 1=bottom, 2=top, 3=both
-    int			silhouette;
-
-    // do not clip sprites above this
-    fixed_t		bsilheight;
-
-    // do not clip sprites below this
-    fixed_t		tsilheight;
-    
-    // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
-    short*		sprtopclip;		
-    short*		sprbottomclip;	
-    short*		maskedtexturecol;
-    
+  short *sprtopclip, *sprbottomclip, *maskedtexturecol;
 } drawseg_t;
 
-
-
+//
 // Patches.
 // A patch holds one or more columns.
 // Patches are used for sprites and all masked pictures,
 // and we compose textures from the TEXTURE1/2 lists
 // of patches.
+//
+
 typedef struct 
 { 
-    short		width;		// bounding box size 
-    short		height; 
-    short		leftoffset;	// pixels to the left of origin 
-    short		topoffset;	// pixels below the origin 
-    int			columnofs[8];	// only [width] used
-    // the [0] is &columnofs[width] 
+  short width, height;  // bounding box size 
+  short leftoffset;     // pixels to the left of origin 
+  short topoffset;      // pixels below the origin 
+  int columnofs[8];     // only [width] used
 } patch_t;
 
+//
+// A vissprite_t is a thing that will be drawn during a refresh.
+// i.e. a sprite object that is partly visible.
+//
 
-
-
-
-
-
-// A vissprite_t is a thing
-//  that will be drawn during a refresh.
-// I.e. a sprite object that is partly visible.
 typedef struct vissprite_s
 {
-    // Doubly linked list.
-    struct vissprite_s*	prev;
-    struct vissprite_s*	next;
-    
-    int			x1;
-    int			x2;
+  int x1, x2;
+  fixed_t gx, gy;              // for line side calculation
+  fixed_t gz, gzt;             // global bottom / top for silhouette clipping
+  fixed_t startfrac;           // horizontal position of x1
+  fixed_t scale;
+  fixed_t xiscale;             // negative if flipped
+  fixed_t texturemid;
+  int patch;
+  int mobjflags;
 
-    // for line side calculation
-    fixed_t		gx;
-    fixed_t		gy;		
-
-    // global bottom / top for silhouette clipping
-    fixed_t		gz;
-    fixed_t		gzt;
-
-    // horizontal position of x1
-    fixed_t		startfrac;
-    
-    fixed_t		scale;
-    
-    // negative if flipped
-    fixed_t		xiscale;	
-
-    fixed_t		texturemid;
-    int			patch;
-
-    // for color translation and shadow draw,
-    //  maxbright frames as well
-    lighttable_t*	colormap;
+  // for color translation and shadow draw, maxbright frames as well
+  lighttable_t *colormap;
    
-    int			mobjflags;
-    
+  // killough 3/27/98: height sector for underwater/fake ceiling support
+  int heightsec;
+
 } vissprite_t;
 
-
-//	
+//  
 // Sprites are patches with a special naming convention
 //  so they can be recognized by R_InitSprites.
 // The base name is NNNNFx or NNNNFxFx, with
@@ -424,67 +345,110 @@ typedef struct vissprite_s
 // Some sprites will only have one picture used
 // for all views: NNNNF0
 //
+
 typedef struct
 {
-    // If false use 0 for any position.
-    // Note: as eight entries are available,
-    //  we might as well insert the same name eight times.
-    boolean	rotate;
+  // If false use 0 for any position.
+  // Note: as eight entries are available,
+  //  we might as well insert the same name eight times.
+  boolean rotate;
 
-    // Lump to use for view angles 0-7.
-    short	lump[8];
+  // Lump to use for view angles 0-7.
+  short lump[8];
 
-    // Flip bit (1 = flip) to use for view angles 0-7.
-    byte	flip[8];
-    
+  // Flip bit (1 = flip) to use for view angles 0-7.
+  byte  flip[8];
+
 } spriteframe_t;
-
-
 
 //
 // A sprite definition:
 //  a number of animation frames.
 //
+
 typedef struct
 {
-    int			numframes;
-    spriteframe_t*	spriteframes;
-
+  int numframes;
+  spriteframe_t *spriteframes;
 } spritedef_t;
-
-
 
 //
 // Now what is a visplane, anyway?
-// 
-typedef struct
-{
-  fixed_t		height;
-  int			picnum;
-  int			lightlevel;
-  int			minx;
-  int			maxx;
-  
-  // leave pads for [minx-1]/[maxx+1]
-  
-  byte		pad1;
-  // Here lies the rub for all
-  //  dynamic resize/change of resolution.
-  byte		top[SCREENWIDTH];
-  byte		pad2;
-  byte		pad3;
-  // See above.
-  byte		bottom[SCREENWIDTH];
-  byte		pad4;
+//
+// Go to http://classicgaming.com/doom/editing/ to find out -- killough
+//
 
+typedef struct visplane
+{
+  struct visplane *next;        // Next visplane in hash chain -- killough
+  int picnum, lightlevel, minx, maxx;
+  fixed_t height;
+  fixed_t xoffs, yoffs;         // killough 2/28/98: Support scrolling flats
+  unsigned short pad1;          // leave pads for [minx-1]/[maxx+1]
+  unsigned short top[MAX_SCREENWIDTH];
+  unsigned short pad2, pad3;    // killough 2/8/98, 4/25/98
+  unsigned short bottom[MAX_SCREENWIDTH];
+  unsigned short pad4;
 } visplane_t;
 
-
-
-
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: r_defs.h,v $
+// Revision 1.18  1998/04/27  02:12:59  killough
+// Program beautification
 //
-//-----------------------------------------------------------------------------
+// Revision 1.17  1998/04/17  10:36:44  killough
+// Improve linedef tag searches (see p_spec.c)
+//
+// Revision 1.16  1998/04/12  02:08:31  killough
+// Add ceiling light property, translucent walls
+//
+// Revision 1.15  1998/04/07  06:52:40  killough
+// Simplify sector_thinglist traversal to use simpler markers
+//
+// Revision 1.14  1998/04/06  04:42:42  killough
+// Add dynamic colormaps, thinglist_validcount
+//
+// Revision 1.13  1998/03/28  18:03:26  killough
+// Add support for underwater sprite clipping
+//
+// Revision 1.12  1998/03/23  03:34:11  killough
+// Add support for an arbitrary number of colormaps
+//
+// Revision 1.11  1998/03/20  00:30:33  phares
+// Changed friction to linedef control
+//
+// Revision 1.10  1998/03/16  12:41:54  killough
+// Add support for floor lightlevel from other sector
+//
+// Revision 1.9  1998/03/09  07:33:44  killough
+// Add scroll effect fields, remove FP for point/line queries
+//
+// Revision 1.8  1998/03/02  11:49:58  killough
+// Support for flats scrolling
+//
+// Revision 1.7  1998/02/27  11:50:49  jim
+// Fixes for stairs
+//
+// Revision 1.6  1998/02/23  00:42:24  jim
+// Implemented elevators
+//
+// Revision 1.5  1998/02/17  22:58:30  jim
+// Fixed bug of vanishinb secret sectors in automap
+//
+// Revision 1.4  1998/02/09  03:21:20  killough
+// Allocate MAX screen height/width in arrays
+//
+// Revision 1.3  1998/02/02  14:19:49  killough
+// Improve searching of matching sector tags
+//
+// Revision 1.2  1998/01/26  19:27:36  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:09  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

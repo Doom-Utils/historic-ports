@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,143 +14,80 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
-//	Rendering main loop and setup functions,
-//	 utility functions (BSP, geometry, trigonometry).
-//	See tables.c, too.
+//      Rendering main loop and setup functions,
+//       utility functions (BSP, geometry, trigonometry).
+//      See tables.c, too.
 //
 //-----------------------------------------------------------------------------
 
+static const char rcsid[] = "$Id: r_main.c,v 1.13 1998/05/07 00:47:52 killough Exp $";
 
-static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
-
-
-
-#include <stdlib.h>
-#include <math.h>
-
-
-#include "doomdef.h"
-#include "d_net.h"
-
+#include "doomstat.h"
+#include "r_main.h"
+#include "r_things.h"
+#include "r_plane.h"
+#include "r_bsp.h"
+#include "r_draw.h"
 #include "m_bbox.h"
-
-#include "r_local.h"
 #include "r_sky.h"
-
-
-
-
+#include "v_video.h"
 
 // Fineangles in the SCREENWIDTH wide window.
-#define FIELDOFVIEW		2048	
+#define FIELDOFVIEW 2048    
 
+// killough: viewangleoffset is a legacy from the pre-v1.2 days, when Doom
+// had Left/Mid/Right viewing. +/-ANG90 offsets were placed here on each
+// node, by d_net.c, to set up a L/M/R session.
 
-
-int			viewangleoffset;
-
-// increment every time a check is made
-int			validcount = 1;		
-
-
-lighttable_t*		fixedcolormap;
-extern lighttable_t**	walllights;
-
-int			centerx;
-int			centery;
-
-fixed_t			centerxfrac;
-fixed_t			centeryfrac;
-fixed_t			projection;
-
-// just for profiling purposes
-int			framecount;	
-
-int			sscount;
-int			linecount;
-int			loopcount;
-
-fixed_t			viewx;
-fixed_t			viewy;
-fixed_t			viewz;
-
-angle_t			viewangle;
-
-fixed_t			viewcos;
-fixed_t			viewsin;
-
-player_t*		viewplayer;
-
-// 0 = high, 1 = low
-int			detailshift;	
+int viewangleoffset;
+int validcount = 1;         // increment every time a check is made
+lighttable_t *fixedcolormap;
+int      centerx, centery;
+fixed_t  centerxfrac, centeryfrac;
+fixed_t  projection;
+fixed_t  viewx, viewy, viewz;
+angle_t  viewangle;
+fixed_t  viewcos, viewsin;
+player_t *viewplayer;
+extern lighttable_t **walllights;
 
 //
 // precalculated math tables
 //
-angle_t			clipangle;
+
+angle_t clipangle;
 
 // The viewangletox[viewangle + FINEANGLES/4] lookup
 // maps the visible view angles to screen X coordinates,
 // flattening the arc to a flat projection plane.
 // There will be many angles mapped to the same X. 
-int			viewangletox[FINEANGLES/2];
+
+int viewangletox[FINEANGLES/2];
 
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t			xtoviewangle[SCREENWIDTH+1];
 
+angle_t xtoviewangle[MAX_SCREENWIDTH+1];   // killough 2/8/98
 
-// UNUSED.
-// The finetangentgent[angle+FINEANGLES/4] table
-// holds the fixed_t tangent values for view angles,
-// ranging from MININT to 0 to MAXINT.
-// fixed_t		finetangent[FINEANGLES/2];
+// killough 3/20/98: Support dynamic colormaps, e.g. deep water
+// killough 4/4/98: support dynamic number of them as well
 
-// fixed_t		finesine[5*FINEANGLES/4];
-fixed_t*		finecosine = &finesine[FINEANGLES/4];
+int numcolormaps;
+lighttable_t *(*c_scalelight)[LIGHTLEVELS][MAXLIGHTSCALE];
+lighttable_t *(*c_zlight)[LIGHTLEVELS][MAXLIGHTZ];
+lighttable_t *(*scalelight)[MAXLIGHTSCALE];
+lighttable_t *(*zlight)[MAXLIGHTZ];
+lighttable_t *fullcolormap;
+lighttable_t **colormaps;
 
+// killough 3/20/98, 4/4/98: end dynamic colormaps
 
-lighttable_t*		scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-lighttable_t*		scalelightfixed[MAXLIGHTSCALE];
-lighttable_t*		zlight[LIGHTLEVELS][MAXLIGHTZ];
+int extralight;                           // bumped light from gun blasts
 
-// bumped light from gun blasts
-int			extralight;			
-
-
-
-void (*colfunc) (void);
-void (*basecolfunc) (void);
-void (*fuzzcolfunc) (void);
-void (*transcolfunc) (void);
-void (*spanfunc) (void);
-
-
-
-//
-// R_AddPointToBox
-// Expand a given bbox
-// so that it encloses a given point.
-//
-void
-R_AddPointToBox
-( int		x,
-  int		y,
-  fixed_t*	box )
-{
-    if (x< box[BOXLEFT])
-	box[BOXLEFT] = x;
-    if (x> box[BOXRIGHT])
-	box[BOXRIGHT] = x;
-    if (y< box[BOXBOTTOM])
-	box[BOXBOTTOM] = y;
-    if (y> box[BOXTOP])
-	box[BOXTOP] = y;
-}
-
+void (*colfunc)(void) = R_DrawColumn;     // current column draw function
 
 //
 // R_PointOnSide
@@ -158,121 +95,49 @@ R_AddPointToBox
 //  check point against partition plane.
 // Returns side 0 (front) or 1 (back).
 //
-int
-R_PointOnSide
-( fixed_t	x,
-  fixed_t	y,
-  node_t*	node )
-{
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	left;
-    fixed_t	right;
-	
-    if (!node->dx)
-    {
-	if (x <= node->x)
-	    return node->dy > 0;
-	
-	return node->dy < 0;
-    }
-    if (!node->dy)
-    {
-	if (y <= node->y)
-	    return node->dx < 0;
-	
-	return node->dx > 0;
-    }
-	
-    dx = (x - node->x);
-    dy = (y - node->y);
-	
-    // Try to quickly decide by looking at sign bits.
-    if ( (node->dy ^ node->dx ^ dx ^ dy)&0x80000000 )
-    {
-	if  ( (node->dy ^ dx) & 0x80000000 )
-	{
-	    // (left is negative)
-	    return 1;
-	}
-	return 0;
-    }
+// killough 5/2/98: reformatted
+//
 
-    left = FixedMul ( node->dy>>FRACBITS , dx );
-    right = FixedMul ( dy , node->dx>>FRACBITS );
-	
-    if (right < left)
-    {
-	// front side
-	return 0;
-    }
-    // back side
-    return 1;			
+int R_PointOnSide(fixed_t x, fixed_t y, node_t *node)
+{
+  if (!node->dx)
+    return x <= node->x ? node->dy > 0 : node->dy < 0;
+
+  if (!node->dy)
+    return y <= node->y ? node->dx < 0 : node->dx > 0;
+        
+  x -= node->x;
+  y -= node->y;
+  
+  // Try to quickly decide by looking at sign bits.
+  if ((node->dy ^ node->dx ^ x ^ y) < 0)
+    return (node->dy ^ x) < 0;  // (left is negative)
+  return FixedMul(y, node->dx>>FRACBITS) >= FixedMul(node->dy>>FRACBITS, x);
 }
 
+// killough 5/2/98: reformatted
 
-int
-R_PointOnSegSide
-( fixed_t	x,
-  fixed_t	y,
-  seg_t*	line )
+int R_PointOnSegSide(fixed_t x, fixed_t y, seg_t *line)
 {
-    fixed_t	lx;
-    fixed_t	ly;
-    fixed_t	ldx;
-    fixed_t	ldy;
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	left;
-    fixed_t	right;
-	
-    lx = line->v1->x;
-    ly = line->v1->y;
-	
-    ldx = line->v2->x - lx;
-    ldy = line->v2->y - ly;
-	
-    if (!ldx)
-    {
-	if (x <= lx)
-	    return ldy > 0;
-	
-	return ldy < 0;
-    }
-    if (!ldy)
-    {
-	if (y <= ly)
-	    return ldx < 0;
-	
-	return ldx > 0;
-    }
-	
-    dx = (x - lx);
-    dy = (y - ly);
-	
-    // Try to quickly decide by looking at sign bits.
-    if ( (ldy ^ ldx ^ dx ^ dy)&0x80000000 )
-    {
-	if  ( (ldy ^ dx) & 0x80000000 )
-	{
-	    // (left is negative)
-	    return 1;
-	}
-	return 0;
-    }
+  fixed_t lx = line->v1->x;
+  fixed_t ly = line->v1->y;
+  fixed_t ldx = line->v2->x - lx;
+  fixed_t ldy = line->v2->y - ly;
 
-    left = FixedMul ( ldy>>FRACBITS , dx );
-    right = FixedMul ( dy , ldx>>FRACBITS );
-	
-    if (right < left)
-    {
-	// front side
-	return 0;
-    }
-    // back side
-    return 1;			
+  if (!ldx)
+    return x <= lx ? ldy > 0 : ldy < 0;
+
+  if (!ldy)
+    return y <= ly ? ldx < 0 : ldx > 0;
+  
+  x -= lx;
+  y -= ly;
+        
+  // Try to quickly decide by looking at sign bits.
+  if ((ldy ^ ldx ^ x ^ y) < 0)
+    return (ldy ^ x) < 0;          // (left is negative)
+  return FixedMul(y, ldx>>FRACBITS) >= FixedMul(ldy>>FRACBITS, x);
 }
-
 
 //
 // R_PointToAngle
@@ -281,167 +146,43 @@ R_PointOnSegSide
 //  the first octant of the coordinate system, then
 //  the y (<=x) is scaled and divided by x to get a
 //  tangent (slope) value which is looked up in the
-//  tantoangle[] table.
-
+//  tantoangle[] table. The +1 size of tantoangle[]
+//  is to handle the case when x==y without additional
+//  checking.
 //
+// killough 5/2/98: reformatted, cleaned up
 
-
-
-
-angle_t
-R_PointToAngle
-( fixed_t	x,
-  fixed_t	y )
-{	
-    x -= viewx;
-    y -= viewy;
-    
-    if ( (!x) && (!y) )
-	return 0;
-
-    if (x>= 0)
-    {
-	// x >=0
-	if (y>= 0)
-	{
-	    // y>= 0
-
-	    if (x>y)
-	    {
-		// octant 0
-		return tantoangle[ SlopeDiv(y,x)];
-	    }
-	    else
-	    {
-		// octant 1
-		return ANG90-1-tantoangle[ SlopeDiv(x,y)];
-	    }
-	}
-	else
-	{
-	    // y<0
-	    y = -y;
-
-	    if (x>y)
-	    {
-		// octant 8
-		return -tantoangle[SlopeDiv(y,x)];
-	    }
-	    else
-	    {
-		// octant 7
-		return ANG270+tantoangle[ SlopeDiv(x,y)];
-	    }
-	}
-    }
-    else
-    {
-	// x<0
-	x = -x;
-
-	if (y>= 0)
-	{
-	    // y>= 0
-	    if (x>y)
-	    {
-		// octant 3
-		return ANG180-1-tantoangle[ SlopeDiv(y,x)];
-	    }
-	    else
-	    {
-		// octant 2
-		return ANG90+ tantoangle[ SlopeDiv(x,y)];
-	    }
-	}
-	else
-	{
-	    // y<0
-	    y = -y;
-
-	    if (x>y)
-	    {
-		// octant 4
-		return ANG180+tantoangle[ SlopeDiv(y,x)];
-	    }
-	    else
-	    {
-		 // octant 5
-		return ANG270-1-tantoangle[ SlopeDiv(x,y)];
-	    }
-	}
-    }
-    return 0;
+angle_t R_PointToAngle(fixed_t x, fixed_t y)
+{       
+  return (y -= viewy, (x -= viewx) || y) ?
+    x >= 0 ?
+      y >= 0 ? 
+        (x > y) ? tantoangle[SlopeDiv(y,x)] :                      // octant 0 
+                ANG90-1-tantoangle[SlopeDiv(x,y)] :                // octant 1
+        x > (y = -y) ? -tantoangle[SlopeDiv(y,x)] :                // octant 8
+                       ANG270+tantoangle[SlopeDiv(x,y)] :          // octant 7
+      y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] : // octant 3
+                            ANG90 + tantoangle[SlopeDiv(x,y)] :    // octant 2
+        (x = -x) > (y = -y) ? ANG180+tantoangle[ SlopeDiv(y,x)] :  // octant 4
+                              ANG270-1-tantoangle[SlopeDiv(x,y)] : // octant 5
+    0;
 }
 
-
-angle_t
-R_PointToAngle2
-( fixed_t	x1,
-  fixed_t	y1,
-  fixed_t	x2,
-  fixed_t	y2 )
-{	
-    viewx = x1;
-    viewy = y1;
-    
-    return R_PointToAngle (x2, y2);
+angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
+{       
+  return (y -= viewy, (x -= viewx) || y) ?
+    x >= 0 ?
+      y >= 0 ? 
+        (x > y) ? tantoangle[SlopeDiv(y,x)] :                      // octant 0 
+                ANG90-1-tantoangle[SlopeDiv(x,y)] :                // octant 1
+        x > (y = -y) ? -tantoangle[SlopeDiv(y,x)] :                // octant 8
+                       ANG270+tantoangle[SlopeDiv(x,y)] :          // octant 7
+      y >= 0 ? (x = -x) > y ? ANG180-1-tantoangle[SlopeDiv(y,x)] : // octant 3
+                            ANG90 + tantoangle[SlopeDiv(x,y)] :    // octant 2
+        (x = -x) > (y = -y) ? ANG180+tantoangle[ SlopeDiv(y,x)] :  // octant 4
+                              ANG270-1-tantoangle[SlopeDiv(x,y)] : // octant 5
+    0;
 }
-
-
-fixed_t
-R_PointToDist
-( fixed_t	x,
-  fixed_t	y )
-{
-    int		angle;
-    fixed_t	dx;
-    fixed_t	dy;
-    fixed_t	temp;
-    fixed_t	dist;
-	
-    dx = abs(x - viewx);
-    dy = abs(y - viewy);
-	
-    if (dy>dx)
-    {
-	temp = dx;
-	dx = dy;
-	dy = temp;
-    }
-	
-    angle = (tantoangle[ FixedDiv(dy,dx)>>DBITS ]+ANG90) >> ANGLETOFINESHIFT;
-
-    // use as cosine
-    dist = FixedDiv (dx, finesine[angle] );	
-	
-    return dist;
-}
-
-
-
-
-//
-// R_InitPointToAngle
-//
-void R_InitPointToAngle (void)
-{
-    // UNUSED - now getting from tables.c
-#if 0
-    int	i;
-    long	t;
-    float	f;
-//
-// slope (tangent) to angle lookup
-//
-    for (i=0 ; i<=SLOPERANGE ; i++)
-    {
-	f = atan( (float)i/SLOPERANGE )/(3.141592657*2);
-	t = 0xffffffff*f;
-	tantoangle[i] = t;
-    }
-#endif
-}
-
 
 //
 // R_ScaleFromGlobalAngle
@@ -450,198 +191,119 @@ void R_InitPointToAngle (void)
 //  at the given angle.
 // rw_distance must be calculated first.
 //
-fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
+// killough 5/2/98: reformatted, cleaned up
+
+fixed_t R_ScaleFromGlobalAngle(angle_t visangle)
 {
-    fixed_t		scale;
-    int			anglea;
-    int			angleb;
-    int			sinea;
-    int			sineb;
-    fixed_t		num;
-    int			den;
-
-    // UNUSED
-#if 0
-{
-    fixed_t		dist;
-    fixed_t		z;
-    fixed_t		sinv;
-    fixed_t		cosv;
-	
-    sinv = finesine[(visangle-rw_normalangle)>>ANGLETOFINESHIFT];	
-    dist = FixedDiv (rw_distance, sinv);
-    cosv = finecosine[(viewangle-visangle)>>ANGLETOFINESHIFT];
-    z = abs(FixedMul (dist, cosv));
-    scale = FixedDiv(projection, z);
-    return scale;
+  int     anglea = ANG90 + (visangle-viewangle);
+  int     angleb = ANG90 + (visangle-rw_normalangle);
+  int     den = FixedMul(rw_distance, finesine[anglea>>ANGLETOFINESHIFT]);
+  fixed_t num = FixedMul(projection, finesine[angleb>>ANGLETOFINESHIFT]);
+  return den > num>>16 ? (num = FixedDiv(num, den)) > 64*FRACUNIT ?
+    64*FRACUNIT : num < 256 ? 256 : num : 64*FRACUNIT;
 }
-#endif
-
-    anglea = ANG90 + (visangle-viewangle);
-    angleb = ANG90 + (visangle-rw_normalangle);
-
-    // both sines are allways positive
-    sinea = finesine[anglea>>ANGLETOFINESHIFT];	
-    sineb = finesine[angleb>>ANGLETOFINESHIFT];
-    num = FixedMul(projection,sineb)<<detailshift;
-    den = FixedMul(rw_distance,sinea);
-
-    if (den > num>>16)
-    {
-	scale = FixedDiv (num, den);
-
-	if (scale > 64*FRACUNIT)
-	    scale = 64*FRACUNIT;
-	else if (scale < 256)
-	    scale = 256;
-    }
-    else
-	scale = 64*FRACUNIT;
-	
-    return scale;
-}
-
-
-
-//
-// R_InitTables
-//
-void R_InitTables (void)
-{
-    // UNUSED: now getting from tables.c
-#if 0
-    int		i;
-    float	a;
-    float	fv;
-    int		t;
-    
-    // viewangle tangent table
-    for (i=0 ; i<FINEANGLES/2 ; i++)
-    {
-	a = (i-FINEANGLES/4+0.5)*PI*2/FINEANGLES;
-	fv = FRACUNIT*tan (a);
-	t = fv;
-	finetangent[i] = t;
-    }
-    
-    // finesine table
-    for (i=0 ; i<5*FINEANGLES/4 ; i++)
-    {
-	// OPTIMIZE: mirror...
-	a = (i+0.5)*PI*2/FINEANGLES;
-	t = FRACUNIT*sin (a);
-	finesine[i] = t;
-    }
-#endif
-
-}
-
-
 
 //
 // R_InitTextureMapping
 //
-void R_InitTextureMapping (void)
+// killough 5/2/98: reformatted
+
+static void R_InitTextureMapping (void)
 {
-    int			i;
-    int			x;
-    int			t;
-    fixed_t		focallength;
+  register int i,x;
+  fixed_t focallength;
     
-    // Use tangent table to generate viewangletox:
-    //  viewangletox will give the next greatest x
-    //  after the view angle.
-    //
-    // Calc focallength
-    //  so FIELDOFVIEW angles covers SCREENWIDTH.
-    focallength = FixedDiv (centerxfrac,
-			    finetangent[FINEANGLES/4+FIELDOFVIEW/2] );
-	
-    for (i=0 ; i<FINEANGLES/2 ; i++)
-    {
-	if (finetangent[i] > FRACUNIT*2)
-	    t = -1;
-	else if (finetangent[i] < -FRACUNIT*2)
-	    t = viewwidth+1;
-	else
-	{
-	    t = FixedMul (finetangent[i], focallength);
-	    t = (centerxfrac - t+FRACUNIT-1)>>FRACBITS;
+  // Use tangent table to generate viewangletox:
+  //  viewangletox will give the next greatest x
+  //  after the view angle.
+  //
+  // Calc focallength
+  //  so FIELDOFVIEW angles covers SCREENWIDTH.
 
-	    if (t < -1)
-		t = -1;
-	    else if (t>viewwidth+1)
-		t = viewwidth+1;
-	}
-	viewangletox[i] = t;
+  focallength = FixedDiv(centerxfrac, finetangent[FINEANGLES/4+FIELDOFVIEW/2]);
+        
+  for (i=0 ; i<FINEANGLES/2 ; i++)
+    {
+      int t;
+      if (finetangent[i] > FRACUNIT*2)
+        t = -1;
+      else
+        if (finetangent[i] < -FRACUNIT*2)
+          t = viewwidth+1;
+      else
+        {
+          t = FixedMul(finetangent[i], focallength);
+          t = (centerxfrac - t + FRACUNIT-1) >> FRACBITS;
+          if (t < -1)
+            t = -1;
+          else
+            if (t > viewwidth+1)
+              t = viewwidth+1;
+        }
+      viewangletox[i] = t;
     }
     
-    // Scan viewangletox[] to generate xtoviewangle[]:
-    //  xtoviewangle will give the smallest view angle
-    //  that maps to x.	
-    for (x=0;x<=viewwidth;x++)
+  // Scan viewangletox[] to generate xtoviewangle[]:
+  //  xtoviewangle will give the smallest view angle
+  //  that maps to x.
+
+  for (x=0; x<=viewwidth; x++)
     {
-	i = 0;
-	while (viewangletox[i]>x)
-	    i++;
-	xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
+      for (i=0; viewangletox[i] > x; i++)
+        ;
+      xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
     }
     
-    // Take out the fencepost cases from viewangletox.
-    for (i=0 ; i<FINEANGLES/2 ; i++)
-    {
-	t = FixedMul (finetangent[i], focallength);
-	t = centerx - t;
-	
-	if (viewangletox[i] == -1)
-	    viewangletox[i] = 0;
-	else if (viewangletox[i] == viewwidth+1)
-	    viewangletox[i]  = viewwidth;
-    }
-	
-    clipangle = xtoviewangle[0];
+  // Take out the fencepost cases from viewangletox.
+  for (i=0; i<FINEANGLES/2; i++)
+    if (viewangletox[i] == -1)
+      viewangletox[i] = 0;
+    else 
+      if (viewangletox[i] == viewwidth+1)
+        viewangletox[i] = viewwidth;
+        
+  clipangle = xtoviewangle[0];
 }
-
-
 
 //
 // R_InitLightTables
 // Only inits the zlight table,
 //  because the scalelight table changes with view size.
 //
-#define DISTMAP		2
+
+#define DISTMAP 2
 
 void R_InitLightTables (void)
 {
-    int		i;
-    int		j;
-    int		level;
-    int		startmap; 	
-    int		scale;
+  int i;
     
-    // Calculate the light levels to use
-    //  for each level / distance combination.
-    for (i=0 ; i< LIGHTLEVELS ; i++)
+  // killough 4/4/98: dynamic colormaps
+  c_zlight = malloc(sizeof(*c_zlight) * numcolormaps);
+  c_scalelight = malloc(sizeof(*c_scalelight) * numcolormaps);
+
+  // Calculate the light levels to use
+  //  for each level / distance combination.
+  for (i=0; i< LIGHTLEVELS; i++)
     {
-	startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-	for (j=0 ; j<MAXLIGHTZ ; j++)
-	{
-	    scale = FixedDiv ((SCREENWIDTH/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
-	    scale >>= LIGHTSCALESHIFT;
-	    level = startmap - scale/DISTMAP;
-	    
-	    if (level < 0)
-		level = 0;
+      int j, startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+      for (j=0; j<MAXLIGHTZ; j++)
+        {
+          int scale = FixedDiv ((SCREENWIDTH/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
+          int t, level = startmap - (scale >>= LIGHTSCALESHIFT)/DISTMAP;
 
-	    if (level >= NUMCOLORMAPS)
-		level = NUMCOLORMAPS-1;
+          if (level < 0)
+            level = 0;
+          else
+            if (level >= NUMCOLORMAPS)
+              level = NUMCOLORMAPS-1;
 
-	    zlight[i][j] = colormaps + level*256;
-	}
+          // killough 3/20/98: Initialize multiple colormaps
+          level *= 256;
+          for (t=0; t<numcolormaps; t++)         // killough 4/4/98
+            c_zlight[t][i][j] = colormaps[t] + level;
+        }
     }
 }
-
-
 
 //
 // R_SetViewSize
@@ -649,250 +311,330 @@ void R_InitLightTables (void)
 //  because it might be in the middle of a refresh.
 // The change will take effect next refresh.
 //
-boolean		setsizeneeded;
-int		setblocks;
-int		setdetail;
 
+boolean setsizeneeded;
+int     setblocks;
 
-void
-R_SetViewSize
-( int		blocks,
-  int		detail )
+void R_SetViewSize(int blocks)
 {
-    setsizeneeded = true;
-    setblocks = blocks;
-    setdetail = detail;
+  setsizeneeded = true;
+  setblocks = blocks;
 }
-
 
 //
 // R_ExecuteSetViewSize
 //
+
 void R_ExecuteSetViewSize (void)
 {
-    fixed_t	cosadj;
-    fixed_t	dy;
-    int		i;
-    int		j;
-    int		level;
-    int		startmap; 	
+  int i;
 
-    setsizeneeded = false;
+  setsizeneeded = false;
 
-    if (setblocks == 11)
+  if (setblocks == 11)
     {
-	scaledviewwidth = SCREENWIDTH;
-	viewheight = SCREENHEIGHT;
+      scaledviewwidth = SCREENWIDTH;
+      viewheight = SCREENHEIGHT;
     }
-    else
+  else
     {
-	scaledviewwidth = setblocks*32;
-	viewheight = (setblocks*168/10)&~7;
+      scaledviewwidth = setblocks*32;
+      viewheight = (setblocks*168/10) & ~7;
     }
     
-    detailshift = setdetail;
-    viewwidth = scaledviewwidth>>detailshift;
-	
-    centery = viewheight/2;
-    centerx = viewwidth/2;
-    centerxfrac = centerx<<FRACBITS;
-    centeryfrac = centery<<FRACBITS;
-    projection = centerxfrac;
+  viewwidth = scaledviewwidth;
+        
+  centery = viewheight/2;
+  centerx = viewwidth/2;
+  centerxfrac = centerx<<FRACBITS;
+  centeryfrac = centery<<FRACBITS;
+  projection = centerxfrac;
 
-    if (!detailshift)
-    {
-	colfunc = basecolfunc = R_DrawColumn;
-	fuzzcolfunc = R_DrawFuzzColumn;
-	transcolfunc = R_DrawTranslatedColumn;
-	spanfunc = R_DrawSpan;
-    }
-    else
-    {
-	colfunc = basecolfunc = R_DrawColumnLow;
-	fuzzcolfunc = R_DrawFuzzColumn;
-	transcolfunc = R_DrawTranslatedColumn;
-	spanfunc = R_DrawSpanLow;
-    }
-
-    R_InitBuffer (scaledviewwidth, viewheight);
-	
-    R_InitTextureMapping ();
+  R_InitBuffer (scaledviewwidth, viewheight);
+        
+  R_InitTextureMapping();
     
-    // psprite scales
-    pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-    pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+  // psprite scales
+  pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
+  pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
     
-    // thing clipping
-    for (i=0 ; i<viewwidth ; i++)
-	screenheightarray[i] = viewheight;
+  // thing clipping
+  for (i=0 ; i<viewwidth ; i++)
+    screenheightarray[i] = viewheight;
     
-    // planes
-    for (i=0 ; i<viewheight ; i++)
-    {
-	dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
-	dy = abs(dy);
-	yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+  // planes
+  for (i=0 ; i<viewheight ; i++)
+    {   // killough 5/2/98: reformatted
+      fixed_t dy = abs(((i-viewheight/2)<<FRACBITS)+FRACUNIT/2);
+      yslope[i] = FixedDiv(viewwidth*(FRACUNIT/2), dy);
     }
-	
-    for (i=0 ; i<viewwidth ; i++)
+        
+  for (i=0 ; i<viewwidth ; i++)
     {
-	cosadj = abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
-	distscale[i] = FixedDiv (FRACUNIT,cosadj);
+      fixed_t cosadj = abs(finecosine[xtoviewangle[i]>>ANGLETOFINESHIFT]);
+      distscale[i] = FixedDiv(FRACUNIT,cosadj);
     }
     
-    // Calculate the light levels to use
-    //  for each level / scale combination.
-    for (i=0 ; i< LIGHTLEVELS ; i++)
+  // Calculate the light levels to use
+  //  for each level / scale combination.
+  for (i=0; i<LIGHTLEVELS; i++)
     {
-	startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
-	for (j=0 ; j<MAXLIGHTSCALE ; j++)
-	{
-	    level = startmap - j*SCREENWIDTH/(viewwidth<<detailshift)/DISTMAP;
-	    
-	    if (level < 0)
-		level = 0;
+      int j, startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
+      for (j=0 ; j<MAXLIGHTSCALE ; j++)
+        {
+          int t, level = startmap - j*SCREENWIDTH/viewwidth/DISTMAP;
+            
+          if (level < 0)
+            level = 0;
 
-	    if (level >= NUMCOLORMAPS)
-		level = NUMCOLORMAPS-1;
+          if (level >= NUMCOLORMAPS)
+            level = NUMCOLORMAPS-1;
 
-	    scalelight[i][j] = colormaps + level*256;
-	}
+          // killough 3/20/98: initialize multiple colormaps
+          level *= 256;
+
+          for (t=0; t<numcolormaps; t++)     // killough 4/4/98
+            c_scalelight[t][i][j] = colormaps[t] + level;
+        }
     }
 }
-
-
 
 //
 // R_Init
 //
-extern int	detailLevel;
-extern int	screenblocks;
 
-
+extern int screenblocks;
 
 void R_Init (void)
 {
-    R_InitData ();
-    printf ("\nR_InitData");
-    R_InitPointToAngle ();
-    printf ("\nR_InitPointToAngle");
-    R_InitTables ();
-    // viewwidth / viewheight / detailLevel are set by the defaults
-    printf ("\nR_InitTables");
-
-    R_SetViewSize (screenblocks, detailLevel);
-    R_InitPlanes ();
-    printf ("\nR_InitPlanes");
-    R_InitLightTables ();
-    printf ("\nR_InitLightTables");
-    R_InitSkyMap ();
-    printf ("\nR_InitSkyMap");
-    R_InitTranslationTables ();
-    printf ("\nR_InitTranslationsTables");
-	
-    framecount = 0;
+  R_InitData();
+  puts("\nR_InitData");
+  R_SetViewSize(screenblocks);
+  R_InitPlanes();
+  puts("R_InitPlanes");
+  R_InitLightTables();
+  puts("R_InitLightTables");
+  R_InitSkyMap();
+  puts("R_InitSkyMap");
+  R_InitTranslationTables();
+  puts("R_InitTranslationsTables");
 }
-
 
 //
 // R_PointInSubsector
 //
-subsector_t*
-R_PointInSubsector
-( fixed_t	x,
-  fixed_t	y )
+// killough 5/2/98: reformatted, cleaned up
+
+subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 {
-    node_t*	node;
-    int		side;
-    int		nodenum;
-
-    // single subsector is a special case
-    if (!numnodes)				
-	return subsectors;
-		
-    nodenum = numnodes-1;
-
-    while (! (nodenum & NF_SUBSECTOR) )
-    {
-	node = &nodes[nodenum];
-	side = R_PointOnSide (x, y, node);
-	nodenum = node->children[side];
-    }
-	
-    return &subsectors[nodenum & ~NF_SUBSECTOR];
+  int nodenum = numnodes-1;
+  while (!(nodenum & NF_SUBSECTOR))
+    nodenum = nodes[nodenum].children[R_PointOnSide(x, y, nodes+nodenum)];
+  return &subsectors[nodenum & ~NF_SUBSECTOR];
 }
-
-
 
 //
 // R_SetupFrame
 //
-void R_SetupFrame (player_t* player)
-{		
-    int		i;
-    
-    viewplayer = player;
-    viewx = player->mo->x;
-    viewy = player->mo->y;
-    viewangle = player->mo->angle + viewangleoffset;
-    extralight = player->extralight;
 
-    viewz = player->viewz;
+void R_SetupFrame (player_t *player)
+{               
+  int i, cm;
     
-    viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
-    viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
-	
-    sscount = 0;
-	
-    if (player->fixedcolormap)
+  viewplayer = player;
+  viewx = player->mo->x;
+  viewy = player->mo->y;
+  viewangle = player->mo->angle + viewangleoffset;
+  extralight = player->extralight;
+
+  viewz = player->viewz;
+    
+  viewsin = finesine[viewangle>>ANGLETOFINESHIFT];
+  viewcos = finecosine[viewangle>>ANGLETOFINESHIFT];
+
+  // killough 3/20/98, 4/4/98: select colormap based on player status
+
+  if (player->mo->subsector->sector->heightsec != -1)
     {
-	fixedcolormap =
-	    colormaps
-	    + player->fixedcolormap*256*sizeof(lighttable_t);
-	
-	walllights = scalelightfixed;
-
-	for (i=0 ; i<MAXLIGHTSCALE ; i++)
-	    scalelightfixed[i] = fixedcolormap;
+      const sector_t *s = player->mo->subsector->sector->heightsec + sectors;
+      cm = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
+        s->topmap : s->midmap;
+      if (cm < 0 || cm > numcolormaps)
+        cm = 0;
     }
-    else
-	fixedcolormap = 0;
-		
-    framecount++;
-    validcount++;
+  else
+    cm = 0;
+
+  fullcolormap = colormaps[cm];
+  zlight = c_zlight[cm];
+  scalelight = c_scalelight[cm];
+
+  if (player->fixedcolormap)
+    {
+      // killough 3/20/98: localize scalelightfixed (readability/optimization)
+      static lighttable_t *scalelightfixed[MAXLIGHTSCALE];
+
+      fixedcolormap = fullcolormap   // killough 3/20/98: use fullcolormap
+        + player->fixedcolormap*256*sizeof(lighttable_t);
+        
+      walllights = scalelightfixed;
+
+      for (i=0 ; i<MAXLIGHTSCALE ; i++)
+        scalelightfixed[i] = fixedcolormap;
+    }
+  else
+    fixedcolormap = 0;
+
+  validcount++;
 }
 
-
+int autodetect_hom = 0;       // killough 2/7/98: HOM autodetection flag
 
 //
 // R_RenderView
 //
 void R_RenderPlayerView (player_t* player)
-{	
-    R_SetupFrame (player);
+{       
+  R_SetupFrame (player);
 
-    // Clear buffers.
-    R_ClearClipSegs ();
-    R_ClearDrawSegs ();
-    R_ClearPlanes ();
-    R_ClearSprites ();
+  // Clear buffers.
+  R_ClearClipSegs ();
+  R_ClearDrawSegs ();
+  R_ClearPlanes ();
+  R_ClearSprites ();
     
-    // check for new console commands.
-    NetUpdate ();
+  if (autodetect_hom)
+    { // killough 2/10/98: add flashing red HOM indicators
+      char c[47*47];
+      extern int lastshottic;
+      int i,color=(gametic % 20) < 9 ? 0xb0 : 0;
+      memset(*screens+viewwindowy*SCREENWIDTH,color,viewheight*SCREENWIDTH);
+      for (i=0;i<47*47;i++)
+        {
+          char t =
+"/////////////////////////////////////////////////////////////////////////////"
+"/////////////////////////////////////////////////////////////////////////////"
+"///////jkkkkklk////////////////////////////////////hkllklklkklkj/////////////"
+"///////////////////jkkkkklklklkkkll//////////////////////////////kkkkkklklklk"
+"lkkkklk//////////////////////////jllkkkkklklklklklkkklk//////////////////////"
+"//klkkllklklklkllklklkkklh//////////////////////kkkkkjkjjkkj\3\205\214\3lllkk"
+"lkllh////////////////////kllkige\211\210\207\206\205\204\203\203\203\205`\206"
+"\234\234\234\234kkllg//////////////////klkkjhfe\210\206\203\203\203\202\202"
+"\202\202\202\202\203\205`\207\211eikkk//////////////////kkkk\3g\211\207\206"
+"\204\203\202\201\201\200\200\200\200\200\201\201\202\204b\210\211\3lkh///////"
+"//////////lklki\213\210b\206\203\201\201\200\200\200\200\200Z\200\200\200\202"
+"\203\204\205\210\211jll/////////////////lkkk\3\212\210b\205\202\201\200\200"
+"\200XW\200\200\200\200\200\200\202\203\204\206\207eklj////////////////lkkjg"
+"\211b\206\204\202\200\200\200YWWX\200Z\200\200\200\202\203\203\205bdjkk//////"
+"//////////llkig\211a\205\203\202\200\200\200YXWX\200\200\200\200\200\201\202"
+"\203\203\206\207ekk////////////////lkki\3\211\206\204\202\201\200\200XXWWWXX"
+"\200\200\200\200\202\202\204\206\207ekk////////////////lkkj\3e\206\206\204\\"
+"\200\200XWVVWWWXX\200\200\200\\\203\205\207\231kk////////////////lkkjjgcccfd"
+"\207\203WVUVW\200\200\202\202\204\204\205\204\206\210gkk////////////////kkkkj"
+"e``\210hjjgb\200W\200\205\206fhghcbdcdfkk////////////////jkkj\3\207ab\211e"
+"\213j\3g\204XX\207\213jii\212\207\203\204\210gfkj///////////////j\211lkjf\210"
+"\214\3\3kj\213\213\211\205X\200\205\212\210\213\213\213\211\210\203\205gelj//"
+"////////////hf\211\213kh\212\212i\212gkh\202\203\210\210\202\201\206\207\206"
+"\\kkhf\210aabkk//////////////je\210\210\3g\210\207\210e\210c\205\204\202\210"
+"\207\203\202\210\205\203\203fjbe\213\210bbieW/////////////ke\207\206ie\206"
+"\203\203\203\205\205\204\203\210\211\207\202\202\206\210\203\204\206\207\210"
+"\211\231\206\206`\206\206]/////////////kf\\\202ig\204\203\202\201\\\202\202"
+"\205\207\210\207\203\202\206\206\206\205\203\203\203\202\202\203\204b\206\204"
+"Z/////////////i\3\\\204j\212\204\202\201\200\202\202\202\203\206\211\210\203"
+"\203c\205\202\201\201\201\200\200\201\202\204a\204\201W/////////////j\3\207"
+"\210jh\206\202\200\200\200\200\200\202\206\211\205\202\202bb\201\200\200\200"
+"\200\200\200\202\203b\\WW/////////////jke\206jic\203\201\200\200\200\200\202"
+"\211\211\201\200\200\204\210\201\200\200W\200\200\200\201\204c\\\200]////////"
+"//////kd\210\3\3e\205\202\200\200W\200\202\211\210\210\201\202\207\210\203"
+"\200WWW\200\200\202\205d\\\202///////////////kkdhigb\203\201\200\200\200\202"
+"\206\210\210\205\210\211\206\203\200WWW\200\201\203ce\203\205////////////////"
+"ijkig\211\203\201\200\200\202\206\207\207\205\206\207\210\206\203\200\200WW"
+"\200\203\206ce\202_//////////////////jig\210\203\202\200\201\206\210\210\205"
+"\204\204\205\206\206\204\202\200\200\200\200\203bcd////////////////////hjgc"
+"\205\202\201\203\206\210\206\204\204\202\202\204\205\206\204\200\200\200\201"
+"\206\207c//////////////////////j\3\207\204\203\202\202\211c\204\201W\200\200"
+"\203\205\206\203\200\200\200\203\206b///////////////////////ihd\204\203\202"
+"\201\207f\205VTVTW\202\210\206Z\200\200\203aa////////////////////////jg\204"
+"\204\203\201\202\210\211\211c\206\205\210d\210\200\200\200\202\204ac/////////"
+"///////////////j\3b\203\203\202\202\205\207\206\205\207\207\206\206\202\200"
+"\201\202\203ac/////////////////////////iid\206\204\203\202\204\205\377\205"
+"\204\205\204\203\201\200\202\203\203bc//////////////////////////ej\207\205"
+"\203\201\202\202\203\207\204\203\202\202\201\201\203\203bd///////////////////"
+"////////ee\3a\204\201\200\201\202\205\203\201\200\200\201\202\204\205cc//////"
+"//////////////////////c\3ec\203\201\200\200\201\202\201\200\200\202\203\206cc"
+"//////////////////////////////c\3f\206\203\201\200\200\200\200\200\201\203bdc"
+"////////////////////////////////g\3\211\206\202\\\201\200\201\202\203dde/////"
+"/////////////////////////////\234\3db\203\203\203\203adec////////////////////"
+"/////////////////hffed\211de////////////////////"[i];
+          c[i] = t=='/' ? color : t;
+        }
+      if (gametic-lastshottic < TICRATE*2 && gametic-lastshottic > TICRATE/8)
+        V_DrawBlock(viewwindowx +  viewwidth/2 - 24,
+                    viewwindowy + viewheight/2 - 24, 0, 47, 47, c);
+      R_DrawViewBorder();
+    }
 
-    // The head node is the last node output.
-    R_RenderBSPNode (numnodes-1);
-    
-    // Check for new console commands.
-    NetUpdate ();
-    
-    R_DrawPlanes ();
-    
-    // Check for new console commands.
-    NetUpdate ();
-    
-    R_DrawMasked ();
+  // check for new console commands.
+  NetUpdate ();
 
-    // Check for new console commands.
-    NetUpdate ();				
+  // The head node is the last node output.
+  R_RenderBSPNode (numnodes-1);
+    
+  // Check for new console commands.
+  NetUpdate ();
+    
+  R_DrawPlanes ();
+    
+  // Check for new console commands.
+  NetUpdate ();
+    
+  R_DrawMasked ();
+
+  // Check for new console commands.
+  NetUpdate ();
 }
+
+//----------------------------------------------------------------------------
+//
+// $Log: r_main.c,v $
+// Revision 1.13  1998/05/07  00:47:52  killough
+// beautification
+//
+// Revision 1.12  1998/05/03  23:00:14  killough
+// beautification, fix #includes and declarations
+//
+// Revision 1.11  1998/04/07  15:24:15  killough
+// Remove obsolete HOM detector
+//
+// Revision 1.10  1998/04/06  04:47:46  killough
+// Support dynamic colormaps
+//
+// Revision 1.9  1998/03/23  03:37:14  killough
+// Add support for arbitrary number of colormaps
+//
+// Revision 1.8  1998/03/16  12:44:12  killough
+// Optimize away some function pointers
+//
+// Revision 1.7  1998/03/09  07:27:19  killough
+// Avoid using FP for point/line queries
+//
+// Revision 1.6  1998/02/17  06:22:45  killough
+// Comment out audible HOM alarm for now
+//
+// Revision 1.5  1998/02/10  06:48:17  killough
+// Add flashing red HOM indicator for TNTHOM cheat
+//
+// Revision 1.4  1998/02/09  03:22:17  killough
+// Make TNTHOM control HOM detector, change array decl to MAX_*
+//
+// Revision 1.3  1998/02/02  13:29:41  killough
+// comment out dead code, add HOM detector
+//
+// Revision 1.2  1998/01/26  19:24:42  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:02  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

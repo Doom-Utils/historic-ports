@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: doomdef.c,v 1.3 1998/05/03 22:40:02 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,7 +14,6 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
 //  DoomDef - basic defines for DOOM, e.g. Version, game mode
@@ -23,16 +22,27 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
-
+rcsid[] = "$Id: doomdef.c,v 1.3 1998/05/03 22:40:02 killough Exp $";
 
 #ifdef __GNUG__
 #pragma implementation "doomdef.h"
 #endif
+
 #include "doomdef.h"
 
 // Location for any defines turned variables.
-
 // None.
 
-
+//----------------------------------------------------------------------------
+//
+// $Log: doomdef.c,v $
+// Revision 1.3  1998/05/03  22:40:02  killough
+// beautification
+//
+// Revision 1.2  1998/01/26  19:23:09  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:06  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

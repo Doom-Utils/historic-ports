@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: dstrings.c,v 1.5 1998/05/04 21:34:24 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,15 +14,14 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
-//	Globally defined strings.
+//   Globally defined strings.
 // 
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
+rcsid[] = "$Id: dstrings.c,v 1.5 1998/05/04 21:34:24 thldrmn Exp $";
 
 
 #ifdef __GNUG__
@@ -31,8 +30,8 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include "dstrings.h"
 
 
-
-char* endmsg[NUM_QUITMESSAGES+1]=
+// killough 1/18/98: remove hardcoded limit, add const:
+const char *const endmsg[]=
 {
   // DOOM1
   QUITMSG,
@@ -42,7 +41,7 @@ char* endmsg[NUM_QUITMESSAGES+1]=
   "you're trying to say you like dos\nbetter than me, right?",
   "don't leave yet -- there's a\ndemon around that corner!",
   "ya know, next time you come in here\ni'm gonna toast ya.",
-  "go ahead and leave. see if i care."
+  "go ahead and leave. see if i care.",  // 1/15/98 killough
 
   // QuitDOOM II messages
   "you want to quit?\nthen, thou hast lost an eighth!",
@@ -51,22 +50,47 @@ char* endmsg[NUM_QUITMESSAGES+1]=
   "if i were your boss, i'd \n deathmatch ya in a minute!",
   "look, bud. you leave now\nand you forfeit your body count!",
   "just leave. when you come\nback, i'll be waiting with a bat.",
-  "you're lucky i don't smack\nyou for thinking about leaving."
+  "you're lucky i don't smack\nyou for thinking about leaving.",  // 1/15/98 killough
 
   // FinalDOOM?
-  "fuck you, pussy!\nget the fuck out!",
-  "you quit and i'll jizz\nin your cystholes!",
-  "if you leave, i'll make\nthe lord drink my jizz.",
-  "hey, ron! can we say\n'fuck' in the game?",
-  "i'd leave: this is just\nmore monsters and levels.\nwhat a load.",
-  "suck it down, asshole!\nyou're a fucking wimp!",
-  "don't quit now! we're \nstill spending your money!",
+
+// Note that these ending "bad taste" strings were commented out
+// in the original id code as the #else case of an #if 1
+// Obviously they were internal playthings before the release of
+// DOOM2 and were not intended for public use.
+//
+// Following messages commented out for now. Bad taste.   // phares
+
+//  "fuck you, pussy!\nget the fuck out!",
+//  "you quit and i'll jizz\nin your cystholes!",
+//  "if you leave, i'll make\nthe lord drink my jizz.",
+//  "hey, ron! can we say\n'fuck' in the game?",
+//  "i'd leave: this is just\nmore monsters and levels.\nwhat a load.",
+//  "suck it down, asshole!\nyou're a fucking wimp!",
+//  "don't quit now! we're \nstill spending your money!",
 
   // Internal debug. Different style, too.
-  "THIS IS NO MESSAGE!\nPage intentionally left blank."
+  "THIS IS NO MESSAGE!\nPage intentionally left blank.",  // 1/15/98 killough
 };
 
+// killough 1/18/98: remove hardcoded limit and replace with var (silly hack):
+const size_t NUM_QUITMESSAGES = sizeof(endmsg)/sizeof(*endmsg) - 1;
 
   
-
-
+//----------------------------------------------------------------------------
+//
+// $Log: dstrings.c,v $
+// Revision 1.5  1998/05/04  21:34:24  thldrmn
+// commenting and reformatting
+//
+// Revision 1.3  1998/01/27  21:11:17  phares
+// Commented out last section of end msgs.
+//
+// Revision 1.2  1998/01/26  19:23:13  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:07  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

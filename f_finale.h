@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: f_finale.h,v 1.3 1998/05/04 21:58:52 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +15,7 @@
 // for more details.
 //
 // DESCRIPTION:
-//
+//   Related to f_finale.c, which is called at the end of a level
 //    
 //-----------------------------------------------------------------------------
 
@@ -23,9 +23,9 @@
 #ifndef __F_FINALE__
 #define __F_FINALE__
 
-
 #include "doomtype.h"
 #include "d_event.h"
+
 //
 // FINALE
 //
@@ -39,15 +39,21 @@ void F_Ticker (void);
 // Called by main loop.
 void F_Drawer (void);
 
-
 void F_StartFinale (void);
 
-
-
-
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: f_finale.h,v $
+// Revision 1.3  1998/05/04  21:58:52  thldrmn
+// commenting and reformatting
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:26:47  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:54  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

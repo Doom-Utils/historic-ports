@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: i_system.c,v 1.14 1998/05/03 22:33:13 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,135 +14,42 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
+rcsid[] = "$Id: i_system.c,v 1.14 1998/05/03 22:33:13 killough Exp $";
 
-
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
+#include <allegro.h>
+extern void (*keyboard_lowlevel_callback)(int);  // should be in <allegro.h>
 #include <stdarg.h>
-#include <sys/time.h>
-#include <unistd.h>
-#include <pc.h>
-#include <go32.h>
-#include <dpmi.h>
-#include <sys/nearptr.h>
+#include <gppconio.h>
 
-#include "doomdef.h"
-#include "m_misc.h"
-#include "i_video.h"
+#include "i_system.h"
 #include "i_sound.h"
-
-#include "d_net.h"
+#include "doomstat.h"
+#include "m_misc.h"
 #include "g_game.h"
+#include "w_wad.h"
 
 #ifdef __GNUG__
 #pragma implementation "i_system.h"
 #endif
 #include "i_system.h"
 
-
-
-
-int	mb_used = 6;
-
-
-void
-I_Tactile
-( int	on,
-  int	off,
-  int	total )
+ticcmd_t *I_BaseTiccmd(void)
 {
-  // UNUSED.
-  on = off = total = 0;
-}
-
-ticcmd_t	emptycmd;
-ticcmd_t*	I_BaseTiccmd(void)
-{
-    return &emptycmd;
-}
-
-
-int  I_GetHeapSize (void)
-{
-    return mb_used*1024*1024;
-}
-
-byte* I_ZoneBase (int*	size)
-{
-    *size = mb_used*1024*1024;
-    return (byte *) malloc (*size);
-}
-
-
-
-//
-// I_GetTime
-// returns time in 1/70th second tics
-//
-int  I_GetTime (void)
-{
-    struct timeval	tp;
-    struct timezone	tzp;
-    int			newtics;
-    static int		basetime=0;
-  
-    gettimeofday(&tp, &tzp);
-    if (!basetime)
-	basetime = tp.tv_sec;
-    newtics = (tp.tv_sec-basetime)*TICRATE + tp.tv_usec*TICRATE/1000000;
-    return newtics;
-}
-
-
-
-//
-// I_Init
-//
-void I_Init (void)
-{
-    I_InitSound();
-    //  I_InitGraphics();
-}
-
-//
-// I_Quit
-//
-void I_Quit (void)
-{
-    D_QuitNetGame ();
-    I_ShutdownSound();
-    I_ShutdownMusic();
-    M_SaveDefaults ();
-    I_ShutdownGraphics();
-    exit(0);
+  static ticcmd_t emptycmd; // killough
+  return &emptycmd;
 }
 
 void I_WaitVBL(int count)
 {
-/*
-#ifdef SGI
-    sginap(1);                                           
-#else
-#ifdef SUN
-    sleep(0);
-#else
-    usleep (count * (1000000/70) );                                
-#endif
-#endif
-*/
-while ((inportb(0x3da)&8)!=8);
-while ((inportb(0x3da)&8)==8);
-
+  rest((count*500)/TICRATE);
 }
 
 void I_BeginRead(void)
@@ -153,41 +60,260 @@ void I_EndRead(void)
 {
 }
 
-byte*	I_AllocLow(int length)
-{
-    byte*	mem;
-        
-    mem = (byte *)malloc (length);
-    memset (mem,0,length);
-    return mem;
+// Most of the following has been rewritten by Lee Killough
+//
+// I_GetTime
+//
 
+static volatile int realtic;
+
+void I_timer(void)
+{
+  realtic++;
+}
+END_OF_FUNCTION(I_timer);
+
+int  I_GetTime_RealTime (void)
+{
+  return realtic;
 }
 
+// killough 4/13/98: Make clock rate adjustable by scale factor
+int realtic_clock_rate = 100;
+static long long I_GetTime_Scale = 1<<24;
+int I_GetTime_Scaled(void)
+{
+  return (long long) realtic * I_GetTime_Scale >> 24;
+}
+
+static int  I_GetTime_FastDemo(void)
+{
+  static int fasttic;
+  return fasttic++;
+}
+
+static int I_GetTime_Error()
+{
+  I_Error("Error: GetTime() used before initialization");
+  return 0;
+}
+
+int (*I_GetTime)() = I_GetTime_Error;                           // killough
+
+// killough 3/21/98: Add keyboard queue
+
+struct keyboard_queue_s keyboard_queue;
+
+static void keyboard_handler(int scancode)
+{
+  keyboard_queue.queue[keyboard_queue.head++] = scancode;
+  keyboard_queue.head &= KQSIZE-1;
+}
+static END_OF_FUNCTION(keyboard_handler);
+
+int mousepresent;
+int joystickpresent;                                         // phares 4/3/98
+
+static int orig_key_shifts;  // killough 3/6/98: original keyboard shift state
+extern int autorun;          // Autorun state
+int leds_always_off;         // Tells it not to update LEDs
+
+void I_Shutdown(void)
+{
+  if (mousepresent!=-1)
+    remove_mouse();
+
+  // killough 3/6/98: restore keyboard shift state
+  key_shifts = orig_key_shifts;
+
+  remove_keyboard();
+
+  remove_timer();
+}
+
+void I_Init(void)
+{
+  extern int key_autorun;
+
+  //init timer
+  LOCK_VARIABLE(realtic);
+  LOCK_FUNCTION(I_timer);
+  install_timer();
+  install_int_ex(I_timer,BPS_TO_TIMER(TICRATE));
+
+  // killough 4/14/98: Adjustable speedup based on realtic_clock_rate
+  if (fastdemo)
+    I_GetTime = I_GetTime_FastDemo;
+  else
+    if (realtic_clock_rate != 100)
+      {
+        I_GetTime_Scale = ((long long) realtic_clock_rate << 24) / 100;
+        I_GetTime = I_GetTime_Scaled;
+      }
+    else
+      I_GetTime = I_GetTime_RealTime;
+
+  // killough 3/21/98: Install handler to handle interrupt-driven keyboard IO
+  LOCK_VARIABLE(keyboard_queue);
+  LOCK_FUNCTION(keyboard_handler);
+  keyboard_lowlevel_callback = keyboard_handler;
+
+  install_keyboard();
+
+  // killough 3/6/98: save keyboard state, initialize shift state and LEDs:
+
+  orig_key_shifts = key_shifts;  // save keyboard state
+
+  key_shifts = 0;        // turn off all shifts by default
+
+  if (autorun)  // if autorun is on initially, turn on any corresponding shifts
+    switch (key_autorun)
+      {
+      case KEYD_CAPSLOCK:
+        key_shifts = KB_CAPSLOCK_FLAG;
+        break;
+      case KEYD_NUMLOCK:
+        key_shifts = KB_NUMLOCK_FLAG;
+        break;
+      case KEYD_SCROLLLOCK:
+        key_shifts = KB_SCROLOCK_FLAG;
+        break;
+      }
+
+  // Either keep the keyboard LEDs off all the time, or update them
+  // right now, and in the future, with respect to key_shifts flag.
+  set_leds(leds_always_off ? 0 : -1);
+  // killough 3/6/98: end of keyboard / autorun state changes
+
+  //init the mouse
+  mousepresent=install_mouse();
+  if (mousepresent!=-1)
+    show_mouse(NULL);
+
+  // phares 4/3/98:
+  // Init the joystick
+  // For now, we'll require that joystick data is present in allegro.cfg.
+  // The ASETUP program can be used to obtain the joystick data.
+
+  if (load_joystick_data(NULL) == 0)
+    joystickpresent = true;
+  else
+    joystickpresent = false;
+
+  atexit(I_Shutdown);
+
+  { // killough 2/21/98: avoid sound initialization if no sound & no music
+    extern boolean nomusicparm, nosfxparm;
+    if (!(nomusicparm && nosfxparm))
+      I_InitSound();
+  }
+}
+
+//
+// I_Quit
+//
+
+static char errmsg[2048];    // buffer of error message -- killough
+
+static int has_exited;
+
+void I_Quit (void)
+{
+  has_exited=1;   /* Prevent infinitely recursive exits -- killough */
+
+  if (demorecording)
+    G_CheckDemoStatus();
+  M_SaveDefaults ();
+
+  if (*errmsg)
+    fprintf (stderr, "%s\n", errmsg);
+  else
+    I_EndDoom();
+}
 
 //
 // I_Error
 //
-extern boolean demorecording;
 
-void I_Error (char *error, ...)
+void I_Error(const char *error, ...) // killough 3/20/98: add const
 {
-    va_list	argptr;
+  if (!*errmsg)   // ignore all but the first message -- killough
+    {
+      va_list argptr;
+      va_start(argptr,error);
+      vsprintf(errmsg,error,argptr);
+      va_end(argptr);
+    }
 
-    // Message first.
-    va_start (argptr,error);
-    fprintf (stderr, "Error: ");
-    vfprintf (stderr,error,argptr);
-    fprintf (stderr, "\n");
-    va_end (argptr);
-
-    fflush( stderr );
-
-    // Shutdown. Here might be other errors.
-    if (demorecording)
-	G_CheckDemoStatus();
-
-    D_QuitNetGame ();
-    I_ShutdownGraphics();
-    
-    exit(-1);
+  if (!has_exited)    // If it hasn't exited yet, exit now -- killough
+    {
+      has_exited=1;   // Prevent infinitely recursive exits -- killough
+      exit(-1);
+    }
 }
+
+// killough 2/22/98: Add support for ENDBOOM, which is PC-specific
+
+void I_EndDoom(void)
+{
+  int lump = W_CheckNumForName("ENDBOOM"); //jff 4/1/98 sign our work
+  if (lump != -1)
+    {
+      const char (*endoom)[2] = W_CacheLumpNum(lump, PU_STATIC);
+      int i, l = W_LumpLength(lump) / 2;
+      for (i=0; i<l; i++)
+        {
+          textattr(endoom[i][1]);
+          putch(endoom[i][0]);
+        }
+      putch('\b');   // hack workaround for extra newline at bottom of screen
+      putch('\r');
+    }
+}
+
+//----------------------------------------------------------------------------
+//
+// $Log: i_system.c,v $
+// Revision 1.14  1998/05/03  22:33:13  killough
+// beautification
+//
+// Revision 1.13  1998/04/27  01:51:37  killough
+// Increase errmsg size to 2048
+//
+// Revision 1.12  1998/04/14  08:13:39  killough
+// Replace adaptive gametics with realtic_clock_rate
+//
+// Revision 1.11  1998/04/10  06:33:46  killough
+// Add adaptive gametic timer
+//
+// Revision 1.10  1998/04/05  00:51:06  phares
+// Joystick support, Main Menu re-ordering
+//
+// Revision 1.9  1998/04/02  05:02:31  jim
+// Added ENDOOM, BOOM.TXT mods
+//
+// Revision 1.8  1998/03/23  03:16:13  killough
+// Change to use interrupt-driver keyboard IO
+//
+// Revision 1.7  1998/03/18  16:17:32  jim
+// Change to avoid Allegro key shift handling bug
+//
+// Revision 1.6  1998/03/09  07:12:21  killough
+// Fix capslock bugs
+//
+// Revision 1.5  1998/03/03  00:21:41  jim
+// Added predefined ENDBETA lump for beta test
+//
+// Revision 1.4  1998/03/02  11:31:14  killough
+// Fix ENDOOM message handling
+//
+// Revision 1.3  1998/02/23  04:28:14  killough
+// Add ENDOOM support, allow no sound FX at all
+//
+// Revision 1.2  1998/01/26  19:23:29  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:07  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: i_video.h,v 1.4 1998/05/03 22:40:58 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,14 +15,12 @@
 // for more details.
 //
 // DESCRIPTION:
-//	System specific interface stuff.
+//      System specific interface stuff.
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __I_VIDEO__
 #define __I_VIDEO__
-
 
 #include "doomtype.h"
 
@@ -30,13 +28,11 @@
 #pragma interface
 #endif
 
-
 // Called by D_DoomMain,
 // determines the hardware configuration
 // and sets up the video mode
+
 void I_InitGraphics (void);
-
-
 void I_ShutdownGraphics(void);
 
 // Takes full 8 bit values.
@@ -50,14 +46,26 @@ void I_WaitVBL(int count);
 
 void I_ReadScreen (byte* scr);
 
-void I_BeginRead (void);
-void I_EndRead (void);
+int I_DoomCode2ScanCode(int);   // killough
+int I_ScanCode2DoomCode(int);   // killough
 
-
+extern int use_vsync;  // killough 2/8/98: controls whether vsync is called
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: i_video.h,v $
+// Revision 1.4  1998/05/03  22:40:58  killough
+// beautification
 //
-//-----------------------------------------------------------------------------
+// Revision 1.3  1998/02/09  03:01:51  killough
+// Add vsync for flicker-free blits
+//
+// Revision 1.2  1998/01/26  19:27:01  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:08  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

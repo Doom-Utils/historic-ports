@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: m_bbox.h,v 1.3 1998/05/05 19:55:58 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -23,33 +23,39 @@
 #ifndef __M_BBOX__
 #define __M_BBOX__
 
+#include "z_zone.h"         // killough 1/18/98
+
 #include <values.h>
-
 #include "m_fixed.h"
-
 
 // Bounding box coordinate storage.
 enum
 {
-    BOXTOP,
-    BOXBOTTOM,
-    BOXLEFT,
-    BOXRIGHT
-};	// bbox coordinates
+  BOXTOP,
+  BOXBOTTOM,
+  BOXLEFT,
+  BOXRIGHT
+};  // bbox coordinates
 
 // Bounding box functions.
-void M_ClearBox (fixed_t*	box);
 
-void
-M_AddToBox
-( fixed_t*	box,
-  fixed_t	x,
-  fixed_t	y );
+void M_ClearBox(fixed_t* box);
 
+void M_AddToBox(fixed_t* box,fixed_t x,fixed_t y);
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: m_bbox.h,v $
+// Revision 1.3  1998/05/05  19:55:58  phares
+// Formatting and Doc changes
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:27:06  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:58  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

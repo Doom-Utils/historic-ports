@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: d_textur.h,v 1.3 1998/05/04 21:34:18 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,8 +15,8 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Typedefs related to to textures etc.,
-//	 isolated here to make it easier separating modules.
+//    Typedefs related to to textures etc.,
+//    isolated here to make it easier separating modules.
 //    
 //-----------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@
 #include "doomtype.h"
 
 
-
+// NOTE: Checking all BOOM sources, there is nothing used called pic_t.
 
 //
 // Flats?
@@ -35,17 +35,25 @@
 // a pic is an unmasked block of pixels
 typedef struct
 {
-    byte		width;
-    byte		height;
-    byte		data;
+  byte  width;
+  byte  height;
+  byte  data;
 } pic_t;
 
 
-
-
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: d_textur.h,v $
+// Revision 1.3  1998/05/04  21:34:18  thldrmn
+// commenting and reformatting
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:26:33  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:54  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

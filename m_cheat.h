@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: m_cheat.h,v 1.5 1998/05/03 22:10:56 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,44 +15,55 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Cheat code checking.
+//      Cheat code checking.
 //
 //-----------------------------------------------------------------------------
-
 
 #ifndef __M_CHEAT__
 #define __M_CHEAT__
 
-//
-// CHEAT SEQUENCE PACKAGE
-//
+// killough 4/16/98: Cheat table structure
 
-#define SCRAMBLE(a) \
-((((a)&1)<<7) + (((a)&2)<<5) + ((a)&4) + (((a)&8)<<1) \
- + (((a)&16)>>1) + ((a)&32) + (((a)&64)>>5) + (((a)&128)>>7))
+extern struct cheat_s {
+  const unsigned char *cheat;
+  const char *const deh_cheat;
+  enum { 
+    always   = 0,
+    not_dm   = 1,
+    not_coop = 2,
+    not_demo = 4, 
+    not_menu = 8,
+    not_deh = 16,
+    not_net = not_dm | not_coop
+  } const when;
+  void (*const func)();
+  const int arg;
+  unsigned long long code, mask;
+} cheat[];
 
-typedef struct
-{
-    unsigned char*	sequence;
-    unsigned char*	p;
-    
-} cheatseq_t;
+boolean M_FindCheats(int key);
 
-int
-cht_CheckCheat
-( cheatseq_t*		cht,
-  char			key );
-
-
-void
-cht_GetParam
-( cheatseq_t*		cht,
-  char*			buffer );
-
+extern int idmusnum;
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: m_cheat.h,v $
+// Revision 1.5  1998/05/03  22:10:56  killough
+// Cheat engine, moved from st_stuff
 //
-//-----------------------------------------------------------------------------
+// Revision 1.4  1998/05/01  14:38:08  killough
+// beautification
+//
+// Revision 1.3  1998/02/09  03:03:07  killough
+// Rendered obsolete by st_stuff.c
+//
+// Revision 1.2  1998/01/26  19:27:08  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:58  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

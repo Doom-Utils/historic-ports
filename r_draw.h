@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: r_draw.h,v 1.5 1998/05/03 22:42:23 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,101 +15,97 @@
 // for more details.
 //
 // DESCRIPTION:
-//	System specific interface stuff.
+//      System specific interface stuff.
 //
 //-----------------------------------------------------------------------------
-
 
 #ifndef __R_DRAW__
 #define __R_DRAW__
 
+#include "r_defs.h"
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-
-extern lighttable_t*	dc_colormap;
-extern int		dc_x;
-extern int		dc_yl;
-extern int		dc_yh;
-extern fixed_t		dc_iscale;
-extern fixed_t		dc_texturemid;
+extern lighttable_t *dc_colormap;
+extern int      dc_x;
+extern int      dc_yl;
+extern int      dc_yh;
+extern fixed_t  dc_iscale;
+extern fixed_t  dc_texturemid;
+extern int      dc_texheight;    // killough
 
 // first pixel in a column
-extern byte*		dc_source;		
-
+extern byte     *dc_source;         
 
 // The span blitting interface.
-// Hook in assembler or system specific BLT
-//  here.
-void 	R_DrawColumn (void);
-void 	R_DrawColumnLow (void);
+// Hook in assembler or system specific BLT here.
 
-// The Spectre/Invisibility effect.
-void 	R_DrawFuzzColumn (void);
-void 	R_DrawFuzzColumnLow (void);
+void R_DrawColumn(void);
+void R_DrawTLColumn(void);      // drawing translucent textures // phares
+void R_DrawFuzzColumn(void);    // The Spectre/Invisibility effect.
 
-// Draw with color translation tables,
-//  for player sprite rendering,
+// Draw with color translation tables, for player sprite rendering,
 //  Green/Red/Blue/Indigo shirts.
-void	R_DrawTranslatedColumn (void);
-void	R_DrawTranslatedColumnLow (void);
 
-void
-R_VideoErase
-( unsigned	ofs,
-  int		count );
+void R_DrawTranslatedColumn(void);
 
-extern int		ds_y;
-extern int		ds_x1;
-extern int		ds_x2;
+void R_VideoErase(unsigned ofs, int count);
 
-extern lighttable_t*	ds_colormap;
+extern lighttable_t *ds_colormap;
 
-extern fixed_t		ds_xfrac;
-extern fixed_t		ds_yfrac;
-extern fixed_t		ds_xstep;
-extern fixed_t		ds_ystep;
+extern int     ds_y;
+extern int     ds_x1;
+extern int     ds_x2;
+extern fixed_t ds_xfrac;
+extern fixed_t ds_yfrac;
+extern fixed_t ds_xstep;
+extern fixed_t ds_ystep;
 
 // start of a 64*64 tile image
-extern byte*		ds_source;		
+extern byte *ds_source;              
+extern byte *translationtables;
+extern byte *dc_translation;
 
-extern byte*		translationtables;
-extern byte*		dc_translation;
+// Span blitting for rows, floor/ceiling. No Spectre effect needed.
+void R_DrawSpan(void);
 
+void R_InitBuffer(int width, int height);
 
-// Span blitting for rows, floor/ceiling.
-// No Sepctre effect needed.
-void 	R_DrawSpan (void);
-
-// Low resolution mode, 160x200?
-void 	R_DrawSpanLow (void);
-
-
-void
-R_InitBuffer
-( int		width,
-  int		height );
-
-
-// Initialize color translation tables,
-//  for player rendering etc.
-void	R_InitTranslationTables (void);
-
-
+// Initialize color translation tables, for player rendering etc.
+void R_InitTranslationTables(void);
 
 // Rendering function.
-void R_FillBackScreen (void);
+void R_FillBackScreen(void);
 
 // If the view size is not full screen, draws a border around it.
-void R_DrawViewBorder (void);
+void R_DrawViewBorder(void);
 
+extern byte *tranmap;         // translucency filter maps 256x256  // phares 
+extern byte *main_tranmap;    // killough 4/11/98
 
+void R_DrawTLColumn(void);    // drawing translucent textures     // phares
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: r_draw.h,v $
+// Revision 1.5  1998/05/03  22:42:23  killough
+// beautification, extra declarations
 //
-//-----------------------------------------------------------------------------
+// Revision 1.4  1998/04/12  01:58:11  killough
+// Add main_tranmap
+//
+// Revision 1.3  1998/03/02  11:51:55  killough
+// Add translucency declarations
+//
+// Revision 1.2  1998/01/26  19:27:38  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:09  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

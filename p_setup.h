@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: p_setup.h,v 1.3 1998/05/03 23:03:31 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -19,30 +19,41 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __P_SETUP__
 #define __P_SETUP__
 
+#include "p_mobj.h"
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
+void P_SetupLevel(int episode, int map, int playermask, skill_t skill);
+void P_Init(void);               // Called by startup code.
 
-// NOT called by W_Ticker. Fixme.
-void
-P_SetupLevel
-( int		episode,
-  int		map,
-  int		playermask,
-  skill_t	skill);
+extern byte     *rejectmatrix;   // for fast sight rejection
 
-// Called by startup code.
-void P_Init (void);
+// killough 3/1/98: change blockmap from "short" to "long" offsets:
+extern long     *blockmaplump;   // offsets in blockmap are from here
+extern long     *blockmap;
+extern int      bmapwidth;
+extern int      bmapheight;      // in mapblocks
+extern fixed_t  bmaporgx;
+extern fixed_t  bmaporgy;        // origin of block map
+extern mobj_t   **blocklinks;    // for thing chains
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: p_setup.h,v $
+// Revision 1.3  1998/05/03  23:03:31  killough
+// beautification, add external declarations for blockmap
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:27:28  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:08  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

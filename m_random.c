@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: m_random.c,v 1.6 1998/05/03 23:13:18 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,21 +14,28 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
-//	Random number LUT.
+//      Random number LUT.
+//
+// 1/19/98 killough: Rewrote random number generator for better randomness,
+// while at the same time maintaining demo sync and backward compatibility.
+//
+// 2/16/98 killough: Made each RNG local to each control-equivalent block,
+// to reduce the chances of demo sync problems.
 //
 //-----------------------------------------------------------------------------
 
-static const char rcsid[] = "$Id: m_random.c,v 1.1 1997/02/03 22:45:11 b1 Exp $";
+static const char rcsid[] = "$Id: m_random.c,v 1.6 1998/05/03 23:13:18 killough Exp $";
 
+#include "doomstat.h"
+#include "m_random.h"
 
 //
 // M_Random
 // Returns a 0-255 number
 //
-unsigned char rndtable[256] = {
+static const unsigned char rndtable[256] = { // 1/19/98 killough -- made const
     0,   8, 109, 220, 222, 241, 149, 107,  75, 248, 254, 140,  16,  66 ,
     74,  21, 211,  47,  80, 242, 154,  27, 205, 128, 161,  89,  77,  36 ,
     95, 110,  85,  48, 212, 140, 211, 249,  22,  79, 200,  50,  28, 188 ,
@@ -50,27 +57,93 @@ unsigned char rndtable[256] = {
     120, 163, 236, 249
 };
 
-int	rndindex = 0;
-int	prndindex = 0;
+int demo_insurance=0, default_demo_insurance=0;   // killough 3/31/98
 
-// Which one is deterministic?
-int P_Random (void)
+rng_t rng;     // the random number state
+
+unsigned long rngseed = 1993;   // killough 3/26/98: The seed
+
+int P_Random(pr_class_t pr_class)
 {
-    prndindex = (prndindex+1)&0xff;
-    return rndtable[prndindex];
+  // killough 2/16/98:  We always update both sets of random number
+  // generators, to ensure repeatability if the demo_compatibility
+  // flag is changed while the program is running. Changing the
+  // demo_compatibility flag does not change the sequences generated,
+  // only which one is selected from.
+  //
+  // All of this RNG stuff is tricky as far as demo sync goes --
+  // it's like playing with explosives :) Lee
+
+  int compat = pr_class == pr_misc ?
+    (rng.prndindex = (rng.prndindex + 1) & 255) :
+    (rng. rndindex = (rng. rndindex + 1) & 255) ;
+
+  unsigned long boom;
+
+  // killough 3/31/98:
+  // If demo sync insurance is not requested, use
+  // much more unstable method by putting everything
+  // except pr_misc into pr_all_in_one
+
+  if (pr_class != pr_misc && !demo_insurance)      // killough 3/31/98
+    pr_class = pr_all_in_one;
+
+  boom = rng.seed[pr_class];
+
+  // killough 3/26/98: add pr_class*2 to addend
+
+  rng.seed[pr_class] = boom * 1664525ul + 221297ul + pr_class*2;
+
+  if (demo_compatibility)
+    return rndtable[compat];
+
+  boom >>= 20;
+
+  // killough 3/30/98: use gametic-levelstarttic to shuffle RNG
+  // killough 3/31/98: but only if demo insurance requested,
+  // since it's unnecessary for random shuffling otherwise
+
+  if (demo_insurance)
+    boom += (gametic-levelstarttic)*7;
+
+  return boom & 255;
 }
 
-int M_Random (void)
-{
-    rndindex = (rndindex+1)&0xff;
-    return rndtable[rndindex];
-}
+// Initialize all the seeds
+//
+// This initialization method is critical to maintaining demo sync.
+// Each seed is initialized according to its class, so if new classes
+// are added they must be added to end of pr_class_t list. killough
+//
 
 void M_ClearRandom (void)
 {
-    rndindex = prndindex = 0;
+  int i;
+  unsigned long seed = rngseed*2+1;    // add 3/26/98: add rngseed
+  for (i=0; i<NUMPRCLASS; i++)         // go through each pr_class and set
+    rng.seed[i] = seed *= 69069ul;     // each starting seed differently
+  rng.prndindex = rng.rndindex = 0;    // clear two compatibility indices
 }
 
-
-
-
+//----------------------------------------------------------------------------
+//
+// $Log: m_random.c,v $
+// Revision 1.6  1998/05/03  23:13:18  killough
+// Fix #include
+//
+// Revision 1.5  1998/03/31  10:43:05  killough
+// Fix (supposed) RNG problems, add new demo_insurance
+//
+// Revision 1.4  1998/03/28  17:56:05  killough
+// Improve RNG by adding external seed
+//
+// Revision 1.3  1998/02/17  05:40:08  killough
+// Make RNGs local to each calling block, for demo sync
+//
+// Revision 1.2  1998/01/26  19:23:51  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:58  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: p_tick.c,v 1.7 1998/05/15 00:37:56 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -14,24 +14,21 @@
 // FITNESS FOR A PARTICULAR PURPOSE. See the DOOM Source Code License
 // for more details.
 //
-// $Log:$
 //
 // DESCRIPTION:
-//	Archiving: SaveGame I/O.
-//	Thinker, Ticker.
+//      Thinker, Ticker.
 //
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: p_tick.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
-
-#include "z_zone.h"
-#include "p_local.h"
+rcsid[] = "$Id: p_tick.c,v 1.7 1998/05/15 00:37:56 killough Exp $";
 
 #include "doomstat.h"
+#include "p_user.h"
+#include "p_spec.h"
+#include "p_tick.h"
 
-
-int	leveltime;
+int leveltime;
 
 //
 // THINKERS
@@ -41,87 +38,102 @@ int	leveltime;
 // but the first element must be thinker_t.
 //
 
-
-
 // Both the head and tail of the thinker list.
-thinker_t	thinkercap;
-
+thinker_t thinkercap;
 
 //
 // P_InitThinkers
 //
-void P_InitThinkers (void)
+
+void P_InitThinkers(void)
 {
-    thinkercap.prev = thinkercap.next  = &thinkercap;
+  thinkercap.prev = thinkercap.next  = &thinkercap;
 }
-
-
-
 
 //
 // P_AddThinker
 // Adds a new thinker at the end of the list.
 //
-void P_AddThinker (thinker_t* thinker)
+
+void P_AddThinker(thinker_t* thinker)
 {
-    thinkercap.prev->next = thinker;
-    thinker->next = &thinkercap;
-    thinker->prev = thinkercap.prev;
-    thinkercap.prev = thinker;
+  thinkercap.prev->next = thinker;
+  thinker->next = &thinkercap;
+  thinker->prev = thinkercap.prev;
+  thinkercap.prev = thinker;
 }
 
+//
+// killough 4/25/98:
+//
+// The thinker's deletion has been delayed long enough, so promote its
+// function to P_RemoveThinker() so that it will be deleted on the next tic.
+//
 
+void P_RemoveThinkerDelayed(thinker_t *thinker)
+{
+  thinker->function.acv = P_RemoveThinker;
+}
 
 //
 // P_RemoveThinker
+//
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 //
-void P_RemoveThinker (thinker_t* thinker)
-{
-  // FIXME: NOP.
-  thinker->function.acv = (actionf_v)(-1);
-}
-
-
-
+// killough 4/25/98:
 //
-// P_AllocateThinker
-// Allocates memory and adds a new thinker at the end of the list.
+// Instead of marking the function with -1 value cast to a function pointer,
+// set the function to P_RemoveThinkerDelayed(), so that later, it will be
+// promoted to P_RemoveThinker() automatically as part of the thinker process.
 //
-void P_AllocateThinker (thinker_t*	thinker)
+
+void P_RemoveThinker(thinker_t *thinker)
 {
+  thinker->function.acv = P_RemoveThinkerDelayed;
 }
-
-
 
 //
 // P_RunThinkers
 //
-void P_RunThinkers (void)
+// killough 4/25/98:
+//
+// Fix deallocator to stop using "next" pointer after node has been freed
+// (a Doom bug).
+//
+// Process each thinker. For thinkers which are marked deleted, we must
+// load the "next" pointer prior to freeing the node. In Doom, the "next"
+// pointer was loaded AFTER the thinker was freed, which could have caused
+// crashes.
+//
+// But if we are not deleting the thinker, we should reload the "next"
+// pointer after calling the function, in case additional thinkers are
+// added at the end of the list.
+//
+// In P_MobjThinker(), if any mobj thinker refers indirectly to a deleted
+// thinker as its target, the deleted thinker's function is changed to
+// P_RemoveThinkerDelayed() so that its deletion is delayed another tic.
+// This fixes some Doom crashes. killough
+//
+
+static void P_RunThinkers (void)
 {
-    thinker_t*	currentthinker;
-
-    currentthinker = thinkercap.next;
-    while (currentthinker != &thinkercap)
-    {
-	if ( currentthinker->function.acv == (actionf_v)(-1) )
-	{
-	    // time to remove it
-	    currentthinker->next->prev = currentthinker->prev;
-	    currentthinker->prev->next = currentthinker->next;
-	    Z_Free (currentthinker);
-	}
-	else
-	{
-	    if (currentthinker->function.acp1)
-		currentthinker->function.acp1 (currentthinker);
-	}
-	currentthinker = currentthinker->next;
-    }
+  register thinker_t *currentthinker = thinkercap.next;
+  while (currentthinker != &thinkercap)
+    if (currentthinker->function.acv == P_RemoveThinker)
+      {
+        register thinker_t *next = currentthinker->next;  // Load next pointer
+        (next->prev = currentthinker->prev)->next = next; // Remove from list
+        Z_Free(currentthinker);                           // Free the node
+        currentthinker = next;                            // Go to next node
+      }
+    else
+      {
+        if (currentthinker->function.acp1)                // Call function
+          currentthinker->function.acp1(currentthinker);  // (may insert nodes)
+        currentthinker = currentthinker->next;            // Get next node
+      }
 }
-
-
 
 //
 // P_Ticker
@@ -129,30 +141,45 @@ void P_RunThinkers (void)
 
 void P_Ticker (void)
 {
-    int		i;
-    
-    // run the tic
-    if (paused)
-	return;
-		
-    // pause if in menu and at least one tic has been run
-    if ( !netgame
-	 && menuactive
-	 && !demoplayback
-	 && players[consoleplayer].viewz != 1)
-    {
-	return;
-    }
-    
-		
-    for (i=0 ; i<MAXPLAYERS ; i++)
-	if (playeringame[i])
-	    P_PlayerThink (&players[i]);
-			
-    P_RunThinkers ();
-    P_UpdateSpecials ();
-    P_RespawnSpecials ();
+  int i;
 
-    // for par times
-    leveltime++;	
+  // pause if in menu and at least one tic has been run
+  if (paused || (!netgame && menuactive && !demoplayback &&
+                  players[consoleplayer].viewz != 1))
+    return;
+
+  for (i=0; i<MAXPLAYERS; i++)
+    if (playeringame[i])
+      P_PlayerThink(&players[i]);
+
+  P_RunThinkers();
+  P_UpdateSpecials();
+  P_RespawnSpecials();
+  leveltime++;                       // for par times
 }
+
+//----------------------------------------------------------------------------
+//
+// $Log: p_tick.c,v $
+// Revision 1.7  1998/05/15  00:37:56  killough
+// Remove unnecessary crash hack, fix demo sync
+//
+// Revision 1.6  1998/05/13  22:57:59  killough
+// Restore Doom bug compatibility for demos
+//
+// Revision 1.5  1998/05/03  22:49:01  killough
+// Get minimal includes at top
+//
+// Revision 1.4  1998/04/29  16:19:16  killough
+// Fix typo causing game to not pause correctly
+//
+// Revision 1.3  1998/04/27  01:59:58  killough
+// Fix crashes caused by thinkers being used after freed
+//
+// Revision 1.2  1998/01/26  19:24:32  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:01  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------

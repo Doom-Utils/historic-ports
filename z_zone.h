@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: z_zone.h,v 1.7 1998/05/08 20:32:12 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -16,71 +16,101 @@
 //
 // DESCRIPTION:
 //      Zone Memory Allocation, perhaps NeXT ObjectiveC inspired.
-//	Remark: this was the only stuff that, according
-//	 to John Carmack, might have been useful for
-//	 Quake.
+//      Remark: this was the only stuff that, according
+//       to John Carmack, might have been useful for
+//       Quake.
+//
+// Rewritten by Lee Killough, though, since it was not efficient enough.
 //
 //---------------------------------------------------------------------
-
-
 
 #ifndef __Z_ZONE__
 #define __Z_ZONE__
 
-#include <stdio.h>
+#ifndef __GNUC__
+#define __attribute__(x)
+#endif
 
-//
+// Remove all definitions before including system definitions
+
+#undef malloc
+#undef free
+#undef realloc
+#undef calloc
+#undef strdup
+
+// Include system definitions so that prototypes become
+// active before macro replacements below are in effect.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
 // ZONE MEMORY
 // PU - purge tags.
-// Tags < 100 are not overwritten until freed.
-#define PU_STATIC		1	// static entire execution time
-#define PU_SOUND		2	// static while playing
-#define PU_MUSIC		3	// static while playing
-#define PU_DAVE		4	// anything else Dave wants static
-#define PU_LEVEL		50	// static until level exited
-#define PU_LEVSPEC		51      // a special thinker in a level
-// Tags >= 100 are purgable whenever needed.
-#define PU_PURGELEVEL	100
-#define PU_CACHE		101
 
+enum {PU_FREE, PU_STATIC, PU_SOUND, PU_MUSIC, PU_LEVEL, PU_LEVSPEC, PU_CACHE,
+      /* Must always be last -- killough */ PU_MAX};
 
-void	Z_Init (void);
-void*	Z_Malloc (int size, int tag, void *ptr);
-void    Z_Free (void *ptr);
-void    Z_FreeTags (int lowtag, int hightag);
-void    Z_DumpHeap (int lowtag, int hightag);
-void    Z_FileDumpHeap (FILE *f);
-void    Z_CheckHeap (void);
-void    Z_ChangeTag2 (void *ptr, int tag);
-int     Z_FreeMemory (void);
+#define PU_PURGELEVEL PU_CACHE        /* First purgable tag's level */
 
+void *(Z_Malloc)(size_t size, int tag, void **ptr, const char *, int);
+void (Z_Free)(void *ptr, const char *, int);
+void (Z_FreeTags)(int lowtag, int hightag, const char *, int);
+void (Z_ChangeTag)(void *ptr, int tag, const char *, int);
+void (Z_Init)(void);
+void *(Z_Calloc)(size_t n, size_t n2, int tag, void **user, const char *, int);
+void *(Z_Realloc)(void *p, size_t n, int tag, void **user, const char *, int);
+char *(Z_Strdup)(const char *s, int tag, void **user, const char *, int);
+void (Z_CheckHeap)(const char *,int);   // killough 3/22/98: add file/line info
+void Z_DumpHistory(char *);
 
-typedef struct memblock_s
-{
-    int			size;	// including the header and possibly tiny fragments
-    void**		user;	// NULL if a free block
-    int			tag;	// purgelevel
-    int			id;	// should be ZONEID
-    struct memblock_s*	next;
-    struct memblock_s*	prev;
-} memblock_t;
+#define Z_Free(a)          (Z_Free)     (a,      __FILE__,__LINE__)
+#define Z_FreeTags(a,b)    (Z_FreeTags) (a,b,    __FILE__,__LINE__)
+#define Z_ChangeTag(a,b)   (Z_ChangeTag)(a,b,    __FILE__,__LINE__)
+#define Z_Malloc(a,b,c)    (Z_Malloc)   (a,b,c,  __FILE__,__LINE__)
+#define Z_Strdup(a,b,c)    (Z_Strdup)   (a,b,c,  __FILE__,__LINE__)
+#define Z_Calloc(a,b,c,d)  (Z_Calloc)   (a,b,c,d,__FILE__,__LINE__)
+#define Z_Realloc(a,b,c,d) (Z_Realloc)  (a,b,c,d,__FILE__,__LINE__)
+#define Z_CheckHeap()      (Z_CheckHeap)(__FILE__,__LINE__)
 
-//
-// This is used to get the local FILE:LINE info from CPP
-// prior to really call the function in question.
-//
-#define Z_ChangeTag(p,t) \
-{ \
-      if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
-	  I_Error("Z_CT at "__FILE__":%i",__LINE__); \
-	  Z_ChangeTag2(p,t); \
-};
+#define malloc(n)          Z_Malloc(n,PU_STATIC,0)
+#define free(p)            Z_Free(p)
+#define realloc(p,n)       Z_Realloc(p,n,PU_STATIC,0)
+#define calloc(n1,n2)      Z_Calloc(n1,n2,PU_STATIC,0)
+#define strdup(s)          Z_Strdup(s,PU_STATIC,0)
 
+// Doom-style printf
+void dprintf(const char *, ...) __attribute__((format(printf,1,2)));
 
+void Z_ZoneHistory(char *);
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: z_zone.h,v $
+// Revision 1.7  1998/05/08  20:32:12  killough
+// fix __attribute__ redefinition
 //
-//-----------------------------------------------------------------------------
+// Revision 1.6  1998/05/03  22:38:11  killough
+// Remove unnecessary #include
+//
+// Revision 1.5  1998/04/27  01:49:42  killough
+// Add history of malloc/free and scrambler (INSTRUMENTED only)
+//
+// Revision 1.4  1998/03/23  03:43:54  killough
+// Make Z_CheckHeap() more diagnostic
+//
+// Revision 1.3  1998/02/02  13:28:06  killough
+// Add dprintf
+//
+// Revision 1.2  1998/01/26  19:28:04  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:06  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

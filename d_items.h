@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: d_items.h,v 1.3 1998/05/04 21:34:12 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -15,7 +15,7 @@
 // for more details.
 //
 // DESCRIPTION:
-//	Items: key cards, artifacts, weapon, ammunition.
+//  Items: key cards, artifacts, weapon, ammunition.
 //
 //-----------------------------------------------------------------------------
 
@@ -33,20 +33,30 @@
 // Weapon info: sprite frames, ammunition use.
 typedef struct
 {
-    ammotype_t	ammo;
-    int		upstate;
-    int		downstate;
-    int		readystate;
-    int		atkstate;
-    int		flashstate;
+  ammotype_t  ammo;
+  int         upstate;
+  int         downstate;
+  int         readystate;
+  int         atkstate;
+  int         flashstate;
 
 } weaponinfo_t;
 
 extern  weaponinfo_t    weaponinfo[NUMWEAPONS];
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: d_items.h,v $
+// Revision 1.3  1998/05/04  21:34:12  thldrmn
+// commenting and reformatting
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:26:26  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:07  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

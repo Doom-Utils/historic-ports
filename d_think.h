@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: d_think.h,v 1.3 1998/05/04 21:34:20 thldrmn Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -42,17 +42,15 @@ typedef  void (*actionf_v)();
 typedef  void (*actionf_p1)( void* );
 typedef  void (*actionf_p2)( void*, void* );
 
+// Note: In d_deh.c you will find references to these
+// wherever code pointers and function handlers exist
 typedef union
 {
-  actionf_p1	acp1;
-  actionf_v	acv;
-  actionf_p2	acp2;
+  actionf_p1    acp1;
+  actionf_v     acv;
+  actionf_p2    acp2;
 
 } actionf_t;
-
-
-
-
 
 // Historically, "think_t" is yet another
 //  function pointer to a routine to handle
@@ -63,17 +61,26 @@ typedef actionf_t  think_t;
 // Doubly linked list of actors.
 typedef struct thinker_s
 {
-    struct thinker_s*	prev;
-    struct thinker_s*	next;
-    think_t		function;
+  struct thinker_s*   prev;
+  struct thinker_s*   next;
+  think_t             function;
     
 } thinker_t;
 
 
-
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: d_think.h,v $
+// Revision 1.3  1998/05/04  21:34:20  thldrmn
+// commenting and reformatting
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:26:34  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:08  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

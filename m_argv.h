@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: m_argv.h,v 1.3 1998/05/01 14:26:18 killough Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -26,17 +26,25 @@
 //
 // MISC
 //
-extern  int	myargc;
-extern  char**	myargv;
+extern int  myargc;
+extern char **myargv;
 
-// Returns the position of the given parameter
-// in the arg list (0 if not found).
-int M_CheckParm (char* check);
-
+// Returns the position of the given parameter in the arg list (0 if not found).
+int M_CheckParm(const char *check);
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: m_argv.h,v $
+// Revision 1.3  1998/05/01  14:26:18  killough
+// beautification
 //
-//-----------------------------------------------------------------------------
+// Revision 1.2  1998/01/26  19:27:05  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:02:58  rand
+// Lee's Jan 19 sources
+//
+//
+//----------------------------------------------------------------------------

@@ -1,7 +1,7 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id:$
+// $Id: doomstat.h,v 1.13 1998/05/12 12:47:28 phares Exp $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 //
@@ -24,7 +24,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #ifndef __D_STATE__
 #define __D_STATE__
 
@@ -36,66 +35,76 @@
 // We need the playr data structure as well.
 #include "d_player.h"
 
-
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-
-
 // ------------------------
 // Command line parameters.
 //
-extern  boolean	nomonsters;	// checkparm of -nomonsters
-extern  boolean	respawnparm;	// checkparm of -respawn
-extern  boolean	fastparm;	// checkparm of -fast
 
-extern  boolean	devparm;	// DEBUG: launched with -devparm
-
-
+extern  boolean nomonsters; // checkparm of -nomonsters
+extern  boolean respawnparm;  // checkparm of -respawn
+extern  boolean fastparm; // checkparm of -fast
+extern  boolean devparm;  // DEBUG: launched with -devparm
 
 // -----------------------------------------------------
 // Game Mode - identify IWAD as shareware, retail etc.
 //
-extern GameMode_t	gamemode;
-extern GameMission_t	gamemission;
+
+extern GameMode_t gamemode;
+extern GameMission_t  gamemission;
 
 // Set if homebrew PWAD stuff has been added.
-extern  boolean	modifiedgame;
+extern  boolean modifiedgame;
 
+// compatibility with old engines (monster behavior, metrics, etc.)
+extern int compatibility, default_compatibility;          // killough 1/31/98
+
+// Only true when playing back an old demo -- used only in "corner cases"
+// which break playback but are otherwise unnoticable or are just desirable:
+
+extern int demo_compatibility;     // killough 1/16/98
+
+// v1.1-like pitched sounds
+extern int pitched_sounds, default_pitched_sounds;        // killough
+
+extern int     default_translucency; // config file says           // phares
+extern boolean general_translucency; // true if translucency is ok // phares
+
+extern int demo_insurance, default_demo_insurance;      // killough 4/5/98
 
 // -------------------------------------------
 // Language.
 extern  Language_t   language;
-
 
 // -------------------------------------------
 // Selected skill type, map etc.
 //
 
 // Defaults for menu, methinks.
-extern  skill_t		startskill;
+extern  skill_t   startskill;
 extern  int             startepisode;
-extern	int		startmap;
+extern  int   startmap;
 
-extern  boolean		autostart;
+extern  boolean   autostart;
 
-// Selected by user. 
+// Selected by user.
 extern  skill_t         gameskill;
-extern  int		gameepisode;
-extern  int		gamemap;
+extern  int   gameepisode;
+extern  int   gamemap;
 
 // Nightmare mode flag, single player.
 extern  boolean         respawnmonsters;
 
 // Netgame? Only true if >1 player.
-extern  boolean	netgame;
+extern  boolean netgame;
 
 // Flag: true only if started as net deathmatch.
 // An enum might handle altdeath/cooperative better.
-extern  boolean	deathmatch;	
-	
-// -------------------------
+extern  boolean deathmatch;
+
+// ------------------------------------------
 // Internal parameters for sound rendering.
 // These have been taken from the DOS version,
 //  but are not (yet) supported with Linux
@@ -129,73 +138,54 @@ extern int snd_DesiredSfxDevice;
 //  status bar explicitely.
 extern  boolean statusbaractive;
 
-extern  boolean automapactive;	// In AutoMap mode?
-extern  boolean	menuactive;	// Menu overlayed?
-extern  boolean	paused;		// Game Pause?
-
-
-extern  boolean		viewactive;
-
-extern  boolean		nodrawers;
-extern  boolean		noblit;
-
-extern	int		viewwindowx;
-extern	int		viewwindowy;
-extern	int		viewheight;
-extern	int		viewwidth;
-extern	int		scaledviewwidth;
-
-
-
-
-
+extern  boolean automapactive; // In AutoMap mode?
+extern  boolean menuactive;    // Menu overlayed?
+extern  boolean paused;        // Game Pause?
+extern  int     hud_active;    //jff 2/17/98 toggles heads-up status display
+extern  boolean viewactive;
+extern  boolean nodrawers;
+extern  boolean noblit;
+extern  int     viewwindowx;
+extern  int     viewwindowy;
+extern  int     viewheight;
+extern  int     viewwidth;
+extern  int     scaledviewwidth;
 
 // This one is related to the 3-screen display mode.
 // ANG90 = left side, ANG270 = right
-extern  int	viewangleoffset;
+extern  int viewangleoffset;
 
 // Player taking events, and displaying.
-extern  int	consoleplayer;	
-extern  int	displayplayer;
-
+extern  int consoleplayer;
+extern  int displayplayer;
 
 // -------------------------------------
 // Scores, rating.
 // Statistics on a given map, for intermission.
 //
-extern  int	totalkills;
-extern	int	totalitems;
-extern	int	totalsecret;
+extern  int totalkills;
+extern  int totalitems;
+extern  int totalsecret;
 
 // Timer, for scores.
-extern  int	levelstarttic;	// gametic at level start
-extern  int	leveltime;	// tics in game play for par
-
-
+extern  int levelstarttic;  // gametic at level start
+extern  int leveltime;  // tics in game play for par
 
 // --------------------------------------
 // DEMO playback/recording related stuff.
-// No demo, there is a human player in charge?
-// Disable save/end game?
-extern  boolean	usergame;
 
-//?
-extern  boolean	demoplayback;
-extern  boolean	demorecording;
+extern  boolean usergame;
+extern  boolean demoplayback;
+extern  boolean demorecording;
 
 // Quit after playing a demo from cmdline.
-extern  boolean		singledemo;	
+extern  boolean   singledemo;
+// Print timing information after quitting.  killough
+extern  boolean   timingdemo;
+// Run tick clock at fastest speed possible while playing demo.  killough
+extern  boolean   fastdemo;
 
-
-
-
-//?
-extern  gamestate_t     gamestate;
-
-
-
-
-
+extern  gamestate_t  gamestate;
 
 //-----------------------------
 // Internal parameters, fixed.
@@ -203,94 +193,133 @@ extern  gamestate_t     gamestate;
 //  according to user inputs. Partly load from
 //  WAD, partly set at startup time.
 
-
-
-extern	int		gametic;
+extern  int   gametic;
 
 
 // Bookkeeping on players - state.
-extern	player_t	players[MAXPLAYERS];
+extern  player_t  players[MAXPLAYERS];
 
 // Alive? Disconnected?
-extern  boolean		playeringame[MAXPLAYERS];
+extern  boolean    playeringame[];
 
+extern  mapthing_t *deathmatchstarts;     // killough
+extern  size_t     num_deathmatchstarts; // killough
 
-// Player spawn spots for deathmatch.
-#define MAX_DM_STARTS   10
-extern  mapthing_t      deathmatchstarts[MAX_DM_STARTS];
-extern  mapthing_t*	deathmatch_p;
+extern  mapthing_t *deathmatch_p;
 
 // Player spawn spots.
-extern  mapthing_t      playerstarts[MAXPLAYERS];
+extern  mapthing_t playerstarts[];
 
 // Intermission stats.
 // Parameters for world map / intermission.
-extern  wbstartstruct_t		wminfo;	
-
+extern wbstartstruct_t wminfo;
 
 // LUT of ammunition limits for each kind.
 // This doubles with BackPack powerup item.
-extern  int		maxammo[NUMAMMO];
-
-
-
-
+extern int maxammo[];
 
 //-----------------------------------------
 // Internal parameters, used for engine.
 //
 
 // File handling stuff.
-extern	char		basedefault[1024];
-extern  FILE*		debugfile;
+extern  char    basedefault[];
+extern  FILE   *debugfile;
 
 // if true, load all graphics at level load
-extern  boolean         precache;
-
+extern  boolean precache;
 
 // wipegamestate can be set to -1
 //  to force a wipe on the next draw
 extern  gamestate_t     wipegamestate;
 
-extern  int             mouseSensitivity;
-//?
+extern  int             mouseSensitivity_horiz; // killough
+extern  int             mouseSensitivity_vert;
+
 // debug flag to cancel adaptiveness
-extern  boolean         singletics;	
+extern  boolean         singletics;
 
 extern  int             bodyqueslot;
 
-
-
 // Needed to store the number of the dummy sky flat.
-// Used for rendering,
-//  as well as tracking projectiles etc.
-extern int		skyflatnum;
+// Used for rendering, as well as tracking projectiles etc.
 
-
+extern int    skyflatnum;
 
 // Netgame stuff (buffers and pointers, i.e. indices).
+extern  doomcom_t  *doomcom;
+extern  doomdata_t *netbuffer;  // This points inside doomcom.
 
-// This is ???
-extern  doomcom_t*	doomcom;
+extern  ticcmd_t   localcmds[];
+extern  int        rndindex;
 
-// This points inside doomcom.
-extern  doomdata_t*	netbuffer;	
+extern  int        maketic;
+extern  int        nettics[];
 
+extern  ticcmd_t   netcmds[][BACKUPTICS];
+extern  int        ticdup;
 
-extern  ticcmd_t	localcmds[BACKUPTICS];
-extern	int		rndindex;
+extern thinker_t thinkercap;  // Both the head and tail of the thinker list
 
-extern	int		maketic;
-extern  int             nettics[MAXNETNODES];
+//-----------------------------------------------------------------------------
 
-extern  ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
-extern	int		ticdup;
+// v1.1-like pitched sounds
+extern int pitched_sounds, default_pitched_sounds;     // killough 2/21/98
 
+extern int allow_pushers;         // MT_PUSH Things    // phares 3/10/98
+extern int default_allow_pushers;
 
+extern int variable_friction;  // ice & mud            // phares 3/10/98
+extern int default_variable_friction;
+
+extern int monsters_remember;                          // killough 3/1/98
+extern int default_monsters_remember;
+
+extern int weapon_recoil;          // weapon recoil    // phares
+extern int default_weapon_recoil;
+
+extern int player_bobbing;  // whether player bobs or not   // phares 2/25/98
+extern int default_player_bobbing;  // killough 3/1/98: make local to each game
 
 #endif
-//-----------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------
 //
-// $Log:$
+// $Log: doomstat.h,v $
+// Revision 1.13  1998/05/12  12:47:28  phares
+// Removed OVER_UNDER code
 //
-//-----------------------------------------------------------------------------
+// Revision 1.12  1998/05/06  16:05:34  jim
+// formatting and documenting
+//
+// Revision 1.11  1998/05/05  16:28:51  phares
+// Removed RECOIL and OPT_BOBBING defines
+//
+// Revision 1.10  1998/05/03  23:12:52  killough
+// beautify, move most global switch variable decls here
+//
+// Revision 1.9  1998/04/06  04:54:55  killough
+// Add demo_insurance
+//
+// Revision 1.8  1998/03/02  11:26:25  killough
+// Remove now-dead monster_ai mask idea
+//
+// Revision 1.7  1998/02/23  04:17:38  killough
+// fix bad translucency flag
+//
+// Revision 1.5  1998/02/20  21:56:29  phares
+// Preliminarey sprite translucency
+//
+// Revision 1.4  1998/02/19  16:55:30  jim
+// Optimized HUD and made more configurable
+//
+// Revision 1.3  1998/02/18  00:58:54  jim
+// Addition of HUD
+//
+// Revision 1.2  1998/01/26  19:26:41  phares
+// First rev with no ^Ms
+//
+// Revision 1.1.1.1  1998/01/19  14:03:09  rand
+// Lee's Jan 19 sources
+//
+//----------------------------------------------------------------------------
