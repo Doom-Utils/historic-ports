@@ -1,0 +1,61 @@
+==============================================================================
+== HeXetic - 0.1                                                            ==
+==                      --Created by XGhost (xghost@lycosmail.com)          ==
+==============================================================================
+
+HeXetic is a source port for the newly released sources of Heretic.  Many new
+features have been added into this source port to make it more enjoyable
+for your gaming experiences.  For more information on HeXetic or if you might
+have any questions, please visit: http://www.angelfire.com/id/hexetic  or
+email: xghost@lycosmail.com .  
+
+==============
+= What Works =
+==============
+
+- Game Engine
+- Sound
+- Key and Mouse Support
+- Music
+- Translucency
+- Anything else that the orginal Heretic supported
+
+=============
+= Whats New =
+=============
+
+- Allegro support added.
+- Support for high-resolutions.
+  Use " -width (width) " and " -height (height) " to change resolutions
+- Memory heap can be changed
+  Use " -heapsize (size) " to change the amount of memory to be used
+
+=====================
+= What Dosen't Work =
+=====================
+
+- Multiplayer? (un-tested)
+- Pause button (???)
+- Screen size changes (screws up weapon positions)
+
+
+FINAL NOTE:
+
+This is'nt a complete source port. Though it is functionable, there still may
+be some bugs that needed to be worked out.  If you find a bug that I have not
+listed, please email: xghost@lycosmail.com.
+
+
+===============
+= Source Code =
+===============
+
+As always, the source code for HeXetic has been released.  Do as you will with
+as long as I get some credit.  To compile the source code, you must have:
+
+- DJGPP Compilier v2
+- The Allegro Libary 3.0  (3.1 might work, untested)
+- Rhide (optional, but, highly recommended)
+
+
+Thank you and please enjoy this version of HeXetic

@@ -1,0 +1,19 @@
+==============================================================================
+== INSTALLTION FOR HEXETIC                                                  ==
+==============================================================================
+
+To install HeXetic, first unzip the HeXetic package into your Heretic
+directory. Registered version of Heretic is recommonded, but, shareware will
+do.
+
+Once unzipped, pleasure make sure you read 'HEXETIC.TXT' for information on
+changes that have been made that might affect you.
+
+After everything have been taken care of, just simply run 'HEXETIC.EXE' to
+start playing.
+
+Also, HeXetic does not have its own configuration program yet.  So, if you
+want your orginal control configurations to be accurate.  Please copy or
+rename 'heretic.cfg' into 'hexetic.cfg'.
+
+Please email: xghost@lycosmail.com if there are any experienced problems.
