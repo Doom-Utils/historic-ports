@@ -1,0 +1,444 @@
+# Makefile.in generated automatically by automake 1.4 from Makefile.am
+
+# Copyright (C) 1994, 1995-8, 1999 Free Software Foundation, Inc.
+# This Makefile.in is free software; the Free Software Foundation
+# gives unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+#
+# automake Makefile.am for the LxDoom source directory
+#
+# $Id: Makefile.am,v 1.6 1999/12/13 17:24:08 cphipps Exp $
+#
+# Process this file with automake to produce Makefile.in
+#
+#
+
+
+SHELL = @SHELL@
+
+srcdir = @srcdir@
+top_srcdir = @top_srcdir@
+VPATH = @srcdir@
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datadir = @datadir@
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+
+DESTDIR =
+
+pkgdatadir = $(datadir)/@PACKAGE@
+pkglibdir = $(libdir)/@PACKAGE@
+pkgincludedir = $(includedir)/@PACKAGE@
+
+top_builddir = ..
+
+ACLOCAL = @ACLOCAL@
+AUTOCONF = @AUTOCONF@
+AUTOMAKE = @AUTOMAKE@
+AUTOHEADER = @AUTOHEADER@
+
+INSTALL = @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@ $(AM_INSTALL_PROGRAM_FLAGS)
+INSTALL_DATA = @INSTALL_DATA@
+INSTALL_SCRIPT = @INSTALL_SCRIPT@
+transform = @program_transform_name@
+
+NORMAL_INSTALL = :
+PRE_INSTALL = :
+POST_INSTALL = :
+NORMAL_UNINSTALL = :
+PRE_UNINSTALL = :
+POST_UNINSTALL = :
+build_alias = @build_alias@
+build_triplet = @build@
+host_alias = @host_alias@
+host_triplet = @host@
+target_alias = @target_alias@
+target_triplet = @target@
+BUILD_LSDOOM = @BUILD_LSDOOM@
+BUILD_LXDOOM = @BUILD_LXDOOM@
+BUILD_SNDSERV = @BUILD_SNDSERV@
+CC = @CC@
+LIB_XDGA = @LIB_XDGA@
+LIB_XEXT = @LIB_XEXT@
+MAKEINFO = @MAKEINFO@
+PACKAGE = @PACKAGE@
+VERSION = @VERSION@
+
+gamesdir = $(prefix)/games
+EXTRA_PROGRAMS = lsdoom lxdoom sndserv
+games_PROGRAMS = @BUILD_LSDOOM@ @BUILD_LXDOOM@ @BUILD_SNDSERV@ lxdoom-game-server
+EXTRA_DIST = makefile.pre-ac
+@I386_ASM_TRUE@ASMS = drawspan.s drawcol.s
+@I386_ASM_FALSE@ASMS = 
+
+sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c l_soundsrv.h l_soundgen.h
+sndserv_LDADD = 
+
+lxdoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
+lxdoom_game_server_LDADD = 
+
+COMMON_SRC =   am_map.c       g_game.c           p_maputl.h       r_plane.h    am_map.h       g_game.h           p_mobj.c         r_segs.c     hu_lib.c       lprintf.c          p_mobj.h         r_segs.h     d_client.c     hu_lib.h           lprintf.h        p_plats.c   r_sky.c	     d_deh.c        hu_stuff.c         m_argv.c         p_pspr.c    r_sky.h	     d_deh.h        hu_stuff.h         m_argv.h         p_pspr.h    r_state.h    d_englsh.h     i_joy.h            m_bbox.c         p_saveg.c   r_things.c   d_event.h      i_net.h            m_bbox.h         p_saveg.h   r_things.h   d_items.c      i_network.h        m_cheat.c        p_setup.c   s_sound.c    d_items.h      i_sound.h          m_cheat.h        p_setup.h   s_sound.h    d_main.c       i_system.h         m_fixed.h        p_sight.c   sounds.c     d_main.h       i_video.h          m_menu.c         p_spec.c    sounds.h     info.c         m_menu.h           p_spec.h         st_lib.c     d_net.h        info.h             m_misc.c         p_switch.c  st_lib.h     d_player.h     l_joy.c            m_misc.h         p_telept.c  st_stuff.c   m_random.c     p_tick.c           st_stuff.h       l_main.c    i_main.h     d_think.h      m_random.h         p_tick.h         tables.c     d_ticcmd.h     m_swap.h           p_user.c         tables.h    l_system.c   doomdata.h     l_sound.c          p_ceilng.c       p_user.h    v_video.c    doomdef.c      p_doors.c          protocol.h       v_video.h    doomdef.h      p_enemy.c          r_bsp.c          version.c    doomstat.c     p_enemy.h          r_bsp.h          version.h    doomstat.h     p_floor.c          r_data.c         w_wad.c	 doomtype.h     p_genlin.c         r_data.h         w_wad.h	 dstrings.c     l_udp.c            p_inter.c        r_defs.h    wi_stuff.c   dstrings.h     p_inter.h          r_draw.c         wi_stuff.h   f_finale.c     p_lights.c         r_draw.h         z_bmalloc.c  f_finale.h     p_map.c            r_main.c         z_bmalloc.h  f_wipe.c       p_map.h            r_main.h         z_zone.c     f_wipe.h       p_maputl.c         r_plane.c        z_zone.h    $(ASMS)
+
+
+lxdoom_SOURCES = l_video_trans.h   l_video_trans.c  l_video_x.c $(COMMON_SRC)
+lsdoom_SOURCES = l_video_svgalib.c $(COMMON_SRC)
+
+lxdoom_LDADD = @X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@ @LIB_XEXT@ @LIB_XDGA@
+lsdoom_LDADD = -lvga
+
+EXTRA_lxdoom_SOURCES = $(ASMS)
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = ../config.h
+CONFIG_CLEAN_FILES = 
+PROGRAMS =  $(games_PROGRAMS)
+
+
+DEFS = @DEFS@ -I. -I$(srcdir) -I..
+CPPFLAGS = @CPPFLAGS@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+X_CFLAGS = @X_CFLAGS@
+X_LIBS = @X_LIBS@
+X_EXTRA_LIBS = @X_EXTRA_LIBS@
+X_PRE_LIBS = @X_PRE_LIBS@
+@I386_ASM_TRUE@lsdoom_OBJECTS =  l_video_svgalib.o am_map.o g_game.o \
+@I386_ASM_TRUE@p_mobj.o r_segs.o hu_lib.o lprintf.o d_client.o \
+@I386_ASM_TRUE@p_plats.o r_sky.o d_deh.o hu_stuff.o m_argv.o p_pspr.o \
+@I386_ASM_TRUE@m_bbox.o p_saveg.o r_things.o d_items.o m_cheat.o \
+@I386_ASM_TRUE@p_setup.o s_sound.o d_main.o p_sight.o sounds.o m_menu.o \
+@I386_ASM_TRUE@p_spec.o info.o st_lib.o m_misc.o p_switch.o l_joy.o \
+@I386_ASM_TRUE@p_telept.o st_stuff.o m_random.o p_tick.o l_main.o \
+@I386_ASM_TRUE@tables.o p_user.o l_system.o l_sound.o p_ceilng.o \
+@I386_ASM_TRUE@v_video.o doomdef.o p_doors.o p_enemy.o r_bsp.o \
+@I386_ASM_TRUE@version.o doomstat.o p_floor.o r_data.o w_wad.o \
+@I386_ASM_TRUE@p_genlin.o dstrings.o l_udp.o p_inter.o wi_stuff.o \
+@I386_ASM_TRUE@r_draw.o f_finale.o p_lights.o z_bmalloc.o p_map.o \
+@I386_ASM_TRUE@r_main.o f_wipe.o z_zone.o p_maputl.o r_plane.o \
+@I386_ASM_TRUE@drawspan.o drawcol.o
+@I386_ASM_FALSE@lsdoom_OBJECTS =  l_video_svgalib.o am_map.o g_game.o \
+@I386_ASM_FALSE@p_mobj.o r_segs.o hu_lib.o lprintf.o d_client.o \
+@I386_ASM_FALSE@p_plats.o r_sky.o d_deh.o hu_stuff.o m_argv.o p_pspr.o \
+@I386_ASM_FALSE@m_bbox.o p_saveg.o r_things.o d_items.o m_cheat.o \
+@I386_ASM_FALSE@p_setup.o s_sound.o d_main.o p_sight.o sounds.o \
+@I386_ASM_FALSE@m_menu.o p_spec.o info.o st_lib.o m_misc.o p_switch.o \
+@I386_ASM_FALSE@l_joy.o p_telept.o st_stuff.o m_random.o p_tick.o \
+@I386_ASM_FALSE@l_main.o tables.o p_user.o l_system.o l_sound.o \
+@I386_ASM_FALSE@p_ceilng.o v_video.o doomdef.o p_doors.o p_enemy.o \
+@I386_ASM_FALSE@r_bsp.o version.o doomstat.o p_floor.o r_data.o w_wad.o \
+@I386_ASM_FALSE@p_genlin.o dstrings.o l_udp.o p_inter.o wi_stuff.o \
+@I386_ASM_FALSE@r_draw.o f_finale.o p_lights.o z_bmalloc.o p_map.o \
+@I386_ASM_FALSE@r_main.o f_wipe.o z_zone.o p_maputl.o r_plane.o
+lsdoom_DEPENDENCIES = 
+lsdoom_LDFLAGS = 
+@I386_ASM_TRUE@lxdoom_OBJECTS =  l_video_trans.o l_video_x.o am_map.o \
+@I386_ASM_TRUE@g_game.o p_mobj.o r_segs.o hu_lib.o lprintf.o d_client.o \
+@I386_ASM_TRUE@p_plats.o r_sky.o d_deh.o hu_stuff.o m_argv.o p_pspr.o \
+@I386_ASM_TRUE@m_bbox.o p_saveg.o r_things.o d_items.o m_cheat.o \
+@I386_ASM_TRUE@p_setup.o s_sound.o d_main.o p_sight.o sounds.o m_menu.o \
+@I386_ASM_TRUE@p_spec.o info.o st_lib.o m_misc.o p_switch.o l_joy.o \
+@I386_ASM_TRUE@p_telept.o st_stuff.o m_random.o p_tick.o l_main.o \
+@I386_ASM_TRUE@tables.o p_user.o l_system.o l_sound.o p_ceilng.o \
+@I386_ASM_TRUE@v_video.o doomdef.o p_doors.o p_enemy.o r_bsp.o \
+@I386_ASM_TRUE@version.o doomstat.o p_floor.o r_data.o w_wad.o \
+@I386_ASM_TRUE@p_genlin.o dstrings.o l_udp.o p_inter.o wi_stuff.o \
+@I386_ASM_TRUE@r_draw.o f_finale.o p_lights.o z_bmalloc.o p_map.o \
+@I386_ASM_TRUE@r_main.o f_wipe.o z_zone.o p_maputl.o r_plane.o \
+@I386_ASM_TRUE@drawspan.o drawcol.o
+@I386_ASM_FALSE@lxdoom_OBJECTS =  l_video_trans.o l_video_x.o am_map.o \
+@I386_ASM_FALSE@g_game.o p_mobj.o r_segs.o hu_lib.o lprintf.o \
+@I386_ASM_FALSE@d_client.o p_plats.o r_sky.o d_deh.o hu_stuff.o \
+@I386_ASM_FALSE@m_argv.o p_pspr.o m_bbox.o p_saveg.o r_things.o \
+@I386_ASM_FALSE@d_items.o m_cheat.o p_setup.o s_sound.o d_main.o \
+@I386_ASM_FALSE@p_sight.o sounds.o m_menu.o p_spec.o info.o st_lib.o \
+@I386_ASM_FALSE@m_misc.o p_switch.o l_joy.o p_telept.o st_stuff.o \
+@I386_ASM_FALSE@m_random.o p_tick.o l_main.o tables.o p_user.o \
+@I386_ASM_FALSE@l_system.o l_sound.o p_ceilng.o v_video.o doomdef.o \
+@I386_ASM_FALSE@p_doors.o p_enemy.o r_bsp.o version.o doomstat.o \
+@I386_ASM_FALSE@p_floor.o r_data.o w_wad.o p_genlin.o dstrings.o \
+@I386_ASM_FALSE@l_udp.o p_inter.o wi_stuff.o r_draw.o f_finale.o \
+@I386_ASM_FALSE@p_lights.o z_bmalloc.o p_map.o r_main.o f_wipe.o \
+@I386_ASM_FALSE@z_zone.o p_maputl.o r_plane.o
+lxdoom_DEPENDENCIES = 
+lxdoom_LDFLAGS = 
+sndserv_OBJECTS =  version.o l_soundsrv.o sounds.o l_soundgen.o
+sndserv_DEPENDENCIES = 
+sndserv_LDFLAGS = 
+lxdoom_game_server_OBJECTS =  d_server.o l_udp.o l_system.o
+lxdoom_game_server_DEPENDENCIES = 
+lxdoom_game_server_LDFLAGS = 
+CFLAGS = @CFLAGS@
+COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(LDFLAGS) -o $@
+DIST_COMMON =  Makefile.am Makefile.in
+
+
+DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
+
+TAR = tar
+GZIP_ENV = --best
+SOURCES = $(lsdoom_SOURCES) $(lxdoom_SOURCES) $(EXTRA_lxdoom_SOURCES) $(sndserv_SOURCES) $(lxdoom_game_server_SOURCES)
+OBJECTS = $(lsdoom_OBJECTS) $(lxdoom_OBJECTS) $(sndserv_OBJECTS) $(lxdoom_game_server_OBJECTS)
+
+all: all-redirect
+.SUFFIXES:
+.SUFFIXES: .S .c .o .s
+$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps src/Makefile
+
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) \
+	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
+
+
+mostlyclean-gamesPROGRAMS:
+
+clean-gamesPROGRAMS:
+	-test -z "$(games_PROGRAMS)" || rm -f $(games_PROGRAMS)
+
+distclean-gamesPROGRAMS:
+
+maintainer-clean-gamesPROGRAMS:
+
+install-gamesPROGRAMS: $(games_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(gamesdir)
+	@list='$(games_PROGRAMS)'; for p in $$list; do \
+	  if test -f $$p; then \
+	    echo "  $(INSTALL_PROGRAM) $$p $(DESTDIR)$(gamesdir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`"; \
+	     $(INSTALL_PROGRAM) $$p $(DESTDIR)$(gamesdir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	  else :; fi; \
+	done
+
+uninstall-gamesPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	list='$(games_PROGRAMS)'; for p in $$list; do \
+	  rm -f $(DESTDIR)$(gamesdir)/`echo $$p|sed 's/$(EXEEXT)$$//'|sed '$(transform)'|sed 's/$$/$(EXEEXT)/'`; \
+	done
+
+.c.o:
+	$(COMPILE) -c $<
+
+.s.o:
+	$(COMPILE) -c $<
+
+.S.o:
+	$(COMPILE) -c $<
+
+mostlyclean-compile:
+	-rm -f *.o core *.core
+
+clean-compile:
+
+distclean-compile:
+	-rm -f *.tab.c
+
+maintainer-clean-compile:
+
+lsdoom: $(lsdoom_OBJECTS) $(lsdoom_DEPENDENCIES)
+	@rm -f lsdoom
+	$(LINK) $(lsdoom_LDFLAGS) $(lsdoom_OBJECTS) $(lsdoom_LDADD) $(LIBS)
+
+lxdoom: $(lxdoom_OBJECTS) $(lxdoom_DEPENDENCIES)
+	@rm -f lxdoom
+	$(LINK) $(lxdoom_LDFLAGS) $(lxdoom_OBJECTS) $(lxdoom_LDADD) $(LIBS)
+
+sndserv: $(sndserv_OBJECTS) $(sndserv_DEPENDENCIES)
+	@rm -f sndserv
+	$(LINK) $(sndserv_LDFLAGS) $(sndserv_OBJECTS) $(sndserv_LDADD) $(LIBS)
+
+lxdoom-game-server: $(lxdoom_game_server_OBJECTS) $(lxdoom_game_server_DEPENDENCIES)
+	@rm -f lxdoom-game-server
+	$(LINK) $(lxdoom_game_server_LDFLAGS) $(lxdoom_game_server_OBJECTS) $(lxdoom_game_server_LDADD) $(LIBS)
+
+tags: TAGS
+
+ID: $(HEADERS) $(SOURCES) $(LISP)
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	here=`pwd` && cd $(srcdir) \
+	  && mkid -f$$here/ID $$unique $(LISP)
+
+TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) $(LISP)
+	tags=; \
+	here=`pwd`; \
+	list='$(SOURCES) $(HEADERS)'; \
+	unique=`for i in $$list; do echo $$i; done | \
+	  awk '    { files[$$0] = 1; } \
+	       END { for (i in files) print i; }'`; \
+	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
+	  || (cd $(srcdir) && etags $(ETAGS_ARGS) $$tags  $$unique $(LISP) -o $$here/TAGS)
+
+mostlyclean-tags:
+
+clean-tags:
+
+distclean-tags:
+	-rm -f TAGS ID
+
+maintainer-clean-tags:
+
+distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+
+subdir = src
+
+distdir: $(DISTFILES)
+	@for file in $(DISTFILES); do \
+	  d=$(srcdir); \
+	  if test -d $$d/$$file; then \
+	    cp -pr $$d/$$file $(distdir)/$$file; \
+	  else \
+	    test -f $(distdir)/$$file \
+	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
+	    || cp -p $$d/$$file $(distdir)/$$file || :; \
+	  fi; \
+	done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+info-am:
+info: info-am
+dvi-am:
+dvi: dvi-am
+check-am: all-am
+check: check-am
+installcheck-am:
+installcheck: installcheck-am
+install-exec-am:
+install-exec: install-exec-am
+
+install-data-am: install-gamesPROGRAMS
+install-data: install-data-am
+
+install-am: all-am
+	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
+install: install-am
+uninstall-am: uninstall-gamesPROGRAMS
+uninstall: uninstall-am
+all-am: Makefile $(PROGRAMS)
+all-redirect: all-am
+install-strip:
+	$(MAKE) $(AM_MAKEFLAGS) AM_INSTALL_PROGRAM_FLAGS=-s install
+installdirs:
+	$(mkinstalldirs)  $(DESTDIR)$(gamesdir)
+
+
+mostlyclean-generic:
+
+clean-generic:
+
+distclean-generic:
+	-rm -f Makefile $(CONFIG_CLEAN_FILES)
+	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+
+maintainer-clean-generic:
+mostlyclean-am:  mostlyclean-gamesPROGRAMS mostlyclean-compile \
+		mostlyclean-tags mostlyclean-generic
+
+mostlyclean: mostlyclean-am
+
+clean-am:  clean-gamesPROGRAMS clean-compile clean-tags clean-generic \
+		mostlyclean-am
+
+clean: clean-am
+
+distclean-am:  distclean-gamesPROGRAMS distclean-compile distclean-tags \
+		distclean-generic clean-am
+
+distclean: distclean-am
+
+maintainer-clean-am:  maintainer-clean-gamesPROGRAMS \
+		maintainer-clean-compile maintainer-clean-tags \
+		maintainer-clean-generic distclean-am
+	@echo "This command is intended for maintainers to use;"
+	@echo "it deletes files that may require special tools to rebuild."
+
+maintainer-clean: maintainer-clean-am
+
+.PHONY: mostlyclean-gamesPROGRAMS distclean-gamesPROGRAMS \
+clean-gamesPROGRAMS maintainer-clean-gamesPROGRAMS \
+uninstall-gamesPROGRAMS install-gamesPROGRAMS mostlyclean-compile \
+distclean-compile clean-compile maintainer-clean-compile tags \
+mostlyclean-tags distclean-tags clean-tags maintainer-clean-tags \
+distdir info-am info dvi-am dvi check check-am installcheck-am \
+installcheck install-exec-am install-exec install-data-am install-data \
+install-am install uninstall-am uninstall all-redirect all-am all \
+installdirs mostlyclean-generic distclean-generic clean-generic \
+maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+
+
+#
+# $Log: Makefile.am,v $
+# Revision 1.6  1999/12/13 17:24:08  cphipps
+# Add i_main.h to lxdoom/lsdoom
+#
+# Revision 1.5  1999/10/31 16:32:21  cphipps
+# Added l_system.c to lxdoom-game-server
+#
+# Revision 1.4  1999/10/27 07:41:53  cphipps
+# Remove overriding of CFLAGS, so configure can set them according to
+# architecture
+#
+# Revision 1.3  1999/10/02 15:00:48  cphipps
+# Added X_CFLAGS to the compile flags, so autoconf can pass the path to
+# the X11 include files for systems that don't put them in the main include
+# tree (fixes compile problem on FreeBSD)
+#
+# Revision 1.2  1999/09/16 22:19:22  cphipps
+# Add missing header files for sound and netgame servers
+#
+# Revision 1.1  1999/09/10 20:10:47  cphipps
+# Initial revision
+#
+#
+
+# Tell versions [3.59,3.63) of GNU make to not export all variables.
+# Otherwise a system limit (for SysV at least) may be exceeded.
+.NOEXPORT:
