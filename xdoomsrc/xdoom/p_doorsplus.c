@@ -20,7 +20,7 @@
 //
 // $Log:$
 //
-// DESCRIPTION: Scritable door animation code for XDoomPlus.
+// DESCRIPTION: Scriptable door animation code for XDoomPlus.
 //
 //-----------------------------------------------------------------------------
 

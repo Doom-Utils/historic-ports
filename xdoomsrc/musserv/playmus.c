@@ -30,13 +30,12 @@
 #include <sys/soundcard.h>
 #endif
 #include <unistd.h>
-#ifdef linux
+#if defined(linux) || defined(sun)
 #  include <signal.h>
-#  include <errno.h>
-#elif defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7) || defined(__FreeBSD__)
+#else
 #  include <sys/signal.h>
-#  include <errno.h>
 #endif
+#include <errno.h>
 #include <string.h>
 #include <ctype.h>
 #include "musserver.h"
@@ -94,10 +93,10 @@ void do_nothing()
 void get_mesg(int flags)
 {
 int result;
-#if defined(linux) || defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
-struct msgbuf *recv;
-#elif defined(__FreeBSD__)
+#ifdef __FreeBSD__
 struct mymsg *recv;
+#else
+struct msgbuf *recv;
 #endif
 int msize = 9;
 int done = 0;
@@ -189,7 +188,7 @@ while (!done)
           }
         cleanup(1);
         break;
-#if defined(linux) || defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
+#ifndef __FreeBSD__
       case EIDRM:
         if (verbose)
           {
@@ -206,10 +205,10 @@ while (!done)
       case EINVAL:
         if (verbose)
           {
-#if defined(linux) || defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
-          printf("Could not receive IPC message: invalid message size or queue id\n");
-#elif defined(__FreeBSD__)
+#ifdef __FreeBSD__
           printf("Could not receive IPC message: message queue has been removed\n or invalid queue id\n");
+#else
+          printf("Could not receive IPC message: invalid message size or queue id\n");
 #endif
           printf("Exiting...\n");
           }
@@ -225,10 +224,10 @@ while (!done)
         cleanup(1);
         break;
 #endif
-#if defined(linux) || defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
-      case ENOMSG:
-#elif defined(__FreeBSD__)
+#ifdef __FreeBSD__
       case EAGAIN:
+#else
+      case ENOMSG:
 #endif
         break;
       }

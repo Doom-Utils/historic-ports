@@ -41,12 +41,16 @@ all:
 	@echo "Linux x86:               make linux-x86"
 	@echo "Linux x86 + svgalib:     make linux-x86-svga"
 	@echo "Linux x86 + Voodoo 3DFX: make linux-x86-3dfx"
+	@echo "Linux PPC:               make linux-ppc"
+	@echo "Linux PPC + svgalib:     make linux-ppc-svga"
 	@echo "Linux Dec Alpha:         make linux-alpha"
 	@echo "OpenServer 5:            make os5"
 	@echo "Unixware 2:              make uw2"
 	@echo "Unixware 7:              make uw7"
 	@echo "Solaris SPARC:           make solsparc"
+	@echo "Solaris x86:             make sol-x86"
 	@echo "IBM AIX:                 make aix"
+	@echo "SGI IRIX:                make irix"
 
 os5: musserv-os5 sndserv-os5 xdoom-os5
 
@@ -54,11 +58,15 @@ uw7: musserv-uw7 sndserv-uw7 xdoom-uw7
 
 uw2: musserv-uw2 sndserv-uw2 xdoom-uw2
 
-linux-x86: musserv-linux sndserv-linux xdoom-linux-x86
+linux-x86: musserv-linux-x86 sndserv-linux-x86 xdoom-linux-x86
 
-linux-x86-svga: musserv-linux sndserv-linux xdoom-linux-x86-svga
+linux-x86-svga: musserv-linux-x86 sndserv-linux-x86 xdoom-linux-x86-svga
 
-linux-x86-3dfx: musserv-linux sndserv-linux xdoom-linux-x86-3dfx
+linux-x86-3dfx: musserv-linux-x86 sndserv-linux-x86 xdoom-linux-x86-3dfx
+
+linux-ppc: musserv-linux-ppc sndserv-linux-ppc xdoom-linux-ppc
+
+linux-ppc-svga: musserv-linux-ppc sndserv-linux-ppc xdoom-linux-ppc-svga
 
 linux-alpha: xdoom-alpha
 
@@ -68,7 +76,11 @@ freebsd-svga: musserv-freebsd sndserv-freebsd xdoom-freebsd-svga
 
 solsparc: xdoom-solsparc
 
+sol-x86: musserv-sol-x86 sndserv-sol-x86 xdoom-sol-x86
+
 aix: xdoom-aix
+
+irix: xdoom-irix
 
 sndserv-uw2:
 	(cd sndserv; ${MAKE} -f Makefile.scouw2)
@@ -79,11 +91,17 @@ sndserv-uw7:
 sndserv-os5:
 	(cd sndserv; ${MAKE} -f Makefile.scoos5)
 
-sndserv-linux:
-	(cd sndserv; ${MAKE} -f Makefile.linux)
+sndserv-linux-x86:
+	(cd sndserv; ${MAKE} -f Makefile.linux-x86)
+
+sndserv-linux-ppc:
+	(cd sndserv; ${MAKE} -f Makefile.linux-ppc)
 
 sndserv-freebsd:
 	(cd sndserv; ${MAKE} -f Makefile.freebsd)
+
+sndserv-sol-x86:
+	(cd sndserv; ${MAKE} -f Makefile.sol-x86)
 
 xdoom-uw2:
 	(cd xdoom; ${MAKE} -f Makefile.scouw2 all)
@@ -103,6 +121,12 @@ xdoom-linux-x86-svga:
 xdoom-linux-x86-3dfx:
 	(cd xdoom; ${MAKE} -f Makefile.linux-x86 linux-x86/glxdoom)
 
+xdoom-linux-ppc:
+	(cd xdoom; ${MAKE} -f Makefile.linux-ppc)
+
+xdoom-linux-ppc-svga:
+	(cd xdoom; ${MAKE} -f Makefile.linux-ppc linux-ppc/sxdoom)
+
 xdoom-alpha:
 	(cd xdoom; ${MAKE} -f Makefile.linux-alpha)
 
@@ -115,8 +139,14 @@ xdoom-freebsd-svga:
 xdoom-solsparc:
 	(cd xdoom; ${MAKE} -f Makefile.solsparc)
 
+xdoom-sol-x86:
+	(cd xdoom; ${MAKE} -f Makefile.sol-x86)
+
 xdoom-aix:
 	(cd xdoom; ${MAKE} -f Makefile.aix)
+
+xdoom-irix:
+	(cd xdoom; ${MAKE} -f Makefile.irix)
 
 musserv-uw2:
 	(cd musserv; ${MAKE} -f Makefile.scouw2)
@@ -127,11 +157,17 @@ musserv-uw7:
 musserv-os5:
 	(cd musserv; ${MAKE} -f Makefile.scoos5)
 
-musserv-linux:
-	(cd musserv; ${MAKE} -f Makefile.linux)
+musserv-linux-x86:
+	(cd musserv; ${MAKE} -f Makefile.linux-x86)
+
+musserv-linux-ppc:
+	(cd musserv; ${MAKE} -f Makefile.linux-ppc)
 
 musserv-freebsd:
 	(cd musserv; ${MAKE} -f Makefile.freebsd)
+
+musserv-sol-x86:
+	(cd musserv; ${MAKE} -f Makefile.sol-x86)
 
 install:
 	@echo "You must specify a target for one of the following"
@@ -142,12 +178,16 @@ install:
 	@echo "Linux x86:               make install-linux-x86"
 	@echo "Linux x86 + svgalib      make install-linux-svga"
 	@echo "Linux x86 + Voodoo 3DFX: make install-linux-x86-3dfx"
+	@echo "Linux PPC:               make install-linux-ppc"
+	@echo "Linux PPC + svgalib:     make install-linux-ppc-svga"
 	@echo "Linux Dec Alpha:         make install-linux-alpha"
 	@echo "OpenServer 5:            make install-os5"
 	@echo "Unixware 2:              make install-uw2"
 	@echo "Unixware 7:              make install-uw7"
 	@echo "Solaris SPARC:           make install-solsparc"
+	@echo "Solaris x86:             make install-sol-x86"
 	@echo "IBM AIX:                 make install-aix"
+	@echo "SGI IRIX:                make install-irix"
 
 install-uw7:
 	-mkdir -p $(DBIN)
@@ -238,9 +278,9 @@ install-linux-x86:
 	-mkdir -p $(DLIB)
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
-	cp musserv/linux/musserver $(DLIB)/musserver.bin
+	cp musserv/linux-x86/musserver $(DLIB)/musserver.bin
 	cp musserv/musserver.sh $(DLIB)/musserver
-	cp sndserv/linux/sndserver $(DLIB)
+	cp sndserv/linux-x86/sndserver $(DLIB)
 	cp xdoom/linux-x86/xdoom $(DLIB)
 	cp ../xdlaunch/xdlaunch $(DBIN)
 	cp contrib/xdoom.sh $(DBIN)/xdoom
@@ -262,9 +302,9 @@ install-linux-x86-svga:
 	-mkdir -p $(DLIB)
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
-	cp musserv/linux/musserver $(DLIB)/musserver.bin
+	cp musserv/linux-x86/musserver $(DLIB)/musserver.bin
 	cp musserv/musserver.sh $(DLIB)/musserver
-	cp sndserv/linux/sndserver $(DLIB)
+	cp sndserv/linux-x86/sndserver $(DLIB)
 	cp xdoom/linux-x86/sxdoom $(DLIB)
 	cp ../xdlaunch/xdlaunch $(DBIN)
 	cp contrib/sxdoom.sh $(DBIN)/sxdoom
@@ -286,9 +326,9 @@ install-linux-x86-3dfx:
 	-mkdir -p $(DLIB)
 	-mkdir -p $(LLIB)/acc/xdoom
 	-mkdir -p $(DMAN)
-	cp musserv/linux/musserver $(DLIB)/musserver.bin
+	cp musserv/linux-x86/musserver $(DLIB)/musserver.bin
 	cp musserv/musserver.sh $(DLIB)/musserver
-	cp sndserv/linux/sndserver $(DLIB)
+	cp sndserv/linux-x86/sndserver $(DLIB)
 	cp xdoom/linux-x86/glxdoom $(DLIB)
 	cp ../xdlaunch/xdlaunch $(DBIN)
 	cp contrib/glxdoom.sh $(DBIN)/glxdoom
@@ -298,6 +338,54 @@ install-linux-x86-3dfx:
 	chmod 755 $(DLIB)/glxdoom
 	chmod 755 $(DBIN)/xdlaunch
 	chmod 755 $(DBIN)/glxdoom
+	cp doc/xdoom.6 $(DMAN)/man6
+	cp data/xdoom.wad $(DLIB)
+	#cp doom1.wad $(DLIB)
+	cp data/common.acs $(LLIB)/acc/xdoom
+	cp data/specials.acs $(LLIB)/acc/xdoom
+	cp data/defs.acs $(LLIB)/acc/xdoom
+
+install-linux-ppc:
+	-mkdir -p $(DBIN)
+	-mkdir -p $(DLIB)
+	-mkdir -p $(LLIB)/acc/xdoom
+	-mkdir -p $(DMAN)
+	cp musserv/linux-ppc/musserver $(DLIB)/musserver.bin
+	cp musserv/musserver.sh $(DLIB)/musserver
+	cp sndserv/linux-ppc/sndserver $(DLIB)
+	cp xdoom/linux-ppc/xdoom $(DLIB)
+	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp contrib/xdoom.sh $(DBIN)/xdoom
+	chmod 755 $(DLIB)/musserver.bin
+	chmod 755 $(DLIB)/musserver
+	chmod 755 $(DLIB)/sndserver
+	chmod 755 $(DLIB)/xdoom
+	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/xdoom
+	cp doc/xdoom.6 $(DMAN)/man6
+	cp data/xdoom.wad $(DLIB)
+	#cp doom1.wad $(DLIB)
+	cp data/common.acs $(LLIB)/acc/xdoom
+	cp data/specials.acs $(LLIB)/acc/xdoom
+	cp data/defs.acs $(LLIB)/acc/xdoom
+
+install-linux-ppc-svga:
+	-mkdir -p $(DBIN)
+	-mkdir -p $(DLIB)
+	-mkdir -p $(LLIB)/acc/xdoom
+	-mkdir -p $(DMAN)
+	cp musserv/linux-ppc/musserver $(DLIB)/musserver.bin
+	cp musserv/musserver.sh $(DLIB)/musserver
+	cp sndserv/linux-ppc/sndserver $(DLIB)
+	cp xdoom/linux-ppc/sxdoom $(DLIB)
+	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp contrib/sxdoom.sh $(DBIN)/sxdoom
+	chmod 755 $(DLIB)/musserver.bin
+	chmod 755 $(DLIB)/musserver
+	chmod 755 $(DLIB)/sndserver
+	chmod 755 $(DLIB)/sxdoom
+	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/sxdoom
 	cp doc/xdoom.6 $(DMAN)/man6
 	cp data/xdoom.wad $(DLIB)
 	#cp doom1.wad $(DLIB)
@@ -375,6 +463,30 @@ install-solsparc:
 	cp data/specials.acs $(LLIB)/acc/xdoom
 	cp data/defs.acs $(LLIB)/acc/xdoom
 
+install-sol-x86:
+	-mkdir -p $(DBIN)
+	-mkdir -p $(DLIB)
+	-mkdir -p $(LLIB)/acc/xdoom
+	-mkdir -p $(DMAN)
+	cp musserv/sol-x86/musserver $(DLIB)/musserver.bin
+	cp musserv/musserver.sh $(DLIB)/musserver
+	cp sndserv/sol-x86/sndserver $(DLIB)
+	cp xdoom/sol-x86/xdoom $(DLIB)
+	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp contrib/xdoom.sh $(DBIN)/xdoom
+	chmod 755 $(DLIB)/musserver.bin
+	chmod 755 $(DLIB)/musserver
+	chmod 755 $(DLIB)/sndserver
+	chmod 755 $(DLIB)/xdoom
+	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/xdoom
+	cp doc/xdoom.6 $(DMAN)/man6
+	cp data/xdoom.wad $(DLIB)
+	#cp doom1.wad $(DLIB)
+	cp data/common.acs $(LLIB)/acc/xdoom
+	cp data/specials.acs $(LLIB)/acc/xdoom
+	cp data/defs.acs $(LLIB)/acc/xdoom
+
 install-aix:
 	-mkdir -p $(DBIN)
 	-mkdir -p $(DLIB)
@@ -393,18 +505,39 @@ install-aix:
 	cp data/specials.acs $(LLIB)/acc/xdoom
 	cp data/defs.acs $(LLIB)/acc/xdoom
 
+install-irix:
+	-mkdir -p $(DBIN)
+	-mkdir -p $(DLIB)
+	-mkdir -p $(LLIB)/acc/xdoom
+	-mkdir -p $(DMAN)
+	cp xdoom/irix/xdoom $(DLIB)
+	cp ../xdlaunch/xdlaunch $(DBIN)
+	cp contrib/xdoom.sh $(DBIN)/xdoom
+	chmod 755 $(DLIB)/xdoom
+	chmod 755 $(DBIN)/xdlaunch
+	chmod 755 $(DBIN)/xdoom
+	cp doc/xdoom.6 $(DMAN)/man6
+	cp data/xdoom.wad $(DLIB)
+	#cp doom1.wad $(DLIB)
+	cp data/common.acs $(LLIB)/acc/xdoom
+	cp data/specials.acs $(LLIB)/acc/xdoom
+	cp data/defs.acs $(LLIB)/acc/xdoom
+
 clean:
 	@echo "You must specify a target for one of the following"
 	@echo "supported OS's:"
 	@echo
 	@echo "FreeBSD:                 make clean-freebsd"
 	@echo "Linux x86:               make clean-linux-x86"
+	@echo "Linux PPC:               make clean-linux-ppc"
 	@echo "Linux Dec Alpha:         make clean-linux-alpha"
 	@echo "OpenServer 5:            make clean-os5"
 	@echo "Unixware 2:              make clean-uw2"
 	@echo "Unixware 7:              make clean-uw7"
 	@echo "Solaris SPARC:           make clean-solsparc"
+	@echo "Solaris x86:             make clean-sol-x86"
 	@echo "IBM AIX:                 make clean-aix"
+	@echo "SGI IRIX:                make clean-irix"
 
 clean-uw7:
 	(cd sndserv; ${MAKE} -f Makefile.scouw7 clean)
@@ -422,9 +555,14 @@ clean-os5:
 	(cd xdoom; ${MAKE} -f Makefile.scoos5 clean)
 
 clean-linux-x86:
-	(cd sndserv; ${MAKE} -f Makefile.linux clean)
-	(cd musserv; ${MAKE} -f Makefile.linux clean)
+	(cd sndserv; ${MAKE} -f Makefile.linux-x86 clean)
+	(cd musserv; ${MAKE} -f Makefile.linux-x86 clean)
 	(cd xdoom; ${MAKE} -f Makefile.linux-x86 clean)
+
+clean-linux-ppc:
+	(cd sndserv; ${MAKE} -f Makefile.linux-ppc clean)
+	(cd musserv; ${MAKE} -f Makefile.linux-ppc clean)
+	(cd xdoom; ${MAKE} -f Makefile.linux-ppc clean)
 
 clean-linux-alpha:
 	(cd xdoom; ${MAKE} -f Makefile.linux-alpha clean)
@@ -437,5 +575,13 @@ clean-freebsd:
 clean-solsparc:
 	(cd xdoom; ${MAKE} -f Makefile.solsparc clean)
 
+clean-sol-x86:
+	(cd sndserv; ${MAKE} -f Makefile.sol-x86 clean)
+	(cd musserv; ${MAKE} -f Makefile.sol-x86 clean)
+	(cd xdoom; ${MAKE} -f Makefile.sol-x86 clean)
+
 clean-aix:
 	(cd xdoom; ${MAKE} -f Makefile.aix clean)
+
+clean-irix:
+	(cd xdoom; ${MAKE} -f Makefile.irix clean)

@@ -64,15 +64,15 @@
 #  ifdef AWE32_SYNTH_SUPPORT
 #    include <linux/awe_voice.h>
 #  endif
-#elif defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
-#  include <sys/soundcard.h>
-#  ifdef AWE32_SYNTH_SUPPORT
-#    include <sys/awe_voice.h>
-#  endif
 #elif defined(__FreeBSD__)
 #  include <machine/soundcard.h>
 #  ifdef AWE32_SYNTH_SUPPORT
 #    include <awe_voice.h>
+#  endif
+#else /* SCO, Sun */
+#  include <sys/soundcard.h>
+#  ifdef AWE32_SYNTH_SUPPORT
+#    include <sys/awe_voice.h>
 #  endif
 #endif
 

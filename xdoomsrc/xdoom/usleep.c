@@ -32,9 +32,7 @@ rcsid[] = "$Id:$";
 
 #ifdef SCOOS5
 #include <sys/itimer.h>
-#endif
-
-#if defined(SCOUW2) || defined(SCOUW7) || defined(LINUX) || defined(FREEBSD) || defined(_AIX)
+#else
 #include <sys/time.h>
 #endif
 

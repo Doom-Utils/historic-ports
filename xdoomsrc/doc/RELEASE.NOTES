@@ -1,8 +1,46 @@
+GNU C 2.9 on all x86 platforms:
+===============================
+With GNU C releases like this:
+
+gcc --version
+2.95.2
+
+compilation aborts with the following error:
+
+gcc -O3 -m486 -ffast-math -fomit-frame-pointer -DUSE_INLINE -DUSE_ASMMOD
+-Wall -DNORMALUNIX -DLINUX  -DBUGFIXES -DPOLL_POINTER -DMUSSERV   -c
+doomstat.c -o linux-x86/doomstat.o
+In file included from p_pspr.h:34,
+                 from d_player.h:39,
+                 from d_net.h:33,
+                 from doomstat.h:40,
+                 from doomstat.c:35:
+m_fixed.h: In function `FixedMul':
+m_fixed.h:64: operand constraint contains '+' or '=' at illegal position.
+m_fixed.h: In function `FixedDiv2':
+m_fixed.h:79: operand constraint contains '+' or '=' at illegal position.
+make[1]: *** [linux-x86/doomstat.o] Error 1
+
+In m_fixed.h there aren't any + or = in any operands, this looks like
+some compiler bug, with releases 2.7 and 2.8 of the GNU C compiler there
+is no such problem.
+Use the EGCS compiler, which also doesn't have this problem, or in
+Makefile.linux-x86 remove -DUSE_INLINE from the active OPTFLAGS.
+C code instead of assembler code for the fixed point division/multiplication
+routines will be compiled then. This is a bit slower, but on nowadys
+systems one won't notice, this optimization is for 386/486 CPU's.
+
 Solaris SPARC:
 ==============
 The sound code is not ported yet to Sun Solaris SPARC OS's, but sound
 works if you use the sndserver binary from the sundoom package. It's
-available at ftp.idsoftware.com.
+available from ftp.idsoftware.com.
+
+SGI Irix 6.5:
+=============
+Same as with Solaris SPARC the sound code is not ported yet, but sound
+works with the sndserver binary from the sgixdoom1.8 package. It's
+available from ftp.idsoftware.com.
 
 Linux x86 2.0.x:
 ================
@@ -19,19 +57,9 @@ else it won't run from accounts other than root. Same for Linux x86 2.2.x.
 
 Linux PPC:
 ==========
-If you try to build it on Linux Apple PPC hardware with the included
-Makefile, it's not very likely that the program will compile, because
-too many things are broken in the OS header files, which needs to be
-repaired. If you don't have experience with fixing broken UNIX systems
-your self just forget about it. Also I'm not able to help with it,
-because I don't have any Apple PPC hardware my self, the Apple PPC
-things included were done by others.
-
-Hm, above is the status from trying to get it working with an unknown
-release of Linux PPC in 1998 sometime. Probably Linux on Apple PPC
-hardware has matured in the meantime and chances to get it working
-might be much better nowadays. So if anyone is playing with this on
-Apple PPC hardware under Linux I would appreciate some feedback.
+The X11 version works OK, the VGA version doesn't build right now,
+due to problems with svgalib. Makefile are prepared to build a PPC
+version when a working svgalib port becomes available.
 
 Linux Dec Alpha 2.2.x
 =====================

@@ -7,14 +7,14 @@
 #
 
 CC=gcc
-CFLAGS=-O2 -Wall -DNORMALUNIX -DLINUX
+CFLAGS=-O2 -Wall -DNORMALUNIX -DLINUX -DBIGEND
 
 LDFLAGS= -s
 #LDFLAGS=-static
 
 LIBS=-lm
 
-O=linux
+O=linux-ppc
 
 all:	 $(O)/sndserver
 

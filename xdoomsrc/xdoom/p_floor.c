@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -436,6 +436,57 @@ int EV_DoFloor(line_t *line, floor_e floortype)
 	    }
 	  default:
 	    break;
+	}
+    }
+    return rtn;
+}
+
+//
+// Handle pure change types. These change floor texture and sector type
+// by trigger or numeric model without moving the floor.
+//
+// The linedef causing the change and the type of change is passed.
+// Returns true if any sector changes.
+//
+// This is from Boom.
+//
+int EV_DoChange(line_t *line, change_e changetype)
+{
+    int		secnum;
+    int		rtn;
+    sector_t	*sec;
+    sector_t	*secm;
+
+    secnum = -1;
+    rtn = 0;
+
+    // change all sectors with same tag as the linedef
+    while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+    {
+	sec = &sectors[secnum];
+	rtn = 1;
+
+	// handle trigger or numeric change type
+	switch(changetype)
+	{
+	    case trigChangeOnly:
+		sec->floorpic = line->frontsector->floorpic;
+		sec->special = line->frontsector->special;
+		sec->oldspecial = line->frontsector->oldspecial;
+		break;
+
+	    case numChangeOnly:
+		secm = P_FindModelFloorSector(sec->floorheight, secnum);
+		if (secm)	// if no model, no change
+		{
+		    sec->floorpic = secm->floorpic;
+		    sec->special = secm->special;
+		    sec->oldspecial = secm->oldspecial;
+		}
+		break;
+
+	    default:
+		break;
 	}
     }
     return rtn;

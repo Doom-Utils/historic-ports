@@ -3,7 +3,7 @@
 //-----------------------------------------------------------------------------
 // $Id:$
 //
-// Copyright (C) 1999 by Udo Munk
+// Copyright (C) 1999-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,16 +56,18 @@ static void M_CommMsg()
 	int	line = 0;
 	char	*p = comtxt;
 	int	size = comtxt_size;
+	char	msgbuf[40];
+	char	*p1 = &msgbuf[0];
 
-	while ((p = memchr(p, '#', size)))
+	while ((size > 0) && (p = memchr(p, '#', size)))
 	{
 		p++;
-		if (!memcmp(p, comdev_lastmsg, strlen(comdev_lastmsg)))
+		if (!strncmp(p, comdev_lastmsg, strlen(comdev_lastmsg)))
 		{
 			flag++;
 			break;
 		}
-		size -= strlen(p) + 2;
+		size = comtxt_size - (p - comtxt);
 	}
 
 	if (!flag)
@@ -78,12 +80,19 @@ static void M_CommMsg()
 		while (*p != '\n')
 			p++;
 		p++;
-		while (*p != '\n')
+		while (*p != '#')
 		{
-			M_WriteText(CX, CY + line * 10, p);
-			p += strlen(p) + 1;
-			line++;
-			if (line >= 10)
+			if (*p == '\n')
+			{
+				*p1 = '\0';
+				p++;
+				M_WriteText(CX, CY + line * 10, &msgbuf[0]);
+				p1 = &msgbuf[0];
+				line++;
+			} else {
+				*p1++ = *p++;
+			}
+			if (line >= 12)
 				break;
 		}
 	}

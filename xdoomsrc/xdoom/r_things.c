@@ -796,12 +796,7 @@ void R_SortVisSprites(void)
 
 	if (num_vissprite_ptrs < num_vissprite * 2)
 	{
-	    if (vissprite_ptrs)
-	    {
-		Z_ChangeTag(vissprite_ptrs, PU_CACHE);
-		Z_Free(vissprite_ptrs);
-	    }
-	    vissprite_ptrs = Z_Malloc((num_vissprite_ptrs =
+	    vissprite_ptrs = Z_Realloc(vissprite_ptrs, (num_vissprite_ptrs =
 		num_vissprite_alloc * 2) * sizeof(*vissprite_ptrs),
 		PU_STATIC, (void *)0);
 	}

@@ -1,3 +1,38 @@
+Sun Jul 23 21:57:47 2000	<um@compuserve.com>
+
+	* Implemented lots Boom compatible extended linedefs, more Boom
+	  levels do work now.
+
+	* Implemented save and load of the new Boom Elevators.
+
+	* Because of the Boom Elevators the save game files are not
+	  compatible anymore and the game version number was increased
+	  to v1.14, to prevent loading of incompatible files.
+
+	* Substited makefile for Linux PPC with the new one contributed
+	  by de savant.
+
+	* Fixed a compile problem with svgalib on Linux PPC, as reported
+	  by de savant.
+
+	* Worked in the patches for Irix 6.5 contributed by Marcus Herbert.
+
+Tue Jun 27 09:13:18 2000	<um@compuserve.com>
+
+	* Forgot to create directory ~/.xdoom, fixed.
+
+	* Merged with the Solaris x86 port.
+
+	* Fixed a memory allocation problem for vissprites in r_things.c.
+
+	* Added new linedefs for a silent opening door, to be able to release
+	  new stuff into a level unheard by players.
+
+	* COMTXT lump has new data format, NL terminated instead of
+	  0 terminated. All example PWAD's adjusted appropriate.
+
+	* Added new linedef to trigger comdev messages by monsters.
+
 Sun Mar  5 20:09:05 2000	<um@compuserve.com>
 
 	* Another review of all sources was in order, to prevent it getting

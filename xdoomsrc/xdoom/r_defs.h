@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -91,6 +91,7 @@ typedef	struct
     short	ceilingpic;
     short	lightlevel;
     short	special;
+    short	oldspecial;
     short	tag;
 
     // improves search for tags, from Boom

@@ -43,7 +43,7 @@ rcsid[] = "$Id:$";
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#if defined(LINUX) || defined(SOLARIS)
+#if defined(LINUX) || defined(SOLARIS) || defined(IRIX)
 #include <alloca.h>
 #endif
 #define O_BINARY		0
@@ -170,7 +170,7 @@ void W_AddFile(char *filename)
     filelump_t		*fileinfo;
     filelump_t		singleinfo;
     int			storehandle;
-
+    
     // open the file and add to directory
 
     // handle reload indicator.

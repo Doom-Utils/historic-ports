@@ -306,12 +306,12 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
     if (gamekeydown[key_up])
     {
-	// printf("up\n");
+        // printf("up\n");
 	forward += forwardmove[speed];
     }
     if (gamekeydown[key_down])
     {
-	// printf("down\n");
+        // printf("down\n");
 	forward -= forwardmove[speed];
     }
     if (joyymove < 0)

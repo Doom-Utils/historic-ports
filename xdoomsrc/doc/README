@@ -24,16 +24,19 @@ XDoom is known to work on the following platforms:
     SCO OpenServer 5.0.x, X11 and [S]VGA support, mouse and keyboard support
     Linux x86 1.2.x, 2.0.x, 2.1.x and 2.2.x, X11, [S]VGA and Voodoo 3DFX
 	support, mouse, keyboard and joystick support
+    Linux PPC X11 support, mouse and keyboard support
     Linux Dec Alpha 2.2.x, X11 support, no sound yet, mouse and keyboard support
     FreeBSD 3.x, X11 and [S]VGA support, mouse and keyboard support
-    Solaris SPARC 2.5.1, 2.6 and 2.7 X11 support, no sound yet,
+    Solaris SPARC 2.5.1, 2.6 and 2.7, X11 support, no sound yet,
 	mouse and keyboard
+    Solaris x86, X11 support, mouse and keyboard support
     IBM AIX 4.2, X11 support, no sound yet, mouse and keyboard support
+    SGI IRIX 6.5, X11 support, mouse and keyboard support
 
 XDoom can probably be made to work on any version of UNIX which runs X11.
 Dependent on the console driver of the OS full screen direct graphics
 support is possible too, enough implementation examples are included
-to see how this can be done on various OS's. If X11 runs on the console
+to show how this can be done on various OS's. If X11 runs on the console
 XDoom can be made to run in full screen graphics mode on the console too.
 
 ------------------------------------------------------------------------
@@ -310,6 +313,7 @@ because this levels are much better than what I can do.
 	lih.wad			all 4 levels ok
 	kboom_2.wad
 	hl.wad, hltextur.wad	level with Half-Life textures
+	dethbase.wad
 
 You should be able to find this Boom levels on ftp.cdrom.com.
 

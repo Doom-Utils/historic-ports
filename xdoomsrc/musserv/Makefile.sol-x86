@@ -1,9 +1,9 @@
 #
-# Makefile for musserver 1.4 for Linux x86 2.0.x
+# Makefile for musserver 1.4 for Solaris 7 x86
 #
 
 CC	= gcc
-CFLAGS	= -Wall -O2
+CFLAGS	= -Wall -O2 -I/opt/oss/include
 LDFLAGS	= -s
 #LDFLAGS	= -static
 
@@ -11,7 +11,7 @@ LDFLAGS	= -s
 # Nothing below this line should be changed #
 #############################################
 
-O=linux
+O=sol-x86
 
 all: ${O}/musserver
 

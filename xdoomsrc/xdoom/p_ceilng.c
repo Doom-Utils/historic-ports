@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -130,6 +131,8 @@ void T_MoveCeiling(ceiling_t *ceiling)
 
 	      case lowerAndCrush:
 	      case lowerToFloor:
+	      case lowerToLowest:
+	      case lowerToMaxFloor:
 		P_RemoveActiveCeiling(ceiling);
 		break;
 
@@ -224,6 +227,18 @@ int EV_DoCeiling(line_t *line, ceiling_e type)
 	  case raiseToHighest:
 	    ceiling->topheight = P_FindHighestCeilingSurrounding(sec);
 	    ceiling->direction = 1;
+	    ceiling->speed = CEILSPEED;
+	    break;
+
+	  case lowerToLowest:
+	    ceiling->bottomheight = P_FindLowestCeilingSurrounding(sec);
+	    ceiling->direction = -1;
+	    ceiling->speed = CEILSPEED;
+	    break;
+
+	  case lowerToMaxFloor:
+	    ceiling->bottomheight = P_FindHighestFloorSurrounding(sec);
+	    ceiling->direction = -1;
 	    ceiling->speed = CEILSPEED;
 	    break;
 	}

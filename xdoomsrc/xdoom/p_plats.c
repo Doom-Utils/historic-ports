@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -76,10 +76,18 @@ void T_PlatRaise(plat_t *plat)
 	{
 	    if (res == pastdest)
 	    {
-		plat->count = plat->wait;
-		plat->status = waiting;
-		S_StartSound((mobj_t *)&plat->sector->soundorg,
-			     sfx_pstop);
+		// if not an instant toggle type, wait, make plat stop sound
+		if (plat->type != toggleUpDn)
+		{
+		  plat->count = plat->wait;
+		  plat->status = waiting;
+		  S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
+		}
+		else	// go into stasis awaiting next toggle activation
+		{
+		  plat->oldstatus = plat->status;
+		  plat->status = in_stasis;
+		}
 
 		switch(plat->type)
 		{
@@ -105,9 +113,18 @@ void T_PlatRaise(plat_t *plat)
 
 	if (res == pastdest)
 	{
-	    plat->count = plat->wait;
-	    plat->status = waiting;
-	    S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
+	    // if not an instant toggle, start waiting, make plat stop sound
+	    if (plat->type != toggleUpDn)
+	    {
+	      plat->count = plat->wait;
+	      plat->status = waiting;
+	      S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
+	    }
+	    else // instan toggles go into statis awaiting next activation
+	    {
+	      plat->oldstatus = plat->status;
+	      plat->status = in_stasis;
+	    }
 	}
 	break;
 
@@ -146,6 +163,11 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	P_ActivateInStasis(line->tag);
 	break;
 
+      case toggleUpDn:
+	P_ActivateInStasis(line->tag);
+	rtn = 1;
+	break;
+
       default:
 	break;
     }
@@ -179,7 +201,6 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	    plat->status = up;
 	    // NO MORE DAMAGE, IF APPLICABLE
 	    sec->special = 0;
-
 	    S_StartSound((mobj_t *)&sec->soundorg, sfx_stnmov);
 	    break;
 
@@ -189,17 +210,14 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	    plat->high = sec->floorheight + amount * FRACUNIT;
 	    plat->wait = 0;
 	    plat->status = up;
-
 	    S_StartSound((mobj_t *)&sec->soundorg, sfx_stnmov);
 	    break;
 
 	  case downWaitUpStay:
 	    plat->speed = PLATSPEED * 4;
 	    plat->low = P_FindLowestFloorSurrounding(sec);
-
 	    if (plat->low > sec->floorheight)
 		plat->low = sec->floorheight;
-
 	    plat->high = sec->floorheight;
 	    plat->wait = 35 * PLATWAIT;
 	    plat->status = down;
@@ -209,10 +227,8 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	  case blazeDWUS:
 	    plat->speed = PLATSPEED * 8;
 	    plat->low = P_FindLowestFloorSurrounding(sec);
-
 	    if (plat->low > sec->floorheight)
 		plat->low = sec->floorheight;
-
 	    plat->high = sec->floorheight;
 	    plat->wait = 35 * PLATWAIT;
 	    plat->status = down;
@@ -222,19 +238,23 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	  case perpetualRaise:
 	    plat->speed = PLATSPEED;
 	    plat->low = P_FindLowestFloorSurrounding(sec);
-
 	    if (plat->low > sec->floorheight)
 		plat->low = sec->floorheight;
-
 	    plat->high = P_FindHighestFloorSurrounding(sec);
-
 	    if (plat->high < sec->floorheight)
 		plat->high = sec->floorheight;
-
 	    plat->wait = 35 * PLATWAIT;
 	    plat->status = P_Random() & 1;
-
 	    S_StartSound((mobj_t *)&sec->soundorg, sfx_pstart);
+	    break;
+
+	  case toggleUpDn:
+	    plat->speed = PLATSPEED;
+	    plat->wait = 35*PLATSPEED;
+	    plat->crush = true;
+	    plat->low = sec->ceilingheight;
+	    plat->high = sec->floorheight;
+	    plat->status = down;
 	    break;
 	}
 	P_AddActivePlat(plat);
@@ -272,7 +292,10 @@ void P_ActivateInStasis(int tag)
 
 	if (plat->tag == tag && plat->status == in_stasis)
 	{
-	    plat->status = plat->oldstatus;
+	    if (plat->type == toggleUpDn)
+	      plat->status = plat->oldstatus == up ? down : up;
+	    else
+	      plat->status = plat->oldstatus;
 	    plat->thinker.function.acp1 = (actionf_p1)T_PlatRaise;
 	}
     }

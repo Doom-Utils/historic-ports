@@ -22,6 +22,7 @@ CC=  gcc
 #	-DSCOUW7		set this for SCO Unixware 7
 #	-DFREEBSD		set this for FreeBSD
 #	-DSOLARIS		set this for Sun Solaris
+#	-DIRIX			set this for SGI Irix
 #
 # Game options:
 #
@@ -48,6 +49,9 @@ CC=  gcc
 #				to compile without this option together with
 #				USE_ASMMOD, because the assembler routines
 #				have the TFE bug fixed.
+#	-DUSE_JOYSTICK		Define this to compile in joystick support,
+#				you need a joystick device driver for this.
+#
 #
 # Optimization/Debugging:
 #
@@ -76,6 +80,10 @@ CDMOD=cd_stub.o			# empty module, doesn't do anything
 # The assembler source modules implemented, use non if portable C
 # sources should be compiled
 ASMMOD=				# use this to compile C
+
+# Joystick support module
+#JOYSTICK=			# use this if you don't want joystick support
+JOYSTICK=$(O)/i_ljoy.o		# Linux joystick support module
 
 OPTFLAGS=-O3 -ffast-math -fomit-frame-pointer -fsigned-char
 
@@ -118,7 +126,6 @@ OBJS=				\
 		$(O)/am_map.o		\
 		$(O)/p_ceilng.o		\
 		$(O)/p_doors.o		\
-		$(O)/p_doorsplus.o	\
 		$(O)/p_enemy.o		\
 		$(O)/p_floor.o		\
 		$(O)/p_inter.o		\
@@ -165,6 +172,10 @@ OBJS=				\
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
 	-o $(O)/xdoom -lXext -lX11 -lm
+
+$(O)/sxdoom:	$(OBJS) $(O)/i_video_vga.o
+	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_vga.o \
+	-o $(O)/sxdoom -lvga -lm
 
 all:	 $(O)/xdoom
 

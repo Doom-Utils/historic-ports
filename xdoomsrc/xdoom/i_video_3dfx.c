@@ -4,7 +4,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 1998, 1999 by Udo Munk
+// Copyright (C) 1998-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -177,18 +177,23 @@ void I_InitGraphics(void)
 	// check if user wants mouse and set it up
 	if (usemouse)
 	{
-		mouse_type = MOUSE_NONE;
+		// MOUSE_NONE is not defined in svgalib for Linux PPC
+		// mouse_type = MOUSE_NONE;
+		mouse_type = -1;
 		for (i = 0; mousetypes[i].name != NULL; i++)
 		{
 			if (!strcmp(mousetype, mousetypes[i].name))
 				mouse_type = mousetypes[i].type;
 		}
 
-		mouse_init(mousedev, mouse_type, MOUSE_DEFAULTSAMPLERATE);
-		mouse_setxrange(0, DFX_WIDTH - 1);
-		mouse_setyrange(0, DFX_HEIGHT - 1);
-		mouse_setwrap(MOUSE_NOWRAP);
-		mouse_seteventhandler(mouse_events);
+		if (mouse_type >= 0)
+		{
+			mouse_init(mousedev, mouse_type, MOUSE_DEFAULTSAMPLERATE);
+			mouse_setxrange(0, DFX_WIDTH - 1);
+			mouse_setyrange(0, DFX_HEIGHT - 1);
+			mouse_setwrap(MOUSE_NOWRAP);
+			mouse_seteventhandler(mouse_events);
+		}
 	}
 
 #ifdef USE_JOYSTICK

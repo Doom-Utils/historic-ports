@@ -40,7 +40,7 @@ rcsid[] = "$Id:$";
 #endif
 
 // SCO OS5 and Unixware OSS sound output
-#if defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
+#if defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7) || defined(sun)
 #include <sys/soundcard.h>
 #endif
 
@@ -897,7 +897,7 @@ void I_InitSound(void)
     if ((i & DSP_CAP_MMAP) && (i & DSP_CAP_TRIGGER))
     {
 
-#if defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
+#if defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7) || defined(sun)
 #define MAP_FILE 0
 #endif
 

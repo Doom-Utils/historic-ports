@@ -72,6 +72,8 @@ fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight);
 fixed_t P_FindLowestCeilingSurrounding(sector_t *sec);
 fixed_t P_FindHighestCeilingSurrounding(sector_t *sec);
 
+sector_t *P_FindModelFloorSector(fixed_t floordestheight, int secnum);
+
 int	P_FindSectorFromLineTag(line_t *line, int start);
 int	P_FindSectorFromTag(int tag, int start);
 
@@ -157,7 +159,11 @@ typedef struct
     char	name2[9];
     short	episode;
 } switchlist_t;
+#ifdef IRIX
+#pragma pack (0)
+#else
 #pragma pack ()
+#endif
 
 typedef enum
 {
@@ -206,8 +212,15 @@ typedef enum
     downWaitUpStay,
     raiseAndChange,
     raiseToNearestAndChange,
-    blazeDWUS
+    blazeDWUS,
+    toggleUpDn
 } plattype_e;
+
+typedef enum
+{
+    trigChangeOnly,
+    numChangeOnly
+} change_e;
 
 typedef struct
 {
@@ -288,6 +301,7 @@ typedef struct
 
 void	EV_VerticalDoor(line_t *line, mobj_t *thing);
 int	EV_DoDoor(line_t *line, vldoor_e type);
+int	EV_DoSilentDoor(line_t *line, vldoor_e type);
 int	EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing);
 void    T_VerticalDoor(vldoor_t *door);
 void    P_SpawnDoorCloseIn30(sector_t *sec);
@@ -401,6 +415,8 @@ typedef enum
 {
     lowerToFloor,
     raiseToHighest,
+    lowerToLowest,
+    lowerToMaxFloor,
     lowerAndCrush,
     crushAndRaise,
     fastCrushAndRaise,
@@ -538,6 +554,7 @@ result_e T_MovePlane(sector_t *sector, fixed_t speed, fixed_t dest,
 		boolean	crush, int floorOrCeiling, int direction);
 int	EV_BuildStairs(line_t *line, stair_e type);
 int	EV_DoFloor(line_t *line, floor_e floortype);
+int	EV_DoChange(line_t *line, change_e changetype);
 void	T_MoveFloor(floormove_t *floor);
 int	EV_DoElevator(line_t *line, elevator_e elevtype);
 void	T_MoveElevator(elevator_t *elevator);

@@ -36,13 +36,9 @@ rcsid[] = "$Id:$";
 
 #ifdef LINUX
 #include <linux/soundcard.h>
-#endif
-
-#ifdef __FreeBSD__
+#elif defined(__FreeBSD__)
 #include <machine/soundcard.h>
-#endif
-
-#if defined(SCOOS5) || defined(SCOUW2) || defined(SCOUW7)
+#else
 #include <sys/soundcard.h>
 #endif
 

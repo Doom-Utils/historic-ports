@@ -24,6 +24,7 @@ CC=  cc
 #	-DSCOUW7		set this for SCO Unixware 7
 #	-DFREEBSD		set this for FreeBSD
 #	-DSOLARIS		set this for Sun Solaris
+#	-DIRIX			set this for SGI Irix
 #
 # Game options:
 #

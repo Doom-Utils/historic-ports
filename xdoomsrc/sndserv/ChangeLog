@@ -1,3 +1,12 @@
+Tue Jul  4 13:13:39 2000	<um@compuserve.com>
+
+	* separated Linux support for x86 and PPC and wrote
+	  new makefile for Linux on Apple PPC hardware.
+
+Sun Jun 18 13:38:39 2000	<um@compuserve.com>
+
+	* merged with the Soaris x86 port.
+
 Sun Dec  5 12:22:37 1999	<um@compuserve.com>
 
 	* took all CPU specific optimization out of makefiles,

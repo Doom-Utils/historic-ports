@@ -4,7 +4,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 1999 by Udo Munk
+// Copyright (C) 1999-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	This are the mouse types supported with Linux svgalib 1.3.1
+//	This are the mouse types supported with Linux x86 svgalib 1.3.1
 //
 //-----------------------------------------------------------------------------
 

@@ -150,5 +150,21 @@ John Davison <davisoja@yahoo.com>
    * For help with structure align problems on AIX and making sure the
      commercial IWAD's work OK under AIX.
 
+Per Espen Hagen <peh@ffi.no>
+
+   * For the Solaris x86 port.
+
+Shailendra Pokhriyal <s_pokh@hotmail.com>
+
+   * For the bug report about vissprite memory allocation problem.
+
+de savant <savant@kscable.com>
+
+   * For Linux PPC support and feedback.
+
+Marcus Herbert <rhoenie@spam-filter.de>
+
+   * For the SGI Irix 6.5 port.
+
 The XDoom project was created and is maintained by:
 Udo Munk (um@compuserve.com)

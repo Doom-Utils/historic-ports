@@ -1,3 +1,12 @@
+Changes (July 4, 2000):
+
+  - separated Linux support into x86 and PPC and new makefile for
+    Linux on Apple PPC hardware.
+
+Changes (June 18, 2000):
+
+  - merged with the Soaris x86 port.
+
 Changes (December 5, 1999):
 
   - took all CPU specific compiler options out of the makefiles,

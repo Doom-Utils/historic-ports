@@ -30,6 +30,7 @@ USLEEP=linux-x86/usleep.o
 #	-DSCOUW7		set this for SCO Unixware 7
 #	-DFREEBSD		set this for FreeBSD
 #	-DSOLARIS		set this for Sun Solaris
+#	-DIRIX			set this for SGI Irix
 #
 # Game options:
 #
@@ -114,6 +115,10 @@ OPTFLAGS=-O3 -mpentium -ffast-math -fomit-frame-pointer \
 
 # Debugging, EGCS
 #OPTFLAGS=-g -mpentium -DUSE_ASMMOD -DRANGECHECK #-DINIT_MESSAGES
+
+# Profiling EGCS
+#OPTFLAGS=-O3 -mpentium -pg -ffast-math -fomit-frame-pointer \
+	-fexpensive-optimizations -DUSE_INLINE -DUSE_ASMMOD
 
 # where your Glide include files are installed
 FEATUREFLAG=-I/usr/include/glide

@@ -66,7 +66,7 @@ CC=  cc
 #				you also need to select the appropriate
 #				assembler source module below.
 
-GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DSNDSERV
+GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DSNDSERV 
 
 # You need to select one of the following possible CD audio modules:
 CDMOD=cd_stub.o			# empty module, doesn't do anything
@@ -77,15 +77,16 @@ CDMOD=cd_stub.o			# empty module, doesn't do anything
 # sources should be compiled
 ASMMOD=				# use this to compile C
 
-OPTFLAGS=-O2 -ma -qcpluscmt -qchars=signed -qalign=packed
+OPTFLAGS=-O0 -mips4 -n32 -Xcpluscomm -signed
 
-CFLAGS=$(OPTFLAGS) -DNORMALUNIX -DBIGEND $(GAMEOPT) $(FEATUREFLAG)
+CFLAGS=$(OPTFLAGS) -DNORMALUNIX -DBIGEND $(GAMEOPT) $(FEATUREFLAG) -DIRIX -DIPPORT_USERRESERVED=5000
 
 # subdirectory for objects
-O=aix
+O=irix
 
 # not too sophisticated dependency
 OBJS=				\
+		$(O)/alloca.o		\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
 		$(O)/dstrings.o		\
@@ -160,6 +161,9 @@ OBJS=				\
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
 	-o $(O)/xdoom -lXext -lX11 -lm
+
+$(O)/alloca.o:	alloca.c
+	$(CC) $(CFLAGS) -c alloca.c -o $(O)/alloca.o
 
 $(O)/doomdef.o:	doomdef.c
 	$(CC) $(CFLAGS) -c doomdef.c -o $(O)/doomdef.o

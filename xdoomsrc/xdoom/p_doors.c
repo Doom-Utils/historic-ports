@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -87,13 +87,13 @@ void T_VerticalDoor(vldoor_t *door)
 {
     result_e	res;
 
-    switch(door->direction)
+    switch (door->direction)
     {
       case 0:
 	// WAITING
 	if (!--door->topcountdown)
 	{
-	    switch(door->type)
+	    switch (door->type)
 	    {
 	      case blazeRaise:
 		door->direction = -1; // time to go back down
@@ -123,7 +123,7 @@ void T_VerticalDoor(vldoor_t *door)
 	//  INITIAL WAIT
 	if (!--door->topcountdown)
 	{
-	    switch(door->type)
+	    switch (door->type)
 	    {
 	      case raiseIn5Mins:
 		door->direction = 1;
@@ -146,7 +146,7 @@ void T_VerticalDoor(vldoor_t *door)
 			  false, 1, door->direction);
 	if (res == pastdest)
 	{
-	    switch(door->type)
+	    switch (door->type)
 	    {
 	      case blazeRaise:
 	      case blazeClose:
@@ -193,7 +193,7 @@ void T_VerticalDoor(vldoor_t *door)
 	}
 	else if (res == crushed)
 	{
-	    switch(door->type)
+	    switch (door->type)
 	    {
 	      case blazeClose:
 	      case close:		// DO NOT GO BACK UP!
@@ -216,7 +216,7 @@ void T_VerticalDoor(vldoor_t *door)
 			  false, 1, door->direction);
 	if (res == pastdest)
 	{
-	    switch(door->type)
+	    switch (door->type)
 	    {
 	      case blazeRaise:
 	      case normal:
@@ -272,7 +272,7 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
     if (!p)
 	return 0;
 
-    switch(line->special)
+    switch (line->special)
     {
       case 99:	// Blue Lock
       case 133:
@@ -315,6 +315,9 @@ int EV_DoLockedDoor(line_t *line, vldoor_e type, mobj_t *thing)
     return EV_DoDoor(line, type);
 }
 
+//
+// Move a door up/down with sound
+//
 int EV_DoDoor(line_t *line, vldoor_e type)
 {
     int		secnum, rtn;
@@ -343,7 +346,7 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 	door->speed = VDOORSPEED;
 	door->line = line;	// remember line that triggered us
 
-	switch(type)
+	switch (type)
 	{
 	  case blazeClose:
 	    door->topheight = P_FindLowestCeilingSurrounding(sec);
@@ -398,6 +401,52 @@ int EV_DoDoor(line_t *line, vldoor_e type)
 }
 
 //
+// Open a door silent (without any sound)
+//
+int EV_DoSilentDoor(line_t *line, vldoor_e type)
+{
+    int		secnum, rtn;
+    sector_t	*sec;
+    vldoor_t	*door;
+
+    secnum = -1;
+    rtn = 0;
+
+    while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+    {
+	sec = &sectors[secnum];
+	if (sec->ceilingdata)
+	    continue;
+
+	// new door thinker
+	rtn = 1;
+	door = Z_Malloc(sizeof(*door), PU_LEVSPEC, (void *)0);
+	P_AddThinker(&door->thinker);
+	sec->ceilingdata = door;
+
+	door->thinker.function.acp1 = (actionf_p1)T_VerticalDoor;
+	door->sector = sec;
+	door->type = type;
+	door->topwait = VDOORWAIT;
+	door->speed = VDOORSPEED;
+	door->line = line;	// remember line that triggered us
+
+	switch (type)
+	{
+	  case open:
+	    door->direction = 1;
+	    door->topheight = P_FindLowestCeilingSurrounding(sec);
+	    door->topheight -= 4 * FRACUNIT;
+	    break;
+
+	  default:
+	    break;
+	}
+    }
+    return rtn;
+}
+
+//
 // EV_VerticalDoor : open a door manually, no tag value
 //
 void EV_VerticalDoor(line_t *line, mobj_t *thing)
@@ -413,7 +462,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     //	Check for locks
     player = thing->player;
 
-    switch(line->special)
+    switch (line->special)
     {
       case 26: // Blue Lock
       case 32:
@@ -463,7 +512,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     if (sec->ceilingdata)
     {
 	door = sec->ceilingdata;
-	switch(line->special)
+	switch (line->special)
 	{
 	  case	1: // ONLY FOR "RAISE" DOORS, NOT "OPEN"s
 	  case	26:
@@ -484,7 +533,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     }
 
     // for proper sound
-    switch(line->special)
+    switch (line->special)
     {
       case 117:	// BLAZING DOOR RAISE
       case 118:	// BLAZING DOOR OPEN
@@ -512,7 +561,7 @@ void EV_VerticalDoor(line_t *line, mobj_t *thing)
     door->topwait = VDOORWAIT;
     door->line = line;	// remember line that triggered us
 
-    switch(line->special)
+    switch (line->special)
     {
       case 1:
       case 26:
@@ -682,7 +731,7 @@ int P_FindSlidingDoorType(line_t *line)
 
 void T_SlidingDoor(slidedoor_t *door)
 {
-    switch(door->status)
+    switch (door->status)
     {
       case sd_opening:
 	if (!door->timer--)
@@ -837,7 +886,7 @@ void EV_SlidingDoor(line_t *line, mobj_t *thing)
 //
 void T_ForceField (forcefield_t *field)
 {
-    switch(field->status)
+    switch (field->status)
     {
       // open it and let it close again after some time
       case ff_open:

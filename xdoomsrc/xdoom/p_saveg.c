@@ -318,6 +318,7 @@ enum
     tc_door,
     tc_floor,
     tc_plat,
+    tc_elevator,
     tc_flash,
     tc_strobe,
     tc_glow,
@@ -338,6 +339,7 @@ enum
 // T_StrobeFlash, (strobe_t: sector_t *),
 // T_Glow, (glow_t: sector_t *),
 // T_PlatRaise, (plat_t: sector_t *), - active list
+// T_MoveElevator, (plat_t: sector_t *), - active list
 // T_Flicker
 // T_ForceField
 // T_SlidingDoor
@@ -350,6 +352,7 @@ void P_ArchiveSpecials(void)
     vldoor_t		*door;
     floormove_t		*floor;
     plat_t		*plat;
+    elevator_t		*elev;
     lightflash_t	*flash;
     strobe_t		*strobe;
     glow_t		*glow;
@@ -421,6 +424,17 @@ plat:
 	    memcpy(plat, th, sizeof(*plat));
 	    save_p += sizeof(*plat);
 	    plat->sector = (sector_t *)(plat->sector - sectors);
+	    continue;
+	}
+
+	if (th->function.acp1 == (actionf_p1)T_MoveElevator)
+	{
+	    *save_p++ = tc_elevator;
+	    PADSAVEP();
+	    elev = (elevator_t *)save_p;
+	    memcpy(elev, th, sizeof(*elev));
+	    save_p += sizeof(*elev);
+	    elev->sector = (sector_t *)(elev->sector - sectors);
 	    continue;
 	}
 
@@ -517,6 +531,7 @@ void P_UnArchiveSpecials(void)
     vldoor_t		*door;
     floormove_t		*floor;
     plat_t		*plat;
+    elevator_t		*elev;
     lightflash_t	*flash;
     strobe_t		*strobe;
     glow_t		*glow;
@@ -586,6 +601,18 @@ void P_UnArchiveSpecials(void)
 
 	    P_AddThinker(&plat->thinker);
 	    P_AddActivePlat(plat);
+	    break;
+
+	  case tc_elevator:
+	    PADSAVEP();
+	    elev = Z_Malloc(sizeof(*elev), PU_LEVEL, (void *)0);
+	    memcpy(elev, save_p, sizeof(*elev));
+	    save_p += sizeof(*elev);
+	    elev->sector = &sectors[(int)elev->sector];
+	    elev->sector->floordata = elev;
+	    elev->sector->ceilingdata = elev;
+	    elev->thinker.function.acp1 = (actionf_p1)T_MoveElevator;
+	    P_AddThinker(&elev->thinker);
 	    break;
 
 	  case tc_flash:

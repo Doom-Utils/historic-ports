@@ -41,7 +41,7 @@ rcsid[] = "$Id:$";
 #include "doomstat.h"
 #include "r_sky.h"
 
-#if defined(LINUX) || defined(SOLARIS)
+#if defined(LINUX) || defined(SOLARIS) || defined(IRIX)
 #include  <alloca.h>
 #endif
 
@@ -123,7 +123,11 @@ typedef struct
     texpatch_t	patches[1];
 } texture_t;
 
+#ifdef IRIX
+#pragma pack (0)
+#else
 #pragma pack ()
+#endif
 
 int		firstflat;
 int		lastflat;
@@ -335,7 +339,7 @@ void R_GenerateComposite(int texnum)
     short	*collump = texturecolumnlump[texnum];
     unsigned	*colofs = texturecolumnofs[texnum];
     int		i = texture->patchcount;
-    byte	*marks = (byte *)alloca(texture->width * texture->height);
+    byte	*marks = (byte *) alloca(texture->width * texture->height);
     byte	*source;
 
     memset(marks, 0, texture->width * texture->height);
@@ -810,7 +814,7 @@ void R_InitFlats(void)
 
 //
 // R_InitSpriteLumps
-// Finds the width and hoffset of all sprites in the wad,
+// Finds the width and offset of all sprites in the wad,
 //  so the sprite does not need to be cached completely
 //  just for having the header info ready during rendering.
 //

@@ -51,21 +51,25 @@ Features of the game engine:
 
 	* Portable, is known to work on:
 		Linux x86 1.2.x, 2.0.x, 2.1.x, 2.2.x
+		Linux PPC
 		Linux Dec Alpha 2.2.x (*)
 		FreeBSD 3.x
 		OpenServer 5.0.x
 		Unixware 2.1.x
 		Unixware 7
 		Solaris SPARC 2.5.1, 2.6 & 2.7
+		Solaris x86
 		AIX 4.2
+		Irix 6.5
+
+	  (*) Not fully tested, might not work properly, see release notes
+	      for details. Any feedback welcome.
+
 	  Can be ported to any UNIX with X11 without too much efford.
 	  Depending on the OS full screen direct frame buffer usage is
 	  supported too, as an example under Linux x86 it runs on [S]VGA
 	  and Voodoo 3DFX cards, on FreeBSD and SCO OS's it runs on [S]VGA
 	  cards on the system console.
-
-	  (*) Not fully tested, might not work properly, see release notes
-	      for details. Any feedback welcome.
 
 	* Works on various X visuals (auto detected):
 		8bpp Pseudo Color
@@ -116,7 +120,7 @@ Features of the game engine:
 	  make use of this, a tool to build the tables for inclusion
 	  into PWAD's is included in xwadtools.
 
-	* UAC communication gadget for extended interaction with the
+	* UAC communication gadget (PDA) for extended interaction with the
 	  environment. The included example PWAD's make use of the device.
 
 	* Supports new linedefs defined for Boom by TeamTNT, like scrolling
@@ -126,8 +130,8 @@ Features of the game engine:
 	  tagged local doors, but it is too much to mention it all here and
 	  I might keep adding features. So, example PWAD included to show
 	  some of the implemented features, the PWAD is compatible between
-	  XDoom and Boom. Also some Boom levels work OK under XDoom, levels
-	  known to fully work are listed inside in the documentation.
+	  XDoom and Boom. Also some Boom levels work OK under XDoom, some
+	  levels known to fully work are listed inside in the documentation.
 
 	* Displays the end text from IWAD's and PWAD's.
 
@@ -142,36 +146,19 @@ Features of the game engine:
 
 New with this release:
 
-	*****************************************************************
-	* To get out of the way of other Doom style game engines, the   *
-	* configuration files for XDoom and xdlaunch have been moved    *
-	* to $HOME/.xdoom. So before you play with this new release     *
-	* please create a directory $HOME/.xdoom and move the files     *
-	* $HOME/.doomrc and $HOME/.xdlaunchrc into this directory, else *
-	* you'll loose your current settings from previous releases!    *
-	* Also please move your saved game file (doomsav[0-5].dsg to	*
-	* $HOME/.xdoom, else the game engine and xdlaunch won't be able *
-	* to find them. Saved game files are not compatible between the *
-	* various game engines and this avoids loading an incompatible  *
-	* one, as long as you don't copy saved games from other engines *
-	* into $HOME/.xdoom, that is.                                   *
-	*****************************************************************
+	Lots more of the Boom extended linedefs implemented.
 
-	Reviewed sources again to make them better readable and weeded
-	out old stuff and misleading comments.
+	**************************************************************
+	* Saved game files are not compatible anymore because of the *
+	* new Boom Elevators! Game version number is increased to    *
+	* v1.14 to prevent loading of old incompatible files. Keep   *
+	* a copy of a previous release to finish saved games.        *
+	**************************************************************
 
-	Ported to Linux (SuSE 6.3 on Dec Alpha), not fully tested.
+	Linux PPC is working now under X, full screen console
+	graphics still needs work.
 
-	Implemented working lasers for XDoomPlus.
-
-	Implemented normal exit switch for XDoomPlus.
-
-	Bug fixes for ACS script support.
-
-	Moved .doomrc from $HOME to $HOME/.xdoom.
-
-	Also saved game files now will reside in $HOME/.xdoom and option
-	-cdrom is gone.
+	Ported to SGI Irix 6.5.
 
 	Documentation work.
 
@@ -183,19 +170,13 @@ Features of the GUI launcher:
 	* Supports all options essential for game players, including
 	  network games.
 	* Allows multiple selection of PWAD's.
-	* Saves the settings into a .rc file.
+	* Saves the current settings into a .rc file.
 
 New with this release:
 
-	Made the pipe non-blocking, gives faster response in the log widget.
+	Overworked the source, better maintenable and customizable,
+	no functional modifications.
 
-	Moved .xdlaunchrc from $HOME to $HOME/.xdoom.
-
-	Added the -dup option and use a default of 2 extra packets, better
-	for congested networks where routers might drop some UDP packets.
-
-	The IWAD on CD option is gone, saved games for XDoom always are
-	in $HOME/.xdoom now.
 
 
 Add-Ons:

@@ -8,10 +8,10 @@
 CC=  gcc
 
 #
-# OS dependent Options:
+# OS dependent options:
 #
 #	-DNORMALUNIX		well, I guess should be active for any UNIX
-#	-DBIGEND		set for big endian machines
+#	-DBIGEND		set this for big endian machines
 #
 #	-DCAPSLOCK		define this if the X server handles
 #				status of the Caps Lock key
@@ -65,46 +65,31 @@ CC=  gcc
 #				portable C source will be compiled. If defined
 #				you also need to select the appropriate
 #				assembler source module below.
-#	-DFREEBSD_MOUSE_HACK	FreeBSD console specific. Attempts to read
-#				mouse data via read() rather than ioctl(). This
-#				might work with PS/2 mice, that don't work
-#				otherwise. See i_video_vgl.c before enabling
-#				this! Very experimental.
 
-# Note: I've experienced problems with FreeBSD's 'pcm' audio driver, libvgl
-# and sndserver all together (there's no console switching in the vgl
-# module so far, and using sndserver freezed the game for some reason.. ugly)
-
-GAMEOPT=-DBUGFIXES -DPOLL_POINTER -DSNDSERV -DMUSSERV
+GAMEOPT=-DBUGFIXES -DSNDSERV -DMUSSERV -DPOLL_POINTER -DUSE_ASMMOD
 
 # You need to select one of the following possible CD audio modules:
 #CDMOD=cd_stub.o		# empty module, doesn't do anything
 #CDMOD=cd_dummy.o		# dummy module to test the CD support
-#CDMOD=cd_cda.o			# uses Ti Kan's CD audio player 'cda'
-CDMOD=cd_ioctl_fbsd.o		# use FreeBSD ioctl() code
+CDMOD=cd_cda.o			# uses Ti Kan's CD audio player 'cda'
 
 # The assembler source modules implemented, use non if portable C
 # sources should be compiled
-#ASMMOD=			# use this to compile C
+#ASMMOD=				# use this to compile C
 ASMMOD=$(O)/asmmod-x86.o	# use this on Intel x86
 
-# use this for GNU C 2.7.2
-OPTFLAGS=-O3 -ffast-math -fomit-frame-pointer -m486 -b elf \
-	-DUSE_INLINE -DUSE_ASMMOD
+# use this for GNU C or EGCS
+OPTFLAGS=-O3 -fomit-frame-pointer -funroll-loops
 
-# egcs:
-#OPTFLAGS=-O3 -ffast-math -fomit-frame-pointer -mpentium -b elf \
-#	-DUSE_INLINE -DUSE_ASMMOD
+# use this for Sun's WorkShop Compiler (not tested on x86)
+#OPTFLAGS=-xO4 -xCC -misalign2 -I/usr/openwin/include
 
-XINCLUDE=/usr/X11R6/include
+CFLAGS=$(OPTFLAGS) -Wall -DNORMALUNIX -DSOLARIS $(GAMEOPT) -I/opt/oss/include
 
-CFLAGS=$(OPTFLAGS) -Wall -DNORMALUNIX -DFREEBSD -I$(XINCLUDE) \
-	$(GAMEOPT)
-
-XLIBS=-L/usr/X11R6/lib
+#XLIBS=-L/usr/openwin/lib
 
 # subdirectory for objects
-O=freebsd
+O=sol-x86
 
 # not too sophisticated dependency
 OBJS=				\
@@ -118,7 +103,7 @@ OBJS=				\
 		$(O)/i_net.o		\
 		$(O)/tables.o		\
 		$(O)/f_finale.o		\
-		$(O)/f_wipe.o		\
+		$(O)/f_wipe.o 		\
 		$(O)/d_main.o		\
 		$(O)/d_net.o		\
 		$(O)/d_items.o		\
@@ -126,7 +111,7 @@ OBJS=				\
 		$(O)/m_menu.o		\
 		$(O)/m_comdev.o		\
 		$(O)/m_misc.o		\
-		$(O)/m_argv.o		\
+		$(O)/m_argv.o  		\
 		$(O)/m_bbox.o		\
 		$(O)/m_fixed.o		\
 		$(O)/m_swap.o		\
@@ -176,18 +161,13 @@ OBJS=				\
 		$(O)/sounds.o		\
 		$(O)/searchp.o		\
 		$(O)/endtxt.o		\
-		$(O)/usleep.o		\
 		$(ASMMOD)
 
 $(O)/xdoom:	$(OBJS) $(O)/i_video_xshm.o
 	$(CC) $(CFLAGS) $(XLIBS) $(OBJS) $(O)/i_video_xshm.o \
-	-o $(O)/xdoom -lXext -lX11 -lm
+	-o $(O)/xdoom -lXext -lX11 -lm -lnsl -lsocket
 
-$(O)/sxdoom:	$(OBJS) $(O)/i_video_vgl.o
-	$(CC) $(CFLAGS) $(OBJS) $(O)/i_video_vgl.o \
-	-o $(O)/sxdoom -lvgl -lm
-
-all:	$(O)/xdoom $(O)/sxdoom
+all:	 $(O)/xdoom
 
 clean:
 	rm -f $(O)/*
@@ -196,7 +176,7 @@ $(O)/%.o:	%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(O)/%.o:	%.s
-	/usr/bin/as -o $@ $<
+	as $< -o $@
 
 #############################################################
 #

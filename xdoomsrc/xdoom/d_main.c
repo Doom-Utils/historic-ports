@@ -796,6 +796,7 @@ void D_DoomMain(void)
 {
     int		p;
     char	file[256];
+    char	buf[512];
 
     FindResponseFile();
 
@@ -906,6 +907,9 @@ void D_DoomMain(void)
     printf("\tYou are welcome to redistribute it under certain conditions.\n");
     printf("\tIt comes with ABSOLUTELY NO WARRANTY. See file COPYING for"
            " details.\n\n");
+
+    sprintf(&buf[0], "%s/.xdoom", home);
+    mkdir(&buf[0], 0755);
 
     if (devparm)
 	printf(D_DEVSTR);
