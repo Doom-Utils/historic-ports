@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_soundsrv.c,v 1.16 1999/10/12 13:01:11 cphipps Exp $
+ * $Id: l_soundsrv.c,v 1.17 2000/03/19 20:14:32 cph Exp $
  *
  *  Sound server for LxDoom, based on the sound server released with the 
  *   original linuxdoom sources.
@@ -32,7 +32,7 @@
  */
 
 static const char
-rcsid[] = "$Id: l_soundsrv.c,v 1.16 1999/10/12 13:01:11 cphipps Exp $";
+rcsid[] = "$Id: l_soundsrv.c,v 1.17 2000/03/19 20:14:32 cph Exp $";
 
 #include <stdio.h>
 #include <stddef.h>
@@ -51,86 +51,19 @@ rcsid[] = "$Id: l_soundsrv.c,v 1.16 1999/10/12 13:01:11 cphipps Exp $";
 #include "sounds.h"
 #include "l_soundgen.h"
 #include "l_soundsrv.h"
-
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/stat.h>
+#include "i_system.h"
 
 #define USE_SELECT
 
-#ifndef USE_SELECT
-#include <sys/ioctl.h>
-#endif
-
 static int snd_verbose;
-
-int  I_GetTime_RealTime (void)
-{
-  static struct timeval tv;
-  static struct timezone tz;
-  static int basetime = 0;
-
-  gettimeofday(&tv, &tz);
-
-  if (!basetime) basetime = tv.tv_sec;
-
-  return (tv.tv_sec * 35 + (tv.tv_usec * 35) / 1000000);
-}
 
 static void I_GetData(void) 
 {
-  switch (pass_by) {
-  case SP_IPC:
-    {
-      struct shmid_ds shminfo;
-      int             shmid = shmget(snd_ipc_key, sizeof(snd_ipc_t), 0);
-      snd_ipc_t*      buf;
-      int i;
-      int count = 10000; // In milliseconds
-      
-      if (shmid == -1) {
-	fprintf(stderr, "Failed to get shared memory\n");
-	exit(-1);
-      }
-      
-      buf = (snd_ipc_t*)shmat(shmid, NULL, 0);
-
-      if (snd_verbose)
-	fprintf(stderr, "Attached shared memory\n");
-      
-      for (i=1 ; i<NUMSFX ; i++) { 
-	// Alias? Example is the chaingun sound linked to pistol.
-	if (!S_sfx[i].link) {
-	  // Load data via IPC.
-	  buf->req_num = i;
-	  while (buf->srv_num != i) {
-	    usleep(1000);
-	    if (!--count) goto cleanup;
-	  }
-	  count = 1000; // Only 1 second timeout once connected
-	  lengths[i] = buf->datalen;
-	  S_sfx[i].data = (unsigned char*)I_PadSfx(buf->data, &lengths[i]);
-	} else {
-	  // Previously loaded already?
-	  S_sfx[i].data = S_sfx[i].link->data;
-	  lengths[i] = lengths[(S_sfx[i].link - S_sfx)/sizeof(sfxinfo_t)];
-	}
-      }
-    cleanup:
-      buf->req_num = NUMSFX; // Signal done;
-      fprintf(stderr, "Detaching shared memory\n");
-      shmdt((char*)buf);
-      shmctl(shmid, IPC_RMID, &shminfo);
-      if (!count) {
-	fprintf(stderr, "I_GetData: Timeout on IPC\n");
-	exit(-1);
-      }
-      break;
-    }
-  case SP_PIPE:
-    {
-      // This has been generalised to accept sound data not matching that expected.
-      // The only restriction is that there are fewer than NUMSFX sounds.
+    { 
+  /* This has been generalised to accept sound data not matching that 
+   * expected.
+   * The only restriction is that there are fewer than NUMSFX sounds.
+   */
       int i;
       unsigned long numsounds;
       
@@ -173,23 +106,15 @@ static void I_GetData(void)
 	  free(crapbuf);
 	}
       }
-      break;
     }
-  }
 }
 
-#ifdef USE_SELECT
 static fd_set		fdset;
 static fd_set		scratchset;
-#endif
 
 int main(int argc, const char** argv)
 {
-#ifndef USE_SELECT
-    int         trueval = 1;
-#else
     struct timeval	zerowait = { 0, 0 };
-#endif
     int		done = 0;
     int		rc, nrc;
     int		sndnum;
@@ -210,36 +135,18 @@ int main(int argc, const char** argv)
       if (!stricmp(argv[3], "-devparm"))
 	snd_verbose = 1;
 
-    pass_by = SP_PIPE; // Use pipe to pass sound data to sound server
-    if (argc >= 3)
-      if (!stricmp(argv[2], IPC_OPT_STR)) {
-	pass_by = SP_IPC; // Unless optioned
-	if (snd_verbose)
-	  fprintf(stderr, "Using ipc\n");
-      }
-    if (argc >= 4)
-      if (!stricmp(argv[3], IPC_OPT_STR)) {
-	pass_by = SP_IPC; // Unless optioned
-	if (snd_verbose)
-	  fprintf(stderr, "Using ipc\n");
-      }
-
     I_InitSoundGen((argv[1] != NULL) ? argv[1] : "/dev/dsp");
 
     usleep(200000);
     // get sound data
     I_GetData();
 
-    //    I_InitMusic();
-
     if (snd_verbose)
       fprintf(stderr, "ready\n");
     
-#ifdef USE_SELECT
     // parse commands and play sounds until done
     FD_ZERO(&fdset);
     FD_SET(STDIN_FILENO, &fdset);
-#endif
 
     while (!done) 
       {
@@ -251,12 +158,10 @@ int main(int argc, const char** argv)
 	lasttime = thistime;
 
 	do {
-#ifdef USE_SELECT
 	  scratchset = fdset;
 	  rc = select(FD_SETSIZE, &scratchset, 0, 0, &zerowait);
 	  
 	  if (rc > 0)
-#endif 
 	  {
 	    //	fprintf(stderr, "select is true\n");
 	    // got a command
@@ -264,11 +169,9 @@ int main(int argc, const char** argv)
 	    nrc = read(STDIN_FILENO, commandbuf, 1);
 
 	    if (nrc <= 0) {
-#ifdef USE_SELECT
 	      done = 1;
 	      if (snd_verbose) 
 		fprintf(stderr, "select true but no data: exiting\n");
-#endif
 	      rc = 0;
 	    }
 	    else {
@@ -345,11 +248,9 @@ int main(int argc, const char** argv)
 		if (!(badcmd>>=1)) putc('\n',stderr);
 	    }
 	  }
-#ifdef USE_SELECT
 	  else if (rc < 0) {
 	    exit(0);
 	  }
-#endif
 	} while (rc > 0);
 	
 	
@@ -364,6 +265,9 @@ int main(int argc, const char** argv)
 
 /*
  * $Log: l_soundsrv.c,v $
+ * Revision 1.17  2000/03/19 20:14:32  cph
+ * Sound code cleaning: DosDoom, IPC and such unused code removed
+ *
  * Revision 1.16  1999/10/12 13:01:11  cphipps
  * Changed header to GPL
  *

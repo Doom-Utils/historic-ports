@@ -1,7 +1,7 @@
 #
 # automake Makefile.am for the LxDoom source directory
 #
-# $Id: Makefile.am,v 1.6 1999/12/13 17:24:08 cphipps Exp $
+# $Id: Makefile.am,v 1.7.2.1 2000/03/28 17:13:43 cph Exp $
 #
 # Process this file with automake to produce Makefile.in
 #
@@ -9,7 +9,6 @@
 gamesdir=$(prefix)/games
 EXTRA_PROGRAMS = lsdoom lxdoom sndserv
 games_PROGRAMS = @BUILD_LSDOOM@ @BUILD_LXDOOM@ @BUILD_SNDSERV@ lxdoom-game-server
-EXTRA_DIST = makefile.pre-ac
 
 if I386_ASM
 ASMS = drawspan.s drawcol.s
@@ -17,7 +16,8 @@ else
 ASMS = 
 endif
 
-sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c l_soundsrv.h l_soundgen.h
+sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c \
+	l_system.c i_system.h l_soundsrv.h l_soundgen.h
 sndserv_LDADD = 
 
 lxdoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
@@ -65,6 +65,12 @@ EXTRA_lxdoom_SOURCES  = $(ASMS)
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.7.2.1  2000/03/28 17:13:43  cph
+# Remove old makefile
+#
+# Revision 1.7  2000/03/19 20:14:32  cph
+# Sound code cleaning: DosDoom, IPC and such unused code removed
+#
 # Revision 1.6  1999/12/13 17:24:08  cphipps
 # Add i_main.h to lxdoom/lsdoom
 #

@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: d_main.c,v 1.45 1999/12/18 15:17:22 cphipps Exp $
+ * $Id: d_main.c,v 1.46 2000/03/27 10:33:49 cph Exp $
  *
  *  LxDoom, a Doom port for Linux/Unix
  *  based on BOOM, a modified and improved DOOM engine
@@ -33,7 +33,7 @@
  *-----------------------------------------------------------------------------
  */
 
-static const char rcsid[] = "$Id: d_main.c,v 1.45 1999/12/18 15:17:22 cphipps Exp $";
+static const char rcsid[] = "$Id: d_main.c,v 1.46 2000/03/27 10:33:49 cph Exp $";
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -146,6 +146,9 @@ int eventhead, eventtail;
 //
 void D_PostEvent(event_t *ev)
 {
+  /* cph - suppress all input events at game start
+   * FIXME: This is a lousy kludge */
+  if (gametic < 3) return; 
   events[eventhead++] = *ev;
   eventhead &= MAXEVENTS-1;
 }
@@ -1734,6 +1737,9 @@ void GetFirstMap(int *ep, int *map)
 //----------------------------------------------------------------------------
 //
 // $Log: d_main.c,v $
+// Revision 1.46  2000/03/27 10:33:49  cph
+// Kludge for game start movement
+//
 // Revision 1.45  1999/12/18 15:17:22  cphipps
 // Completely cleaned up the WAD searching code
 // New function FindWADFile is used for IWAD and autoloading searches

@@ -1,6 +1,11 @@
 This file is a log of all the changes to LxDoom since v1.0.0.
 Note that LxDoom v0.* was a seperate line of development.
 
+* Changes v1.4.3 to v1.4.4
+- Install documentation in the right directory
+- Sound code cleanup
+- Fix problem with network games often desyncing immediately at startup
+
 * Changes v1.4.2 to v1.4.3
 - Improved mouse resolution, thanks to a patch from Barry Mead
 - Various robustness fixed to the networking code

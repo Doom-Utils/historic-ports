@@ -1,4 +1,4 @@
-LxDoom v1.4.3
+LxDoom v1.4.4
 =============
 
 Doom is a 3d shoot'em'up game, written by id Software, first released in
@@ -28,7 +28,7 @@ If you have used older versions of LxDoom, you can remove the old doom wad
 references from /usr/local/games/wads. Also, save games and config files are
 now stored in ~/.lxdoom/
 
-You will also need to recalibrat your mouse sensitivity, since LxDoom v1.4.3 
+You will also need to recalibrate your mouse sensitivity, since LxDoom v1.4.3 
 changes te sensitivity scale in order to give more fine control.
 
 Requirements
@@ -131,7 +131,7 @@ resolution for the current time you run lxdoom only, you can use the -geometry
 parameter, e.g. lxdoom -geom 320x200. 
 
 LxDoom can display to most Xwindows displays. It is fastest on 256 colour
-PseudoColor dislpays (since this is what Doom was originally written for).
+PseudoColor displays (since this is what Doom was originally written for).
 To change the colour depth of your XFree86 setup, edit your 
 /etc/XF86Config file, and replace any existing DefaultColorDepth lines with:
 

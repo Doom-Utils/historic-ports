@@ -13,7 +13,7 @@
 #
 # automake Makefile.am for the LxDoom source directory
 #
-# $Id: Makefile.am,v 1.6 1999/12/13 17:24:08 cphipps Exp $
+# $Id: Makefile.am,v 1.7.2.1 2000/03/28 17:13:43 cph Exp $
 #
 # Process this file with automake to produce Makefile.in
 #
@@ -85,11 +85,11 @@ VERSION = @VERSION@
 gamesdir = $(prefix)/games
 EXTRA_PROGRAMS = lsdoom lxdoom sndserv
 games_PROGRAMS = @BUILD_LSDOOM@ @BUILD_LXDOOM@ @BUILD_SNDSERV@ lxdoom-game-server
-EXTRA_DIST = makefile.pre-ac
 @I386_ASM_TRUE@ASMS = drawspan.s drawcol.s
 @I386_ASM_FALSE@ASMS = 
 
-sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c l_soundsrv.h l_soundgen.h
+sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c 	l_system.c i_system.h l_soundsrv.h l_soundgen.h
+
 sndserv_LDADD = 
 
 lxdoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
@@ -178,7 +178,8 @@ lsdoom_LDFLAGS =
 @I386_ASM_FALSE@z_zone.o p_maputl.o r_plane.o
 lxdoom_DEPENDENCIES = 
 lxdoom_LDFLAGS = 
-sndserv_OBJECTS =  version.o l_soundsrv.o sounds.o l_soundgen.o
+sndserv_OBJECTS =  version.o l_soundsrv.o sounds.o l_soundgen.o \
+l_system.o
 sndserv_DEPENDENCIES = 
 sndserv_LDFLAGS = 
 lxdoom_game_server_OBJECTS =  d_server.o l_udp.o l_system.o
@@ -386,6 +387,12 @@ maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.7.2.1  2000/03/28 17:13:43  cph
+# Remove old makefile
+#
+# Revision 1.7  2000/03/19 20:14:32  cph
+# Sound code cleaning: DosDoom, IPC and such unused code removed
+#
 # Revision 1.6  1999/12/13 17:24:08  cphipps
 # Add i_main.h to lxdoom/lsdoom
 #

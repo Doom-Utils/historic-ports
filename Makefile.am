@@ -1,10 +1,10 @@
 #
 # Top level automake Makefile.am for LxDoom
 #
-# $Id: Makefile.am,v 1.4 2000/03/16 20:14:08 cph Exp $
+# $Id: Makefile.am,v 1.5 2000/03/19 16:28:37 cph Exp $
 #
 
-docdir=$(prefix)/share/doc
+docdir=$(prefix)/share/doc/@PACKAGE@
 SUBDIRS = doc data src
 EXTRA_DIST = ChangeLog lxdoom.spec.in
 doc_DATA = ChangeLog README COPYING AUTHORS
@@ -15,6 +15,9 @@ rpm:	lxdoom.spec dist
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.5  2000/03/19 16:28:37  cph
+# Fix documentation directory
+#
 # Revision 1.4  2000/03/16 20:14:08  cph
 # Add docs to make install, add RPM building
 #

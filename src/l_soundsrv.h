@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_soundsrv.h,v 1.4 1999/10/12 13:00:57 cphipps Exp $
+ * $Id: l_soundsrv.h,v 1.5 2000/03/19 20:14:32 cph Exp $
  *
  *  Sound server for LxDoom, based on the sound server released with the 
  *   original linuxdoom sources.
@@ -27,34 +27,11 @@
  *  Common header for soundserver data passing
  *-----------------------------------------------------------------------------*/
 
-/* Define message ID's for IPC between soundserver and doom */
-typedef enum {
-  SNDSERV_SFX = 1,
-  SNDSERV_MUSIC = 2,
-} sound_ipc_id_e;
-
-/* IPC key to use for IPC between sndserver and main program */
-
-static const int snd_ipc_key = ('D' << 24) | ('S' << 16) | ('N' << 8) | 'D';
-
-#define SND_IPC_BUF_SIZE (1<<16)
-typedef struct {
-  int srv_num;
-  int req_num;
-  int datalen;
-  unsigned char* data[SND_IPC_BUF_SIZE];
-} snd_ipc_t;
-
 typedef struct {
   unsigned int sfxid;
   signed int link;
   unsigned int datalen;
 } snd_pass_t;
-
-/* I know, I know, vars in header files... */
-static enum { SP_IPC, SP_PIPE } pass_by;
-
-#define IPC_OPT_STR "--ipc"
 
 /* I_GetLinkNum - returns linked sound number */
 static inline signed int I_GetLinkNum(unsigned int i)
@@ -65,6 +42,9 @@ static inline signed int I_GetLinkNum(unsigned int i)
 
 /*
  * $Log: l_soundsrv.h,v $
+ * Revision 1.5  2000/03/19 20:14:32  cph
+ * Sound code cleaning: DosDoom, IPC and such unused code removed
+ *
  * Revision 1.4  1999/10/12 13:00:57  cphipps
  * Changed header to GPL, converted C++ comments to C
  *

@@ -22,12 +22,17 @@ Basic Installation
      instructions. I have tested BSD pmake and it works fine.
 
   4. Type `make install-strip' as root, to install the programs, data files 
-     and man pages for LxDoom.
+     and man pages for LxDoom. If you don't have root access on the machine, 
+     you should ask the syadmin to do this and the next step for you. 
 
   5. Copy your Doom, Doom 2, Ultimate Doom or Final Doom IWAD (doom.wad or
      doom2.wad) to /usr/local/share/games/doom/ (or symlink it from there). 
      Or if you don't have any of those, use the shareware IWAD, which you can 
      get from http://www.doomworld.com/ or http://www.idsoftware.com/.
+
+     If you have a system with many users, you should read the license for 
+     your version of Doom, and make sure only those users allowed to use it 
+     can access the IWAD file.
 
   6. You can remove the program binaries and object files from the
      source directory by typing `make clean'.  To also remove the
@@ -41,7 +46,7 @@ Basic Installation
   7. LxDoom is now ready for use. If /usr/local/games is in your path,
      you can just run lxdoom or lsdoom, otherwise give the full path.
      See the README file for information about the choice between lxdoom
-     and lxdoom, getting higher resolutions, etc.
+     and lsdoom, getting higher resolutions, etc.
 
 Installation Details
 ====================

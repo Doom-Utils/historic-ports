@@ -2005,3 +2005,24 @@ the movement clamping unchanged.
 Also sorted out the configure scripts way of deciding compiler optimisations. 
 Now it will add options for your system only if they are tested to work, 
 and they can be disabled by a configure option (which is used by the RPM).
+
+22/03/2000
+
+Whoops, the documentation was being installed in the wrong directory. Just
+needed an @PACKAGE@ in the doc path. Fixed.
+
+23/03/2000
+
+Did some cleaning up of the sound code. This is meant to clear the ground
+for work later, maybe converting it to use esd.
+
+25/03/2000
+
+Found a problem with lxdoom, the new mouse code, and consistency failures,
+when trying to play a netgame. Right at game start the game would desync, as
+if one player was trying to move before the game started.
+
+Implemented a kludge which prevents movement in the first few tics. It's
+definitely a kludge though.
+
+

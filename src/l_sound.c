@@ -1,7 +1,7 @@
 /* Emacs style mode select   -*- C++ -*- 
  *-----------------------------------------------------------------------------
  *
- * $Id: l_sound.c,v 1.38 1999/12/18 22:23:35 cphipps Exp $
+ * $Id: l_sound.c,v 1.39 2000/03/19 20:14:32 cph Exp $
  *
  *  Sound interface from the original linuxdoom, extensively modified
  *  for LxDoom, a Doom port for Linux/Unix
@@ -31,7 +31,7 @@
  */
 
 static const char
-rcsid[] = "$Id: l_sound.c,v 1.38 1999/12/18 22:23:35 cphipps Exp $";
+rcsid[] = "$Id: l_sound.c,v 1.39 2000/03/19 20:14:32 cph Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,9 +75,6 @@ int detect_voices = 0; // God knows
 
 // Separate sound server process.
 static FILE*	sndserver=0;
-
-#include <sys/ipc.h>
-#include <sys/shm.h>
 
 //
 // MUSIC API.
@@ -290,7 +287,7 @@ int I_GetSfxLumpNum(sfxinfo_t* sfx)
 
   if ((lump = W_CheckNumForName(namebuf)) == -1) {
     // Clumsy hack - IPC does not support missing sounds
-    return ((pass_by == SP_IPC) ? W_GetNumForName("dspistol") : -1);
+    return (-1);
   } else
     return lump;
 }
@@ -350,21 +347,13 @@ void I_ShutdownSound(void)
   return;
 }
 
-#ifdef DOSDOOM
-boolean
-#else
-void
-#endif
-I_InitSound(void)
+void I_InitSound(void)
 { 
-  pass_by = M_CheckParm("-nopipe") ? SP_IPC : SP_PIPE;
-
   // start sound process
   if ( !access(sndserver_filename, X_OK) ) {
     char buf[1024];
 
-    sprintf(buf, "%s %s %s %s", sndserver_filename, snd_device,
-	    (pass_by == SP_IPC) ? IPC_OPT_STR : "", 
+    snprintf(buf, sizeof(buf), "%s %s %s", sndserver_filename, snd_device,
 	    devparm ? "-devparm" : "");
     sndserver = popen(buf, "w");
     atexit(I_ShutdownSound);
@@ -372,65 +361,7 @@ I_InitSound(void)
     fprintf(stderr, "I_InitSound: Passing sound data to %s via ", 
 	    sndserver_filename);
 
-    if (pass_by == SP_IPC) {
-      int shmid =shmget(snd_ipc_key, sizeof(snd_ipc_t), 0777 | IPC_CREAT);
-      struct shmid_ds shminfo;
-      snd_ipc_t* buf;
-      int count = 10000;
-
-      fprintf(stderr, "IPC: ");
-
-      if (shmid == -1) {
-	fprintf(stderr, "shmget failed\n");
-
-	fclose(sndserver);
-	sndserver = 0;
-#ifndef DOSDOOM
-	return;
-#else
-	return false;
-#endif
-      }
-
-      buf = (snd_ipc_t*)shmat(shmid, NULL, 0);
-
-      buf->srv_num = buf->req_num = -1;
-
-      while (buf->req_num < NUMSFX) {
-	while (buf->req_num == buf->srv_num) {
-	  usleep(1000);
-	  if (!--count) goto cleanup;
-	}	
-	count = 1000;
-
-	if ((buf->req_num >= 0) && (buf->req_num < NUMSFX)) {
-	  int i       = buf->req_num;
-	  int lump    = I_GetSfxLumpNum(&S_sfx[i]);
-	  int sndlen  = W_LumpLength(lump);
-	  
-	  buf->datalen= sndlen;
-
-	  W_ReadLump(lump, buf->data);
-
-	  buf->srv_num = i;
-	}
-      }
-    cleanup:
-      if (shmdt((char*)buf))
-	fprintf(stderr, "shmdt failed");
-
-      if (shmctl(shmid, IPC_RMID, &shminfo))
-	fprintf(stderr, "shmctl failed\n");
-      
-      if (!count) {
-	fprintf(stderr, "timeout\n");
-
-	fclose(sndserver);
-	sndserver=0;
-      } else 
-	fprintf(stderr, "data sent OK\n");
-    } else {
-      // Write data into pipe.
+    { /* Write data into pipe. */
       snd_pass_t sfxpass;
       const void* s_data = NULL;
       int i;
@@ -499,6 +430,9 @@ void I_SetCDMusicVolume(int vol) { };
 #endif
 /*
  * $Log: l_sound.c,v $
+ * Revision 1.39  2000/03/19 20:14:32  cph
+ * Sound code cleaning: DosDoom, IPC and such unused code removed
+ *
  * Revision 1.38  1999/12/18 22:23:35  cphipps
  * Fix bug where music only played once after a resume from pause when
  *  mus_pause_opt was 0

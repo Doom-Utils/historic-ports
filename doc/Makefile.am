@@ -2,16 +2,19 @@
 #
 # Makefile.am for LxDoom doc directory
 #
-# $Id: Makefile.am,v 1.3 2000/03/16 20:14:08 cph Exp $
+# $Id: Makefile.am,v 1.3.4.1 2000/03/28 17:14:01 cph Exp $
 #
 
-docdir=$(prefix)/share/doc
+docdir=$(prefix)/share/doc/@PACKAGE@
 man_MANS=lxdoom.6 boom.cfg.5 lxdoom-game-server.6
 doc_DATA=old-source-docs.tar.gz boom.txt boomref.txt
 EXTRA_DIST=old-source-docs.tar.gz boom.txt boomref.txt lxdoom.6 boom.cfg.5 lxdoom-game-server.6
 
 #
 # $Log: Makefile.am,v $
+# Revision 1.3.4.1  2000/03/28 17:14:01  cph
+# Fix install dir for docs
+#
 # Revision 1.3  2000/03/16 20:14:08  cph
 # Add docs to make install, add RPM building
 #
