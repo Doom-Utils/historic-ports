@@ -189,8 +189,8 @@ LEVEL_START 0 1 0 XDoom
    S2 0 0 - - GRAYBIG
    -
   V36 V37 : 132 331 5000
-   S0 0  0 - - -
-   S0 0  0 - - -
+   S0 0 0 - - -
+   S0 0 0 - - -
  LINEDEFS_END
 
  THINGS_START
@@ -202,6 +202,7 @@ LEVEL_START 0 1 0 XDoom
   9 : 160 352 270 6
   2018 : 64 -64 0 7
   2035 : 80 304 0 7
+  69 : 224 384 180 4
  THINGS_END
 
 LEVEL_END

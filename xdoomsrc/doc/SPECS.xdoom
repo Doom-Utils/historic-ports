@@ -140,8 +140,20 @@ stuff is in one of the rooms.
 
 2.5 Boom compatible thing spawn flags
 
+XDoom has implemented two new thing flags, "not in DM" and "not in
+COOP", which in combination with the existing "not in Single" flag,
+usually called "Multiplayer", allow complete control over a level's
+inventory and monsters, in any game mode.
 
-2.6 Boom compatible linedefs implemented so far
+If you want a thing to be only available in Single play, you set both
+the "not in DM" and "not in COOP" flags. Other combinations are
+similar.
+
+"not in DM"   is bit 5, value 32, in the thing flags word.
+"not in COOP" is bit 6, value 64, in the thing flags word.
+
+
+2.6 Boom compatible linedefs implemented
 
 The documentation for this linedefs is based on the documentation
 included in the Boom 2.02 sources.
@@ -156,6 +168,40 @@ on fully closing. This is true for all doors with push triggers.
 #        Trig   Lock   Speed    Wait  Monst    Function
 175      S1     No     Slow     30s   No       Close, Wait, Then Open
 196      SR     No     Slow     30s   No       Close, Wait, Then Open
+
+There are two generalized door linedef types, Generalized Door, and
+Generalized Locked Door. The following tables show the possibilities
+for each parameter, any combination of parameters is allowed:
+
+Slow and Fast represent the same speeds as slow and fast regular doors. Normal
+is twice as fast as slow, Fast is twice normal, Turbo is twice Fast.
+
+Generalized Door Types
+---------------------------------------------------------------
+#        Trig   Lock   Speed    Wait  Monst    Function
+
+3C00H-   P1/PR  No     Slow     1s    Yes      Open, Wait, Then Close
+4000H    S1/SR         Normal   4s    No       Open and Stay Open
+         W1/WR         Fast     9s             Close and Stay Closed
+         G1/GR         Turbo    30s            Close, Wait, Then Open
+                        
+
+Generalized Locked Door Types
+---------------------------------------------------------------
+#        Trig   Lock   Speed    Wait  Monst    Function
+
+3800H-   P1/PR  Any    Slow     1s    No       Open, Wait, Then Close
+3C00H    S1/SR  Blue   Normal   4s             Open and Stay Open
+         W1/WR  Red    Fast     9s             Close and Stay Closed
+         G1/GR  Yell   Turbo    30s            Close, Wait, Then Open
+                BlueC
+                RedC
+                YellC
+                BlueS
+                RedS
+                YellS
+                All3
+                All6
 
 
 Floors
@@ -227,6 +273,31 @@ position until the obstacle is removed or dies, then continues.
 240   WR     --  ----  TxTy Num No  No    None
 241   S1     --  ----  TxTy Num No  No    None
 
+The following tables show the possibilities for generalized floor
+linedef type parameters. Any combination of parameters is allowed:
+
+Slow and Fast represent the same speeds as slow and fast regular
+floors. Normal is twice as fast as slow, Fast is twice normal, Turbo
+is twice Fast.
+
+Generalized Floor Types
+---------------------------------------------------------------------------
+#      Trig   Dir Spd   *Chg *Mdl Mon Crsh  Target
+
+6000H- P1/PR  Up  Slow   None Trg Yes Yes   Lowest Neighbor Floor
+7FFFH  S1/SR  Dn  Normal Tx   Num No  No    Next Neighbor Floor
+       W1/WR      Fast   Tx0                Lowest Neighbor Ceiling
+       G1/GR      Turbo  TxTy               Highest Neighbor Floor
+                                            Ceiling
+                                            24
+                                            32
+*Mon(ster) enabled must be No if            Shortest Lower Texture
+Chg field is not None
+
+Tx = Texture copied only           Trg = Trigger Model
+Tx0 = Texture copied and Type->0   Num = Numeric Model
+TxTy = Texture and Type copied
+
 
 Ceilings
 --------
@@ -290,7 +361,23 @@ obstacle is removed or dies, then continues.
 205   SR     Dn  Slow  None  --  No  No   Lowest Neighbor Ceiling
 206   SR     Dn  Slow  None  --  No  No   Highest Neighbor Floor
 
-* Monster enabled must be No if Chg field is not None
+Generalized Ceiling Types
+---------------------------------------------------------------------------
+#      Trig   Dir Spd   *Chg *Mdl Mon Crsh  Target
+
+4000H- P1/PR  Up  Slow   None Trg Yes Yes   Highest Neighbor Ceiling
+5FFFH  S1/SR  Dn  Normal Tx   Num No  No    Next Neighbor Ceiling
+       W1/WR      Fast   Tx0                Lowest Neighbor Ceiling
+       G1/GR      Turbo  TxTy               Highest Neighbor Floor
+                                            Floor
+                                            24
+                                            32
+*Mon(ster) enabled must be No if            Shortest Upper Texture
+Chg field is not None
+
+Tx = Texture copied only           Trg = Trigger Model
+Tx0 = Texture copied and Type->0   Num = Numeric Model
+TxTy = Texture and Type copied
 
 
 Crushing Ceilings
@@ -327,6 +414,15 @@ can be restarted, but not changed, with any crusher linedef.
 185   SR     Slow No  Yes    Start
 188   SR     ---- --  --     Stop
 
+Generalized Crusher Types
+---------------------------------------------------------------------------
+#      Trig   Spd    Mon  Silent
+
+2F80H- P1/PR  Slow   Yes  Yes
+2FFFH  S1/SR  Normal No   No
+       W1/WR  Fast        
+       G1/GR  Turbo       
+
 
 Stairs
 ------
@@ -362,6 +458,15 @@ crush.
 257   WR    Up  Fast  16   No     No
 258   SR    Up  Slow  8    No     No
 259   SR    Up  Fast  16   No     No
+
+Generalized Stairs Types
+---------------------------------------------------------------------------
+#      Trig   Dir Spd     Step  Ignore Mon
+
+3000H- P1/PR  Up  Slow    4     Yes    Yes
+33FFH  S1/SR  Dn  Normal  8     No     No 
+       W1/WR      Fast    16 
+       G1/GR      Turbo   24 
 
 
 Platforms
@@ -403,6 +508,15 @@ property other than the sector's type.
 182   SR     --  ---- ---- --  --  Stop
 211   SR     --  Inst None --  No  Ceiling (toggle)
 212   WR     --  Inst None --  No  Ceiling (toggle)
+
+Generalized Lift Types
+---------------------------------------------------------------------------
+#      Trig   Dly Spd    Mon  Target
+
+3400H- P1/PR  1s  Slow   Yes  Lowest Neighbor Floor
+37FFH  S1/SR  3s  Normal No   Next Lowest Neighbor Floor
+       W1/WR  5s  Fast        Lowest Neighbor Ceiling
+       G1/GR  10s Turbo       Lowest and Highest Floor (perpetual)
 
 
 Elevators
@@ -766,8 +880,636 @@ filters to be used in different parts of the same maps. If the first side's
 normal texture is not a valid translucency filter lump name, it must be a
 valid texture name, and will be displayed as such on this linedef.
 
+242	--   Set Tagged Lighting, Flats Heights to 1st Sidedef's Sector,
+             and set colormap based on sidedef textures.
 
-2.7 Various XDoom specific new linedefs
+This allows the tagged sector to have two levels -- an actual floor and 
+ceiling, and another floor or ceiling where more flats are rendered. Things
+will stand on the actual floor or hang from the actual ceiling, while this
+function provides another rendered floor and ceiling at the heights of the
+sector on the first sidedef of the linedef. Typical use is "deep water" that
+can be over the player's head.
+
+     ----------------------------------  < real sector's ceiling height
+    |         real ceiling             | < control sector's ceiling texture
+    |                                  |
+    |                                  | < control sector's lightlevel
+    |              A                   |
+    |                                  | < upper texture as colormap
+    |                                  |
+    |                                  | < control sector's floor texture
+     ----------------------------------  < control sector's ceiling height
+    |         fake ceiling             | < real sector's ceiling texture
+    |                                  |
+    |                                  | < real sector's lightlevel
+    |              B                   |
+    |                                  | < normal texture as colormap
+    |                                  |
+    |          fake floor              | < real sector's floor texture
+     ----------------------------------  < control sector's floor height
+    |                                  | < control sector's ceiling texture
+    |                                  |
+    |                                  | < control sector's lightlevel
+    |              C                   |
+    |                                  | < lower texture as colormap
+    |                                  |
+    |          real floor              | < control sector's floor texture
+     ----------------------------------  < real sector's floor height
+
+XDoom sectors controlled by a 242 linedef are partitioned into 3 spaces.
+The viewer's xyz coordinates uniquely determine which space they are in.
+
+If they are in space B (normal space), then the floor and ceiling textures
+and lightlevel from the real sector are used, and the colormap from the 242
+linedef's first sidedef's normal texture is used (COLORMAP is used if it's
+invalid or missing). The floor and ceiling are rendered at the control
+sector's heights.
+
+If they are in space C ("underwater"), then the floor and ceiling textures
+and lightlevel from the control sector are used, and the lower texture in
+the 242 linedef's first sidedef is used as the colormap.
+
+If they are in space A ("head over ceiling"), then the floor and ceiling
+textures and lightlevel from the control sector are used, and the upper
+texture in the 242 linedef's first sidedef is used as the colormap.
+
+If only two of these adjacent partitions in z-space are used, such as 
+underwater and normal space, one has complete control over floor textures,
+ceiling textures, light level, and colormaps, in each of the two partitions.
+The control sector determines the textures and lighting in the more "unusual"
+case (e.g. underwater).
+
+It's also possible for the fake floor to extend below the real floor, in
+which case an invisible platform / stair effect is created. In that case,
+the picture looks like this (barring any ceiling effects too):
+
+     ----------------------------------  < real sector's ceiling texture
+    |   real ceiling = fake ceiling    |
+    |                                  |
+    |                                  |
+    |              B                   | < real sector's lightlevel
+    |                                  | < normal texture's colormap
+    |                                  |
+    |          real floor              |
+     ----------------------------------  < invisible, no texture drawn
+    |                                  |
+    |                                  |
+    |                                  | < real sector's lightlevel
+    |              C                   | < normal texture's colormap
+    |                                  |
+    |                                  |
+    |          fake floor              | < real sector's floor texture
+     ----------------------------------  < fake sector's floor height
+
+In this case, since the viewer is always at or above the fake floor, no
+colormap/lighting/texture changes occur -- the fake floor just gets drawn
+at the control sector's height, but at the real sector's lighting and
+texture, while objects stand on the higher height of the real floor.
+
+It's the viewer's position relative to the fake floor and/or fake ceiling,
+which determines whether the control sector's lighting and textures should
+be used, and which colormap should be used. If the viewer is always between
+the fake floor and fake ceiling, then no colormap, lighting, or texture
+changes occur, and the view just sees the real sector's textures and light
+level drawn at possibly different heights.
+
+If the viewer is below the fake floor height set by the control sector, or is
+above the fake ceiling height set by the control sector, then the corresponding
+colormap is used (lower or upper texture name), and the textures and lighting
+are taken from the control sector rather than the real sector. They are still
+stacked vertically in standard order -- the control sector's ceiling is always
+drawn above the viewer, and the control sector's floor is always drawn below
+the viewer.
+
+The kaleidescope effect only occurs when F_SKY1 is used as the control sector's
+floor or ceiling. If F_SKY1 is used as the control sector's ceiling texture,
+then under water, only the control sector's floor appears, but it "envelops"
+the viewer. Similarly, if F_SKY1 is used as the control sector's floor texture,
+then when the player's head is over a fake ceiling, the control sector's
+ceiling is used throughout.
+
+F_SKY1 causes HOM when used as a fake ceiling between the viewer and normal
+space. Since there is no other good use for it, this kaleidescope is an
+option turned on by F_SKY1. Note that this does not preclude the use of sky
+REAL ceilings over deep water -- this is the control sector's ceiling, the
+one displayed when the viewer is underwater, not the real one.
+
+A colormap has the same size and format as Doom's COLORMAP. Extra colormaps
+may defined in XDoom by adding them between C_START and C_END markers in wads.
+Colormaps between C_START and C_END are automatically merged by XDoom with any
+previously defined colormaps.
+
+WATERMAP is a colormap predefined by XDoom which can be used to provide a
+blue-green tint while the player is under water. WATERMAP can be modified by
+pwads.
+
+Ceiling bleeding may occur if required upper textures are not used.
+
+
+223	--   Length Sets Friction in tagged Sector, Sludge < 100, Ice > 100
+
+The length of the linedef with type 223 controls the amount of friction
+experienced by the player in the tagged sector, when in contact with the
+floor. Lengths less than 100 are sticker than normal, lengths greater than
+100 are slipperier than normal. The effect is only present in the tagged
+sector when its friction enable bit (bit 8) in the sector type is set.
+This allows the flat to be changed in conjunction with turning the effect
+on or off thru texture/type changes.
+
+
+Constant pushers
+----------------
+Two types of constant pushers are available, wind and current. Depending
+on whether you are above, on, or below (special water sectors) the ground
+level, the amount of force varies.
+
+The length of the linedef defines the 'full' magnitude of the force, and
+the linedef's angle defines the direction.
+
+     line type         above  on   under
+     ---------         -----  --   -----
+     wind       224    full  half  none
+     current    225    none  full  full
+
+The linedef should be tagged to the sector where you want the effect. The
+special type of the sector should have bit 9 set (0x200). If this bit
+is turned off, the effect goes away. For example, a fan creating a wind
+could be turned off, and the wind dies, by changing the sector type and
+clearing that bit.
+
+Constant pushers can be combined with scrolling effects and point
+pushers.
+
+224	--   Length/Direction Sets Wind Force in tagged Sectors
+
+
+225	--   Length/Direction Sets Current Force in tagged Sectors
+
+Point pushers
+-------------
+Two types of point pushers are available, push and pull.
+
+The previous implementation of these was SECTOR-SPECIFIC. The new
+implementation ignores sector boundaries and provides the effect in a
+circular area whose center is defined by a Thing of type 5001 (push)
+or 5002 (pull). You now also don't have to set any option flags on these
+Things. A new linedef type of 226 is used to control the effect, and this
+line should be tagged to the sector with the 5001/5002 Thing.
+
+The length of the linedef defines the 'full' magnitude of the force, and
+the force is inversely proportional to distance from the point source. If
+the length of the controlling linedef is L, then the force is reduced to
+zero at a distance of 2L.
+
+The angle of the controlling linedef is not used.
+
+The sector where the 5001/5002 Things reside must have bit 9 set (0x200)
+in its type. If this is turned off, the effect goes away.
+
+Point pushers can be combined with scrolling effects and constant
+pushers.
+
+226	--   Length Sets Point Source Wind/Current Force in Tagged Sectors
+
+
+#######################################################
+Detailed Generalized Linedef Specification
+#######################################################
+
+
+XDoom has added generalized linedef types that permit the parameters
+of linedef actions to be nearly independently chosen. 
+
+NOTE to wad authors:
+
+This requires a lot of type numbers, 20608 in all so far. Some
+editors may object to the presence of these new types thru assuming
+that a lookup table of size 256 suffices (or some other reason). For
+those that must continue to use such an editor, it may be necessary
+to stick to the old linedef types, which are still present.
+
+Command line tools are provided to calculate these linedef types,
+independent of which editor you happen to use. See TRIGCALC included
+in the xwadtools distribution.
+
+== Generalized Linedef Ranges =======================================
+
+There are types for Floors, Ceilings, Doors, Locked Doors, Lifts,
+Stairs, and Crushers. The allocation of linedef type field numbers is 
+according to the following table:
+
+Type            Start      Length   (Dec)
+-----------------------------------------------------------------
+Floors          0x6000     0x2000  (8192)
+Ceilings        0x4000     0x2000  (8192)
+Doors           0x3c00     0x0400  (1024)
+Locked Doors    0x3800     0x0400  (1024)
+Lifts           0x3400     0x0400  (1024)
+Stairs          0x3000     0x0400  (1024)
+Crushers        0x2F80     0x0080   (128)
+-----------------------------------------------------------------
+Totals:  0x2f80-0x7fff     0x5080  (20608)
+
+======================================================================
+
+The following sections define the placement and meaning of the bit
+fields within each linedef category. Fields in the description are
+listed in increasing numeric order.
+
+Some nomenclature:
+
+Target height designations:
+
+H means highest, L means lowest, N means next, F means floor, C means
+ceiling, n means neighbor, Cr means crush, sT means shortest
+lower texture. 
+
+Texture change designations:
+
+c0n  change texture, change sector type to 0, numeric model change
+c0t  change texture, change sector type to 0, trigger model change
+cTn  change texture only, numeric model change
+cTt  change texture only, trigger model change
+cSn  change texture and sector type to model's, numeric model change
+cSt  change texture and sector type to model's, trigger model change
+
+A trigger model change uses the sector on the first side of the
+trigger for its model. A numeric model change looks at the sectors
+adjoining the tagged sector at the target height, and chooses the one
+across the lowest numbered two sided line for its model. If no model
+exists, no change occurs. Note that in DOOM II v1.9, no model meant
+an illegal sector type was generated.
+
+
+------------------------------------------------------------------
+generalized floors (8192 types)
+
+field   description                       NBits   Mask     Shift
+------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3     0x0007      0
+speed   slow/normal/fast/turbo             2     0x0018      3
+model   trig/numeric -or- nomonst/monst    1     0x0020      5
+direct  down/up                            1     0x0040      6
+target  HnF/LnF/NnF/LnC/C/sT/24/32         3     0x0380      7
+change  nochg/zero/txtonly/type            2     0x0c00      10
+crush   no/yes                             1     0x1000      12
+
+TRIGCALC Nomenclature:
+
+W1[m] F->HnF DnS [c0t] [Cr]
+WR[m] F->LnF DnN [c0n] 
+S1[m] F->NnF DnF [cTt]  
+SR[m] F->LnC DnT [cTn]          
+G1[m] F->C   UpS [cSt]          
+GR[m] FbysT  UpN [cSn]          
+D1[m] Fby24  UpF                        
+DR[m] Fby32  UpT                        
+
+Notes:
+
+1) When change is nochg, model is 1 when monsters can activate trigger
+   otherwise monsters cannot activate it.
+2) The change fields mean the following:
+   nochg   - means no texture change or type change
+   zero    - means sector type is zeroed, texture copied from model
+   txtonly - means sector type unchanged, texture copied from model
+   type    - means sector type and floor texture are copied from model
+3) down/up specifies the "normal" direction for moving. If the
+   target specifies motion in the opposite direction, motion is instant.
+   Otherwise it occurs at speed specified by speed field.
+4) Speed is 1/2/4/8 units per tic
+5) If change is nonzero then model determines which sector is copied.
+   If model is 0 its the sector on the first side of the trigger.
+   if model is 1 (numeric) then the model sector is the sector at
+   destination height on the opposite side of the lowest numbered
+   two sided linedef around the tagged sector. If it doesn't exist
+   no change occurs.
+
+------------------------------------------------------------------
+generalized ceilings (8192 types)
+
+field   description                        NBits   Mask     Shift
+------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR             3     0x0007      0
+speed   slow/normal/fast/turbo              2     0x0018      3
+model   trig/numeric -or- nomonst/monst     1     0x0020      5
+direct  down/up                             1     0x0040      6
+target  HnC/LnC/NnC/HnF/F/sT/24/32          3     0x0380      7
+change  nochg/zero/txtonly/type             2     0x0c00      10
+crush   no/yes                              1     0x1000      12
+
+TRIGCALC Nomenclature:
+
+W1[m] C->HnC DnS [Cr] [c0t] 
+WR[m] C->LnC DnN      [c0n] 
+S1[m] C->NnC DnF      [cTt] 
+SR[m] C->HnF DnT      [cTn]     
+G1[m] C->F   UpS      [cSt]     
+GR[m] CbysT  UpN      [cSn]     
+D1[m] Cby24  UpF                        
+DR[m] Cby32  UpT                        
+
+Notes:
+
+1) When change is nochg, model is 1 when monsters can activate trigger
+   otherwise monsters cannot activate it.
+2) The change fields mean the following:
+   nochg   - means no texture change or type change
+   zero    - means sector type is zeroed, texture copied from model
+   txtonly - means sector type unchanged, texture copied from model
+   type    - means sector type and ceiling texture are copied from model
+3) down/up specifies the "normal" direction for moving. If the
+   target specifies motion in the opposite direction, motion is instant.
+   Otherwise it occurs at speed specified by speed field.
+4) Speed is 1/2/4/8 units per tic
+5) If change is nonzero then model determines which sector is copied.
+   If model is 0 its the sector on the first side of the trigger.
+   if model is 1 (numeric) then the model sector is the sector at
+   destination height on the opposite side of the lowest numbered
+   two sided linedef around the tagged sector. If it doesn't exist
+   no change occurs.
+
+------------------------------------------------------------------
+generalized doors (1024 types)
+
+field   description                       NBits    Mask     Shift
+------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
+speed   slow/normal/fast/turbo             2      0x0018      3
+kind    odc/o/cdo/c                        2      0x0060      5
+monster n/y                                1      0x0080      7
+delay   1/4/9/30 (secs)                    2      0x0300      8
+
+TRIGCALC Nomenclature:
+
+W1[m] OpnD{1|4|9|30}Cls S
+WR[m] Opn               N
+S1[m] ClsD{1|4|9|30}Opn F
+SR[m] Cls               T
+G1[m]
+GR[m]
+D1[m]
+DR[m]
+
+Notes:
+
+1) The odc (Open, Delay, Close) and cdo (Close, Delay, Open) kinds use
+   the delay field. The o (Open and Stay) and c (Close and Stay) kinds 
+   do not.
+2) The precise delay timings in gametics are: 35/150/300/1050
+3) Speed is 2/4/8/16 units per tic
+
+------------------------------------------------------------------
+generalized locked doors (1024 types)
+
+field   description                       NBits    Mask     Shift
+------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
+speed   slow/normal/fast/turbo             2      0x0018      3
+kind    odc/o                              1      0x0020      5
+lock    any/rc/bc/yc/rs/bs/ys/all          3      0x01c0      6
+sk=ck   n/y                                1      0x0200      9
+
+TRIGCALC Nomenclature:
+
+W1[m] OpnDCls           S Any
+WR[m] Opn               N R{C|S|K}
+S1[m]                   F B{C|S|K}
+SR[m]                   T Y{C|S|K}
+G1[m]                     All{3|6}
+GR[m]
+D1[m]
+DR[m]
+
+Notes:
+
+1) Delay for odc kind is constant at 150 gametics or about 4.333 secs
+2) The lock field allows any key to open a door, or a specific key to
+   open a door, or all keys to open a door.
+3) If the sk=ck field is 0 (n) skull and cards are different keys,
+   otherwise they are treated identically. Hence an "all" type door
+   requires 3 keys if sk=ck is 1, and 6 keys if sk=ck is 0.
+4) Speed is 2/4/8/16 units per tic
+
+-------------------------------------------------------------------
+generalized lifts (1024 types)
+
+field   description                       NBits    Mask     Shift
+-------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
+speed   slow/normal/fast/turbo             2      0x0018      3
+monster n/y                                1      0x0020      5
+delay   1/3/5/10 (secs)                    2      0x00c0      6
+target  LnF/NnF/LnC/LnF<->HnF(perp.)       2      0x0300      8
+
+TRIGCALC Nomenclature:
+
+W1[m] Lft  F->LnFD{1|3|5|10}    S
+WR[m]      F->NnFD{1|3|5|10}    N
+S1[m]      F->LnCD{1|3|5|10}    F
+SR[m]      HnF<->LnFD{1|3|5|10} T
+G1[m]
+GR[m]
+D1[m]
+DR[m]
+
+Notes:
+
+1) The precise delay timings in gametics are: 35/105/165/350
+2) Speed is 1/2/4/8 units per tic
+3) If the target specified is above starting floor height, or does not
+   exist the lift does not move when triggered. NnF is Next Lowest
+   Neighbor Floor.
+4) Starting a perpetual lift between lowest and highest neighboring floors
+   locks out all other floor actions on the sector, even if it is stopped
+   with the non-extended stop perpetual floor function.
+
+-------------------------------------------------------------------
+generalized stairs (1024 types)
+
+field   description                       NBits    Mask     Shift
+-------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
+speed   slow/normal/fast/turbo             2      0x0018      3
+monster n/y                                1      0x0020      5
+step    4/8/16/24                          2      0x00c0      6
+dir     dn/up                              1      0x0100      8
+igntxt  n/y                                1      0x0200      9
+
+TRIGCALC Nomenclature:
+
+W1[m] Stair Dn s4  S [Ign]
+WR[m]       Up s8  N
+S1[m]          s16 F
+SR[m]          s24 T
+G1[m]
+GR[m]
+D1[m]
+DR[m]
+
+Notes:
+
+1) Speed is .25/.5/2/4 units per tic
+2) If igntxt is 1, then the staircase will not stop building when
+   a step does not have the same texture as the previous.
+3) A retriggerable stairs builds up and down alternately on each
+   trigger.
+
+-------------------------------------------------------------------
+generalized crushers (128 types)
+
+field   description                       NBits    Mask     Shift
+-------------------------------------------------------------------
+
+trigger W1/WR/S1/SR/G1/GR/D1/DR            3      0x0007      0
+speed   slow/normal/fast/turbo             2      0x0018      3
+monster n/y                                1      0x0020      5
+silent  n/y                                1      0x0040      6
+
+TRIGCALC Nomenclature:
+
+W1[m] Crusher S [Silent]
+WR[m]         N
+S1[m]         F
+SR[m]         T
+G1[m]
+GR[m]
+D1[m]
+DR[m]
+
+Notes:
+
+1) Speed is 1/2/4/8 units per second, faster means slower damage as usual.
+2) If silent is 1, the crusher is totally quiet, no start/stop sounds
+                                           
+
+======================================================================
+                        Sector Types
+======================================================================
+
+XDoom is backward compatible with DOOM's sector types. All types 0-17
+have the same meaning they did under DOOM. Types 18-31 are reserved
+for extended sector types, that work like DOOM's and share the
+limitation that only one type can be active in a sector at once. No
+extended sector types are implemented at this time.
+
+####################################
+	Regular Sector types
+####################################
+
+From Matt Fell's Unofficial DOOM Spec the DOOM sector types are:
+
+Dec Hex Class   Description
+-------------------------------------------------------------------
+ 0  00  -       Normal, no special characteristic.
+ 1  01  Light   random off
+ 2  02  Light   blink 0.5 second
+ 3  03  Light   blink 1.0 second
+ 4  04  Both    -10/20% health AND light blink 0.5 second
+ 5  05  Damage  -5/10% health
+ 7  07  Damage  -2/5% health
+ 8  08  Light   oscillates
+ 9  09  Secret  a player must stand in this sector to get credit for
+                  finding this secret. This is for the SECRETS ratio
+                  on inter-level screens.
+10  0a  Door    30 seconds after level start, ceiling closes like a door.
+11  0b  End     -10/20% health. If a player's health is lowered to less
+                  than 11% while standing here, then the level ends! Play
+                  proceeds to the next level. If it is a final level
+                  (levels 8 in DOOM 1, level 30 in DOOM 2), the game ends!
+12  0c  Light   blink 0.5 second, synchronized
+13  0d  Light   blink 1.0 second, synchronized
+14  0e  Door    300 seconds after level start, ceiling opens like a door.
+16  10  Damage  -10/20% health
+
+17  11  Light   flickers on and off randomly
+
+Note that XDoom will NEVER exit the game on an illegal sector type, as
+was the case with DOOM. The sector type will merely be ignored.
+
+####################################
+	Generalized sector types
+####################################
+
+XDoom also provides generalized sector types, based on bit fields,
+that allow several sector type properties to be independently
+specified for a sector. Texture change linedefs can be used to switch
+some or all of these properties dynamically, outside lighting.
+
+Bits 0 thru 4 specify the lighting type in the sector, the same codes
+that DOOM used are employed:
+
+Dec Bits 4-0   Description
+-------------------------------------------------------------------
+0   00000      Normal lighting
+1   00001      random off
+2   00010      blink 0.5 second
+3   00011      blink 1.0 second
+4   00100      -10/20% health AND light blink 0.5 second
+8   01000      oscillates
+12  01100      blink 0.5 second, synchronized
+13  01101      blink 1.0 second, synchronized
+17  10001      flickers on and off randomly
+
+Bits 5 and 6 set the damage type of the sector, with the usual
+5/10/20 damage units per second.
+
+Dec Bits 6-5   Description
+-------------------------------------------------------------------
+0   00         No damage
+32  01         5  units damage per sec (halve damage in TYTD skill)
+64  10         10 units damage per sec
+96  11         20 units damage per sec
+
+Bit 7 makes the sector count towards the secrets total at game end
+
+Dec Bit 7      Description
+-------------------------------------------------------------------
+0    0         Sector is not secret
+128  1         Sector is secret
+
+Bit 8 enables the ice/mud effect controlled by linedef 223
+
+Dec Bit 8      Description
+-------------------------------------------------------------------
+0    0         Sector friction disabled
+256  1         Sector friction enabled
+
+Bit 9 enables the wind effects controlled by linedefs 224-226
+
+Dec Bit 9      Description
+-------------------------------------------------------------------
+0    0         Sector wind disabled
+512  1         Sector wind enabled
+
+Bits 10 and 11 are not implemented yet, but are reserved for use in
+sound control. Bit 10 will suppress all sounds within the sector,
+while bit 11 will disable any sounds due to floor or ceiling motion
+by the sector.
+
+
+2.7 Linedefs implemented from MBF/LxDoom
+
+271	--   Sky property transfer
+
+The upper texture will be used as sky texture in all tagged levels.
+This allows multiple skies in different outside areas of one map,
+or usage of the IWAD builtin skies from another episode, without the
+need to extract the texture und replace the one for the episode, the
+map is for.
+
+272	--   Flipped Sky property transfer
+
+Same as 271, but the texture will be flipped.
+
+
+2.8 Various XDoom specific new linedefs
 
 Silent working doors in combination with object carrying floors are helpful
 for releasing new stuff into a level unheard by players:

@@ -630,6 +630,50 @@ boolean P_ThingHeightClip (mobj_t *thing)
 }
 
 //
+// From Boom:
+//
+// P_GetMoveFactor() returns the value by which the x,y
+// movements are multiplied to add to player movement.
+//
+int P_GetMoveFactor(mobj_t *mo)
+{
+    int movefactor = ORIG_FRICTION_FACTOR;
+    int momentum, friction;
+
+    // If the floor is icy or muddy, it's harder to get moving. This is where
+    // the different friction factors are applied to 'trying to move'. In
+    // p_mobj.c, the friction factors are applied as you coast and slow down.
+
+    if (variable_friction && !(mo->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+    {
+	friction = mo->friction;
+	if (friction == ORIG_FRICTION)			// normal floor
+	    ;
+	else if (friction > ORIG_FRICTION)		// ice
+	{
+	    movefactor = mo->movefactor;
+	    mo->movefactor = ORIG_FRICTION_FACTOR;	// reset
+	}
+	else						// sludge
+	{
+	    // you start off slowly, then increase as
+	    // you get better footing
+	    momentum = (P_AproxDistance(mo->momx, mo->momy));
+	    movefactor = mo->movefactor;
+	    if (momentum > MORE_FRICTION_MOMENTUM << 2)
+		movefactor <<= 3;
+	    else if (momentum > MORE_FRICTION_MOMENTUM << 1)
+		movefactor <<= 2;
+	    else if (momentum > MORE_FRICTION_MOMENTUM)
+		movefactor <<= 1;
+
+	    mo->movefactor = ORIG_FRICTION_FACTOR;	// reset
+	}
+    }
+    return(movefactor);
+}
+
+//
 // SLIDE MOVE
 // Allows the player to slide along any angled walls.
 //
@@ -656,21 +700,48 @@ void P_HitSlideLine (line_t *ld)
     angle_t		lineangle;
     angle_t		moveangle;
     angle_t		deltaangle;
-
     fixed_t		movelen;
     fixed_t		newlen;
+    boolean		icyfloor;
+
+    // Under icy conditions, if the angle of approach to the wall
+    // is more than 45 degress, then you'll bounce and lose half
+    // your momentum. If less than 45 degrees, you'll slide along
+    // the wall. 45 is arbitrary and is believable.
+
+    if (variable_friction)
+	icyfloor = (onground && (slidemo->friction > ORIG_FRICTION));
+    else
+	icyfloor = false;
 
     if (ld->slopetype == ST_HORIZONTAL)
     {
-	tmymove = 0;
+	if (icyfloor && (abs(tmymove) > abs(tmxmove)))
+	{
+	    tmxmove /= 2; // absorb half the momentum
+	    tmymove = -tmymove / 2;
+	    S_StartSound(slidemo, sfx_oof); // oooff
+	}
+	else
+	    tmymove = 0; // no more movement in the Y direction
 	return;
     }
 
     if (ld->slopetype == ST_VERTICAL)
     {
-	tmxmove = 0;
+	if (icyfloor && (abs(tmxmove) > abs(tmymove)))
+	{
+	    tmxmove = -tmxmove / 2; // absorb half the momentum
+	    tmymove /= 2;
+	    S_StartSound(slidemo, sfx_oof); // oooff
+	}
+	else
+	    tmxmove = 0; // no more movement in the X direction
 	return;
     }
+
+    // The wall is angled. Bounce if the angle of approach
+    // is less than 45 degrees
 
     side = P_PointOnLineSide(slidemo->x, slidemo->y, ld);
 
@@ -682,20 +753,28 @@ void P_HitSlideLine (line_t *ld)
     moveangle = R_PointToAngle2(0, 0, tmxmove, tmymove);
     deltaangle = moveangle - lineangle;
 
-    if (deltaangle > ANG180)
-    {
-	deltaangle += ANG180;
-    //	I_Error("SlideLine: ang>ANG180");
-    }
-
-    lineangle >>= ANGLETOFINESHIFT;
-    deltaangle >>= ANGLETOFINESHIFT;
-
     movelen = P_AproxDistance(tmxmove, tmymove);
-    newlen = FixedMul(movelen, finecosine[deltaangle]);
 
-    tmxmove = FixedMul(newlen, finecosine[lineangle]);
-    tmymove = FixedMul(newlen, finesine[lineangle]);
+    if (icyfloor && (deltaangle > ANG45) && (deltaangle < ANG90 + ANG45))
+    {
+	moveangle = lineangle - deltaangle;
+	movelen /= 2; // absorb
+	S_StartSound(slidemo, sfx_oof); // oooff
+	moveangle >>= ANGLETOFINESHIFT;
+	tmxmove = FixedMul(movelen, finecosine[moveangle]);
+	tmymove = FixedMul(movelen, finesine[moveangle]);
+    }
+    else
+    {
+	if (deltaangle > ANG180)
+	    deltaangle += ANG180;
+
+	lineangle >>= ANGLETOFINESHIFT;
+	deltaangle >>= ANGLETOFINESHIFT;
+	newlen = FixedMul(movelen, finecosine[deltaangle]);
+	tmxmove = FixedMul(newlen, finecosine[lineangle]);
+	tmymove = FixedMul(newlen, finesine[lineangle]);
+    }
 }
 
 //

@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,8 +46,6 @@ rcsid[] = "$Id:$";
 
 // 16 pixels of bob
 #define MAXBOB	0x100000
-
-boolean		onground;
 
 //
 // P_Thrust
@@ -135,6 +134,7 @@ void P_CalcHeight(player_t *player)
 void P_MovePlayer(player_t *player)
 {
     ticcmd_t	*cmd;
+    int		movefactor;
 
     cmd = &player->cmd;
 
@@ -143,12 +143,13 @@ void P_MovePlayer(player_t *player)
     // Do not let the player control movement
     //  if not onground.
     onground = (player->mo->z <= player->mo->floorz);
+    movefactor = P_GetMoveFactor(player->mo);
 
     if (cmd->forwardmove && onground)
-	P_Thrust(player, player->mo->angle, cmd->forwardmove * 2048);
+	P_Thrust(player, player->mo->angle, cmd->forwardmove * movefactor);
 
     if (cmd->sidemove && onground)
-	P_Thrust(player, player->mo->angle - ANG90, cmd->sidemove * 2048);
+	P_Thrust(player, player->mo->angle - ANG90, cmd->sidemove * movefactor);
 
     if ((cmd->forwardmove || cmd->sidemove)
 	 && player->mo->state == &states[S_PLAY])

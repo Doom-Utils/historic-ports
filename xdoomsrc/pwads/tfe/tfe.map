@@ -29,10 +29,10 @@ LEVEL_START 0 1 0 Doom2
   S0 : 0 256 FLOOR0_3 FLAT2 200 0 0
   S1 : 72 256 FLOOR0_3 FLAT2 200 0 0
   S2 : 0 256 FLOOR0_3 FLAT2 200 0 1
-  S3 : 0 256  FLOOR0_3 FLAT2 200 0 0
-  S4 : 0 256  FLOOR0_3 FLAT2 200 0 0
-  S5 : 0 256  FLOOR0_3 FLAT2 200 0 0
-  S6 : 0 256  FLOOR0_3 FLAT2 200 0 0
+  S3 : 0 256 FLOOR0_3 FLAT2 200 0 0
+  S4 : 0 256 FLOOR0_3 FLAT2 200 0 0
+  S5 : 0 256 FLOOR0_3 FLAT2 200 0 0
+  S6 : 0 256 FLOOR0_3 FLAT2 200 0 0
  SECTORS_END
 
  LINEDEFS_START
@@ -61,20 +61,20 @@ LEVEL_START 0 1 0 Doom2
    S0 0 0 - GRAY1 -
    S1 0 0 - - -
   V10 V11 : 20 0 0
-   S3 0  0 - STEP4 -
-   S4 0  0 - - -
+   S3 0 0 - STEP4 -
+   S4 0 0 - - -
   V11 V9 : 20 0 0
    S0 0 0 - GRAYBIG -
    S4 0 0 - - -
   V8 V9 : 20 0 0
-   S4 0  0 - STEP4 -
-   S5 0  0 - - -
+   S4 0 0 - STEP4 -
+   S5 0 0 - - -
   V8 V10 : 20 0 0
    S0 0 0 - GRAYBIG -
    S4 0 0 - - -
   V12 V13 : 20 0 0
-   S2 0  0 - STEP4 -
-   S3 0  0 - - -
+   S2 0 0 - STEP4 -
+   S3 0 0 - - -
   V13 V11 : 20 0 0
    S0 0 0 - GRAYBIG -
    S3 0 0 - - -
@@ -93,9 +93,9 @@ LEVEL_START 0 1 0 Doom2
   V9 V16 : 20 0 0
    S0 0 0 - GRAYBIG -
    S5 0 0 - - -
-  V18 V19 : 20 0 0
-   S0 0 0 - GRAYBIG -
-   S6 0 0 - - -
+  V18 V19 : 20 11 0
+   S0 0  0 - SW1GRAY -
+   S6 0  0 - - -
   V17 V8 : 20 0 0
    S0 0 0 - GRAYBIG -
    S5 0 0 - - -
@@ -103,8 +103,8 @@ LEVEL_START 0 1 0 Doom2
    S0 0 0 - GRAYBIG -
    S6 0 0 - - -
   V17 V16 : 20 0 0
-   S5 0  0 - STEP4 -
-   S6 0  0 - - -
+   S5 0 0 - STEP4 -
+   S6 0 0 - - -
   V19 V17 : 20 0 0
    S0 0 0 - GRAYBIG -
    S6 0 0 - - -

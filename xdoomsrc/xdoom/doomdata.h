@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -158,6 +158,9 @@ typedef struct
 
 // Block shots on two sided
 #define ML_SHOOTBLOCK		2048
+
+// Block sight through two sided
+#define ML_SIGHTBLOCK		4096
 
 //=========================================================================
 // Extensions for XDoomPlus

@@ -133,6 +133,29 @@ typedef	struct
     void	*ceilingdata;
     void	*lightingdata;
 
+    // lockout machinery for stairbuilding
+    int		stairlock;	// -2 on first lock, -1 after thinker done
+    int		prevsec;	// -1 or number of sector for previous step
+    int		nextsec;	// -1 or number of next step sector
+
+    // Support flat heights drawn at another sector's heights
+    //   other sector, or -1 if no other sector
+    int		heightsec;
+
+    // Support dynamic colormaps
+    int		bottommap;
+    int		midmap;
+    int		topmap;
+
+    // Support skies coming from sidedefs. Allows scrolling
+    // skies and other effects. No "level info" kind of lump
+    // is needed like in Hexen, because one can use an arbitrary
+    // number of skies per level with this method. This field
+    // only applies when skyflatnum is used for floorpic or
+    // ceilingpic, because the rest of Doom needs to know which
+    // is sky and which isn't, etc.
+    int		sky;
+
     // list of mobjs that are at least partially in the sector
     struct msecnode_s	*touching_thinglist;
 
@@ -408,6 +431,9 @@ typedef struct vissprite_s
     // for color translation and shadow draw,
     //  maxbright frames as well
     lighttable_t	*colormap;
+
+    // height sector for underwater/fake ceiling support
+    int			heightsec;
 } vissprite_t;
 
 //

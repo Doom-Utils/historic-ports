@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -247,7 +247,7 @@ visplane_t *R_FindPlane(fixed_t height, int picnum, int lightlevel,
     visplane_t	*check;
     unsigned	hash;
 
-    if (picnum == skyflatnum)
+    if ((picnum == skyflatnum) || (picnum & PL_SKYFLAT))
     {
 	height = 0;			// all skys map together
 	lightlevel = 0;
@@ -380,6 +380,8 @@ void R_DrawPlanes(void)
     visplane_t	*pl;
     int		i;
     int		x;
+    int		texture;
+    angle_t	an, flip;
 
     for (i = 0; i < MAXVISPLANES; i++)
     {
@@ -388,9 +390,42 @@ void R_DrawPlanes(void)
 	    if (pl->minx > pl->maxx)
 		continue;
 
-	    // sky flat
-	    if (pl->picnum == skyflatnum)
+	    // sky flat ?
+	    if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT)
 	    {
+		// Allow skies to come from sidedefs.
+		// Allows scrolling and/or animated skies, as well as
+		// arbitrary multiple skies per level without having
+		// to use info lumps.
+		an = viewangle;
+		if (pl->picnum & PL_SKYFLAT)
+		{
+		    // Sky linedef
+		    const line_t *l = &lines[pl->picnum & ~PL_SKYFLAT];
+		    // Sky transferres from first sidedef
+		    const side_t *s = *l->sidenum + sides;
+		    // texture comes from upper texture of reference sidedef
+		    texture = texturetranslation[s->toptexture];
+		    // Horizontal offset is turned into an angle offset,
+		    // to allow sky rotation as well as careful positioning.
+		    // However, the offset is scaled very small, so that it
+		    // allows a long-period of sky rotation.
+		    an += s->textureoffset;
+		    // Vertical offset allows careful sky positioning.
+		    dc_texturemid = s->rowoffset - 28 * FRACUNIT;
+		    // We sometimes flip the picture horizontally.
+		    // Doom always flipped the picture, so we make it optional,
+		    // to make it easier to use the new feature, while to still
+		    // allow old sky textures to be used.
+		    flip = l->special == 272 ? 0u : ~0u;
+		}
+		else	// normal Doom sky, only one allowed per level
+		{
+		    dc_texturemid = skytexturemid;	// default y-offset
+		    texture = skytexture;		// default texture
+		    flip = 0;				// Doom flips it
+		}
+
 		dc_iscale = pspriteiscale >> detailshift;
 
 		// Sky is allways drawn full bright,
@@ -400,12 +435,9 @@ void R_DrawPlanes(void)
 		//dc_colormap = colormaps;
 
 		// I never liked that hack, this fixes it
-		if (fixedcolormap)
-		    dc_colormap = fixedcolormap;
-		else
-		    dc_colormap = colormaps;
+		if (!(dc_colormap = fixedcolormap))
+		    dc_colormap = fullcolormap;
 
-		dc_texturemid = skytexturemid;
 		dc_texheight = textureheight[skytexture] >> FRACBITS;
 
 		for (x = pl->minx; x <= pl->maxx; x++)
@@ -416,8 +448,8 @@ void R_DrawPlanes(void)
 		    if (dc_yl <= dc_yh)
 		    {
 			dc_x = x;
-			dc_source = R_GetColumn(skytexture,
-				(viewangle + xtoviewangle[x]) >>
+			dc_source = R_GetColumn(texture,
+				((an + xtoviewangle[x]) ^ flip) >>
 				ANGLETOSKYSHIFT);
 			colfunc();
 		    }

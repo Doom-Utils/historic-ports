@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,5 +34,6 @@
 #endif
 
 void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2);
+void R_StoreWallRange(int start, int stop);
 
 #endif

@@ -126,6 +126,7 @@ OBJS=				\
 		$(O)/am_map.o		\
 		$(O)/p_ceilng.o		\
 		$(O)/p_doors.o		\
+		$(O)/p_doorsplus.o	\
 		$(O)/p_enemy.o		\
 		$(O)/p_floor.o		\
 		$(O)/p_inter.o		\
@@ -138,6 +139,7 @@ OBJS=				\
 		$(O)/p_sight.o		\
 		$(O)/p_spec.o		\
 		$(O)/p_specplus.o	\
+		$(O)/p_genlin.o		\
 		$(O)/p_switch.o		\
 		$(O)/p_mobj.o		\
 		$(O)/p_telept.o		\

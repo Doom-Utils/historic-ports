@@ -17,3 +17,7 @@ The assumption was made that char variables by default are signed, which
 is not true on every platform. Usually the compiler on such platforms
 has an option to force signed char variables. For GNU C use -fsigned-char,
 for other compilers RTFM.
+
+If your compiler doesn't support alloca(), the source directory includes
+a public domain substitute in file alloca.c. Add this one to the makefile
+for your platform, like it's done in the one for Irix.

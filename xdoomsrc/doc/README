@@ -29,7 +29,7 @@ XDoom is known to work on the following platforms:
     FreeBSD 3.x, X11 and [S]VGA support, mouse and keyboard support
     Solaris SPARC 2.5.1, 2.6 and 2.7, X11 support, no sound yet,
 	mouse and keyboard
-    Solaris x86, X11 support, mouse and keyboard support
+    Solaris 7 x86, X11 support, mouse and keyboard support
     IBM AIX 4.2, X11 support, no sound yet, mouse and keyboard support
     SGI IRIX 6.5, X11 support, mouse and keyboard support
 
@@ -299,54 +299,13 @@ One additional cheat code was added to XDoom so far:
 Boom compatibility
 ------------------------------------------------------------------------
 
-XDoom has implemented some extended features from Boom by TeamTNT.
-This includes scrolling floors and ceilings, with floors being able to
-carry objects. It also includes independent lighting for the sector, its
-floor and its ceiling. Also some silent teleportes are implemented. While
-there is a PWAD included, which I use for testing the compatibility of this
-features, this one won't be great fun to play. So, are there any Boom
-levels which really do play OK? Certainly, so far I found the following
-Boom levels playing OK. You really should get them and have a look,
-because this levels are much better than what I can do.
-
-	foa.wad
-	lih.wad			all 4 levels ok
-	kboom_2.wad
-	hl.wad, hltextur.wad	level with Half-Life textures
-	dethbase.wad
-
-You should be able to find this Boom levels on ftp.cdrom.com.
-
-So how does one test if a Boom level is OK to play with XDoom and doesn't
-use features, not implemented in XDoom?
-
-This is easy, get xwadtools from ftp.cdrom.com, same place where you got
-XDoom. This tools include the WAD editor tkwadcad, which supports all
-features implemented in XDoom and it has WAD consistency checking builtin.
-Make sure you use a xwadtools release with the same release date than the
-XDoom release you have. So, to check if a PWAD would play with XDoom do this:
-
-- First decompile the level map from the PWAD:
-	wadldc -g XDoom MAP01 foa.wad foa.map
-
-- Then load the map into tkwadcad:
-	tkwadcad foa.map
-
-Make sure the game version is set to XDoom, so that the consistency
-checker works with the XDoom features. Then from the Check menu run all
-check functions other than 'Tag references'. If no function complains
-about an unknown sector type, unknown thing id or unknown linedef type,
-then this PWAD should play OK with XDoom. Please note that the consistency
-checks are very thorough, on large maps they will need a long time to complete.
-It can need some minutes to finish a test, even on fast systems. This is
-normal, just be patient.
-
-If you check other levels this way and find some which are OK and not
-listed above, I would appreciate an email, so that it can be listed
-here, thank you.
+XDoom has implemented all features necessary to play PWAD's
+created for Boom release 2.02. If you find a Boom PWAD which
+doesn't play correct then please email me at um@compuserve.com
+and let me know where to find this PWAD.
 
 ------------------------------------------------------------------------
-Original Readme from ID
+Original Readme from id Software
 ------------------------------------------------------------------------
 
 Here it is, at long last.  The DOOM source code is released for your

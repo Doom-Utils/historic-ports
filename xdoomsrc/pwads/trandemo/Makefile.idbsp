@@ -1,6 +1,5 @@
 # Location of your Doom][ IWAD file
 DOOM2WAD=/usr/local/games/xdoom/doom2.wad
-#DOOM2WAD=c:\games\doom2\doom2.wad
 
 # The translucent door doesn't work correct yet, if idbsp is used.
 
@@ -9,7 +8,7 @@ trandemo.wad: trandemo.lwad trandemo.gwad trandemo.rwad
 	wadcat -o trandemo.wad trandemo.lwad trandemo.gwad trandemo.rwad
 
 trandemo.lwad: trandemo.map
-	idbsp trandemo.map trandemo.lwad
+	idbsp -q -s trandemo.map trandemo.lwad
 
 trandemo.gwad: trandemo.wgc glass1.ppm glass2.ppm glass3f.ppm glass3b.ppm \
 	umgr1.ppm umcomp1.ppm umcomp2.ppm umcomp3.ppm

@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -103,6 +103,7 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
     int			texnum;
     byte		*old_tranmap = NULL;
     extern byte		*tranmap;
+    static sector_t	tempsec;
 
     // Calculate light table.
     // Use different light tables
@@ -134,7 +135,8 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
     backsector = curline->backsector;
     texnum = texturetranslation[curline->sidedef->midtexture];
 
-    lightnum = (frontsector->lightlevel >> LIGHTSEGSHIFT) + extralight;
+    lightnum = (R_FakeFlat(frontsector, &tempsec, NULL, NULL, false)
+		->lightlevel >> LIGHTSEGSHIFT) + extralight;
 
     if (curline->v1->y == curline->v2->y)
 	lightnum--;
@@ -189,7 +191,24 @@ void R_RenderMaskedSegRange(drawseg_t *ds, int x1, int x2)
 		dc_colormap = walllights[index];
 	    }
 
-	    sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+	    // killough 3/2/98:
+	    //
+	    // This calculation used to overflow and cause crashes in Doom:
+	    //
+	    // sprtopscreen = centeryfrac - FixedMul(dc_texturemid, spryscale);
+	    //
+	    // This code fixes it, by using double-precision intermediate
+	    // arithmetic and by skipping the drawing of 2s normals whose
+	    // mapping to screen coordinates is totally out of range:
+	    {
+		long long t = ((long long) centeryfrac << FRACBITS) -
+			       (long long) dc_texturemid * spryscale;
+		if (t + (long long) textureheight[texnum] * spryscale < 0 ||
+		    t > (long long) SCREENHEIGHT << FRACBITS * 2)
+		    continue; // skip if the texture is out of screen's range
+		sprtopscreen = (long)(t >> FRACBITS);
+	    }
+
 	    dc_iscale = 0xffffffffu / (unsigned)spryscale;
 
 	    // draw the texture
@@ -235,15 +254,17 @@ void R_RenderSegLoop(void)
     for (; rw_x < rw_stopx; rw_x++)
     {
 	// mark floor / ceiling areas
+	yh = bottomfrac >> HEIGHTBITS;
 	yl = (topfrac + HEIGHTUNIT - 1) >> HEIGHTBITS;
 
 	// no space above wall?
-	if (yl < ceilingclip[rw_x] + 1)
-	    yl = ceilingclip[rw_x] + 1;
+	bottom = top = ceilingclip[rw_x] + 1;
+
+	if (yl < top)
+	    yl = top;
 
 	if (markceiling)
 	{
-	    top = ceilingclip[rw_x] + 1;
 	    bottom = yl - 1;
 
 	    if (bottom >= floorclip[rw_x])
@@ -256,18 +277,15 @@ void R_RenderSegLoop(void)
 	    }
 	}
 
-	yh = bottomfrac >> HEIGHTBITS;
-
-	if (yh >= floorclip[rw_x])
-	    yh = floorclip[rw_x] - 1;
+	bottom = floorclip[rw_x] - 1;
+	if (yh > bottom)
+	    yh = bottom;
 
 	if (markfloor)
 	{
-	    top = yh + 1;
-	    bottom = floorclip[rw_x] - 1;
-	    if (top <= ceilingclip[rw_x])
-		top = ceilingclip[rw_x] + 1;
-	    if (top <= bottom)
+	    top = yh < ceilingclip[rw_x] ? ceilingclip[rw_x] : yh;
+
+	    if (++top <= bottom)
 	    {
 		floorplane->top[rw_x] = top;
 		floorplane->bottom[rw_x] = bottom;
@@ -340,7 +358,7 @@ void R_RenderSegLoop(void)
 	    if (bottomtexture)
 	    {
 		// bottom wall
-		mid = (pixlow+HEIGHTUNIT - 1) >> HEIGHTBITS;
+		mid = (pixlow + HEIGHTUNIT - 1) >> HEIGHTBITS;
 		pixlow += pixlowstep;
 
 		// no space above wall?
@@ -393,6 +411,7 @@ void R_StoreWallRange(int start, int stop)
     angle_t		distangle, offsetangle;
     fixed_t		vtop;
     int			lightnum;
+    extern int		doorclosed;
 
     // fix 2s line HOM, taken from Boom sources
     if (ds_p == drawsegs + maxdrawsegs)
@@ -425,7 +444,8 @@ void R_StoreWallRange(int start, int stop)
 	offsetangle = ANG90;
 
     distangle = ANG90 - offsetangle;
-    hyp = R_PointToDist(curline->v1->x, curline->v1->y);
+    hyp = (viewx == curline->v1->x && viewy == curline->v1->y) ?
+	   0 : R_PointToDist(curline->v1->x, curline->v1->y);
     sineval = finesine[distangle >> ANGLETOFINESHIFT];
     rw_distance = FixedMul(hyp, sineval);
 
@@ -532,6 +552,15 @@ void R_StoreWallRange(int start, int stop)
 	}
 	rw_midtexturemid += sidedef->rowoffset;
 
+	// reduce offset
+	{
+	    fixed_t	h;
+
+	    h = textureheight[sidedef->midtexture];
+	    if (h & (h - FRACUNIT))
+		rw_midtexturemid %= h;
+	}
+
 	ds_p->silhouette = SIL_BOTH;
 	ds_p->sprtopclip = screenheightarray;
 	ds_p->sprbottomclip = negonearray;
@@ -568,14 +597,14 @@ void R_StoreWallRange(int start, int stop)
 	    // ds_p->sprtopclip = screenheightarray;
 	}
 
-	if (backsector->ceilingheight <= frontsector->floorheight)
+	if (doorclosed || backsector->ceilingheight <= frontsector->floorheight)
 	{
 	    ds_p->sprbottomclip = negonearray;
 	    ds_p->bsilheight = MAXINT;
 	    ds_p->silhouette |= SIL_BOTTOM;
 	}
 
-	if (backsector->floorheight >= frontsector->ceilingheight)
+	if (doorclosed || backsector->floorheight >= frontsector->ceilingheight)
 	{
 	    ds_p->sprtopclip = screenheightarray;
 	    ds_p->tsilheight = MININT;
@@ -598,6 +627,8 @@ void R_StoreWallRange(int start, int stop)
 	    // checks for (x, y) offsets
 	    || backsector->floor_xoffs != frontsector->floor_xoffs
 	    || backsector->floor_yoffs != frontsector->floor_yoffs
+	    // prevents 2s normals from bleeding through deep water
+	    || frontsector->heightsec != -1
 	    // draw floors if different light levels
 	    || backsector->floorlightsec != frontsector->floorlightsec
 	   )
@@ -616,6 +647,9 @@ void R_StoreWallRange(int start, int stop)
 	    // checks for (x, y) offsets
 	    || backsector->ceiling_xoffs != frontsector->ceiling_xoffs
 	    || backsector->ceiling_yoffs != frontsector->ceiling_yoffs
+	    // prevents 2s normals from bleeding through fake ceilings
+	    || (frontsector->heightsec != -1 &&
+		frontsector->ceilingpic != skyflatnum)
 	    // draw ceilings in different light levels
 	    || backsector->ceilinglightsec != frontsector->ceilinglightsec
 	   )
@@ -669,8 +703,26 @@ void R_StoreWallRange(int start, int stop)
 	    else	// top of texture at top
 		rw_bottomtexturemid = worldlow;
 	}
+
 	rw_toptexturemid += sidedef->rowoffset;
+	// reduce offset
+	{
+	    fixed_t	h;
+
+	    h = textureheight[sidedef->toptexture];
+	    if (h & (h - FRACUNIT))
+		rw_toptexturemid %= h;
+	}
+
 	rw_bottomtexturemid += sidedef->rowoffset;
+	// reduce offset
+	{
+	    fixed_t	h;
+
+	    h = textureheight[sidedef->bottomtexture];
+	    if (h & (h - FRACUNIT))
+		rw_bottomtexturemid %= h;
+	}
 
 	// allocate space for masked texture tables
 	if (sidedef->midtexture)
@@ -730,17 +782,20 @@ void R_StoreWallRange(int start, int stop)
     //  of the view plane, it is definitely invisible
     //  and doesn't need to be marked.
 
-    if (frontsector->floorheight >= viewz)
+    if (frontsector->heightsec == -1)
     {
-	// above view plane
-	markfloor = false;
-    }
+	if (frontsector->floorheight >= viewz)
+	{
+	    // above view plane
+	    markfloor = false;
+	}
 
-    if (frontsector->ceilingheight <= viewz
-	&& frontsector->ceilingpic != skyflatnum)
-    {
-	// below view plane
-	markceiling = false;
+	if (frontsector->ceilingheight <= viewz
+	    && frontsector->ceilingpic != skyflatnum)
+	{
+	    // below view plane
+	    markceiling = false;
+	}
     }
 
     // calculate incremental stepping values for texture edges
@@ -773,10 +828,20 @@ void R_StoreWallRange(int start, int stop)
 
     // render it
     if (markceiling)
-	ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx - 1);
+    {
+	if (ceilingplane)
+	    ceilingplane = R_CheckPlane(ceilingplane, rw_x, rw_stopx - 1);
+	else
+	    markceiling = 0;
+    }
 
     if (markfloor)
-	floorplane = R_CheckPlane(floorplane, rw_x, rw_stopx - 1);
+    {
+	if (floorplane)
+	    floorplane = R_CheckPlane(floorplane, rw_x, rw_stopx - 1);
+	else
+	    markfloor = 0;
+    }
 
     R_RenderSegLoop();
 

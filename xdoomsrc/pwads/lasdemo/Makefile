@@ -5,6 +5,8 @@ lasdemo.wad: lasdemo.lwad lasdemo.gwad lasdemo.rwad
 	rm -f lasdemo.wad
 	wadcat -o lasdemo.wad lasdemo.lwad lasdemo.gwad lasdemo.rwad
 
+lasdemo.lwad: lasdemo.map
+
 lasdemo.gwad: lasdemo.wgc um_lasl.ppm um_lasr.ppm um_lassl.ppm um_lassr.ppm \
 	um_lsig.ppm um_vlas.ppm sky1.ppm \
 	umcomp1.ppm umcomp2.ppm umcomp3.ppm \
@@ -27,5 +29,7 @@ clean:
 	rm -f *.bak lasdemo.lwad lasdemo.gwad lasdemo.rwad \
 	switches.lmp animated.lmp
 
-%.lwad: %.map
+.SUFFIXES: .lwad .map
+
+.map.lwad:
 	idbsp -q $< $@

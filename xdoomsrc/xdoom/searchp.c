@@ -4,7 +4,7 @@
 //
 // $Id:$
 //
-// Copyright (C) 1998 by Udo Munk
+// Copyright (C) 1998-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +35,9 @@ rcsid[] = "$Id:$";
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if defined(LINUX) || defined(SOLARIS) || defined(IRIX)
+#include <alloca.h>
+#endif
 
 char *searchpath(char *file)
 {
@@ -42,13 +45,14 @@ char *searchpath(char *file)
 	char		*dir;
 	static char	b[2048];
 	struct stat	s;
-	char		pb[2048];
+	char		*pb;
 
 	// get PATH, if not set just return filename, might be in cwd
 	if ((path = getenv("PATH")) == NULL)
 		return(file);
 
 	// we have to do this because strtok() is destructive
+	pb = (char *)alloca(strlen(path) + 1);
 	strcpy(pb, path);
 
 	// get first directory
@@ -70,5 +74,5 @@ char *searchpath(char *file)
 	}
 
 	// hm, not found, just return filename, again, might be in cwd
-	return file ;
+	return file;
 }

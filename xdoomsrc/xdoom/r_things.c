@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -428,6 +428,7 @@ void R_ProjectSprite(mobj_t *thing)
     fixed_t		tr_y;
     fixed_t		gxt;
     fixed_t		gyt;
+    fixed_t		gzt;
     fixed_t		tx;
     fixed_t		tz;
     fixed_t		xscale;
@@ -442,6 +443,7 @@ void R_ProjectSprite(mobj_t *thing)
     vissprite_t		*vis;
     angle_t		ang;
     fixed_t		iscale;
+    int			heightsec;
 
     // transform the origin point
     tr_x = thing->x - viewx;
@@ -513,14 +515,43 @@ void R_ProjectSprite(mobj_t *thing)
     if (x2 < 0)
 	return;
 
+    gzt = thing->z + spritetopoffset[lump];
+
+    // clip things which are out of view due to height
+    if (thing->z > viewz + FixedDiv(centeryfrac, xscale) ||
+	gzt < viewz - FixedDiv(centeryfrac - viewheight, xscale))
+	return;
+
+    // exclude things totally separated from the viewer,
+    // either by water or fake ceilings
+    heightsec = thing->subsector->sector->heightsec;
+
+    if (heightsec != -1) // only clip things which are in special sectors
+    {
+	int phs = viewplayer->mo->subsector->sector->heightsec;
+
+	if (phs != -1 && viewz < sectors[phs].floorheight ?
+	    thing->z >= sectors[heightsec].floorheight :
+	    gzt < sectors[heightsec].floorheight)
+	    return;
+
+	if (phs != -1 && viewz > sectors[phs].ceilingheight ?
+	    gzt < sectors[heightsec].ceilingheight &&
+	    viewz >= sectors[heightsec].ceilingheight :
+	    thing->z >= sectors[heightsec].ceilingheight)
+	    return;
+    }
+
+
     // store information in a vissprite
     vis = R_NewVisSprite();
+    vis->heightsec = heightsec;
     vis->mobjflags = thing->flags;
     vis->scale = xscale << detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
     vis->gz = thing->z;
-    vis->gzt = thing->z + spritetopoffset[lump];
+    vis->gzt = gzt;
     vis->texturemid = vis->gzt - viewz;
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= viewwidth ? viewwidth - 1 : x2;
@@ -555,7 +586,7 @@ void R_ProjectSprite(mobj_t *thing)
     else if (thing->frame & FF_FULLBRIGHT)
     {
 	// full bright
-	vis->colormap = colormaps;
+	vis->colormap = fullcolormap;
     }
     else
     {
@@ -573,7 +604,7 @@ void R_ProjectSprite(mobj_t *thing)
 // R_AddSprites
 // During BSP traversal, this adds sprites by sector.
 //
-void R_AddSprites(sector_t *sec)
+void R_AddSprites(sector_t *sec, int lightlevel)
 {
     mobj_t		*thing;
     int			lightnum;
@@ -588,7 +619,7 @@ void R_AddSprites(sector_t *sec)
     // Well, now it will be done.
     sec->validcount = validcount;
 
-    lightnum = (sec->lightlevel >> LIGHTSEGSHIFT) + extralight;
+    lightnum = (lightlevel >> LIGHTSEGSHIFT) + extralight;
 
     if (lightnum < 0)
 	spritelights = scalelight[0];
@@ -693,7 +724,7 @@ void R_DrawPSprite(pspdef_t *psp)
     else if (psp->state->frame & FF_FULLBRIGHT)
     {
 	// full bright
-	vis->colormap = colormaps;
+	vis->colormap = fullcolormap;
     }
     else
     {
@@ -900,6 +931,46 @@ void R_DrawSprite(vissprite_t *spr)
 		if (cliptop[x] == -2)
 		    cliptop[x] = ds->sprtopclip[x];
 	    }
+	}
+    }
+
+    // Clip the sprite against deep water and/or fake ceilings
+    if (spr->heightsec != -1)  // only things in specially marked sectors
+    {
+	fixed_t h,mh;
+	int phs = viewplayer->mo->subsector->sector->heightsec;
+
+	if ((mh = sectors[spr->heightsec].floorheight) > spr->gz &&
+	    (h = centeryfrac - FixedMul(mh-=viewz, spr->scale)) >= 0 &&
+	    (h >>= FRACBITS) < viewheight)
+	{
+	    if (mh <= 0 || (phs != -1 && viewz > sectors[phs].floorheight))
+	    {                          // clip bottom
+		for (x = spr->x1; x <= spr->x2; x++)
+		    if (clipbot[x] == -2 || h < clipbot[x])
+			clipbot[x] = h;
+	    }
+	    else                        // clip top
+	    if (phs != -1 && viewz <= sectors[phs].floorheight)
+		for (x = spr->x1; x <= spr->x2; x++)
+		    if (cliptop[x] == -2 || h > cliptop[x])
+			cliptop[x] = h;
+	}
+
+	if ((mh = sectors[spr->heightsec].ceilingheight) < spr->gzt &&
+	    (h = centeryfrac - FixedMul(mh-viewz, spr->scale)) >= 0 &&
+	    (h >>= FRACBITS) < viewheight)
+	{
+	    if (phs != -1 && viewz >= sectors[phs].ceilingheight)
+	    {                         // clip bottom
+		for (x = spr->x1; x <= spr->x2; x++)
+		    if (clipbot[x] == -2 || h < clipbot[x])
+			clipbot[x] = h;
+	    }
+	    else                       // clip top
+	    for (x = spr->x1; x <= spr->x2; x++)
+		if (cliptop[x] == -2 || h > cliptop[x])
+		    cliptop[x] = h;
 	}
     }
 

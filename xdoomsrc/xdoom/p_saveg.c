@@ -326,6 +326,8 @@ enum
     tc_field,
     tc_sldoor,
     tc_scroll,
+    tc_friction,
+    tc_pusher,
     tc_endspecials
 } specials_e;
 
@@ -344,6 +346,8 @@ enum
 // T_ForceField
 // T_SlidingDoor
 // T_Scroll
+// T_Friction
+// T_Pusher
 //
 void P_ArchiveSpecials(void)
 {
@@ -360,6 +364,8 @@ void P_ArchiveSpecials(void)
     forcefield_t	*field;
     slidedoor_t		*sldoor;
     scroll_t		*scroll;
+    pusher_t		*pusher;
+    friction_t		*friction;
 
     // save off the current thinkers
     for (th = thinkercap.next; th != &thinkercap; th = th->next)
@@ -515,6 +521,26 @@ plat:
 	    save_p += sizeof(*scroll);
 	    continue;
 	}
+
+	if (th->function.acp1 == (actionf_p1)T_Pusher)
+	{
+	    *save_p++ = tc_pusher;
+	    PADSAVEP();
+	    pusher = (pusher_t *)save_p;
+	    memcpy(pusher, th, sizeof(*pusher));
+	    save_p += sizeof(*pusher);
+	    continue;
+	}
+
+	if (th->function.acp1 == (actionf_p1)T_Friction)
+	{
+	    *save_p++ = tc_friction;
+	    PADSAVEP();
+	    friction = (friction_t *)save_p;
+	    memcpy(friction, th, sizeof(*friction));
+	    save_p += sizeof(*friction);
+	    continue;
+	}
     }
 
     // add a terminating marker
@@ -539,6 +565,8 @@ void P_UnArchiveSpecials(void)
     forcefield_t	*field;
     slidedoor_t		*sldoor;
     scroll_t		*scroll;
+    pusher_t		*pusher;
+    friction_t		*friction;
 
     // read in saved thinkers
     while (1)
@@ -684,6 +712,24 @@ void P_UnArchiveSpecials(void)
 	    save_p += sizeof(*scroll);
 	    scroll->thinker.function.acp1 = (actionf_p1)T_Scroll;
 	    P_AddThinker(&scroll->thinker);
+	    break;
+
+	  case tc_pusher:
+	    PADSAVEP();
+	    pusher = Z_Malloc(sizeof(*pusher), PU_LEVEL, (void *)0);
+	    memcpy(pusher, save_p, sizeof(*pusher));
+	    save_p += sizeof(*pusher);
+	    pusher->thinker.function.acp1 = (actionf_p1)T_Pusher;
+	    P_AddThinker(&pusher->thinker);
+	    break;
+
+	  case tc_friction:
+	    PADSAVEP();
+	    friction = Z_Malloc(sizeof(*friction), PU_LEVEL, (void *)0);
+	    memcpy(friction, save_p, sizeof(*friction));
+	    save_p += sizeof(*friction);
+	    friction->thinker.function.acp1 = (actionf_p1)T_Friction;
+	    P_AddThinker(&friction->thinker);
 	    break;
 
 	  default:

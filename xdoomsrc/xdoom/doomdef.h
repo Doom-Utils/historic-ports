@@ -37,8 +37,13 @@
 // Global parameters/defines.
 //
 // DOOM version
-enum { VERSION = 114 };
-enum { BUILD = 20000723 };
+enum { VERSION = 115 };
+enum { BUILD = 20001001 };
+
+//
+// installation directory, used to find resource wad
+//
+#define INSTALLDIR	"/usr/local/games/xdoom"
 
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
@@ -256,5 +261,12 @@ typedef enum
 #define KEY_CAPSLOCK	(0x80 + 0x10)
 
 #define KEY_LALT	KEY_RALT
+
+// Player friction is variable, based on controlling
+// linedefs. More friction can create mud, sludge,
+// magnetized floors, etc. Less friction can create ice.
+#define MORE_FRICTION_MOMENTUM	15000	// mud factor based on momentum
+#define ORIG_FRICTION		0xe800	// original value
+#define ORIG_FRICTION_FACTOR	2048	// original value
 
 #endif          // __DOOMDEF__

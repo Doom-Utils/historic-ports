@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,7 +67,6 @@ extern int		loopcount;
 //
 
 // Lighting constants.
-// Now why not 32 levels here?
 #define LIGHTLEVELS	        16
 #define LIGHTSEGSHIFT	         4
 
@@ -75,9 +75,11 @@ extern int		loopcount;
 #define MAXLIGHTZ	       128
 #define LIGHTZSHIFT		20
 
-extern lighttable_t	*scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-extern lighttable_t	*scalelightfixed[MAXLIGHTSCALE];
-extern lighttable_t	*zlight[LIGHTLEVELS][MAXLIGHTZ];
+extern lighttable_t	*(*scalelight)[MAXLIGHTSCALE];
+extern lighttable_t	*(*zlight)[MAXLIGHTZ];
+extern lighttable_t	*fullcolormap;
+extern int		numcolormaps;
+extern lighttable_t	**colormaps;
 
 extern int		extralight;
 extern lighttable_t	*fixedcolormap;

@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,5 +53,8 @@ int R_FlatNumForName(char *name);
 // returns the texture number for the texture name.
 int R_TextureNumForName(char *name);
 int R_CheckTextureNumForName(char *name);
+
+// Colormap retrieval
+int R_ColormapNumForName(char * name);
 
 #endif

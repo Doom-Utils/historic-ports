@@ -1889,6 +1889,19 @@ $ MT_EXTRABFG		; explosion for all other visible monsters
 spawnstate		S_BFGEXP
 flags			MF_NOBLOCKMAP|MF_NOGRAVITY|MF_TRANSLUC
 
+$ MT_PUSH		; Boom wind and current effects
+doomednum		5001
+radius			8
+height			8
+mass			10
+flags			MF_NOBLOCKMAP
+
+$ MT_PULL		; Boom wind and current effects
+doomednum		5002
+radius			8
+height			8
+mass			10
+flags			MF_NOBLOCKMAP
 
 ; ===================
 ; 

@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -187,12 +188,15 @@ boolean P_CrossSubsector(int num)
 	    continue;
 
 	// stop because it is not two sided anyway
-	// might do this after updating validcount?
 	if (!(line->flags & ML_TWOSIDED))
 	    return false;
 
 	// check if it is a closed sliding door
 	if ((line->special == 300) && (line->flags & ML_BLOCKING))
+	    return false;
+
+	// check if block sight flag is set
+	if (line->flags & ML_SIGHTBLOCK)
 	    return false;
 
 	// crosses a two sided line
@@ -293,8 +297,8 @@ boolean P_CrossBSPNode(int bspnum)
 //
 boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 {
-    int		s1;
-    int		s2;
+    sector_t	*s1;
+    sector_t	*s2;
     int		pnum;
     int		bytenum;
     int		bitnum;
@@ -302,9 +306,9 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
     // First check for trivial rejection.
 
     // Determine subsector entries in REJECT table.
-    s1 = (t1->subsector->sector - sectors);
-    s2 = (t2->subsector->sector - sectors);
-    pnum = s1 * numsectors + s2;
+    s1 = t1->subsector->sector;
+    s2 = t2->subsector->sector;
+    pnum = (s1 - sectors) * numsectors + (s2 - sectors);
     bytenum = pnum >> 3;
     bitnum = 1 << (pnum & 7);
 
@@ -316,6 +320,20 @@ boolean P_CheckSight(mobj_t *t1, mobj_t *t2)
 	// can't possibly be connected
 	return false;
     }
+
+    // Make fake floors and ceilings block monster view
+    if ((s1->heightsec != -1 &&
+	 ((t1->z + t1->height <= sectors[s1->heightsec].floorheight &&
+	   t2->z >= sectors[s1->heightsec].floorheight) ||
+	  (t1->z >= sectors[s1->heightsec].ceilingheight &&
+	   t2->z + t1->height <= sectors[s1->heightsec].ceilingheight)))
+	||
+	(s2->heightsec != -1 &&
+	 ((t2->z + t2->height <= sectors[s2->heightsec].floorheight &&
+	   t1->z >= sectors[s2->heightsec].floorheight) ||
+	  (t2->z >= sectors[s2->heightsec].ceilingheight &&
+	   t1->z + t2->height <= sectors[s2->heightsec].ceilingheight))))
+    return false;
 
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.

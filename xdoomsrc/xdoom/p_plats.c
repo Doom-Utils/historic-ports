@@ -45,18 +45,22 @@ platlist_t	*activeplats;
 //
 // Move a plat up and down
 //
+// Passed a plat structure containing all pertinent informations about the move
+// Returns nothing
+//
 void T_PlatRaise(plat_t *plat)
 {
     result_e	res;
 
     switch(plat->status)
     {
-      case up:
+      case up:	// moving up
 	res = T_MovePlane(plat->sector,
 			  plat->speed,
 			  plat->high,
 			  plat->crush, 0, 1);
 
+	// if a pure raise type, make the plat moving sound
 	if (plat->type == raiseAndChange
 	    || plat->type == raiseToNearestAndChange)
 	{
@@ -65,6 +69,7 @@ void T_PlatRaise(plat_t *plat)
 			     sfx_stnmov);
 	}
 
+	// if encountered an obstacle, and not a crush typ, reverse direction
 	if (res == crushed && (!plat->crush))
 	{
 	    plat->count = plat->wait;
@@ -72,7 +77,7 @@ void T_PlatRaise(plat_t *plat)
 	    S_StartSound((mobj_t *)&plat->sector->soundorg,
 			 sfx_pstart);
 	}
-	else
+	else // else handle reaching end of up stroke
 	{
 	    if (res == pastdest)
 	    {
@@ -89,15 +94,15 @@ void T_PlatRaise(plat_t *plat)
 		  plat->status = in_stasis;
 		}
 
+		// lift types and pure raise types are done at end of up stroke
+		// only the perpetual type waits then goes back up
 		switch(plat->type)
 		{
 		  case blazeDWUS:
 		  case downWaitUpStay:
-		    P_RemoveActivePlat(plat);
-		    break;
-
 		  case raiseAndChange:
 		  case raiseToNearestAndChange:
+		  case genLift:
 		    P_RemoveActivePlat(plat);
 		    break;
 
@@ -108,9 +113,10 @@ void T_PlatRaise(plat_t *plat)
 	}
 	break;
 
-      case	down:
+      case down: // moving down
 	res = T_MovePlane(plat->sector, plat->speed, plat->low, false, 0, -1);
 
+	// handle reaching end of down stroke
 	if (res == pastdest)
 	{
 	    // if not an instant toggle, start waiting, make plat stop sound
@@ -120,31 +126,50 @@ void T_PlatRaise(plat_t *plat)
 	      plat->status = waiting;
 	      S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstop);
 	    }
-	    else // instan toggles go into statis awaiting next activation
+	    else // instant toggles go into statis awaiting next activation
 	    {
 	      plat->oldstatus = plat->status;
 	      plat->status = in_stasis;
 	    }
+
+	    // remove the plat if it's a pure raise type
+	    switch(plat->type)
+	    {
+		case raiseAndChange:
+		case raiseToNearestAndChange:
+		    P_RemoveActivePlat(plat);
+		    break;
+
+		default:
+		    break;
+	    }
 	}
 	break;
 
-      case	waiting:
-	if (!--plat->count)
+      case waiting: // waiting
+	if (!--plat->count)	// downcount and check for delay elapsed
 	{
 	    if (plat->sector->floorheight == plat->low)
-		plat->status = up;
+		plat->status = up;	// if at bottom start up
 	    else
-		plat->status = down;
+		plat->status = down;	// if at top start down
+
+	    // make plat start sound
 	    S_StartSound((mobj_t *)&plat->sector->soundorg, sfx_pstart);
 	}
-      case	in_stasis:
+	break;
+
+      case in_stasis: // do nothing if in stasis
 	break;
     }
 }
 
 //
 // Do Platforms
-//  "amount" is only used for SOME platforms.
+//
+// Passed the linedef that activated the plat, the type of plat action,
+// and for some plat types an amount to raise.
+// Returns true if a thinker is started or restarted from stasis.
 //
 int EV_DoPlat(line_t *line, plattype_e type, int amount)
 {
@@ -172,14 +197,16 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	break;
     }
 
+    // act on all sectors tagged the same as the activating linedef
     while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
     {
 	sec = &sectors[secnum];
 
-	if (sec->floordata)
+	// don't start a second floor function if already moving
+	if (P_SectorActive(floor_special, sec))
 	    continue;
 
-	// Find lowest & highest floors around sector
+	// Create a thinker
 	rtn = 1;
 	plat = Z_Malloc(sizeof(*plat), PU_LEVSPEC, (void *)0);
 	P_AddThinker(&plat->thinker);
@@ -191,6 +218,11 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	plat->crush = false;
 	plat->tag = line->tag;
 
+	// Avoid raise plat bouncing a head off a ceiling and then
+	// going down forever - default low to plat height when triggered
+	plat->low = sec->floorheight;
+
+	// set up plat according to type
 	switch(type)
 	{
 	  case raiseToNearestAndChange:
@@ -201,6 +233,7 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	    plat->status = up;
 	    // NO MORE DAMAGE, IF APPLICABLE
 	    sec->special = 0;
+	    sec->oldspecial = 0;
 	    S_StartSound((mobj_t *)&sec->soundorg, sfx_stnmov);
 	    break;
 
@@ -256,8 +289,11 @@ int EV_DoPlat(line_t *line, plattype_e type, int amount)
 	    plat->high = sec->floorheight;
 	    plat->status = down;
 	    break;
+
+	  default:
+	    break;
 	}
-	P_AddActivePlat(plat);
+	P_AddActivePlat(plat); // add plat to list of active plats
     }
     return rtn;
 }

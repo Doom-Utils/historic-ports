@@ -161,7 +161,8 @@ fixed_t		*spritewidth;
 fixed_t		*spriteoffset;
 fixed_t		*spritetopoffset;
 
-lighttable_t	*colormaps;
+int		firstcolormaplump;
+int		lastcolormaplump;
 
 //
 // MAPTEXTURE_T CACHING
@@ -851,17 +852,50 @@ void R_InitSpriteLumps(void)
 //
 // R_InitColormaps
 //
-void R_InitColormaps(void)
-{
-    int	lump, length;
+// Modified to allow dynamic colormaps, based on Boom
+//
 
-    // Load in the light tables,
-    //  256 byte align tables.
-    lump = W_GetNumForName("COLORMAP");
-    length = W_LumpLength(lump) + 255;
-    colormaps = Z_Malloc(length, PU_STATIC, (void *)0);
+//
+// Load in the light tables, 256 byte align tables
+//
+static void *R_GetColormaps(int lump)
+{
+    void	*colormaps;
+    int		lenght = W_LumpLength(lump) + 255;
+
+    colormaps = Z_Malloc(lenght, PU_STATIC, (void *)0);
     colormaps = (byte *)(((long)colormaps + 255) & ~0xff);
     W_ReadLump(lump, colormaps);
+    return colormaps;
+}
+
+void R_InitColormaps(void)
+{
+    int		i;
+
+    firstcolormaplump = W_GetNumForName("C_START");
+    lastcolormaplump = W_GetNumForName("C_END");
+    numcolormaps = lastcolormaplump - firstcolormaplump;
+    colormaps = (lighttable_t **)Z_Malloc(sizeof(*colormaps) * numcolormaps,
+			 PU_STATIC, (void *)0);
+    colormaps[0] = (lighttable_t *)R_GetColormaps(W_GetNumForName("COLORMAP"));
+    for (i = 1; i < numcolormaps; i++)
+	colormaps[i] = (lighttable_t *)R_GetColormaps(i + firstcolormaplump);
+}
+
+//
+// Get colormap number from name
+// From Boom
+//
+int R_ColormapNumForName(char *name)
+{
+    register int	i = 0;
+
+    if (strncasecmp(name, "COLORMAP", 8)) // COLORMAP predefined to return 0
+	if ((i = W_CheckNumForName(name)) != -1)
+	    i -= firstcolormaplump;
+
+    return i;
 }
 
 //

@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,10 +60,11 @@ extern lighttable_t	**dscalelight;
 
 typedef void (*drawfunc_t) (int start, int stop);
 
-// BSP?
 void R_ClearClipSegs(void);
 void R_ClearDrawSegs(void);
-
 void R_RenderBSPNode(int bspnum);
+sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
+		     int *floorlightlevel, int *ceilinglightlevel,
+		     boolean back);
 
 #endif

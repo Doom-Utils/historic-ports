@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -135,6 +136,15 @@
 #define PD_BLUEK	"You need a blue key to open this door"
 #define PD_REDK		"You need a red key to open this door"
 #define PD_YELLOWK	"You need a yellow key to open this door"
+#define PD_BLUEC	"You need a blue card to open this door"
+#define PD_REDC		"You need a red card to open this door"
+#define PD_YELLOWC	"You need a yellow card to open this door"
+#define PD_BLUES	"You need a blue skull to open this door"
+#define PD_REDS		"You need a red skull to open this door"
+#define PD_YELLOWS	"You need a yellow skull to open this door"
+#define PD_ANY		"Any key will open this door"
+#define PD_ALL3		"You need all three keys to open this door"
+#define PD_ALL6		"You need all six keys to open this door"
 
 //
 //	G_game.C

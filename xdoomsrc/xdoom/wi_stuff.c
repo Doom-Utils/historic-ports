@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1487,7 +1487,7 @@ void WI_loadData(void)
     // darken the background image
     // while (pic != screens[1] + SCREENHEIGHT * SCREENWIDTH)
     // {
-    //   *pic = colormaps[256 * 25 + *pic];
+    //   *pic = colormaps[0][256 * 25 + *pic];
     //   pic++;
     // }
     //}
@@ -1747,8 +1747,9 @@ void WI_initVariables(wbstartstruct_t *wbstartstruct)
     if (!wbs->maxitems)
 	wbs->maxitems = 1;
 
-    if (!wbs->maxsecret)
-	wbs->maxsecret = 1;
+// keep 0 so that we can detect 0/0 as a special case and print 100%
+//    if (!wbs->maxsecret)
+//	wbs->maxsecret = 1;
 
     if (gamemode != retail)
       if (wbs->epsd > 2)

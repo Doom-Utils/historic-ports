@@ -8,7 +8,7 @@ boomtst.wad: boomtst.lwad boomtst.gwad boomtst.rwad
 boomtst.lwad: boomtst.map
 	idbsp -q boomtst.map boomtst.lwad
 
-boomtst.gwad: boomtst.wgc glass3f.ppm glass3b.ppm tlite.ppm
+boomtst.gwad: boomtst.wgc glass3f.ppm tlite.ppm ksw1.ppm ksw2.ppm
 	wadext $(DOOM2WAD) PNAMES pnames.raw
 	wadext $(DOOM2WAD) TEXTURE1 texture1.raw
 	wadgc boomtst.wgc boomtst.gwad

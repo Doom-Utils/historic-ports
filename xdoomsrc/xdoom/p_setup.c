@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -31,7 +31,11 @@
 static const char
 rcsid[] = "$Id:$";
 
+#include <stdio.h>
 #include <math.h>
+#if defined(LINUX) || defined(SOLARIS) || defined(IRIX)
+#include <alloca.h>
+#endif
 
 #include "z_zone.h"
 #include "m_menu.h"
@@ -189,7 +193,7 @@ void P_LoadSegs(int lump)
 	side = SHORT(ml->side);
 	li->sidedef = &sides[ldef->sidenum[side]];
 	li->frontsector = sides[ldef->sidenum[side]].sector;
-	if (ldef->flags & ML_TWOSIDED)
+	if (ldef->flags & ML_TWOSIDED && ldef->sidenum[side ^ 1] != -1)
 	    li->backsector = sides[ldef->sidenum[side ^ 1]].sector;
 	else
 	    li->backsector = 0;
@@ -257,9 +261,14 @@ void P_LoadSectors(int lump)
 	ss->ceilingpic = R_FlatNumForName(ms->ceilingpic);
 	ss->lightlevel = SHORT(ms->lightlevel);
 	ss->special = SHORT(ms->special);
+	ss->oldspecial = SHORT(ms->special);
 	ss->tag = SHORT(ms->tag);
 	ss->thinglist = NULL;
 	ss->touching_thinglist = NULL;
+
+	// lockout stair retriggering until build completes
+	ss->nextsec = -1;
+	ss->prevsec = -1;
 
 	// floor offsets
 	ss->floor_xoffs = 0;
@@ -270,8 +279,12 @@ void P_LoadSectors(int lump)
 	ss->ceiling_yoffs = 0;
 
 	// transfers
+	ss->heightsec = -1;	  // sector used to get floor and ceiling height
 	ss->floorlightsec = -1;   // sector used to get floor lighting
 	ss->ceilinglightsec = -1; // scetor used to get ceiling lighting
+	ss->bottommap =		  // colormaps coming from sidedefs
+	ss->midmap = ss->topmap = 0;
+	ss->sky = 0;		  // sky textures coming from sidedefs
     }
 
     Z_Free(data);
@@ -620,11 +633,19 @@ void P_LoadLineDefs2(int lump)
     {
 	// fix common wad errors (missing sidedefs)
 	if (ld->sidenum[0] == -1)
+	{
 	    ld->sidenum[0] = 0;	// substitute dummy sidedef for missing right
+	    printf("P_LoadLineDefs2: linedef %d missing first sidedef\n",
+		   numlines - i);
+	}
 
 	// clear 2s flag for missing left side
-	if (ld->sidenum[1] == -1)
+	if ((ld->sidenum[1] == -1) && (ld->flags & ML_TWOSIDED))
+	{
 	    ld->flags &= ~ML_TWOSIDED;
+	    printf("P_LoadLineDefs2: linedef %d has two-sided flag set, "
+		   "but no second sidedef\n", numlines -i);
+	}
 
 	// set front and back sector of the line
 	ld->frontsector = ld->sidenum[0] != -1 ?
@@ -730,6 +751,25 @@ void P_LoadSideDefs2(int lump)
 
 	switch (sd->special)
 	{
+	    // variable colormap via 242 linedef
+	    case 242:
+		sd->bottomtexture =
+		    (sd->sector->bottommap =
+		     R_ColormapNumForName(msd->bottomtexture)) < 0 ?
+		     sd->sector->bottommap = 0,
+		     R_TextureNumForName(msd->bottomtexture) : 0;
+		sd->midtexture =
+		    (sd->sector->midmap =
+		     R_ColormapNumForName(msd->midtexture)) < 0 ?
+		     sd->sector->midmap = 0,
+		     R_TextureNumForName(msd->midtexture) : 0;
+		sd->toptexture =
+		    (sd->sector->topmap =
+		     R_ColormapNumForName(msd->toptexture)) < 0 ?
+		     sd->sector->topmap = 0,
+		     R_TextureNumForName(msd->toptexture) : 0;
+		break;
+
 	    // apply translucency to 2s normal texture
 	    case 260:
 		sd->midtexture = strncasecmp("TRANMAP", msd->midtexture, 8) ?
@@ -904,6 +944,80 @@ void P_GroupLines(void)
 }
 
 //
+// killough 10/98
+//
+// Remove slime trails.
+//
+// Slime trails are inherent to Doom's coordinate system -- i.e. there is
+// nothing that a node builder can do to prevent slime trails ALL of the time,
+// because it's a product of the integer coodinate system, and just because
+// two lines pass through exact integer coordinates, doesn't necessarily mean
+// that they will intersect at integer coordinates. Thus we must allow for
+// fractional coordinates if we are to be able to split segs with node lines,
+// as a node builder must do when creating a BSP tree.
+//
+// A wad file does not allow fractional coordinates, so node builders are out
+// of luck except that they can try to limit the number of splits (they might
+// also be able to detect the degree of roundoff error and try to avoid splits
+// with a high degree of roundoff error). But we can use fractional coordinates
+// here, inside the engine. It's like the difference between square inches and
+// square miles, in terms of granularity.
+//
+// For each vertex of every seg, check to see whether it's also a vertex of
+// the linedef associated with the seg (i.e, it's an endpoint). If it's not
+// an endpoint, and it wasn't already moved, move the vertex towards the
+// linedef by projecting it using the law of cosines. Formula:
+//
+//      2        2                         2        2
+//    dx  x0 + dy  x1 + dx dy (y0 - y1)  dy  y0 + dx  y1 + dx dy (x0 - x1)
+//   {---------------------------------, ---------------------------------}
+//                  2     2                            2     2
+//                dx  + dy                           dx  + dy
+//
+// (x0,y0) is the vertex being moved, and (x1,y1)-(x1+dx,y1+dy) is the
+// reference linedef.
+//
+// Segs corresponding to orthogonal linedefs (exactly vertical or horizontal
+// linedefs), which comprise at least half of all linedefs in most wads, don't
+// need to be considered, because they almost never contribute to slime trails
+// (because then any roundoff error is parallel to the linedef, which doesn't
+// cause slime). Skipping simple orthogonal lines lets the code finish quicker.
+//
+//
+void P_RemoveSlimeTrails(void)
+{
+    register int i;
+    byte *hit = (byte *)alloca(numvertexes);	// Hitlist for vertices
+
+    memset(hit, 0, numvertexes);		// Clear hitlist
+    for (i = 0; i < numsegs; i++)		// Go through each seg
+    {
+	const line_t *l = segs[i].linedef;	// The parent linedef
+	if (l->dx && l->dy)		// We can ignore orthogonal lines
+	{
+	    vertex_t *v = segs[i].v1;
+	    do
+		if (!hit[v - vertexes])	// If we haven't processed vertex
+		{
+		    hit[v - vertexes] = 1;	// Mark this vertex as processed
+		    // Exclude endpoints of linedefs
+		    if (v != l->v1 && v != l->v2)
+		    { // Project the vertex back onto the parent linedef
+		      long long dx2 = (l->dx >> FRACBITS) * (l->dx >> FRACBITS);
+		      long long dy2 = (l->dy >> FRACBITS) * (l->dy >> FRACBITS);
+		      long long dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
+		      long long s = dx2 + dy2;
+		      int x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
+		      v->x = (dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s;
+		      v->y = (dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s;
+		    }
+	        }  // Obsfucated C contest entry:   :)
+	    while ((v != segs[i].v2) && (v = segs[i].v2));
+	}
+    }
+}
+
+//
 // P_SetupLevel
 //
 void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
@@ -999,6 +1113,8 @@ void P_SetupLevel(int episode, int map, int playermask, skill_t skill)
 
     rejectmatrix = W_CacheLumpNum(lumpnum + ML_REJECT, PU_LEVEL);
     P_GroupLines();
+
+    P_RemoveSlimeTrails();	// remove slime trails from wad
 
     bodyqueslot = 0;
     deathmatch_p = deathmatchstarts;

@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -190,6 +191,7 @@ extern	line_t		*blockingline;
 
 boolean P_CheckPosition(mobj_t *thing, fixed_t x, fixed_t y);
 boolean P_TryMove(mobj_t *thing, fixed_t x, fixed_t y);
+int	P_GetMoveFactor(mobj_t *mo);
 boolean P_TeleportMove(mobj_t *thing, fixed_t x, fixed_t y);
 void	P_SlideMove(mobj_t *mo);
 boolean P_CheckSight(mobj_t *t1, mobj_t *t2);

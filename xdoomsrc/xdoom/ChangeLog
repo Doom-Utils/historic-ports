@@ -1,3 +1,74 @@
+	* Makefile for Linux PPC was missing module p_doorsplus.o, fixed.
+
+	* Fixed most Yadex 1.1.5 warnings in the included example PWAD's.
+	  Fixed the makefiles and added more monsters and level ending
+	  switches.
+
+	* Implemented the slime trails fix from Lee Killough from MFB.
+
+	* Use bit 13 of linedef flag to block line of sight on 2s lines.
+	  Wrote test level map "shadows" to try it out.
+
+	* Implemented the 271, 272 sky propertry tansfer linedefs from
+	  MFB. Tested implementation with Boom WAD CATABOOM and made
+	  example map "shadows" using SKY2 in MAP01.
+
+	* First try /usr/local/games/xdoom for loading xdoom.wad
+	  and then $DOOMWADDIR, prevents cluttering the filesystem
+	  with various copies of the file.
+
+	* Extracted WATERMAP from the Boom resource WAD and added it
+	  to xdoom.wad, between C_START and C_END labels for support
+	  of loadable multiple colormaps.
+
+	* Modified the whole colormap handling to support multiple
+	  colormaps. Also merge loadable colormaps from PWAD's between
+	  C_START and C_END markers, this is supposed to be Boom
+	  compatible.
+
+	* Implemented the 242 linedef fom Boom for sectors with two
+	  levels. Tested it with Boom WAD CATABOOM, the deep water
+	  now works as intended. Tested further with Boom WAD PAX,
+	  this one includes deep water over the player's head.
+
+	* Implemented all the generalized linedefs from Boom.
+	  Playtested and debugged with some Boom PWAD's, more
+	  testing is required.
+
+	* Fixed possible buffer overrun in searchpath().
+
+	* Displaying 100% secrets for maps without any secrets didn't
+	  work, fixed.
+
+	* Implemented the extended sector attributes from Boom.
+
+	* Added the wind/current thingies 5001 and 5002 from Boom to
+	  multigen.txt and recompiled info.c/info.h with multigen.
+	  No more warnings from da Boom maps about unkown things, neato.
+
+	* Implemented the code from Boom dealing with wind/current
+	  thingies: linedefs 224, 225 and 226. Tested the new thingies
+	  with Boom PWAD DAWNING, they seem to work OK.
+
+	* Print warnings if first sidedef of linedef is missing and
+	  a linedef has 2s flag set, but no second sidedef.
+
+	* Implemented the Boom friction stuff, linedef 223. Tested a bit
+	  with Boom PWAD's DAWNING and ARTICA. The icy floors in ARTICA
+	  are cool.
+
+	* Added save/load of the pusher and friction thinkers. Raised
+	  version number to v1.15, to prevent loading of incompatible
+	  files.
+
+	* Some minor improvements in the test PWAD plustst. Forgot to
+	  make the laser line repeatable. Flag for wall animation
+	  is initialized now by script, so that the state is the same
+	  also when player enters sector before script was started.
+
+	* Made the slime river and lava pool in test PWAD boomtst deep
+	  water, added multiplayer starts.
+
 Sun Jul 23 21:57:47 2000	<um@compuserve.com>
 
 	* Implemented lots Boom compatible extended linedefs, more Boom

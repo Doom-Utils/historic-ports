@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -185,6 +185,8 @@ void P_XYMovement(mobj_t *mo)
     player_t	*player;
     fixed_t	xmove;
     fixed_t	ymove;
+    fixed_t	oldx, oldy;	// reducing bobbing/momentum on ice
+				// when up against walls
 
     if (!mo->momx && !mo->momy)
     {
@@ -213,6 +215,10 @@ void P_XYMovement(mobj_t *mo)
 
     xmove = mo->momx;
     ymove = mo->momy;
+
+    oldx = mo->x;	// to reduce bobbing/momentum when on ice & up against
+    oldy = mo->y;	// wall. These will be compared later to your x,y
+			// values to see if you were able to move
 
     do
     {
@@ -273,7 +279,7 @@ void P_XYMovement(mobj_t *mo)
     }
 
     if (mo->flags & (MF_MISSILE | MF_SKULLFLY) )
-	return; 	// no friction for missiles ever
+	return; 	// no friction for missiles or skulls ever
 
     if (mo->z > mo->floorz)
 	return;		// no friction when airborne
@@ -309,8 +315,24 @@ void P_XYMovement(mobj_t *mo)
     }
     else
     {
-	mo->momx = FixedMul(mo->momx, FRICTION);
-	mo->momy = FixedMul(mo->momy, FRICTION);
+	// Friction will have been adjusted by friction thinkers for icy
+	// or muddy floors. Otherwise it was never touched and remained
+	// set at ORIG_FRICTION
+
+	if ((oldx == mo->x) && (oldy == mo->y)) // did you go anywhere?
+	{
+	    // no, use original friction. this allows you to not bob so much
+	    // if you're on ice, but keeps enough momentum arround to break
+	    // free when you're stuck mildly in a wall.
+	    mo->momx = FixedMul(mo->momx, ORIG_FRICTION);
+	    mo->momy = FixedMul(mo->momy, ORIG_FRICTION);
+	}
+	else // yes, use store friction
+	{
+	    mo->momx = FixedMul(mo->momx, mo->friction);
+	    mo->momy = FixedMul(mo->momy, mo->friction);
+	}
+	mo->friction = ORIG_FRICTION; // reset to normal for next tic
     }
 }
 
@@ -577,6 +599,8 @@ mobj_t *P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t	type)
 	mobj->z = z;
 
     mobj->thinker.function.acp1 = (actionf_p1)P_MobjThinker;
+
+    mobj->friction = ORIG_FRICTION;
 
     P_AddThinker(&mobj->thinker);
 

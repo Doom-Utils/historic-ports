@@ -58,8 +58,8 @@ else it won't run from accounts other than root. Same for Linux x86 2.2.x.
 Linux PPC:
 ==========
 The X11 version works OK, the VGA version doesn't build right now,
-due to problems with svgalib. Makefile are prepared to build a PPC
-version when a working svgalib port becomes available.
+due to problems with svgalib. Makefile is prepared to build a VGA
+version when a working svgalib port for Linux PPC becomes available.
 
 Linux Dec Alpha 2.2.x
 =====================

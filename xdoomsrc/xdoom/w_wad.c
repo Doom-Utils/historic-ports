@@ -349,6 +349,9 @@ void W_InitMultipleFiles (char **filenames)
     W_MergeLumps("S_START", "S_END");
     W_MergeLumps("F_START", "F_END");
 
+    // merge the colormaps namespaces
+    W_MergeLumps("C_START", "C_END");
+
     // set up caching
     size = numlumps * sizeof(*lumpcache);
     lumpcache = malloc(size);

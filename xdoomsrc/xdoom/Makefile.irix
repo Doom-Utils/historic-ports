@@ -127,6 +127,7 @@ OBJS=				\
 		$(O)/p_sight.o		\
 		$(O)/p_spec.o		\
 		$(O)/p_specplus.o	\
+		$(O)/p_genlin.o		\
 		$(O)/p_switch.o		\
 		$(O)/p_mobj.o		\
 		$(O)/p_telept.o		\
@@ -284,6 +285,9 @@ $(O)/p_spec.o: p_spec.c
 
 $(O)/p_specplus.o: p_specplus.c
 	$(CC) $(CFLAGS) -c p_specplus.c -o $(O)/p_specplus.o
+
+$(O)/p_genlin.o: p_genlin.c
+	$(CC) $(CFLAGS) -c p_genlin.c -o $(O)/p_genlin.o
 
 $(O)/p_switch.o: p_switch.c
 	$(CC) $(CFLAGS) -c p_switch.c -o $(O)/p_switch.o

@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -105,9 +106,13 @@ angle_t			xtoviewangle[SCREENWIDTH + 1];
 // fixed_t		finesine[5 * FINEANGLES / 4];
 fixed_t			*finecosine = &finesine[FINEANGLES / 4];
 
-lighttable_t		*scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
-lighttable_t		*scalelightfixed[MAXLIGHTSCALE];
-lighttable_t		*zlight[LIGHTLEVELS][MAXLIGHTZ];
+int			numcolormaps;
+lighttable_t		*(*c_scalelight)[LIGHTLEVELS][MAXLIGHTSCALE];
+lighttable_t		*(*c_zlight)[LIGHTLEVELS][MAXLIGHTZ];
+lighttable_t		*(*scalelight)[MAXLIGHTSCALE];
+lighttable_t		*(*zlight)[MAXLIGHTZ];
+lighttable_t		*fullcolormap;
+lighttable_t		**colormaps;
 
 // bumped light from gun blasts
 int			extralight;
@@ -560,9 +565,14 @@ void R_InitLightTables(void)
 {
     int		i;
     int		j;
-    int		level;
+    int		t;
     int		startmap;
     int		scale;
+    int		level;
+
+    // dynamic colormaps
+    c_zlight = malloc(sizeof(*c_zlight) * numcolormaps);
+    c_scalelight = malloc(sizeof(*c_scalelight) * numcolormaps);
 
     // Calculate the light levels to use
     //  for each level / distance combination.
@@ -582,7 +592,9 @@ void R_InitLightTables(void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS - 1;
 
-	    zlight[i][j] = colormaps + level * 256;
+	    level *= 256;
+	    for (t = 0; t < numcolormaps; t++)
+		c_zlight[t][i][j] = colormaps[t] + level;
 	}
     }
 }
@@ -613,6 +625,7 @@ void R_ExecuteSetViewSize(void)
     fixed_t	dy;
     int		i;
     int		j;
+    int		t;
     int		level;
     int		startmap;
 
@@ -695,7 +708,9 @@ void R_ExecuteSetViewSize(void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS - 1;
 
-	    scalelight[i][j] = colormaps + level * 256;
+	    level *= 256;
+	    for (t = 0; t < numcolormaps; t++)
+		c_scalelight[t][i][j] = colormaps[t] + level;
 	}
     }
 }
@@ -791,6 +806,7 @@ subsector_t *R_PointInSubsector(fixed_t x, fixed_t y)
 void R_SetupFrame(player_t *player)
 {
     int		i;
+    int		cm;
 
     viewplayer = player;
     viewx = player->mo->x;
@@ -803,13 +819,31 @@ void R_SetupFrame(player_t *player)
     viewsin = finesine[viewangle >> ANGLETOFINESHIFT];
     viewcos = finecosine[viewangle >> ANGLETOFINESHIFT];
 
+    // select colormap based on player status
+    if (player->mo->subsector->sector->heightsec != -1)
+    {
+	sector_t *s = player->mo->subsector->sector->heightsec + sectors;
+
+	cm = viewz < s->floorheight ? s->bottommap : viewz > s->ceilingheight ?
+	     s->topmap : s->midmap;
+	if (cm < 0 || cm > numcolormaps)
+	    cm = 0;
+    }
+    else
+	cm = 0;
+
     sscount = 0;
+
+    fullcolormap = colormaps[cm];
+    zlight = c_zlight[cm];
+    scalelight = c_scalelight[cm];
 
     if (player->fixedcolormap)
     {
-	fixedcolormap =
-	    colormaps
-	    + player->fixedcolormap * 256 * sizeof(lighttable_t);
+	static lighttable_t *scalelightfixed[MAXLIGHTSCALE];
+
+	fixedcolormap = fullcolormap
+			+ player->fixedcolormap * 256 * sizeof(lighttable_t);
 
 	walllights = scalelightfixed;
 

@@ -1,4 +1,4 @@
-.TH xdoom 6 "5 March 2000"
+.TH xdoom 6 "18 September 2000"
 
 .SH NAME
 xdoom \- UNIX version of the popular DOS game
@@ -32,6 +32,9 @@ described in the file \fBdmfaq666.txt\fR, for XDoom
 this manual page is decisive.
 
 .TP
+\fB\@\fR \fIfilename\fR
+Used to read in a command line parameter file including options.
+.TP
 .B \-1234
 Run the game with the specified amount of magnification.
 .B \-1
@@ -45,9 +48,6 @@ exits if the desired magnification will not fit on the screen.
 The less magnification used, the faster the game runs.
 This option does work only with X11, if another frame buffer is used
 the resolution is fixed and the option is ignored.
-.TP
-\fB\@\fR \fIfilename\fR
-Used to read in a command line parm file.
 .TP
 .B \-altcoop
 Alternative cooperative mode for multi\-player games. In this mode the
@@ -193,9 +193,8 @@ in the office with volume set to 100% and she or he thinks an office
 war with firearms started.
 .TP
 .B \-notrans
-Switch translucency off completely. While it looks pretty good with the
-original id levels for Doom and many of the third party levels, there are
-some add-ons which look very stupid with translucency.
+Switch translucency off completely, some add-ons with modified items
+don't look good with translucency.
 .TP
 \fB\-pdebug
 Prints debugging informations for running Action Code Scripts. The
@@ -247,11 +246,11 @@ Copies game statistic to some device, useless without this device.
 .TP
 .B \-stripextbits
 Some PWAD's designed for original Doom or Doom][ have bits set in
-linedef flags, which are not used by the original engine and so ignored.
+linedef flags, which are not used by the original engine and ignored.
 XDoom supports some more bits (for PWAD's especially designed for
-XDoom) and this PWAD's won't play correct then.
-Use this option to strip the undefined bits from the linedefs, this
-makes the PWAD play correct.
+XDoom) and this PWAD's won't play correct because of this.
+Use the option to strip the undefined bits from the linedefs, this
+makes such PWAD's play correct.
 .TP
 \fB\-timedemo\fR \fIfilename w/o .lmp\fR
 Calculates the number of times the screen is redrawn when playing a demo.
@@ -275,7 +274,7 @@ just use the level (1-32), this games don't have episodes.
 Loads a PWAD named E\fIepisode\fRM\fIlevel\fR.wad.
 
 .SH EXTENDED FEATURES
-XDoom has some extended features which weren't implemented in the original
+XDoom has extended features which weren't implemented in the original
 DOS game, nor were they part of the public source release.
 .LP
 The Shift-Lock key makes the marine always run without the need to
@@ -283,10 +282,9 @@ hold down the Shift key all the time. Hit the key again for walking.
 This key can't be remapped in \fB~/.xdoom/.doomrc\fR.
 .LP
 Demons are popping up in your back and killing you? Not a problem
-anymore because
-XDoom allows fast 180 degree turns. The default key for this is <, the
-key can be remapped in \fB~/.xdoom/.doomrc\fR. Using it is cheating,
-don't use it with the original id Software IWAD's. But some PWAD
+anymore because XDoom allows fast 180 degree turns. The default key for
+this is <, the key can be remapped in \fB~/.xdoom/.doomrc\fR. Using it
+is cheating, don't use it with the original id Software IWAD's. Some PWAD
 authors implement very nasty ambushes, in this case the usage of
 180 degree turns give the average player a fighting chance.
 .LP
@@ -310,15 +308,14 @@ Smoke trails are added to player and Cyberdemon missiles, it looks
 cool from player view to see that missiles smoking away and it adds
 to deathmatch games, because one can see the path of a missile.
 .LP
-XDoom
-got a handheld communication gadget for communication with the environment.
-It can be activated and deactivated with F5. Be careful with this
-because the action will continue, while one holds the device in front of the
-face! If the display of the device shows the text "NO\ OS\ BOOTED", that
-means that the PWAD doesn't contain any electronics one could communicate
-with. The text "DEVICE\ MALFUNCTION" indicates an error in the COMTXT
-PWAD resource, the next line shows the missing or misspelled label for the
-WAD author.
+XDoom got a handheld communication gadget (PDA) for communication with
+the environment. It can be activated and deactivated with F5. Be careful
+with this because the action will continue, while one holds the device in
+front of the face! If the display of the device shows the
+text "NO\ OS\ BOOTED", that means that the PWAD doesn't contain any
+electronics one could communicate with. The text "DEVICE\ MALFUNCTION"
+indicates an error in the COMTXT PWAD resource, the next line shows the
+missing or misspelled label for the WAD author.
 Whenever the gadget has new informations a little CD icon will be displayed
 and a sound signal is played.
 This icon will be removed after the gadget was used. Intentionally there is
@@ -329,7 +326,7 @@ If one tries to use a teleporter or open a door and the gadget reports that
 the teleporter is deactivated, or the door is locked, one has to search for
 an access terminal, to unlock the door or activate the teleporter. Access
 terminals look like a computer screen but are animated. As usual walk up
-to the terminal and press the use key. The gadget will report then that
+to the terminal and press the use key. The gadget will report that
 a door was unlocked or a teleporter was activated. Also an access terminal
 could switch off a force field. Whenever you see something that looks like
 an access terminal use it and see what happens, if something happened the
@@ -485,7 +482,8 @@ This file is included with the XDoom source distribution.
 .B xdoom.wad
 This PWAD file includes new data which is not included in the original
 id Software IWAD's. Same as with the IWAD's this file must be found in
-the current directory or where DOOMWADDIR points to.
+the installation directory (/usr/local/games/xdoom), or where DOOMWADDIR
+points to.
 .TP
 .B doom1.wad
 The shareware version of the Doom 1 wad. This wad will only allow limited
@@ -520,7 +518,7 @@ the IWAD files into one directory, the programs look for them in some order
 to decide the game version one is playing. So the various WAD's must be in
 different directories, if one doesn't want to play the same one all the time.
 .P
-Similar, if it exits with the message "SWITCHES\ not\ found!" \fBxdoom\fR
+Similar, if it exits with the message "C_START\ not\ found!" \fBxdoom\fR
 cannot find xdoom.wad.
 .P
 Note that PWAD files (third party wads) can be specified with the "-file"

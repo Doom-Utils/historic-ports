@@ -21,9 +21,7 @@ The name XDOOM was chosen for some reasons:
 
 Features of the game engine:
 
-	* Many bug fixes from the sources id Software released,
-	  this is a pretty solid, commercial quality like software,
-	  similar to the products sold by id for DOS and Windows.
+	* Bug fixes from the sources id Software released:
 	    - no TFE
 	    - no Medusa
 	    - no bullet and missile eating walls
@@ -35,10 +33,17 @@ Features of the game engine:
 	  instead of using fixed sized arrays, so they can't overflow.
 	  No 2s line HOM bug anymore, because the drawsegs are dynamic
 	  allocated and the engine cannot run out of drawsegs.
+	  Vissprites are allocated dynamic, the engine allows infinite
+	  amount of sprites in view.
+
+	* Slime trails caused by round off error fixed.
 
 	* Does merge sprites and flats from PWAD's correctly with the
 	  IWAD, no external tools necessary for merging a PWAD before
 	  playing it.
+
+	* Allows more than one sky texture per map and usage of different
+	  skies than the hardcoded defaults in original Doom.
 
 	* Enhanced version can play WAD files in extended Hexen format,
 	  a Hexen compatible P code interpreter is builtin. This doesn't
@@ -58,12 +63,12 @@ Features of the game engine:
 		Unixware 2.1.x
 		Unixware 7
 		Solaris SPARC 2.5.1, 2.6 & 2.7
-		Solaris x86
+		Solaris 7 x86
 		AIX 4.2
 		Irix 6.5
 
 	  (*) Not fully tested, might not work properly, see release notes
-	      for details. Any feedback welcome.
+	      for details.
 
 	  Can be ported to any UNIX with X11 without too much efford.
 	  Depending on the OS full screen direct frame buffer usage is
@@ -123,15 +128,12 @@ Features of the game engine:
 	* UAC communication gadget (PDA) for extended interaction with the
 	  environment. The included example PWAD's make use of the device.
 
-	* Supports new linedefs defined for Boom by TeamTNT, like scrolling
-	  floors and ceilings. That includes carrying objects on scrolling
-	  floors. So it's possible to build conveyor belts, escalators...
-	  There is more Boom support than this, like silent teleporters,
-	  tagged local doors, but it is too much to mention it all here and
-	  I might keep adding features. So, example PWAD included to show
-	  some of the implemented features, the PWAD is compatible between
-	  XDoom and Boom. Also some Boom levels work OK under XDoom, some
-	  levels known to fully work are listed inside in the documentation.
+	* Supports all extended and generalized linedefs defined for Boom
+	  by TeamTNT, like scrolling floors and ceilings. That includes
+	  carrying objects on scrolling floors. So it's possible to build
+	  conveyor belts, escalators and many other interesting structures.
+	  Example PWAD included to show some of the implemented features,
+	  the PWAD is compatible between XDoom and Boom.
 
 	* Displays the end text from IWAD's and PWAD's.
 
@@ -146,21 +148,43 @@ Features of the game engine:
 
 New with this release:
 
-	Lots more of the Boom extended linedefs implemented.
+	-----------------------------------------------------------------
+	| The game engine version was increased to 1.15, due to changes	|
+	| for saved game support. Old saved game files from releases	|
+	| before cannot be loaded anymore, so keep a copy of the	|
+	| previous release, to finish saved games.			|
+	| If you don't use the top-level makefile to install this	|
+	| release, make sure you copy xdoom.wad to			|
+	| /usr/local/games/xdoom, else the engine won't work.		|
+	-----------------------------------------------------------------
 
-	**************************************************************
-	* Saved game files are not compatible anymore because of the *
-	* new Boom Elevators! Game version number is increased to    *
-	* v1.14 to prevent loading of old incompatible files. Keep   *
-	* a copy of a previous release to finish saved games.        *
-	**************************************************************
+	Full Boom support, any Boom level should play now! Includes everything,
+	generalized linedefs and extended sectors, colormap support, fake
+	ceiling/floor sectors, wind and current effects etc.
+	Now, that said, the enhanced Boom support required many changes
+	in the sources all over the place. It is very likely that some of
+	the Boom support contains bugs. The added features are so many that
+	I haven't had a chance yet, to test all and everything. I have
+	playtested with a bunch of Boom level maps tho, get all the Boom
+	levels from Kurt Kessler, they are bug free and as far as I can tell
+	everything works as intended by the wad author.
 
-	Linux PPC is working now under X, full screen console
-	graphics still needs work.
+	A new linedef flagbit was introduced, which blocks line-of-sight
+	for monsters. This allows to create save heavens in a map, as an
+	example a player in a dark shadow area won't be seen by monsters.
+	This has been possible before by manipulating the reject map, but
+	doing it straight from the editor with a linedef flag is a lot
+	more comfortable to handle. An new example map is included to
+	show this feature.
 
-	Ported to SGI Irix 6.5.
+	Sky property transfer partially implemented from MBF, allows to use
+	SKY2 in MAP01 e.g.
 
-	Documentation work.
+	There have been several bug fixes as well, the details are in
+	the change log inside, see there. Also most of the included
+	example PWAD's have been improved, might be fun again to play
+	arround with those. Included documentation was improved all
+	over the place.
 
 
 
@@ -174,8 +198,7 @@ Features of the GUI launcher:
 
 New with this release:
 
-	Overworked the source, better maintenable and customizable,
-	no functional modifications.
+	Nothing.
 
 
 

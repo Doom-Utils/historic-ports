@@ -550,6 +550,8 @@ void IdentifyVersion(void)
     char	*plutoniawad;
     char	*tntwad;
 
+    struct stat	stb;
+
 #ifdef NORMALUNIX
     char	*doomwaddir;
 
@@ -586,8 +588,18 @@ void IdentifyVersion(void)
     sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
 
     // XDoom resource PWAD
-    xdoomwad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
-    sprintf(xdoomwad, "%s/xdoom.wad", doomwaddir);
+    // first try INSTALLDIR
+    if (stat(INSTALLDIR "/xdoom.wad", &stb) != -1)
+    {
+    	xdoomwad = malloc(strlen(INSTALLDIR) + 1 + 9 + 1);
+    	sprintf(xdoomwad, "%s/xdoom.wad", INSTALLDIR);
+    }
+    else
+    {
+	// assue we'll find it in DOOMWADDIR
+    	xdoomwad = malloc(strlen(doomwaddir) + 1 + 9 + 1);
+    	sprintf(xdoomwad, "%s/xdoom.wad", doomwaddir);
+    }
 
     home = getenv("HOME");
     if (!home)

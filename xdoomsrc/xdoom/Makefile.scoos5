@@ -159,6 +159,7 @@ OBJS=				\
 		$(O)/p_sight.o		\
 		$(O)/p_spec.o		\
 		$(O)/p_specplus.o	\
+		$(O)/p_genlin.o		\
 		$(O)/p_switch.o		\
 		$(O)/p_mobj.o		\
 		$(O)/p_telept.o		\

@@ -22,7 +22,7 @@ xdoom.gwad: xdoom.wgc m_cdvol.ppm comdev.ppm
 	wadgc xdoom.wgc xdoom.gwad
 	rm temp.*
 
-xdoom.rwad: tranmap.dat switches.lmp animated.lmp
+xdoom.rwad: tranmap.dat switches.lmp animated.lmp watermap.dat
 	mkwad -v -p xdoom.rwad @xdoom.res
 
 tranmap.dat:

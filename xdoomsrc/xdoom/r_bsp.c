@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 // Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
@@ -30,10 +30,13 @@
 static const char
 rcsid[] = "$Id:$";
 
+#include <string.h>
+
 #include "doomdef.h"
 #include "m_bbox.h"
 #include "i_system.h"
 #include "r_main.h"
+#include "r_segs.h"
 #include "r_plane.h"
 #include "r_things.h"
 #include "doomstat.h"
@@ -49,7 +52,7 @@ drawseg_t	*drawsegs;
 unsigned	maxdrawsegs;
 drawseg_t	*ds_p;
 
-void R_StoreWallRange(int start, int stop);
+int		doorclosed;
 
 //
 // R_ClearDrawSegs
@@ -66,15 +69,33 @@ void R_ClearDrawSegs(void)
 //
 typedef	struct
 {
-    int	first;
-    int last;
+    short first;
+    short last;
 } cliprange_t;
 
-#define MAXSEGS		32
+// From Boom:
+//
+// 1/11/98: Lee Killough
+//
+// This fixes many strange venetian blind crashes, which occurred when a scan
+// line had too many "posts" of alternating non-transparent and transparent
+// regions. Using a doubly-linked list to represent the posts is one way to
+// do it, but it has increased overhead and poor spatial locality, which hurts
+// cache performance on modern machines. Since the maximum number of posts
+// theoretically possible is a function of screen width, a static limit is
+// okay in this case. It used to be 32, which was way too small.
+//
+// This limit was frequently mistaken for the visplane limit in some Doom
+// editing FAQs, where visplanes were said to "double" if a pillar or other
+// object split the view's space into two pieces horizontally. That did not
+// have anything to do with visplanes, but it had everything to do with these
+// clip posts.
+//#define MAXSEGS		32
+#define MAXSEGS (SCREENWIDTH / 2 + 1)
 
 // newend is one past the last valid seg
-cliprange_t	*newend;
-cliprange_t	solidsegs[MAXSEGS];
+static cliprange_t	*newend;
+static cliprange_t	solidsegs[MAXSEGS];
 
 //
 // R_ClipSolidWallSegment
@@ -100,21 +121,15 @@ void R_ClipSolidWallSegment(int first, int last)
 	    // Post is entirely visible (above start),
 	    //  so insert a new clippost.
 	    R_StoreWallRange(first, last);
-	    next = newend;
-	    newend++;
-
-	    while (next != start)
-	    {
-		*next = *(next - 1);
-		next--;
-	    }
-	    next->first = first;
-	    next->last = last;
+	    memmove(start + 1, start, (++newend - start) * sizeof(*start));
+	    start->first = first;
+	    start->last = last;
 	    return;
 	}
 
 	// There is a fragment above *start.
 	R_StoreWallRange(first, start->first - 1);
+
 	// Now adjust the clip size.
 	start->first = first;
     }
@@ -141,6 +156,7 @@ void R_ClipSolidWallSegment(int first, int last)
 
     // There is a fragment after *next.
     R_StoreWallRange(next->last + 1, last);
+
     // Adjust the clip size.
     start->last = last;
 
@@ -215,31 +231,144 @@ void R_ClipPassWallSegment(int first, int last)
 //
 void R_ClearClipSegs(void)
 {
-    solidsegs[0].first = -0x7fffffff;
+    solidsegs[0].first = -0x7fff;
     solidsegs[0].last = -1;
     solidsegs[1].first = viewwidth;
-    solidsegs[1].last = 0x7fffffff;
+    solidsegs[1].last = 0x7fff;
     newend = solidsegs + 2;
 }
 
+// From Boom:
 //
-// Incomplete hack from Boom sources.
-// This is used to modify floor and ceiling lighting only so far,
-// underwater fake not implemented.
+// killough 1/18/98 -- This function is used to fix the automap bug which
+// showed lines behind closed doors simply because the door had a dropoff.
+//
+// It assumes that Doom has already ruled out a door being closed because
+// of front-back closure (e.g. front floor is taller than back ceiling).
+int R_DoorClosed(void)
+{
+    return
+
+    // if door is closed because back is shut:
+    backsector->ceilingheight <= backsector->floorheight
+
+    // preserve a kind of transparent door/lift special effect:
+    && (backsector->ceilingheight >= frontsector->ceilingheight ||
+	curline->sidedef->toptexture)
+
+    && (backsector->floorheight <= frontsector->floorheight ||
+	curline->sidedef->bottomtexture)
+
+    // properly render skies (consider door "open" if both ceilings are sky):
+    && (backsector->ceilingpic != skyflatnum ||
+        frontsector->ceilingpic != skyflatnum);
+}
+
+//
+// From Boom sources:
+//
+// For one this is used to modify floor and ceiling lighting.
+// Then, if player's view height is underneath fake floor, lower the
+// drawn ceiling to be just under the floor height, and replace
+// the drawn floor and ceiling textures, and light level, with
+// the control sector's.
+// Similar for ceiling, only reflected.
 //
 sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		     int *floorlightlevel, int *ceilinglightlevel,
 		     boolean back)
 {
-	if (floorlightlevel)
-	    *floorlightlevel = sec->floorlightsec == -1 ?
-	      sec->lightlevel : sectors[sec->floorlightsec].lightlevel;
+    if (floorlightlevel)
+	*floorlightlevel = sec->floorlightsec == -1 ?
+	sec->lightlevel : sectors[sec->floorlightsec].lightlevel;
 
-	if (ceilinglightlevel)
-	    *ceilinglightlevel = sec->ceilinglightsec == -1 ?
-	      sec->lightlevel : sectors[sec->ceilinglightsec].lightlevel;
+    if (ceilinglightlevel)
+	*ceilinglightlevel = sec->ceilinglightsec == -1 ?
+	sec->lightlevel : sectors[sec->ceilinglightsec].lightlevel;
 
-	return sec;
+    if (sec->heightsec != -1)
+    {
+	sector_t *s = &sectors[sec->heightsec];
+	int	 heightsec = viewplayer->mo->subsector->sector->heightsec;
+	int	 underwater = heightsec != -1 && viewz <=
+			      sectors[heightsec].floorheight;
+
+	// replace the sector beeing drawn with a copy to be hacked
+	*tempsec = *sec;
+
+	// replace floor and ceiling height with other sector's heights
+	tempsec->floorheight = s->floorheight;
+	tempsec->ceilingheight = s->ceilingheight;
+
+	// prevent sudden light changes from non-water sectors
+	if ((underwater && (tempsec->floorheight = sec->floorheight,
+			   tempsec->ceilingheight = s->floorheight - 1, !back))
+			   || viewz <= s->floorheight)
+	{
+	    // head below floor hack
+	    tempsec->floorpic = s->floorpic;
+	    tempsec->floor_xoffs = s->floor_xoffs;
+	    tempsec->floor_yoffs = s->floor_yoffs;
+
+	    if (underwater)
+	    {
+		if (s->ceilingpic == skyflatnum)
+		{
+		    tempsec->floorheight = tempsec->ceilingheight + 1;
+		    tempsec->ceilingpic = tempsec->floorpic;
+		    tempsec->ceiling_xoffs = tempsec->floor_xoffs;
+		    tempsec->ceiling_yoffs = tempsec->floor_yoffs;
+		}
+		else
+		{
+		    tempsec->ceilingpic = s->ceilingpic;
+		    tempsec->ceiling_xoffs = s->ceiling_xoffs;
+		    tempsec->ceiling_yoffs = s->ceiling_yoffs;
+		}
+	    }
+
+	    tempsec->lightlevel = s->lightlevel;
+
+	    if (floorlightlevel)
+		*floorlightlevel = s->floorlightsec == -1 ?
+		s->lightlevel : sectors[s->floorlightsec].lightlevel;
+
+	    if (ceilinglightlevel)
+		*ceilinglightlevel = s->ceilinglightsec == -1 ?
+		s->lightlevel : sectors[s->ceilinglightsec].lightlevel;
+	}
+	else if (heightsec != -1 && viewz >= sectors[heightsec].ceilingheight
+		 && sec->ceilingheight > s->ceilingheight)
+	{
+	    // head above ceiling hack
+	    tempsec->ceilingheight = s->ceilingheight;
+	    tempsec->floorheight = s->ceilingheight + 1;
+	    tempsec->floorpic = tempsec->ceilingpic = s->ceilingpic;
+	    tempsec->floor_xoffs = tempsec->ceiling_xoffs = s->ceiling_xoffs;
+	    tempsec->floor_yoffs = tempsec->ceiling_yoffs = s->ceiling_yoffs;
+
+	    if (s->floorpic != skyflatnum)
+	    {
+		tempsec->ceilingheight = sec->ceilingheight;
+		tempsec->floorpic = s->floorpic;
+		tempsec->floor_xoffs = s->floor_xoffs;
+		tempsec->floor_yoffs = s->floor_yoffs;
+	    }
+
+	    tempsec->lightlevel = s->lightlevel;
+
+	    if (floorlightlevel)
+		*floorlightlevel = s->floorlightsec == -1 ?
+		s->lightlevel : sectors[s->floorlightsec].lightlevel;
+
+	    if (ceilinglightlevel)
+		*ceilinglightlevel = s->ceilinglightsec == -1 ?
+		s->lightlevel : sectors[s->ceilinglightsec].lightlevel;
+	}
+	sec = tempsec;	// use other sector
+    }
+
+    return sec;
 }
 
 //
@@ -255,6 +384,7 @@ void R_AddLine(seg_t *line)
     angle_t		angle2;
     angle_t		span;
     angle_t		tspan;
+    static sector_t	tempsec;
 
     curline = line;
 
@@ -314,9 +444,17 @@ void R_AddLine(seg_t *line)
     if (!backsector)
 	goto clipsolid;
 
+    // hack for invisible ceilings / deep water
+    backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
+
     // Closed door.
+    doorclosed = 0;
     if (backsector->ceilingheight <= frontsector->floorheight
 	|| backsector->floorheight >= frontsector->ceilingheight)
+	goto clipsolid;
+
+    // This fixes the automap floor height bug
+    if ((doorclosed = R_DoorClosed()))
 	goto clipsolid;
 
     // Window.
@@ -492,6 +630,7 @@ void R_Subsector(int num)
     int			count;
     seg_t		*line;
     subsector_t		*sub;
+    sector_t		tempsec;
     int			floorlightlevel;
     int			ceilinglightlevel;
 
@@ -508,40 +647,37 @@ void R_Subsector(int num)
     count = sub->numlines;
     line = &segs[sub->firstline];
 
-    // for floor/ceiling lighting different from sector
-    frontsector = R_FakeFlat(frontsector, NULL, &floorlightlevel,
+    // for floor/ceiling lighting different from sector and fake ceiling
+    frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
 			     &ceilinglightlevel, false);
 
-    if (frontsector->floorheight < viewz)
-    {
-	floorplane = R_FindPlane(frontsector->floorheight,
-				 frontsector->floorpic,
-				 floorlightlevel,
-				 frontsector->floor_xoffs,
-				 frontsector->floor_yoffs);
-    }
-    else
-	floorplane = NULL;
+    floorplane = frontsector->floorheight < viewz ||
+		 (frontsector->heightsec != -1 &&
+		  sectors[frontsector->heightsec].ceilingpic == skyflatnum) ?
+		 R_FindPlane(frontsector->floorheight,
+			     frontsector->floorpic == skyflatnum &&
+			     frontsector->sky & PL_SKYFLAT ?
+			     frontsector->sky : frontsector->floorpic,
+			     floorlightlevel,
+			     frontsector->floor_xoffs,
+			     frontsector->floor_yoffs) : NULL;
 
-    if (frontsector->ceilingheight > viewz
-	|| frontsector->ceilingpic == skyflatnum)
-    {
-	ceilingplane = R_FindPlane(frontsector->ceilingheight,
-				   frontsector->ceilingpic,
-				   ceilinglightlevel,
-				   frontsector->ceiling_xoffs,
-				   frontsector->ceiling_yoffs);
-    }
-    else
-	ceilingplane = NULL;
+    ceilingplane = frontsector->ceilingheight > viewz ||
+		   frontsector->ceilingpic == skyflatnum ||
+		   (frontsector->heightsec != -1 &&
+		    sectors[frontsector->heightsec].floorpic == skyflatnum) ?
+		   R_FindPlane(frontsector->ceilingheight,
+			       frontsector->ceilingpic == skyflatnum &&
+			       frontsector->sky & PL_SKYFLAT ?
+			       frontsector->sky : frontsector->ceilingpic,
+			       ceilinglightlevel,
+			       frontsector->ceiling_xoffs,
+			       frontsector->ceiling_yoffs) : NULL;
 
-    R_AddSprites(frontsector);
+    R_AddSprites(sub->sector, (floorlightlevel + ceilinglightlevel) / 2);
 
     while (count--)
-    {
-	R_AddLine(line);
-	line++;
-    }
+	R_AddLine(line++);
 }
 
 //

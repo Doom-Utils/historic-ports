@@ -1,14 +1,14 @@
 The file xdoom.wad is a PWAD file which gets automatically loaded by XDoom,
-if found in the current working directory or $DOOMWADDIR. This PWAD file
-includes new lumps for XDoom, like the translucency table and new sound for
-the chaingun. The pre-compiled xdoom.wad just is build how I like things
-looking and sounding, feel free to play with it and adjust it to what you
-like. All raw data to rebuild xdoom.wad is provided here, but please note
-that you need xwadtools from ftp://ftp.cdrom.com/pub/doom/source to build
-xdoom.wad your self. Xwadtools includes all and any tools to manipulate
-WAD files, I have working under UNIX. To rebuild xdoom.wad simply type make
-in this directory (after you installed xwadtools, that is), 'make clean'
-to remove the temporary files generated.
+from directories /usr/local/games/xdoom or $DOOMWADDIR, in this order.
+This PWAD file includes new lumps for XDoom, like the translucency table
+and new sound for the chaingun. The pre-compiled xdoom.wad just is build
+how I like things looking and sounding, feel free to play with it and adjust
+it to what you like. All raw data to rebuild xdoom.wad is provided here, but
+please note that you need xwadtools from ftp://ftp.cdrom.com/pub/doom/source
+to build xdoom.wad your self. Xwadtools includes all and any tools to
+manipulate WAD files, I have working under UNIX. To rebuild xdoom.wad simply
+type make in this directory (after you installed xwadtools, that is),
+'make clean' to remove the temporary files generated.
 
 The files in this directory are as follows:
 
@@ -20,6 +20,8 @@ xdoom.wgc:	Input file for 'wadgc' used for the graphical resources
 
 swantbls.dat:	Input file for 'swantbls' with the default switches and
 		animated textures/flats in the id IWAD's.
+
+watermap.dat:	Underwater colormap extracted from Boom resource WAD.
 
 dschgun.sfx:	This is a weapon sound I took out of Marines Doom, the included
 		text file doesn't limit usage of the PWAD in any way. With this
@@ -37,7 +39,7 @@ m_cdvol.ppm:	Image file in PPM P6 format, this image shows the text
 
 m_horsen.ppm	Image in PPM P6 format, shows menu text 'Horizonal' for
 		horizontal mouse sensitivity setting. This image was taken
-		from the Boom resource wad.
+		from the Boom resource WAD.
 
 m_versen.ppm	As above, for vertical mouse sensitivity, from Boom too.
 

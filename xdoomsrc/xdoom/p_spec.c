@@ -43,6 +43,7 @@ rcsid[] = "$Id:$";
 #include "m_argv.h"
 #include "m_random.h"
 #include "m_swap.h"
+#include "m_bbox.h"
 #include "w_wad.h"
 #include "r_local.h"
 #include "p_local.h"
@@ -52,8 +53,11 @@ rcsid[] = "$Id:$";
 #include "r_state.h"
 #include "sounds.h"
 #include "m_comdev.h"
+#include "dstrings.h"
 
 static void P_SpawnScrollers(void);	// Initialize generalized scrolling
+static void P_SpawnPushers(void);	// Initialize sectors with pushers
+static void P_SpawnFriction(void);	// Initialize sectors with friction
 
 //
 // Animating textures and planes
@@ -274,14 +278,357 @@ int twoSided(int sector, int line)
 //
 sector_t *getNextSector(line_t *line, sector_t *sec)
 {
-    if (!(line->flags & ML_TWOSIDED))
-	return NULL;
+//    if (!(line->flags & ML_TWOSIDED))
+//	return NULL;
 
     if (line->frontsector == sec)
-	return line->backsector;
+    {
+	if (line->backsector != sec)
+	    return line->backsector;
+	else
+	    return (sector_t *)0;
+    }
 
     return line->frontsector;
 }
+
+//
+// RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
+//
+int P_FindSectorFromLineTag(line_t *line, int start)
+{
+    int	i;
+
+    for (i = start + 1; i < numsectors; i++)
+	if (sectors[i].tag == line->tag)
+	    return i;
+
+    return -1;
+}
+
+//
+// Find sector from tag
+// This is from Boom
+//
+int P_FindSectorFromTag(int tag, int start)
+{
+	start = start >= 0 ? sectors[start].nexttag :
+		sectors[(unsigned)tag % (unsigned)numsectors].firsttag;
+	while (start >= 0 && sectors[start].tag != tag)
+		start = sectors[start].nexttag;
+	return start;
+}
+
+//
+// Find line from another lines tag
+// This is from Boom
+//
+int P_FindLineFromLineTag(line_t *line, int start)
+{
+    start = start >= 0 ? lines[start].nexttag :
+	lines[(unsigned)line->tag % (unsigned)numlines].firsttag;
+    while (start >= 0 && lines[start].tag != line->tag)
+	start = lines[start].nexttag;
+    return start;
+}
+
+//
+// Find line from tag
+// This is needed for XDoomPlus, just written from function above
+//
+int P_FindLineFromTag(int tag, int start)
+{
+    start = start >= 0 ? lines[start].nexttag :
+	lines[(unsigned)tag % (unsigned)numlines].firsttag;
+    while (start >= 0 && lines[start].tag != tag)
+	start = lines[start].nexttag;
+    return start;
+}
+
+//
+// Hash sector tags across the sectors and linedefs.
+// Also taken from Boom.
+//
+void P_InitTagLists(void)
+{
+    register int i;
+
+    // hash tags in sectors
+    for (i = numsectors; --i >= 0;)	// Initially make all slots empty
+	sectors[i].firsttag = -1;
+    for (i = numsectors; --i >= 0;)	// Proceed from last to first sector
+    {					// so that lower sector appears first
+	int j = (unsigned) sectors[i].tag % (unsigned)numsectors; // hash func
+	sectors[i].nexttag = sectors[j].firsttag;  // Prepend sector to chain
+	sectors[j].firsttag = i;
+    }
+
+    // hash tags in linedefs
+    for (i = numlines; --i >= 0;)	// Initially make all slots empty
+	lines[i].firsttag = -1;
+    for (i = numlines; --i >= 0;)	// Proceed from last to first linedef
+    {					// so that lower linedef appears first
+	int j = (unsigned) lines[i].tag % (unsigned)numlines; // hash func
+	lines[i].nexttag = lines[j].firsttag; // Prepend linedef to chain
+	lines[j].firsttag = i;
+    }
+}
+
+//
+// From Boom:
+//
+// P_SectorActive()
+//
+// Passed a linedef special class (floor, ceiling, lighting) and a sector
+// returns whether the sector is already busy with a linedef special of the
+// same class.
+//
+int P_SectorActive(special_e t, sector_t *sec)
+{
+    switch (t)             // return whether thinker of same type is active
+    {
+	case floor_special:
+	    return (int)sec->floordata;
+	case ceiling_special:
+	    return (int)sec->ceilingdata;
+	case lighting_special:
+	    return (int)sec->lightingdata;
+    }
+    return 1; // don't know which special, must be active, shouldn't be here
+}
+
+//
+// P_CanUnlockGenDoor()
+//
+// Passed a generalized locked door linedef and a player, returns whether
+// the player has the keys necessary to unlock that door.
+//
+// Note: The linedef passed MUST be a generalized locked door type
+//       or results are undefined.
+//
+boolean P_CanUnlockGenDoor(line_t *line, player_t *player)
+{
+    // does this line special distinguish between skulls and keys?
+    int skulliscard = (line->special & LockedNKeys) >> LockedNKeysShift;
+
+    // determine for each case of lock type if player's keys are adequate
+    switch((line->special & LockedKey) >> LockedKeyShift)
+    {
+	case AnyKey:
+	    if
+	    (
+	     !player->cards[it_redcard] &&
+	     !player->cards[it_redskull] &&
+	     !player->cards[it_bluecard] &&
+	     !player->cards[it_blueskull] &&
+	     !player->cards[it_yellowcard] &&
+	     !player->cards[it_yellowskull]
+	    )
+	    {
+		player->message = PD_ANY;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case RCard:
+	    if
+	    (
+	     !player->cards[it_redcard] &&
+	     (!skulliscard || !player->cards[it_redskull])
+	    )
+	    {
+		player->message = skulliscard ? PD_REDK : PD_REDC;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case BCard:
+	    if
+	    (
+	     !player->cards[it_bluecard] &&
+	     (!skulliscard || !player->cards[it_blueskull])
+	    )
+	    {
+		player->message = skulliscard ? PD_BLUEK : PD_BLUEC;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case YCard:
+	    if
+	    (
+	     !player->cards[it_yellowcard] &&
+	     (!skulliscard || !player->cards[it_yellowskull])
+	    )
+	    {
+		player->message = skulliscard ? PD_YELLOWK : PD_YELLOWC;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case RSkull:
+	    if
+	    (
+	     !player->cards[it_redskull] &&
+	     (!skulliscard || !player->cards[it_redcard])
+	    )
+	    {
+		player->message = skulliscard ? PD_REDK : PD_REDS;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case BSkull:
+	    if
+	    (
+	     !player->cards[it_blueskull] &&
+	     (!skulliscard || !player->cards[it_bluecard])
+	    )
+	    {
+		player->message = skulliscard ? PD_BLUEK : PD_BLUES;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case YSkull:
+	    if
+	    (
+	     !player->cards[it_yellowskull] &&
+	     (!skulliscard || !player->cards[it_yellowcard])
+	    )
+	    {
+		player->message = skulliscard ? PD_YELLOWK : PD_YELLOWS;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+
+	case AllKeys:
+	    if
+	    (
+	     !skulliscard &&
+	     (
+  	      !player->cards[it_redcard] ||
+  	      !player->cards[it_redskull] ||
+  	      !player->cards[it_bluecard] ||
+  	      !player->cards[it_blueskull] ||
+	      !player->cards[it_yellowcard] ||
+  	      !player->cards[it_yellowskull]
+	     )
+	    )
+	    {
+		player->message = PD_ALL6;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    if
+	    (
+	     skulliscard &&
+	     (
+  	      (!player->cards[it_redcard] &&
+    	      !player->cards[it_redskull]) ||
+	      (!player->cards[it_bluecard] &&
+	      !player->cards[it_blueskull]) ||
+	      (!player->cards[it_yellowcard] &&
+	      !player->cards[it_yellowskull])
+	     )
+	    )
+	    {
+		player->message = PD_ALL3;
+		S_StartSound(player->mo, sfx_oof);
+		return false;
+	    }
+	    break;
+    }
+    return true;
+}
+
+//
+// P_CheckTag()
+//
+// Passed a line, returns true if the tag is non-zero or the line special
+// allows no tag without harm.
+//
+// Note: Only line specials activated by walkover, pushing, or shooting are
+//       checked by this routine.
+//
+int P_CheckTag(line_t *line)
+{
+    if (line->tag)		// tag not zero, allowed
+	return 1;
+
+    switch(line->special)
+    {
+	case 1:			// Manual door specials
+	case 26:
+	case 27:
+	case 28:
+	case 31:
+	case 32:
+	case 33:
+	case 34:
+	case 117:
+	case 118:
+	case 300:		// sliding door
+
+	case 139:		// Lighting specials
+	case 170:
+	case 79:
+	case 35:
+	case 138:
+	case 171:
+	case 81:
+	case 13:
+	case 192:
+	case 169:
+	case 80:
+	case 12:
+	case 194:
+	case 173:
+	case 157:
+	case 104:
+	case 193:
+	case 172:
+	case 156:
+	case 17:
+
+	case 195:		// Thing teleporters
+	case 174:
+	case 97:
+	case 39:
+	case 126:
+	case 125:
+	case 210:
+	case 209:
+	case 208:
+	case 207:
+
+	case 11:		// Exits
+	case 52:
+	case 197:
+	case 51:
+	case 124:
+	case 198:
+
+	case 48:		// Scrolling walls
+	case 85:
+		return 1;	// zero tag allowed
+
+	default:
+		break;
+    }
+    return 0;			// zero tag not allowed
+}
+
+//
+// Floors
+//
 
 //
 // P_FindLowestFloorSurrounding()
@@ -428,6 +775,41 @@ fixed_t P_FindNextLowestFloor(sector_t *sec, int currentheight)
 }
 
 //
+// From Boom:
+//
+// Passed a floor height and a sector number, return a pointer to a
+// sector with that floor height across the lowest numbered two sided
+// line surrounding the sector.
+//
+// Note: If no sector at that height bounds the sector passed, return NULL.
+//
+sector_t *P_FindModelFloorSector(fixed_t floordestheight, int secnum)
+{
+    int		i;
+    sector_t	*sec = &sectors[secnum];
+    int		linecount;
+
+    linecount = sec->linecount;
+
+    for (i = 0; i < (sec->linecount < linecount ? sec->linecount : linecount);
+	 i++)
+    {
+	if (getSide(secnum, i, 0)->sector - sectors == secnum)
+	    sec = getSector(secnum, i, 1);
+	else
+	    sec = getSector(secnum, i, 0);
+
+	if (sec->floorheight == floordestheight)
+	    return sec;
+    }
+    return (sector_t *)0;
+}
+
+//
+// Ceilings
+//
+
+//
 // FIND LOWEST CEILING IN THE SURROUNDING SECTORS
 //
 fixed_t P_FindLowestCeilingSurrounding(sector_t *sec)
@@ -466,116 +848,114 @@ fixed_t	P_FindHighestCeilingSurrounding(sector_t *sec)
 //
 // From Boom:
 //
-// Passed a floor height and a sector number, return a pointer to a
-// sector with that floor height across the lowest numbered two sided
+// P_FindNextLowestCeiling()
+//
+// Passed a sector and a ceiling height, returns the fixed point value
+// of the largest ceiling height in a surrounding sector smaller than
+// the ceiling height passed. If no such height exists the ceiling height
+// passed is returned.
+//
+//
+fixed_t P_FindNextLowestCeiling(sector_t *sec, int currentheight)
+{
+    sector_t	*other;
+    int		i;
+
+    for (i = 0; i < sec->linecount; i++)
+    {
+	if ((other = getNextSector(sec->lines[i], sec)) &&
+	     other->ceilingheight < currentheight)
+	{
+	    int height = other->ceilingheight;
+
+	    while (++i < sec->linecount)
+	    {
+		if ((other = getNextSector(sec->lines[i], sec)) &&
+    		    other->ceilingheight > height &&
+    		    other->ceilingheight < currentheight)
+		    height = other->ceilingheight;
+	    }
+	    return height;
+	}
+    }
+    return currentheight;
+}
+
+//
+// From Boom:
+//
+// P_FindNextHighestCeiling()
+//
+// Passed a sector and a ceiling height, returns the fixed point value
+// of the smallest ceiling height in a surrounding sector larger than
+// the ceiling height passed. If no such height exists the ceiling height
+// passed is returned.
+//
+//
+fixed_t P_FindNextHighestCeiling(sector_t *sec, int currentheight)
+{
+    sector_t	*other;
+    int		i;
+
+    for (i = 0; i < sec->linecount; i++)
+    {
+	if ((other = getNextSector(sec->lines[i], sec)) &&
+	     other->ceilingheight > currentheight)
+	{
+	    int height = other->ceilingheight;
+	
+	    while (++i < sec->linecount)
+	    {
+		if ((other = getNextSector(sec->lines[i], sec)) &&
+		    other->ceilingheight < height &&
+		    other->ceilingheight > currentheight)
+		    height = other->ceilingheight;
+	    }
+	    return height;
+	}
+    }
+    return currentheight;
+}
+
+//
+// From Boom:
+//
+// P_FindModelCeilingSector()
+//
+// Passed a ceiling height and a sector number, return a pointer to a
+// a sector with that ceiling height across the lowest numbered two sided
 // line surrounding the sector.
 //
-// Note: If no sector at that height bounds the sector passed, return NULL.
+// Note: If no sector at that height bounds the sector passed, return NULL
 //
-sector_t *P_FindModelFloorSector(fixed_t floordestheight, int secnum)
+sector_t *P_FindModelCeilingSector(fixed_t ceildestheight, int secnum)
 {
     int		i;
-    sector_t	*sec = (sector_t *)0;
+    sector_t	*sec = &sectors[secnum];
     int		linecount;
 
-    sec = &sectors[secnum];
     linecount = sec->linecount;
 
-    for (i = 0; i < (sec->linecount < linecount ? sec->linecount : linecount);
+    for (i = 0; i < (sec->linecount < linecount ?  sec->linecount : linecount);
 	 i++)
     {
-	if (getSide(secnum, i, 0)->sector - sectors == secnum)
-	    sec = getSector(secnum, i, 1);
-	else
-	    sec = getSector(secnum, i, 0);
+	if (twoSided(secnum, i))
+	{
+	    if (getSide(secnum, i, 0)->sector - sectors == secnum)
+  		sec = getSector(secnum, i, 1);
+	    else
+  		sec = getSector(secnum, i, 0);
 
-	if (sec->floorheight == floordestheight)
-	    return sec;
+	    if (sec->ceilingheight == ceildestheight)
+		return sec;
+	}
     }
     return (sector_t *)0;
 }
 
 //
-// RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
+// Lighting
 //
-int P_FindSectorFromLineTag(line_t *line, int start)
-{
-    int	i;
-
-    for (i = start + 1; i < numsectors; i++)
-	if (sectors[i].tag == line->tag)
-	    return i;
-
-    return -1;
-}
-
-//
-// Find sector from tag
-// This is from Boom
-//
-int P_FindSectorFromTag(int tag, int start)
-{
-	start = start >= 0 ? sectors[start].nexttag :
-		sectors[(unsigned)tag % (unsigned)numsectors].firsttag;
-	while (start >= 0 && sectors[start].tag != tag)
-		start = sectors[start].nexttag;
-	return start;
-}
-
-//
-// Find line from another lines tag
-// This is from Boom
-//
-int P_FindLineFromLineTag(line_t *line, int start)
-{
-    start = start >= 0 ? lines[start].nexttag :
-	lines[(unsigned)line->tag % (unsigned)numlines].firsttag;
-    while (start >= 0 && lines[start].tag != line->tag)
-	start = lines[start].nexttag;
-    return start;
-}
-
-//
-// Find line from tag
-// This is needed for XDoomPlus, just written from function above
-//
-int P_FindLineFromTag(int tag, int start)
-{
-    start = start >= 0 ? lines[start].nexttag :
-	lines[(unsigned)tag % (unsigned)numlines].firsttag;
-    while (start >= 0 && lines[start].tag != tag)
-	start = lines[start].nexttag;
-    return start;
-}
-
-//
-// Hash sector tags across the sectors and linedefs.
-// Also taken from Boom.
-//
-void P_InitTagLists(void)
-{
-    register int i;
-
-    // hash tags in sectors
-    for (i = numsectors; --i >= 0;)	// Initially make all slots empty
-	sectors[i].firsttag = -1;
-    for (i = numsectors; --i >= 0;)	// Proceed from last to first sector
-    {					// so that lower sector appears first
-	int j = (unsigned) sectors[i].tag % (unsigned)numsectors; // hash func
-	sectors[i].nexttag = sectors[j].firsttag;  // Prepend sector to chain
-	sectors[j].firsttag = i;
-    }
-
-    // hash tags in linedefs
-    for (i = numlines; --i >= 0;)	// Initially make all slots empty
-	lines[i].firsttag = -1;
-    for (i = numlines; --i >= 0;)	// Proceed from last to first linedef
-    {					// so that lower linedef appears first
-	int j = (unsigned) lines[i].tag % (unsigned)numlines; // hash func
-	lines[i].nexttag = lines[j].firsttag; // Prepend linedef to chain
-	lines[j].firsttag = i;
-    }
-}
 
 //
 // Find minimum light from an adjacent sector
@@ -597,6 +977,74 @@ int P_FindMinSurroundingLight(sector_t *sector, int max)
 }
 
 //
+// Textures
+//
+
+//
+// From Boom:
+//
+// P_FindShortestUpperAround()
+//
+// Passed a sector number, returns the shortest upper texture on a
+// linedef bounding the sector.
+//
+fixed_t P_FindShortestUpperAround(int secnum)
+{
+    int		minsize = MAXINT;
+    side_t	*side;
+    int		i;
+    sector_t	*sec = &sectors[secnum];
+
+    for (i = 0; i < sec->linecount; i++)
+    {
+	if (twoSided(secnum, i))
+	{
+	    side = getSide(secnum, i, 0);
+	    if (side->toptexture > 0)	// texture 0 is a placeholder
+		if (textureheight[side->toptexture] < minsize)
+		    minsize = textureheight[side->toptexture];
+	    side = getSide(secnum, i, 1);
+	    if (side->toptexture > 0)	// texture 0 is a placeholder
+		if (textureheight[side->toptexture] < minsize)
+		    minsize = textureheight[side->toptexture];
+	}
+    }
+    return minsize;
+}
+
+//
+// From Boom:
+//
+// P_FindShortestTextureAround()
+//
+// Passed a sector number, returns the shortest lower texture on a
+// linedef bounding the sector.
+//
+fixed_t P_FindShortestTextureAround(int secnum)
+{
+    int		minsize = MAXINT;
+    side_t	*side;
+    int		i;
+    sector_t	*sec = &sectors[secnum];
+
+    for (i = 0; i < sec->linecount; i++)
+    {
+	if (twoSided(secnum, i))
+	{
+	    side = getSide(secnum, i, 0);
+	    if (side->bottomtexture > 0)  // texture 0 is a placeholder
+		if (textureheight[side->bottomtexture] < minsize)
+  		    minsize = textureheight[side->bottomtexture];
+	    side = getSide(secnum, i, 1);
+	    if (side->bottomtexture > 0)  // texture 0 is a placeholder
+		if (textureheight[side->bottomtexture] < minsize)
+		    minsize = textureheight[side->bottomtexture];
+	}
+    }
+    return minsize;
+}
+
+//
 // EVENTS
 // Events are operations triggered by using, crossing,
 // or shooting special lines, or by timed thinkers.
@@ -613,6 +1061,149 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
     int		ok;
 
     line = &lines[linenum];
+
+    // Generalized triggers from Boom
+    if (line->special >= GenLinedefBase)
+    {
+	// pointer to line function is NULL by default, set non-NULL if
+	// line special is walkover generalized linedef type
+	int (*linefunc)(line_t *line) = (void *)0;
+
+	// Things tat should NOT trigger special
+	if (!thing->player)
+	{
+	    switch(thing->type)
+	    {
+		case MT_ROCKET:
+		case MT_PLASMA:
+		case MT_BFG:
+		case MT_TROOPSHOT:
+		case MT_HEADSHOT:
+		case MT_BRUISERSHOT:
+		    return;
+
+		default:
+		    break;
+	    }
+	}
+
+	// check each range of generalized linedefs
+	// careful here, must check from higher numbers to lower numbers!
+	if ((unsigned int)line->special >= GenFloorBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & FloorChange) ||
+		    !(line->special & FloorModel))
+		{
+		    return;	// FloorModel is "Allow Monsters" if
+				// FloorChange is 0
+		}
+	    }
+
+	    if (!line->tag)	// all walk generalized types require tag
+		return;
+
+	    linefunc = EV_DoGenFloor;
+	}
+
+	else if ((unsigned int)line->special >= GenCeilingBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & CeilingChange) ||
+		    !(line->special & CeilingModel))
+		{
+		    return;	// CeilingModel is "Allow Monsters"
+				// if CeilingChange is 0
+		}
+	    }
+
+	    if (!line->tag)
+		return;		// all walk generalized types require tag
+
+	    linefunc = EV_DoGenCeiling;
+	}
+
+	else if ((unsigned int)line->special >= GenDoorBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & DoorMonster))
+		    return;	// monsters disallowed
+		if (line->flags & ML_SECRET)
+		    return;	// they can't open secret doors either
+	    }
+
+	    if (!line->tag)
+		return;		// all walk generalized types require tag
+
+	    linefunc = EV_DoGenDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLockedBase)
+	{
+	    if (!thing->player)
+		return;		// monsters disallowed from unlocking doors
+
+	    if (((line->special & TriggerType) == WalkOnce) ||
+		((line->special & TriggerType) == WalkMany))
+	    {
+		if (!P_CanUnlockGenDoor(line, thing->player))
+		    return;
+	    }
+	    else
+		return;
+
+	    linefunc = EV_DoGenLockedDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLiftBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & LiftMonster))
+		    return;	// monsters disallowed
+	    }
+
+	    if (!line->tag)
+		return;		// all walk generalized types require tag
+
+	    linefunc = EV_DoGenLift;
+	}
+
+	else if ((unsigned int)line->special >= GenStairsBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & StairMonster))
+		    return;	// monsters disallowed
+	    }
+
+	    if (!line->tag)
+		return;		// all walk generalized types require tag
+
+	    linefunc = EV_DoGenStairs;
+	}
+
+	if (linefunc)	// if it was a valid generalized type
+	{
+	    switch ((line->special & TriggerType) >> TriggerTypeShift)
+	    {
+		case WalkOnce:
+		    if (linefunc(line))
+			line->special = 0; // clear special if walk once type
+		    return;
+
+		case WalkMany:
+		    linefunc(line);
+		    return;
+
+		default:		// if not a walk type do nothing here
+		    return;
+	    }
+	}
+    }
 
     // Triggers that other things can activate
     if (!thing->player)
@@ -688,7 +1279,11 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 	    return;
     }
 
-    // Note: could use some const's here.
+    if (!P_CheckTag(line))	// disallow zero tag on some types
+	return;
+
+    // Dispatch on the line special value to the line's action routine.
+    // If a once only function clear the line special.
     switch (line->special)
     {
 
@@ -1376,14 +1971,12 @@ void P_CrossSpecialLine(int linenum, int side, mobj_t *thing)
 //
 // P_UseSpecialLine
 // Called when a thing uses a special line.
-// Only the front sides of lines are usable.
 //
 boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
 {
     register int i;
 
-    // Err...
-    // Use the back sides of VERY SPECIAL lines...
+    // Some lines can be used from back side
     if (side)
     {
 	switch(line->special)
@@ -1396,6 +1989,150 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
 	  default:
 	    return false;
 	    break;
+	}
+    }
+
+    // Generalized triggers from Boom
+    if (line->special >= GenLinedefBase)
+    {
+	// pointer to line function is NULL by default, set non-NULL if
+	// line special is push or switch generalized linedef type
+	int (*linefunc)(line_t *line) = (void *)0;
+
+	// check each range of generalized linedefs
+	// careful here, must check from higher numbers to lower numbers!
+	if ((unsigned int)line->special >= GenFloorBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & FloorChange) ||
+		    !(line->special & FloorModel))
+		{
+		    return false;	// Floor Model is "Allow Monsters"
+					// if FloorChange is 0
+		}
+	    }
+
+	    if (!line->tag)	// all generalized types require tag
+		return false;
+
+	    linefunc = EV_DoGenFloor;
+	}
+
+	else if ((unsigned int)line->special >= GenCeilingBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & CeilingChange) ||
+		    !(line->special & CeilingModel))
+		{
+		    return false;	// CeilingModel is "Allow Monsters"
+					// if CeilingChange is 0
+		}
+	    }
+
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenCeiling;
+	}
+
+	else if ((unsigned int)line->special >= GenDoorBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & DoorMonster))
+		    return false;	// monsters disallowed
+		if (line->flags & ML_SECRET)
+		    return false;	// they can't open secret door either
+	    }
+
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLockedBase)
+	{
+	    if (!thing->player)
+		return false;		// monsters disallowed
+	    if (!P_CanUnlockGenDoor(line, thing->player))
+		return false;
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenLockedDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLiftBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & LiftMonster))
+		    return false;	// monsters disallowed
+	    }
+
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenLift;
+	}
+
+	else if ((unsigned int)line->special >= GenStairsBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & StairMonster))
+		    return false;	// monsters disallowed
+	    }
+
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenStairs;
+	}
+	
+	else if ((unsigned int)line->special >= GenCrusherBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & CrusherMonster))
+		    return false;	// monsters disallowed
+	    }
+
+	    if (!line->tag && ((line->special & 6) != 6)) // all non-manual
+		return false;				  // types require tag
+
+	    linefunc = EV_DoGenCrusher;
+	}
+
+	if (linefunc)
+	{
+	    switch ((line->special & TriggerType) >> TriggerTypeShift)
+	    {
+		case PushOnce:
+		    if (linefunc(line))
+			line->special = 0;
+		    return true;
+
+		case PushMany:
+		    linefunc(line);
+		    return true;
+
+		case SwitchOnce:
+		    if (linefunc(line))
+			P_ChangeSwitchTexture(line, 0);
+		    return true;
+
+		case SwitchMany:
+		    if (linefunc(line))
+			P_ChangeSwitchTexture(line, 1);
+		    return true;
+
+		default:	// if not a switch/push type, do nothing here
+		    return false;
+	    }
 	}
     }
 
@@ -1424,7 +2161,10 @@ boolean P_UseSpecialLine(mobj_t *thing, line_t *line, int side)
 	}
     }
 
-    // do something
+    if (!P_CheckTag(line))	// disallow zero tag on some types
+	return false;
+
+    // dispatch to handle according to linedef type
     switch (line->special)
     {
 
@@ -2200,6 +2940,146 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
 {
     int		ok;
 
+    // Generalized triggers from Boom
+    if (line->special >= GenLinedefBase)
+    {
+	// pointer to line function is NULL by default, set non-NULL if
+	// line special is gun triggered generalized linedef type
+	int (*linefunc)(line_t *line) = (void *)0;
+
+	// check each range of generalized linedefs
+	// careful here, must check from higher numbers to lower numbers!
+	if ((unsigned int)line->special >= GenFloorBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & FloorChange) ||
+		    !(line->special & FloorModel))
+		{
+		    return;	// FloorModel is "Allow Monsters" if
+				// FloorChange is 0
+		}
+	    }
+
+	    if (!line->tag)	// all gun generalized types require tag
+		return;
+
+	    linefunc = EV_DoGenFloor;
+	}
+
+	else if ((unsigned int)line->special >= GenCeilingBase)
+	{
+	    if (!thing->player)
+	    {
+		if ((line->special & CeilingChange) ||
+		    !(line->special & CeilingModel))
+		{
+		    return;	// CeilingModel is "Allow Monsters" if
+				// CeilingChange is 0
+		}
+	    }
+
+	    if (!line->tag)	// all gun generalized types require tag
+		return;
+
+	    linefunc = EV_DoGenCeiling;
+	}
+
+	else if ((unsigned int)line->special >= GenDoorBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & DoorMonster))
+		    return;	// monsters disallowed
+		if (line->flags & ML_SECRET)
+		    return;	// they can't open secret doors either
+	    }
+
+	    if (!line->tag)
+		return;		// all gun generalized types require tag
+
+	    linefunc = EV_DoGenDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLockedBase)
+	{
+	    if (!thing->player)
+		return;		// monsters disallowed from unlocking doors
+
+	    if (((line->special & TriggerType) == GunOnce) ||
+		((line->special & TriggerType) == GunMany))
+	    {
+		if (!P_CanUnlockGenDoor(line, thing->player))
+		    return;
+	    }
+	    else
+		return;
+
+	    if (!line->tag)
+		return;		// all gun generalized types require tag
+
+	    linefunc = EV_DoGenLockedDoor;
+	}
+
+	else if ((unsigned int)line->special >= GenLiftBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & LiftMonster))
+		    return;	// monsters disallowed
+	    }
+
+	    linefunc = EV_DoGenLift;
+	}
+
+	else if ((unsigned int)line->special >= GenStairsBase)
+	{
+	    if (!thing->player)
+	    {
+	        if (!(line->special & StairMonster))
+		    return;	// monsters disallowed
+	    }
+
+	    if (!line->tag)
+		return;		// all gun generalized types require tag
+
+	    linefunc = EV_DoGenStairs;
+	}
+
+	else if ((unsigned int)line->special >= GenCrusherBase)
+	{
+	    if (!thing->player)
+	    {
+		if (!(line->special & StairMonster))
+		    return;	// monsters disallowed
+	    }
+
+	    if (!line->tag)
+		return;		// all gun generalized types require tag
+
+	    linefunc = EV_DoGenCrusher;
+	}
+
+	if (linefunc)
+	{
+	    switch((line->special & TriggerType) >> TriggerTypeShift)
+	    {
+		case GunOnce:
+		    if (linefunc(line))
+			P_ChangeSwitchTexture(line, 0);
+		    return;
+
+		case GunMany:
+		    if (linefunc(line))
+			P_ChangeSwitchTexture(line, 1);
+		    return;
+
+		default:	// if not a gun type, do nothing here
+		    return;
+	    }
+	}
+    }
+
     //	Impacts that other things can activate.
     if (!thing->player)
     {
@@ -2214,6 +3094,9 @@ void P_ShootSpecialLine(mobj_t *thing, line_t *line)
 	if (!ok)
 	    return;
     }
+
+    if (!P_CheckTag(line))	// disallow zero tag on some types
+	return;
 
     switch(line->special)
     {
@@ -2270,55 +3153,97 @@ void P_PlayerInSpecialSector(player_t *player)
 	return;
 
     // Has hitten ground.
-    switch (sector->special)
+    // handle the original types
+    if (sector->special < 32)
     {
-      case 5:
-	// HELLSLIME DAMAGE
-	if (!player->powers[pw_ironfeet])
-	    if (!(leveltime&0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 10);
-	break;
-
-      case 7:
-	// NUKAGE DAMAGE
-	if (!player->powers[pw_ironfeet])
-	    if (!(leveltime&0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 5);
-	break;
-
-      case 16:
-	// SUPER HELLSLIME DAMAGE
-      case 4:
-	// STROBE HURT
-	if (!player->powers[pw_ironfeet] || (P_Random()<5))
+	switch (sector->special)
 	{
-	    if (!(leveltime&0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 20);
+	    case 5:
+		// HELLSLIME DAMAGE
+		if (!player->powers[pw_ironfeet])
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 10);
+		break;
+
+	    case 7:
+		// NUKAGE DAMAGE
+		if (!player->powers[pw_ironfeet])
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+		break;
+
+	    case 16:
+		// SUPER HELLSLIME DAMAGE
+	    case 4:
+		// STROBE HURT
+		if (!player->powers[pw_ironfeet] || (P_Random() < 5))
+		{
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 20);
+		}
+		break;
+
+	    case 9:
+		// SECRET SECTOR
+		player->secretcount++;
+		sector->special = 0;
+		break;
+
+	    case 11:
+		// EXIT SUPER DAMAGE! (for E1M8 finale)
+		player->cheats &= ~CF_GODMODE;
+
+		if (!(leveltime & 0x1f))
+		    P_DamageMobj(player->mo, NULL, NULL, 20);
+
+		if (player->health <= 10)
+		    G_ExitLevel();
+		break;
+
+	    default:
+		I_Error("P_PlayerInSpecialSector: "
+			"unknown special %i", sector->special);
+		break;
 	}
-	break;
+    }
+    else // handle the extended sector types from Boom
+    {
+	switch ((sector->special & DAMAGE_MASK) >> DAMAGE_SHIFT)
+	{
+	    case 0: // no damage
+		break;
 
-      case 9:
-	// SECRET SECTOR
-	player->secretcount++;
-	sector->special = 0;
-	break;
+	    case 1: // 2/5 damage per 31 ticks
+		if (!player->powers[pw_ironfeet])
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 5);
+		break;
 
-      case 11:
-	// EXIT SUPER DAMAGE! (for E1M8 finale)
-	player->cheats &= ~CF_GODMODE;
+	    case 2: // 5/10 damage per 31 ticks
+		if (!player->powers[pw_ironfeet])
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 10);
+		break;
 
-	if (!(leveltime&0x1f))
-	    P_DamageMobj(player->mo, NULL, NULL, 20);
+	    case 3: // 10/20 damage per 31 ticks
+		if (!player->powers[pw_ironfeet]
+		    || (P_Random() < 5)) // take damage even with suit
+		    if (!(leveltime & 0x1f))
+			P_DamageMobj(player->mo, NULL, NULL, 20);
+		break;
+	}
 
-	if (player->health <= 10)
-	    G_ExitLevel();
-	break;
+	if (sector->special & SECRET_MASK)
+	{
+	    player->secretcount++;
+	    sector->special &= ~SECRET_MASK;
+	    if (sector->special < 32)	// if all extended bits clear,
+		sector->special = 0;	// sector is not special anymore
+	}
 
-      default:
-	I_Error("P_PlayerInSpecialSector: "
-		"unknown special %i",
-		sector->special);
-	break;
+	// If FRICTION_MASK or PUSH_MASK is set, we don't care at this
+	// point, since the code to deal with those situations is
+	// handled by thinkers.
     }
 }
 
@@ -2478,7 +3403,6 @@ int EV_DoDonut(line_t *line)
 //  that spawn thinkers
 //
 
-
 //
 // not used anymore, replaced with thinker based scrollers from Boom
 //
@@ -2609,9 +3533,11 @@ void P_SpawnSpecials(void)
     for (i = 0; i < MAXBUTTONS; i++)
 	memset(&buttonlist[i], 0, sizeof(button_t));
 
-    P_InitTagLists();	// create xref tables for tags
-    P_SpawnScrollers();
-    P_InitSlidingDoorFrames();
+    P_InitTagLists();		// create xref tables for tags
+    P_SpawnScrollers();		// initialize scrollers
+    P_SpawnFriction();		// initialize sectors with friction
+    P_SpawnPushers();		// initialize sectors with push/pull thingies
+    P_InitSlidingDoorFrames();	// initialize frame animation for sliding doors
 
     for (i = 0; i < numlines; i++)
     {
@@ -2619,6 +3545,13 @@ void P_SpawnSpecials(void)
 	{
 	    int sec;
 	    int s;
+
+	    // support for drawn heights coming from different sector
+	    case 242:
+		sec = sides[*lines[i].sidenum].sector - sectors;
+		for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+		    sectors[s].heightsec = sec;
+		break;
 
 	    // floor lighting independently (e.g. lava)
 	    case 213:
@@ -2632,6 +3565,18 @@ void P_SpawnSpecials(void)
 		sec = sides[*lines[i].sidenum].sector - sectors;
 		for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
 		    sectors[s].ceilinglightsec = sec;
+		break;
+
+	    // Support for sky textures beeing transferred from sidedefs.
+	    // Allows scrolling and other effects (but if scrolling is
+	    // used, then the same sector tag needs to be used for the
+	    // sky sector, the sky-transfer linedef and the scroll-effect
+	    // linedef). Still requires user to use F_SKY1 for the floor
+	    // or ceiling texture, to distinguish floor and ceiling sky.
+	    case 271:	// regular sky
+	    case 272:	// same, only flipped
+		for (s = -1; (s = P_FindSectorFromLineTag(lines + i, s)) >= 0;)
+		    sectors[s].sky = i | PL_SKYFLAT;
 		break;
 	}
     }
@@ -2684,6 +3629,7 @@ void T_Scroll(scroll_t *s)
 	side_t		*side;
 	sector_t	*sec;
 	fixed_t		height;
+	fixed_t		waterheight;
 	msecnode_t	*node;
 	mobj_t		*thing;
 
@@ -2712,12 +3658,18 @@ void T_Scroll(scroll_t *s)
 	case sc_carry:
 	    sec = sectors + s->affectee;
 	    height = sec->floorheight;
+	    waterheight = sec->heightsec != -1 &&
+			  sectors[sec->heightsec].floorheight > height ?
+			  sectors[sec->heightsec].floorheight : MININT;
 	    for (node = sec->touching_thinglist; node; node = node->m_snext)
 	    {
 	      thing = node->m_thing;
 	      if (!(thing->flags & MF_NOCLIP) &&
-		  !(thing->flags & MF_NOGRAVITY) && !(thing->z > height))
+		  (!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
+		   thing->z < waterheight))
 	      {
+		// Move objects only if on floor or underwater,
+		// non-flating and clipped.
 		thing->momx += dx;
 		thing->momy += dy;
 	      }
@@ -2874,3 +3826,450 @@ static void P_SpawnScrollers(void)
 	    }
 	}
 }
+
+////////////////////////////////////////////////////////////////////////////
+//
+// PUSH/PULL EFFECT
+//
+// This is where push/pull effects are applied to objects in the sectors.
+//
+// There are four kinds of push effects
+//
+// 1) Pushing Away
+//
+//    Pushes you away from a point source defined by the location of an
+//    MT_PUSH Thing. The force decreases linearly with distance from the
+//    source. This force crosses sector boundaries and is felt w/in a circle
+//    whose center is at the MT_PUSH. The force is felt only if the point
+//    MT_PUSH can see the target object.
+//
+// 2) Pulling toward
+//
+//    Same as Pushing Away except you're pulled toward an MT_PULL point
+//    source. This force crosses sector boundaries and is felt w/in a circle
+//    whose center is at the MT_PULL. The force is felt only if the point
+//    MT_PULL can see the target object.
+//
+// 3) Wind
+//
+//    Pushes you in a constant direction. Full force above ground, half
+//    force on the ground, nothing if you're below it (water).
+//
+// 4) Current
+//
+//    Pushes you in a constant direction. No force above ground, full
+//    force if on the ground or below it (water).
+//
+// The magnitude of the force is controlled by the length of a controlling
+// linedef. The force vector for types 3 & 4 is determined by the angle
+// of the linedef, and is constant.
+//
+// For each sector where these effects occur, the sector special type has
+// to have the PUSH_MASK bit set. If this bit is turned off by a switch
+// at run-time, the effect will not occur. The controlling sector for
+// types 1 & 2 is the sector containing the MT_PUSH/MT_PULL Thing.
+//
+// The push/pull effects are from TeamTNT's Boom engine.
+//
+////////////////////////////////////////////////////////////////////////////
+
+#define PUSH_FACTOR 7
+
+/////////////////////////////
+//
+// Add a push thinker to the thinker list
+
+static void Add_Pusher(int type, int x_mag, int y_mag, mobj_t *source,
+		       int affectee)
+{
+    pusher_t *p = Z_Malloc((sizeof *p), PU_LEVSPEC, (void *)0);
+
+    p->thinker.function.acp1 = (actionf_p1)T_Pusher;
+    p->source = source;
+    p->type = type;
+    p->x_mag = x_mag >> FRACBITS;
+    p->y_mag = y_mag >> FRACBITS;
+    p->magnitude = P_AproxDistance(p->x_mag, p->y_mag);
+    if (source) // point source exist?
+    {
+	// where force goes to zero
+	p->radius = (p->magnitude) << (FRACBITS + 1);
+        p->x = p->source->x;
+        p->y = p->source->y;
+    }
+    p->affectee = affectee;
+    P_AddThinker(&p->thinker);
+}
+
+/////////////////////////////
+//
+// PIT_PushThing determines the angle and magnitude of the effect.
+// The object's x and y momentum values are changed.
+//
+// tmpusher belongs to the point source (MT_PUSH/MT_PULL).
+//
+
+pusher_t *tmpusher; // pusher structure for blockmap searches
+
+boolean PIT_PushThing(mobj_t *thing)
+{
+    if (thing->player && !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+    {
+	angle_t pushangle;
+	int dist;
+	int speed;
+	int sx, sy;
+
+	sx = tmpusher->x;
+	sy = tmpusher->y;
+	dist = P_AproxDistance(thing->x - sx, thing->y - sy);
+	speed = (tmpusher->magnitude -
+		 ((dist >> FRACBITS) >> 1)) << (FRACBITS - PUSH_FACTOR - 1);
+
+	// If speed <= 0, you're outside the effective radius. You also have
+	// to be able to see the push/pull source point.
+	if ((speed > 0) && (P_CheckSight(thing, tmpusher->source)))
+	{
+	    pushangle = R_PointToAngle2(thing->x, thing->y, sx, sy);
+	    if (tmpusher->source->type == MT_PUSH)
+		pushangle += ANG180;    // away
+	    pushangle >>= ANGLETOFINESHIFT;
+	    thing->momx += FixedMul(speed, finecosine[pushangle]);
+	    thing->momy += FixedMul(speed, finesine[pushangle]);
+	}
+    }
+    return true;
+}
+
+/////////////////////////////
+//
+// T_Pusher looks for all objects that are inside the radius of
+// the effect.
+//
+
+void T_Pusher(pusher_t *p)
+{
+    sector_t	*sec;
+    mobj_t	*thing;
+    msecnode_t	*node;
+    int		xspeed, yspeed;
+    int		xl, xh, yl, yh, bx, by;
+    int		radius;
+    int		ht = 0;
+    fixed_t	tmbbox[4];
+
+    if (!allow_pushers)
+	return;
+
+    sec = sectors + p->affectee;
+
+    // Be sure the special sector type is still turned on. If so, proceed.
+    // Else, bail out; the sector type has been changed on us.
+    if (!(sec->special & PUSH_MASK))
+	return;
+
+    // For constant pushers (wind/current) there are 3 situations:
+    //
+    // 1) Affected Thing is above the floor.
+    //
+    //    Apply the full force if wind, no force if current.
+    //
+    // 2) Affected Thing is on the ground.
+    //
+    //    Apply half force if wind, full force if current.
+    //
+    // 3) Affected Thing is below the ground (underwater effect).
+    //
+    //    Apply no force if wind, full force if current.
+    //
+    // Apply the effect to clipped players only for now.
+    //
+    // In Phase II, you can apply these effects to Things other than players.
+
+    if (p->type == p_push)
+    {
+
+	// Seek out all pushable things within the force radius of this
+	// point pusher. Crosses sectors, so use blockmap.
+	tmpusher = p; // MT_PUSH/MT_PULL point source
+	radius = p->radius; // where force goes to zero
+	tmbbox[BOXTOP]    = p->y + radius;
+	tmbbox[BOXBOTTOM] = p->y - radius;
+	tmbbox[BOXRIGHT]  = p->x + radius;
+	tmbbox[BOXLEFT]   = p->x - radius;
+
+	xl = (tmbbox[BOXLEFT] - bmaporgx - MAXRADIUS) >> MAPBLOCKSHIFT;
+	xh = (tmbbox[BOXRIGHT] - bmaporgx + MAXRADIUS) >> MAPBLOCKSHIFT;
+	yl = (tmbbox[BOXBOTTOM] - bmaporgy - MAXRADIUS) >> MAPBLOCKSHIFT;
+	yh = (tmbbox[BOXTOP] - bmaporgy + MAXRADIUS) >> MAPBLOCKSHIFT;
+	for (bx = xl; bx <= xh; bx++)
+	    for (by = yl; by <= yh; by++)
+		P_BlockThingsIterator(bx, by, PIT_PushThing);
+	return;
+    }
+
+    // constant pushers p_wind and p_current
+    if (sec->heightsec != -1) // special water sector?
+	ht = sectors[sec->heightsec].floorheight;
+    node = sec->touching_thinglist; // things touching this sector
+    for (; node; node = node->m_snext)
+    {
+	thing = node->m_thing;
+	if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+	    continue;
+	if (p->type == p_wind)
+	{
+	    if (sec->heightsec == -1) // NOT special water sector
+		if (thing->z > thing->floorz) // above ground
+		{
+		    xspeed = p->x_mag; // full force
+		    yspeed = p->y_mag;
+		}
+		else // on ground
+		{
+		    xspeed = (p->x_mag) >> 1; // half force
+		    yspeed = (p->y_mag) >> 1;
+		}
+	    else // special water sector
+	    {
+		if (thing->z > ht) // above ground
+		{
+		    xspeed = p->x_mag; // full force
+		    yspeed = p->y_mag;
+		}
+		else if (thing->player->viewz < ht) // underwater
+		    xspeed = yspeed = 0; // no force
+		else // wading in water
+		{
+		    xspeed = (p->x_mag) >> 1; // half force
+		    yspeed = (p->y_mag) >> 1;
+		}
+	    }
+	}
+	else // p_current
+	{
+	    if (sec->heightsec == -1) // NOT special water sector
+		if (thing->z > sec->floorheight) // above ground
+		    xspeed = yspeed = 0; // no force
+		else // on ground
+		{
+		    xspeed = p->x_mag; // full force
+		    yspeed = p->y_mag;
+		}
+	    else // special water sector
+		if (thing->z > ht) // above ground
+		    xspeed = yspeed = 0; // no force
+		else // underwater
+		{
+		    xspeed = p->x_mag; // full force
+		    yspeed = p->y_mag;
+		}
+	}
+	thing->momx += xspeed << (FRACBITS - PUSH_FACTOR);
+	thing->momy += yspeed << (FRACBITS - PUSH_FACTOR);
+    }
+}
+
+/////////////////////////////
+//
+// P_GetPushThing() returns a pointer to an MT_PUSH or MT_PULL thing,
+// NULL otherwise.
+
+mobj_t *P_GetPushThing(int s)
+{
+    mobj_t	*thing;
+    sector_t	*sec;
+
+    sec = sectors + s;
+    thing = sec->thinglist;
+    while (thing)
+    {
+	switch(thing->type)
+        {
+	    case MT_PUSH:
+	    case MT_PULL:
+		return thing;
+
+	    default:
+		break;
+	}
+	thing = thing->snext;
+    }
+    return (mobj_t *)0;
+}
+
+/////////////////////////////
+//
+// Initialize the sectors where pushers are present
+//
+
+static void P_SpawnPushers(void)
+{
+    int			i;
+    line_t		*l = lines;
+    register int	s;
+    mobj_t		*thing;
+
+    for (i = 0; i < numlines; i++, l++)
+	switch(l->special)
+	{
+	    case 224: // wind
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
+		    Add_Pusher(p_wind, l->dx, l->dy, NULL, s);
+		break;
+
+	    case 225: // current
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
+		    Add_Pusher(p_current, l->dx, l->dy, NULL, s);
+		break;
+
+	    case 226: // push/pull
+		for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
+		{
+		    thing = P_GetPushThing(s);
+		    if (thing) // No MT_P* means no effect
+			Add_Pusher(p_push, l->dx, l->dy, thing, s);
+		}
+		break;
+	}
+}
+
+//
+// End of Pusher effects
+//
+////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////
+//
+// FRICTION EFFECTS
+//
+// As the player moves, friction is applied by decreasing the x and y
+// momentum values on each tic. By varying the percentage of decrease,
+// we can simulate muddy or icy conditions. In mud, the player slows
+// down faster. In ice, the player slows down more slowly.
+//
+// The amount of friction change is controlled by the length of a linedef
+// with type 223. A length < 100 gives you mud. A length > 100 gives you ice.
+//
+// Also, each sector where these effects are to take place is given a
+// new special type _______. Changing the type value at runtime allows
+// these effects to be turned on or off.
+//
+// Sector boundaries present problems. The player should experience these
+// friction changes only when his feet are touching the sector floor. At
+// sector boundaries where floor height changes, the player can find
+// himself still 'in' one sector, but with his feet at the floor level
+// of the next sector (steps up or down). To handle this, Thinkers are used
+// in icy/muddy sectors. These thinkers examine each object that is touching
+// their sectors, looking for players whose feet are at the same level as
+// their floors. Players satisfying this condition are given new friction
+// values that are applied by the player movement code later.
+//
+// The friction effect is from TeamTNT's Boom engine.
+//
+////////////////////////////////////////////////////////////////////////////
+
+/////////////////////////////
+//
+// Add a friction thinker to the thinker list
+//
+// Add_Friction adds a new friction thinker to the list of active thinkers.
+//
+
+static void Add_Friction(int friction, int movefactor, int affectee)
+{
+    friction_t *f = Z_Malloc((sizeof *f), PU_LEVSPEC, (void *)0);
+
+    f->thinker.function.acp1 = (actionf_p1)T_Friction;
+    f->friction = friction;
+    f->movefactor = movefactor;
+    f->affectee = affectee;
+    P_AddThinker(&f->thinker);
+}
+
+/////////////////////////////
+//
+// This is where abnormal friction is applied to objects in the sectors.
+// A friction thinker has been spawned for each sector where less or
+// more friction should be applied. The amount applied is proportional to
+// the length of the controlling linedef.
+
+void T_Friction(friction_t *f)
+{
+    sector_t	*sec;
+    mobj_t	*thing;
+    msecnode_t	*node;
+
+    if (!variable_friction)
+	return;
+
+    sec = sectors + f->affectee;
+
+    // Be sure the special sector type is still turned on. If so, proceed.
+    // Else, bail out; the sector type has been changed on us.
+    if (!(sec->special & FRICTION_MASK))
+	return;
+
+    // Assign the friction value to players on the floor, non-floating,
+    // and clipped. Normally the object's friction value is kept at
+    // ORIG_FRICTION and this thinker changes it for icy or muddy floors.
+
+    // In Phase II, you can apply friction to Things other than players.
+
+    // When the object is straddling sectors with the same
+    // floorheight that have different frictions, use the lowest
+    // friction value (muddy has precedence over icy).
+    node = sec->touching_thinglist; // things touching this sector
+    while (node)
+    {
+	thing = node->m_thing;
+	if (thing->player &&
+            !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) &&
+            thing->z <= sec->floorheight)
+	{
+	    if ((thing->friction == ORIG_FRICTION) || // normal friction?
+		(f->friction < thing->friction))
+	    {
+		thing->friction   = f->friction;
+		thing->movefactor = f->movefactor;
+	    }
+	}
+	node = node->m_snext;
+    }
+}
+
+/////////////////////////////
+//
+// Initialize the sectors where friction is increased or decreased
+
+static void P_SpawnFriction(void)
+{
+    int		 i;
+    line_t	 *l = lines;
+    register int s;
+    int		 length;     // line length controls magnitude
+    int		 friction;   // friction value to be applied during movement
+    int		 movefactor; // applied to each player move to simulate inertia
+
+    for (i = 0; i < numlines; i++, l++)
+	if (l->special == 223)
+	{
+	    length = P_AproxDistance(l->dx, l->dy) >> FRACBITS;
+	    friction = (0x1EB8 * length) / 0x80 + 0xD000;
+
+	    // The following check might seem odd. At the time of movement,
+	    // the move distance is multiplied by 'friction/0x10000', so a
+	    // higher friction value actually means 'less friction'.
+	    if (friction > ORIG_FRICTION)       // ice
+		movefactor = ((0x10092 - friction) * 0x70) / 0x158;
+	    else
+		movefactor = ((friction - 0xDB34) * 0xA) / 0x80;
+	    for (s = -1; (s = P_FindSectorFromLineTag(l, s)) >= 0;)
+		Add_Friction(friction, movefactor, s);
+	}
+}
+
+//
+// End of friction effects
+//
+////////////////////////////////////////////////////////////////////////////

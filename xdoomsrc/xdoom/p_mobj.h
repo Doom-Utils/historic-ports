@@ -279,6 +279,10 @@ typedef struct mobj_s
     // Thing being chased/attacked for tracers.
     struct mobj_s	*tracer;
 
+    // Friction values for the sector the object is in
+    int			friction;
+    int			movefactor;
+
     // additional members for Hexen style things, needed for XDoomPlus
     short		tid;		// thing identifier
     byte		special;	// special

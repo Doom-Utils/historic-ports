@@ -1,6 +1,5 @@
 # Location of your Doom][ IWAD file
 DOOM2WAD=/usr/local/games/xdoom/doom2.wad
-#DOOM2WAD=//h/doom/doom2/doom2.wad
 
 trandemo.wad: trandemo.lwad trandemo.gwad trandemo.rwad
 	rm -f trandemo.wad

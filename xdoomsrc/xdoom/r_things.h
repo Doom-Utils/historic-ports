@@ -5,7 +5,7 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,7 +51,7 @@ void R_DrawMaskedColumn(column_t *column);
 
 void R_SortVisSprites(void);
 
-void R_AddSprites(sector_t *sec);
+void R_AddSprites(sector_t *sec, int lightlevel);
 void R_AddPSprites(void);
 void R_DrawSprites(void);
 void R_InitSprites(char **namelist);

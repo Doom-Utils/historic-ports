@@ -1,6 +1,5 @@
 # Location of your Doom][ IWAD file
 DOOM2WAD=/usr/local/games/xdoom/doom2.wad
-#DOOM2WAD=c:\games\doom2\doom2.wad
 
 sldoor.wad: sldoor.lwad sldoor.gwad sldoor.rwad
 	rm -f sldoor.wad

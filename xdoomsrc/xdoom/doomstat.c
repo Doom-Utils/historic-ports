@@ -5,7 +5,8 @@
 // $Id:$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1997-1999 by Udo Munk
+// Copyright (C) 1997-2000 by Udo Munk
+// Copyright (C) 1998 by Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,3 +44,12 @@ Language_t	language = english;
 
 // Set if homebrew PWAD stuff has been added.
 boolean		modifiedgame;
+
+// Set if MT_PUSH thing is allowed
+int		allow_pushers = 1;
+
+// Set if friction is allowed
+int		variable_friction = 1;
+
+// whether you're on the ground, for ice purpose
+boolean		onground;
