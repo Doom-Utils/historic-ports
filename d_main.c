@@ -610,7 +610,8 @@ void IdentifyVersion (void)
 
     home = getenv("HOME");
     if (!home)
-      I_Error("Please set $HOME to your home directory");
+//      I_Error("Please set $HOME to your home directory");
+      strcpy(home,".");  //this isnt really unix
     sprintf(basedefault, "%s/.doomrc", home);
 #endif
 

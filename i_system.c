@@ -31,6 +31,10 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include <stdarg.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <pc.h>
+#include <go32.h>
+#include <dpmi.h>
+#include <sys/nearptr.h>
 
 #include "doomdef.h"
 #include "m_misc.h"
@@ -125,6 +129,7 @@ void I_Quit (void)
 
 void I_WaitVBL(int count)
 {
+/*
 #ifdef SGI
     sginap(1);                                           
 #else
@@ -134,6 +139,10 @@ void I_WaitVBL(int count)
     usleep (count * (1000000/70) );                                
 #endif
 #endif
+*/
+while ((inportb(0x3da)&8)!=8);
+while ((inportb(0x3da)&8)==8);
+
 }
 
 void I_BeginRead(void)
@@ -151,6 +160,7 @@ byte*	I_AllocLow(int length)
     mem = (byte *)malloc (length);
     memset (mem,0,length);
     return mem;
+
 }
 
 
