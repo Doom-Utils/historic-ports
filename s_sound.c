@@ -51,8 +51,17 @@ rcsid[] = "$Id: s_sound.c,v 1.11 1998/05/03 22:57:06 killough Exp $";
 #define S_STEREO_SWING (96<<FRACBITS)
 
 //jff 1/22/98 make sound enabling variables readable here
+// CPhipps - I wish you hadn't, now I have to remove them :-(
+
+#ifndef LINUX
 extern int snd_card, mus_card;
+#else
+#define snd_card 0
+#define mus_card 0
+#endif
+
 extern boolean nosfxparm, nomusicparm;
+
 //jff end sound enabling variables readable here
 
 typedef struct

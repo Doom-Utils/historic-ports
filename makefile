@@ -7,21 +7,21 @@
 CC = gcc
 
 # the command you use to delete files
-RM = del
+RM = rm
 
 # the command you use to copy files
-CP = copy /y
+CP = cp /y
 
 # options common to all builds
-CFLAGS_common = -Wall -Winline -DNORMALUNIX
+CFLAGS_common = -Wall -Winline -DNORMALUNIX -DLINUX
 
 # debug options
 #CFLAGS_debug = -g -O2 -DRANGECHECK -DINSTRUMENTED -DCHECKHEAP
-CFLAGS_debug = -g -O2 -DRANGECHECK -DINSTRUMENTED
+CFLAGS_debug = -pg -O2 -m486 -ffast-math -DGPROF
 LDFLAGS_debug =
 
 # optimized (release) options
-CFLAGS_release = -O3 -ffast-math -fomit-frame-pointer -m486
+CFLAGS_release = -O2 -ffast-math -fomit-frame-pointer -m486
 LDFLAGS_release = -s
 
 # new features; comment out what you don't want at the moment
@@ -29,7 +29,7 @@ LDFLAGS_release = -s
 CFLAGS_newfeatures = 
 
 # libraries to link in
-LIBS=-lalleg -lm -lemu
+LIBS=-lvga -lkb -lm -lvgagl
 
 # this selects flags based on debug and release tagets
 mode = release
@@ -50,6 +50,7 @@ OBJS=   $(O)/doomdef.o      \
         $(O)/i_system.o     \
         $(O)/i_sound.o      \
         $(O)/i_video.o      \
+	$(O)/i_input.o	    \
         $(O)/i_net.o        \
         $(O)/tables.o       \
         $(O)/f_finale.o     \
@@ -103,32 +104,30 @@ OBJS=   $(O)/doomdef.o      \
         $(O)/z_zone.o       \
         $(O)/info.o         \
         $(O)/sounds.o       \
-        $(O)/mmus2mid.o     \
         $(O)/i_main.o       \
-        $(O)/pproblit.o     \
-        $(O)/drawspan.o     \
-        $(O)/drawcol.o      \
         $(O)/p_genlin.o     \
         $(O)/d_deh.o	    \
-	$(O)/keyboard.o     \
-	$(O)/emu8kmid.o
+	$(O)/drawcol.o	    \
+	$(O)/drawspan.o  
 
-boom doom release all: $(O)/boom.exe
-	$(CP) $(O)\boom.exe .
+# drawcol.o
+# drawspan.o
+# pproblit.o
+
+boom doom release all: $(O)/linboom
 
 debug:
 	$(MAKE) mode=debug
 
 clean:
-	$(RM) boom.exe
-	$(RM) $(O_release)\*.exe
-	$(RM) $(O_debug)\*.exe
-	$(RM) $(O_release)\*.o
-	$(RM) $(O_debug)\*.o
+	$(RM) $(O_release)/boom
+	$(RM) $(O_debug)/boom
+	$(RM) $(O_release)/*.o
+	$(RM) $(O_debug)/*.o
 
-$(O)/boom.exe: $(OBJS) $(O)/version.o
+$(O)/linboom: $(OBJS) $(O)/version.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/version.o -o $@ $(LIBS)
-	$(RM) $(O)\version.o
+	$(RM) $(O)/version.o
 
 $(O)/%.o:   %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -140,7 +139,8 @@ $(O)/%.o:   %.s
 $(OBJS): z_zone.h
 
 # If you change the makefile, everything should rebuild
-$(OBJS): Makefile
+# $(OBJS): Makefile
+# CPhipps - Nooooooo!
 
 # individual file depedencies follow
 
@@ -159,7 +159,7 @@ $(O)/i_system.o: i_system.c i_system.h d_ticcmd.h doomtype.h i_sound.h \
 
 $(O)/i_sound.o: i_sound.c z_zone.h doomstat.h doomdata.h doomtype.h d_net.h \
  d_player.h d_items.h doomdef.h m_swap.h version.h p_pspr.h m_fixed.h \
- i_system.h d_ticcmd.h tables.h info.h d_think.h p_mobj.h mmus2mid.h \
+ i_system.h d_ticcmd.h tables.h info.h d_think.h p_mobj.h \
  i_sound.h sounds.h w_wad.h g_game.h d_event.h d_main.h
 
 $(O)/i_video.o: i_video.c z_zone.h doomstat.h doomdata.h doomtype.h d_net.h \

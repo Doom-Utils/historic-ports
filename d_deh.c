@@ -22,6 +22,7 @@ rcsid[] = "$Id: d_deh.c,v 1.19 1998/05/17 09:39:48 thldrmn Exp $";
 #include "p_inter.h"
 #include "g_game.h"
 #include "d_think.h"
+#include "strcase.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -870,6 +871,18 @@ char *  ptr_lstrip(char *);  // point past leading whitespace
 boolean deh_GetData(char *, char *, long *, char **, FILE *);
 boolean deh_procStringSub(char *, char *, char *, FILE *);
 char *  dehReformatStr(char *);
+
+#ifdef LINUX
+// Can't see it in my string.h
+#include <ctype.h>
+
+char* strlwr(char* str) {
+  int i;
+  for (i=0; i<strlen(str); i++) str[i]=tolower(str[i]);
+  return str;
+}
+// Hope that is the right semantics
+#endif
 
 // Prototypes for block processing functions
 // Pointers to these functions are used as the blocks are encountered.

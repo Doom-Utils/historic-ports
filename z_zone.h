@@ -55,6 +55,7 @@ enum {PU_FREE, PU_STATIC, PU_SOUND, PU_MUSIC, PU_LEVEL, PU_LEVSPEC, PU_CACHE,
 
 #define PU_PURGELEVEL PU_CACHE        /* First purgable tag's level */
 
+void Z_Close(void); // Added by CPhipps in effort to combat exit probs
 void *(Z_Malloc)(size_t size, int tag, void **ptr, const char *, int);
 void (Z_Free)(void *ptr, const char *, int);
 void (Z_FreeTags)(int lowtag, int hightag, const char *, int);

@@ -46,6 +46,7 @@ rcsid[] = "$Id: m_menu.c,v 1.53 1998/05/16 09:17:09 killough Exp $";
 #include "m_menu.h"
 #include "d_deh.h"
 #include "m_misc.h"
+#include "exit.h"
 
 extern patch_t* hu_font[HU_FONTSIZE];
 extern boolean  message_dontfuckwithme;

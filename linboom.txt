@@ -1,0 +1,150 @@
+BOOM (and bits of DosDoom) ported to Linux
+==========================================
+
+by Colin Phipps (colin_phipps@hotmail.com)
+
+What this is
+------------
+
+This is a port of Boom to run under Linux (on 80386's and upward of course), using SVGALib and LibKB. It uses bits of the code from the Linux port of DosDoom for low-level stuff.
+
+What does all that mean? Well:
+
+BOOM : An excellent Doom 'port' by TeamTNT. See their web page www.teamtnt.com for more info on their original Boom, for DOS. 
+
+****BUT**** : However, my port of Boom to Linux is nothing to do with TeamTNT, is not endorsed by them or supported by them. Nor is it supported in fact by any team.
+
+port : A confusing term, used for 2 things it seems. I use it to mean a port, i.e a conversion of an existing program to a different operating platform. So my port adds nothing to the gameplay of Boom.
+	However, 'port' is also confusingly used to refer to Doom source code conversions/reworks/rewrites, such as Boom itself, which is a reworking of the original Doom. My port is not this kind.
+	I hope that makes sense :-)
+
+SVGALib: A library for full-screen graphics under a Linux console. This is free software, and is downloadable from most Linux ftp sites. It also provides the mouse handling code that I use.
+
+LibKB : An excellent keyboard library which I used. Again free software. Compiled in, so you shouldn't need it (I think).
+
+DosDoom:Another excellent doom 'port', which already has a Linux version. But it is for X11, and is much slower. So I used bits of its system code for my Linux version of Boom.
+
+Just to clarify, this program consists of 5 parts:
+
+BOOM engine - an improved version of the Doom engine with static limits removed and many new features
+DosDoom/Linux system code - Some bits and pieces which make the whole thing tick under linux.
+My graphic & input code - Goes between Doom and the libraries
+Svgalib - A Linux graphics library
+LibKB - A keyboard library
+
+What this does
+--------------
+
+- provides full-screen 320x200x256 Doom playing
+- no changes to the high-level code, so all Doom and Boom wad files should work.
+- some (minor) performance tweaks over Boom aimed specifically at low-spec systems
+- whatever new fangled stuff Boom had (as of the maintenance release 2.01) this should also have. But I haven't checked.
+- runs acceptably on a 486 with 5 megs of RAM free
+
+What it lacks
+-------------
+
+- sound
+- music
+- networking
+- ENDOOM (as for all Linux ports)
+- BOOM.CFG is still stored as BOOM.CFG, not changed to .BOOMRC in /etc or whatever most Linux progs do
+- higher resolutions
+- support for obscure mouse types, because I was lazy (all it needed was a few extra lines, but no...). E-mail and nag me if you like, and I'll do it
+- testing
+
+WARNING
+-------
+
+- This is alpha release software. I have only been working on this for a few days. I have tested it, but only on 1 machine, and in very few configurations.
+- This software is supplied AS IS without any warranty, including but not limited to any implied fitness for purpose, reliability.
+- I am not trying to start a major Doom port here; I am one person on my own. So I reserve the right not to add features that people request, fix bugs, or even release any further updates should I see fit.
+
+On the other hand, if someone would like to try to do some improvements in a similar direction to those I am doing, I would be pleased to cooperate.
+
+Setup
+-----
+
+Unzip LINBOOM and BOOMLUMP.WAD into a directory.
+
+Either set DOOMWADDIR to you Doom2.wad's path, or create a symlink fromm the directory to your Doom2.wad.
+
+Log on as root. This is a requirement for SVGALib to be allowed to access the VGA directly. There is a good doc on the net, the Linux DOOM FAQ, which describes some contortions with schmod or chown which may get round this; I haven'ttried.
+
+Run linboom -nosound
+
+Note: Networking and sound are not in fact disabled. Code is there. It might even work. I doubt it though. So I suggest you disable it with -nosound.
+
+If the program gets into difficulties, try CTRL-C - the keyboard handler should trap this and do a clean exit. But I've not had to do that for days.
+
+Credits
+-------
+
+All I have done is a quick and simple port to Linux of some great software. Here are the people who deserve the real credit:
+
+- iD - For releasing the Doom sources, for a great game, for the endless hours I spent playing Knee-Deep, and much more
+- The DosDoom team - I started doing a port of DosDoom to Linux/Svgalib, and then reused this code and a lot of other DosDoom/Linux code in my port of Boom.
+- TeamTNT - For excellent work in improving and debugging Doom.
+- Lee Killough - Part of TeamTNT, but gets a special mention for his excellent work in doing improved alrogithms in Doom. I did manage to improve one or two routines for a little extra performance, but not by much!
+- The authors of Svgalib - Excellent library. Couldn't have an SVGALib port without it ;-)
+- Marcus Oberhumer - LibKB - saved me a lot of work writing keyboard code.
+
+DosDoom / Development notes
+---------------------------
+
+About 5 days ago (25/5/98) I downloaded the DosDoom source, and found that the performance under their Linux/X11 port was unacceptable on my old 486.
+
+About 3 days ago I had a working DosDoom for Linux/SVGALib. This was great, worked fine, and I had done a few performance tweaks that made it faster than original Doom.
+
+Then the Boom sources came out, and I looked at them. Well, they had already done all the tweaks I had, and much, much more. So I zapped all the i_*.* files from Boom, copied the ones from my ported DosDoom, patched up some broken subs, and hey presto! working Linux Boom.
+
+I then tweaked the performance of Boom, so it is now about in line with the original DOS version of Doom. BUT this is without sound or that kind of thing.
+
+If anyone wants my DosDoom/Linux/Svgalib port, e-mail me; but I'll only do it if there is a significant response.
+
+Real technical stuff
+--------------------
+
+For source code programmers/hackers, here is a list of changes.
+
+All changes should have either have #ifdef LINUX clauses round them, or //CPhipps by them, or as specified below:
+
+- Replaced i_*.* with files from my DosDoom/Linux/Svgalib port (except i_net.c)
+- Patched up some subs (I_GetTime_RealTime or something like that was missing, so whatever it did is broken - I think it was -timedemo)
+- Removed multi-resolution support  from my video handler, as Boom lacks this
+- Added a call to my I_InitInputs() to set up mouse/keyboard
+- #ifdef LINUXed out some DOS specific things in m_menu.c
+- Completely reworked Boom's signal and exit handling, because it didn't work under my port.
+- Tried it and it works nicely!
+- Added on-the-fly SIDEDEF compression (I was bored) enclosed by #ifdef SIDE_COMP or something like that
+- Switch to the assembler versions of some subs (TeamTNT had used them for DOS only, so I had to convert them a bit)
+- Removed the hardcoded resources from the EXE, because they waste precious RAM. boomlump.wad is automatically loaded to get them.
+- Tried but failed to remove strings from the EXE to a WAD. Will try again soon.
+- Implemented new scheme in z_zone.c which improves memory organisation, and performace a little.
+- Fixed bugs with mouse handling (very bizarre ; when is a^b!=0 but a==b ? ; still it works now it seems)
+
+Warning to potential programmers:
+- compiling with profiling enabled causes linboom to crash, and take out the entire Linux system. You will see various bits of #ifndef GPROF lying around in my code, in an effore to locate the problem. It doesn't work though.
+
+Performance
+-----------
+
+I run a 486DX2 66 with 8Mb of RAM. This is the bare minimum for Boom/DOS. But for my Linux port I have improved things a little.
+
+Boom's core rendering speed is less than DosDoom, presumably due to the bug-fixes included in Boom (e.g. Medusa, TFE). I had DosDoom running slightly faster than the original Doom; Boom is now running about the same speed as the original. 
+
+But BOOM has greatly improved algorithms, which means that for large levels it is better. So hence my decision to go with Boom for now.
+
+Points to note:
+- I added a -heapsize parameter, nicked straight from DosDoom, which allows you to tell Boom how much RAM to use. USE THIS! The default is 7 (all figures in Mb) which is too much if you have 8 Mb (since Linux and the Boom executable take up RAM), and too little if you have 16 Mb (I wish).
+- Set heapsize to (your RAM)-2 Mb. If this gives a lot of disk thrashing, use 1 Mb less.
+- Hard disk performance is critical - all the doom 'ports' are more disk intensive. Keep DOOM2.WAD on a different drive to your Linux swap file/partition if possible. 
+- For 8Mb (or less!) systems: make a Linux kernel with minimal drivers which saves on RAM; if you save enough you may be able to increase heapsize by a bit, and every increase is helpful.
+
+Legal Stuff
+-----------
+
+This program is covered by the various liscence and copying agreements which sucessive teams have given it. I have included the stuff released by iD with the original source code, and and various docs from TeamTNT and DosDoom's versions which looked relevent. Frankly the legal status of the released code is beyond me.
+
+
+

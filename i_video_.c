@@ -42,13 +42,11 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "doomstat.h"
 #include "i_system.h"
-// CPhipps - remove stubs for DosDoom multires
-//#include "multires.h"
+#include "multires.h"
 #include "m_argv.h"
 #include "d_main.h"
 #include "w_wad.h"
 #include "z_zone.h"
-#include "v_video.h"
 
 #include "doomdef.h"
 
@@ -65,16 +63,11 @@ int		doPointerWarp = POINTER_WARP_COUNTDOWN;
 int key_shifts=0;
 int KB_CAPSLOCK_FLAG=1;
 
-// CPhipps - BOOM has only 1 res
-#ifdef DOSDOOM
 int SCREENWIDTH;
 int SCREENHEIGHT;
 int SCREENPITCH;
 int BPP;
 int weirdaspect;
-#else
-#define BPP 1
-#endif
 
 int mode;
 GraphicsContext* physicalscreen;
@@ -82,30 +75,26 @@ GraphicsContext* physicalscreen;
 int mousepresent;
 int doublebufferflag=0;
 
-// Never knew what these did - CPhipps
-//byte *hicolortable;
-//short hicolortransmask1,hicolortransmask2;
-//short palette_color[256];
+byte *hicolortable;
+short hicolortransmask1,hicolortransmask2;
+short palette_color[256];
 
-// Moved to i_input.c
 //extern int usejoystick;
 //extern int usemouse;
 
-// Not  relevent for BOOM
-#ifdef DOSDOOM
 void I_CalcTranslucTbl();
 char *translucencytable25;
 char *translucencytable50;
 char *translucencytable75;
-#endif
+//end of newly added stuff
 
 //void inithicolor();
-#ifdef DOSDOOM
+
 void I_AutodetectBPP()
 {
   BPP=1; // Nice and easy
 }
-#endif
+
 //
 // I_StartFrame
 //
@@ -115,7 +104,7 @@ void I_StartFrame (void)
 
 //static int	lastmousex = 0;
 //static int	lastmousey = 0;
-//boolean		mousemoved = false;
+boolean		mousemoved = false;
 //boolean		shmFinished;
 
 //
@@ -142,28 +131,20 @@ void I_FinishUpdate(void)
     if (tics > 20) tics = 20;
     
     for (i=0 ; i<tics*2 ; i+=2) {
-#ifdef DOSDOOM
       if (BPP==1)
-#endif
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)] = 0xff;
-#ifdef DOSDOOM
       else {
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2] = 0xff;
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2+1] = 0xff;
       }
-#endif
     }
     for ( ; i<20*2 ; i+=2) {
-#ifdef DOSDOOM
       if (BPP==1)
-#endif
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)] = 0x0;
-#ifdef DOSDOOM
       else {
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2] = 0x0;
 	screens[0][ ((SCREENHEIGHT-1)*SCREENWIDTH + i)*2+1] = 0x0;
       }
-#endif
     }    
   }
   //blast it to the screen
@@ -173,11 +154,7 @@ void I_FinishUpdate(void)
   //    vga_imageblt(screens[0], 0, SCREENWIDTH, SCREENHEIGHT, SCREENWIDTH); // gives rubbish
   //    for (i=0; i<SCREENHEIGHT; i++) 
   //vga_drawscansegment(&(screens[0][i*SCREENWIDTH]), 0, i, SCREENWIDTH); // Works but looks slow in code
-#ifndef GPROF
   gl_putbox(0, 0, SCREENWIDTH, SCREENHEIGHT, screens[0]); // Good
-#else
-  printf("F");
-#endif
 }
 
 //
@@ -239,11 +216,7 @@ int makecol(int r,int g,int b)
 #endif
 
 #include "progbar.h"
-#ifdef DOSDOOM
 void I_SetPalette (byte* palette, int redness)
-#else
-void I_SetPalette (byte* palette)
-#endif
 {
   int i;
   //printf("I_SetPalette");
@@ -258,22 +231,16 @@ void I_SetPalette (byte* palette)
 //static int oldkbmode;
 //static struct termios  oldtermios, newtermios;
 
-static cleanedup=1;
-
 void I_InitGraphics(void) {        
   static int		firsttime=1;
 
   if (!firsttime) return;
   firsttime = 0;
-  cleanedup=0;
-  signal(SIGINT, (void (*)(int)) I_Quit); // Seems BOOM does this elsewhere
+
+  signal(SIGINT, (void (*)(int)) I_Quit);
   // Do it
   printf("I_InitGraphics\n");
   // Screen init
-// CPhipps - Remove multires
-#ifndef DOSDOOM
-  mode=G320x200x256;
-#else
   mode=-1;
 
 #define TESTMODE(w, h) if (SCREENWIDTH==w && SCREENHEIGHT==h && BPP==1) mode=G ## w ## x ## h ## x256
@@ -290,25 +257,21 @@ void I_InitGraphics(void) {
   TESTMODE(640,480);
   TESTMODE(1024,768);
   TESTMODE(1280,1024); // ?!? I wish :->
-#endif
+
   if (mode==-1) {
-    fprintf(stderr, "    Unsupported resolution: %dx%dx%ld\n", SCREENWIDTH, SCREENHEIGHT, (long)1 << (8*BPP));
+    fprintf(stderr, "    Unsupported resolution: %dx%dx%ld\n", SCREENWIDTH, SCREENHEIGHT, (long)1 << (8*BPP)); 
     I_Error("Unsupported resolution\n");
   }
-#ifdef DOSDOOM
   //calc translucencytable if needed
   if ((BPP==1)&&(!M_CheckParm("-notrans")))
     I_CalcTranslucTbl();
-#endif  
-// Initialise screen
-#ifndef GPROF
+  // Initialise screen
   vga_init(); // Note: must do before kb_install (i_input.c)
   vga_setmode(mode);
   gl_setcontextvga(mode);
   physicalscreen=gl_allocatecontext();
   gl_getcontext(physicalscreen);
-#endif
-#ifdef DOSDOOM
+#if 0
   //do the hicolorpal table if necessary
   if (BPP==2)
     {
@@ -340,12 +303,8 @@ void I_InitGraphics(void) {
 
 void I_ShutdownGraphics(void)
 {
-  if (cleanedup==1) return; // Avoid recursive cleanups
-  cleanedup=1;
-#ifndef GPROF
   gl_freecontext(physicalscreen);
   vga_setmode(TEXT);
-#endif
 }
 
 struct twolongints {
@@ -353,7 +312,6 @@ struct twolongints {
   unsigned long int b;
 };
 
-#ifdef DOSDOOM
 // Blimey, this is complicated and _slow_
 #ifndef FAST_BUT_BAD
 void I_CalcTranslucTbl() {
@@ -549,5 +507,5 @@ if ((cl=PCLGRID(red+1,green+1,blue-1))==0) \
   printf(" %d bad.\n", badcl);
 }
 #endif
-#endif
+
 

@@ -35,6 +35,8 @@ rcsid[] = "$Id: m_misc.c,v 1.59 1998/05/21 12:12:28 jim Exp $";
 #include "i_system.h"
 #include "i_sound.h"
 #include "i_video.h"
+// CPhipps - added my i_input.h
+#include "i_input.h"
 #include "v_video.h"
 #include "hu_stuff.h"
 #include "st_stuff.h"
@@ -162,9 +164,11 @@ extern int viewwidth;
 extern int viewheight;
 
 extern int mouseSensitivity_horiz,mouseSensitivity_vert;  // killough
-
+#ifndef LINUX
+// Declaring things here? - CPhipps
 extern int realtic_clock_rate;         // killough 4/13/98: adjustable timer
 extern int leds_always_off;            // killough 3/6/98
+#endif
 extern int tran_filter_pct;            // killough 2/21/98
 
 extern int screenblocks;
@@ -191,7 +195,7 @@ default_t defaults[] =
 
     {"default_skill", &defaultskill, 3, // jff 3/24/98 allow default skill setting
      1,5,0,ss_none,   "[1-5(3)] selects default skill 1=TYTD 2=NTR 3=HMP 4=UV 5=NM"},
-
+#ifndef LINUX
     {"sound_card", &snd_card, -1,                            // jff 1/18/98 allow Allegro drivers
      -1,7,0,ss_none,   "[-1-7(-1)] code used by Allegro to select sounds driver, -1 is autodetect"}, 
     {"music_card", &mus_card, -1,                            //  to be set,  -1 = autodetect
@@ -200,10 +204,9 @@ default_t defaults[] =
      0,1,0,ss_none,   "[0/1(1)] 1 enables voice detection prior to calling install sound"},  
     {"use_vsync",  &use_vsync, 1,             // killough 2/8/98
      0,1,0,ss_none,    "[0/1(1)] 1 to enable wait for vsync to avoid display tearing"},
-
     {"realtic_clock_rate", &realtic_clock_rate, 100,
      10,1000,0,ss_none, "[10/1000(100)] Percentage of normal speed (35 fps) realtic clock runs at"},
-
+#endif
     {"pitched_sounds", &default_pitched_sounds, 0,
      0,1,0,ss_none,   "[0/1(0)] 1 to enable variable pitch in sound effects (from id's original code)"}, // killough 2/21/98
 
@@ -245,10 +248,10 @@ default_t defaults[] =
 
     {"traditional_menu", &traditional_menu, 0,
      0,1,0,ss_none,    "[0/1(0)] 1 to use Doom's main menu ordering"},   // killough 4/17/98
-
+#ifndef LINUX
     {"leds_always_off", &leds_always_off, 0,
          0,1,0,ss_none,     "[0/1(0)] 1 to keep keyboard LEDs turned off"}, // killough 3/6/98
-
+#endif
     //jff 4/3/98 allow unlimited sensitivity
     {"mouse_sensitivity_horiz",&mouseSensitivity_horiz, 5,
      0,UL,0,ss_none,  "[0-?(5)] adjust horizontal (x) mouse sensitivity"},  // killough

@@ -460,17 +460,22 @@ void P_LoadSideDefs (int lump)
 // killough 4/4/98: delay using texture names until
 // after linedefs are loaded, to allow overloading.
 // killough 5/3/98: reformatted, cleaned up
+// CPhipps - on-the-fly sidedef compression
+#define COMP_SIDEDEFS
+void RenumberSidedef(int from, int to);
 
 void P_LoadSideDefs2(int lump)
 {
   byte *data = W_CacheLumpNum(lump,PU_STATIC);
   int  i;
+  register side_t* sd;
+  int oldnum;
 
   for (i=0; i<numsides; i++)
     {
       register mapsidedef_t *msd = (mapsidedef_t *) data + i;
-      register side_t *sd = sides + i;
       register sector_t *sec;
+      /*register side_t * */ sd = sides + i;
 
       sd->textureoffset = SHORT(msd->textureoffset)<<FRACBITS;
       sd->rowoffset = SHORT(msd->rowoffset)<<FRACBITS;
@@ -512,6 +517,39 @@ void P_LoadSideDefs2(int lump)
         }
     }
   Z_Free (data);
+#ifdef COMP_SIDEDEFS
+  // CPhipps - Brute force here, o(n^2)
+  // Will optimise later I hope
+  for (i=0, oldnum=numsides; i<numsides; i++) {
+    register int j;
+    sd=sides+i;
+    for (j=0; j<i; j++) {
+      if (memcmp(sd, sides+j, sizeof(side_t))==0) 
+	break; // Compatible sidedef
+    }
+    if (i==j) continue;
+    RenumberSidedef(i, j);
+    RenumberSidedef(numsides-1, i);
+    memcpy(sd, sides+numsides-1, sizeof(side_t));
+    numsides--; i--;
+  }
+  sd=Z_Malloc(numsides*sizeof(side_t),PU_LEVEL,0);
+  memcpy(sd, sides, numsides*sizeof(side_t));
+  Z_Free(sides); sides=sd;
+  //  fprintf(stderr, "Sidedefs compressed %u/%u", numsides, oldnum);
+  // On MAP11 it reports 438/1195, so good!
+#endif
+}
+
+void RenumberSidedef(int from, int to)
+{
+  register line_t* ld;
+  int count;
+  for (count=0; count<numlines; count++) {
+    ld=lines+count;
+    if (ld->sidenum[0]==from) ld->sidenum[0]=to;
+    if (ld->sidenum[1]==from) ld->sidenum[1]=to;
+  }
 }
 
 // killough 5/3/98: tests whether a linedef is inside a block.

@@ -31,10 +31,19 @@ static const char rcsid[] = "$Id: z_zone.c,v 1.13 1998/05/12 06:11:55 killough E
 
 #include "z_zone.h"
 #include "doomstat.h"
+#include "i_system.h"
+#include "m_argv.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #ifdef DJGPP
 #include <dpmi.h>
 #endif
+
+// CPhipps - 
+#define NEW_SCHEME
+/* The plan is to work _down_ the z_zone for purgeables, up for statics
+ */
 
 // Uncomment this to see real-time memory allocation
 // statistics, to and enable extra debugging features
@@ -52,13 +61,17 @@ static const char rcsid[] = "$Id: z_zone.c,v 1.13 1998/05/12 06:11:55 killough E
 // Tunables
 
 // Alignment of zone memory (benefit may be negated by HEADER_SIZE, CHUNK_SIZE)
-#define CACHE_ALIGN 32
+#define CACHE_ALIGN 16
 
 // size of block header
+#ifdef INSTRUMENTED
+#define HEADER_SIZE 16
+#else
 #define HEADER_SIZE 32
+#endif
 
 // Minimum chunk size at which blocks are allocated
-#define CHUNK_SIZE 32
+#define CHUNK_SIZE 16
 
 // Minimum size a block must be to become part of a split
 #define MIN_BLOCK_SPLIT (1024)
@@ -100,6 +113,10 @@ typedef struct memblock {
 } memblock_t;
 
 static memblock_t *rover;                // roving pointer to memory blocks
+#ifdef NEW_SCHEME
+static memblock_t *rover_s;              // roving pointer to memory blocks
+                                         // for statics 
+#endif
 static memblock_t *zone;                 // pointer to first block
 static memblock_t *zonebase;             // pointer to entire zone memory
 static size_t zonebase_size;             // zone memory allocated size
@@ -182,10 +199,13 @@ void Z_DumpHistory(char *buf)
 
 #endif
 
-static void Z_Close(void)
+void Z_Close(void)
 {
   (free)(zonebase);
-  zone = rover = zonebase = NULL;
+  zone = rover  = zonebase = NULL;
+#ifdef NEW_SCHEME
+  rover_s = NULL;
+#endif
 }
 
 void Z_Init(void)
@@ -195,20 +215,28 @@ void Z_Init(void)
 #else
   size_t size = MIN_RAM;
 #endif
-
+  int p;
   if (size < MIN_RAM)         // If less than MIN_RAM, assume MIN_RAM anyway
     size = MIN_RAM;
+  // CPhipps - On low RAM systems a -heapsize parameter is necessary
+  p = M_CheckParm("-heapsize");
+  if (p && p < myargc-1)
+    size=atoi(myargv[p+1])*1024*1024;
 
   size -= LEAVE_ASIDE;        // Leave aside some for other libraries
 
   assert(HEADER_SIZE >= sizeof(memblock_t) && MIN_RAM > LEAVE_ASIDE);
-
+#ifndef LINUX
+  // CPhipps  -big problems with this
   atexit(Z_Close);            // exit handler
-
+#endif
   size = (size+CHUNK_SIZE-1) & ~(CHUNK_SIZE-1);  // round to chunk size
 
-   // Allocate the memory
+  // CPhipps - just checking...
+  if (sizeof(memblock_t)>HEADER_SIZE) 
+    I_Error("Z_Init: Ensure that HEADER_SIZE >= sizeof(memblock_T)\n");
 
+   // Allocate the memory
   while (!(zonebase=(malloc)(zonebase_size=size + HEADER_SIZE + CACHE_ALIGN)))
     if (size < (MIN_RAM-LEAVE_ASIDE < RETRY_AMOUNT ? RETRY_AMOUNT :
                                                      MIN_RAM-LEAVE_ASIDE))
@@ -217,12 +245,17 @@ void Z_Init(void)
     else
       size -= RETRY_AMOUNT;
 
+  printf("Z_Init: Allocated zone of %lu\n", (unsigned long)zonebase_size);
+
   // Align on cache boundary
 
   zone = (memblock_t *) ((char *) zonebase + CACHE_ALIGN -
                          ((unsigned) zonebase & (CACHE_ALIGN-1)));
 
   rover = zone;                            // Rover points to base of zone mem
+#ifdef NEW_SCHEME
+  rover_s=zone;
+#endif
   zone->next = zone->prev = zone;          // Single node
   zone->size = size;                       // All memory in one block
   zone->tag = PU_FREE;                     // A free block
@@ -239,6 +272,7 @@ void Z_Init(void)
 #endif
 }
 
+#ifndef NEW_SCHEME
 // Z_Malloc
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 
@@ -299,14 +333,11 @@ void *(Z_Malloc)(size_t size, int tag, void **user, const char *file, int line)
               newb->size = extra - HEADER_SIZE;
               newb->tag = PU_FREE;
               newb->vm = 0;
-
 #ifdef INSTRUMENTED
               inactive_memory += HEADER_SIZE;
               free_memory -= HEADER_SIZE;
 #endif
             }
-
-          rover = block->next;           // set roving pointer for next search
 
 #ifdef INSTRUMENTED
           inactive_memory += block->extra = block->size - size_orig;
@@ -329,6 +360,8 @@ allocated:
 #endif
           block->tag = tag;           // tag
           block->user = user;         // user
+           rover = block->prev;           // set roving pointer for next search
+
           block = (memblock_t *)((char *) block + HEADER_SIZE);
           if (user)                   // if there is a user
             *user = block;            // set user to point to new block
@@ -368,6 +401,200 @@ allocated:
 
   goto allocated;
 }
+
+#else
+// New scheme - CPhipps
+
+void *(Z_Malloc)(size_t size, int tag, void **user, const char *file, int line)
+{
+  register memblock_t *block;
+  memblock_t *start;
+
+#ifdef INSTRUMENTED
+  size_t size_orig = size;
+#ifdef CHECKHEAP
+  Z_CheckHeap();
+#endif
+
+  file_history[malloc_history][history_index[malloc_history]] = file;
+  line_history[malloc_history][history_index[malloc_history]++] = line;
+  history_index[malloc_history] &= ZONE_HISTORY-1;
+#endif
+
+  if (!size)
+    return user ? *user = NULL : NULL;           // malloc(0) returns NULL
+
+  size = (size+CHUNK_SIZE-1) & ~(CHUNK_SIZE-1);  // round to chunk size
+
+  if (tag>=PU_PURGELEVEL) { // so allocate at top of zone
+#ifdef ZONEIDCHECK
+    if (!user) I_Error ("Z_Malloc: an owner is required for purgable blocks\n"
+             "Source: %s:%d", file, line);
+#endif
+    block = rover;
+    if (block->next->tag == PU_FREE) block = block->next;
+    start=block;
+    do {
+      if (block->tag >= PU_PURGELEVEL)      // Free purgable blocks
+        {                                   // replacement is roughly FIFO
+          start = block->prev;
+          Z_Free((char *) block + HEADER_SIZE);
+          block = start = start->next;      // Important: resets start
+        }
+
+      if (block->tag == PU_FREE && block->size >= size)   // First-fit
+        {
+          size_t extra = block->size - size;
+          if (extra >= MIN_BLOCK_SPLIT + HEADER_SIZE)
+            {
+	      memblock_t *newb=(memblock_t *)((char*)block + extra);
+              (newb->next = block->next)->prev = newb;
+              (newb->prev = block)->next = newb;          // Split up block
+              block->size = extra - HEADER_SIZE;
+              newb->size = size;
+              block->tag = PU_FREE; // It darn well already should be
+              newb->vm = 0;
+	      block=newb; // We want the new block this time
+	      
+#ifdef INSTRUMENTED
+	      inactive_memory += HEADER_SIZE;
+	      free_memory -= HEADER_SIZE;
+#endif
+            }
+
+#ifdef INSTRUMENTED
+          inactive_memory += block->extra = block->size - size_orig;
+	  purgable_memory += size_orig;
+          free_memory -= block->size;
+#endif
+
+	  // allocated:
+
+#ifdef INSTRUMENTED
+          block->file = file;
+          block->line = line;
+#endif
+
+#ifdef ZONEIDCHECK
+          block->id = ZONEID;         // signature required in block header
+#endif
+          block->tag = tag;           // tag
+          block->user = user;         // user
+	  rover = block->prev;           // set roving pointer for next search
+
+          block = (memblock_t *)((char *) block + HEADER_SIZE);
+	  *user = block;            // set user to point to new block
+
+#ifdef INSTRUMENTED
+          Z_PrintStats();           // print memory allocation stats
+          // scramble memory -- weed out any bugs
+          memset(block, gametic & 0xff, size);
+#endif
+          return block;
+        }
+      // This is one main benefit of the new scheme
+      // rover_s is lowest free slot, so...
+      if (block<=rover_s) block=zone;
+      // this will immediately be moved to the top of the zone by the 
+      // outer loop
+    } while ((block = block->prev ) != start);   // detect cycles as failure
+  } else { // tag<PU_PURGELEVEL, so allocate at bottom of zone
+    block=rover_s;
+    if (block->prev->tag == PU_FREE) block = block->prev;
+    start=block;
+    do {
+      if (block->tag >= PU_PURGELEVEL)      // Free purgable blocks
+        {                                   // replacement is roughly FIFO
+          start = block->prev;
+          Z_Free((char *) block + HEADER_SIZE);
+          block = start = start->next;      // Important: resets start
+        }
+
+      if (block->tag == PU_FREE && block->size >= size)   // First-fit
+        {
+          size_t extra = block->size - size;
+          if (extra >= MIN_BLOCK_SPLIT + HEADER_SIZE)
+            {
+	      memblock_t *newb = (memblock_t *)((char *) block +
+                                                HEADER_SIZE + size);
+
+              (newb->next = block->next)->prev = newb;
+              (newb->prev = block)->next = newb;          // Split up block
+              block->size = size;
+              newb->size = extra - HEADER_SIZE;
+              newb->tag = PU_FREE;
+              newb->vm = 0;
+#ifdef INSTRUMENTED
+              inactive_memory += HEADER_SIZE;
+              free_memory -= HEADER_SIZE;
+#endif
+            }
+
+#ifdef INSTRUMENTED
+          inactive_memory += block->extra = block->size - size_orig;
+	  active_memory += size_orig;
+          free_memory -= block->size;
+#endif
+
+	  // allocated_s:
+
+#ifdef INSTRUMENTED
+          block->file = file;
+          block->line = line;
+#endif
+
+#ifdef ZONEIDCHECK
+          block->id = ZONEID;         // signature required in block header
+#endif
+          block->tag = tag;           // tag
+          block->user = user;         // user
+	  rover_s=block->next;
+	  
+          block = (memblock_t *)((char *) block + HEADER_SIZE);
+          if (user)                   // if there is a user
+            *user = block;            // set user to point to new block
+
+#ifdef INSTRUMENTED
+          Z_PrintStats();           // print memory allocation stats
+          // scramble memory -- weed out any bugs
+          memset(block, gametic & 0xff, size);
+#endif
+          return block;
+        }
+    } while ((block = block->next) != start);   // detect cycles as failure
+  }
+
+  // We've run out of physical memory, or so we think.
+  // Although less efficient, we'll just use ordinary malloc.
+  // This will squeeze the remaining juice out of this machine
+  // and start cutting into virtual memory if it has it.
+#ifndef NEW_SCHEME
+  // I.e never, 'cause I dislike the goto and I think I broke this already
+  // - CPhipps
+  while (!(block = (malloc)(size + HEADER_SIZE)))
+    {
+      if (!blockbytag[PU_CACHE])
+#endif
+        I_Error ("Z_Malloc: Failure trying to allocate %lu bytes"
+                 "\nSource: %s:%d",(unsigned long) size, file, line);
+#ifndef NEW_SCHEME
+      Z_FreeTags(PU_CACHE,PU_CACHE);
+    }
+
+  if ((block->next = blockbytag[tag]))
+    block->next->prev = (memblock_t *) &block->next;
+  blockbytag[tag] = block;
+  block->prev = (memblock_t *) &blockbytag[tag];
+  block->vm = 1;
+
+#ifdef INSTRUMENTED
+  virtual_memory += block->size = size + HEADER_SIZE;
+#endif
+
+  goto allocated_s;
+#endif
+}
+#endif // NEW_SCHEME
 
 void (Z_Free)(void *p, const char *file, int line)
 {
@@ -430,7 +657,10 @@ void (Z_Free)(void *p, const char *file, int line)
 #endif
 
           block->tag = PU_FREE;       // Mark block freed
-
+#ifdef NEW_SCHEME
+	  if (block<rover_s) 
+	    rover_s=block; // Keep rover_s at lowest free slot in the zone
+#endif
           if (block != zone)
             {
               other = block->prev;        // Possibly merge with previous block
@@ -438,6 +668,9 @@ void (Z_Free)(void *p, const char *file, int line)
                 {
                   if (rover == block)  // Move back rover if it points at block
                     rover = other;
+#ifdef NEW_SCHEME
+		  if (rover_s == block) rover_s=other;
+#endif
                   (other->next = block->next)->prev = other;
                   other->size += block->size + HEADER_SIZE;
                   block = other;
@@ -454,6 +687,9 @@ void (Z_Free)(void *p, const char *file, int line)
             {
               if (rover == other) // Move back rover if it points at next block
                 rover = block;
+#ifdef NEW_SCHEME
+	      if (rover_s == other) rover_s = block;
+#endif
               (block->next = other->next)->prev = block;
               block->size += other->size + HEADER_SIZE;
 

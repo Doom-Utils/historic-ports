@@ -41,6 +41,12 @@ lumpinfo_t *lumpinfo;
 int        numlumps;         // killough
 void       **lumpcache;      // killough
 
+// CPhipps - Ugly, hopefully temporary kludge
+#ifdef LINUX
+#define O_BINARY 0
+#endif
+// Do I need an updated libc?
+
 static int filelength(int handle)
 {
   struct stat   fileinfo;
@@ -164,7 +170,9 @@ static void W_AddFile(const char *filename) // killough 1/31/98: static, const
         lump_p->handle = handle;                    //  killough 4/25/98
         lump_p->position = LONG(fileinfo->filepos);
         lump_p->size = LONG(fileinfo->size);
+#ifdef INLINE_PREDEFINED_LUMPS
         lump_p->data = NULL;                        // killough 1/31/98
+#endif
         lump_p->namespace = ns_global;              // killough 4/17/98
         strncpy (lump_p->name, fileinfo->name, 8);
       }
@@ -352,6 +360,8 @@ int W_GetNumForName (const char* name)     // killough -- const added
 
 void W_InitMultipleFiles(char *const *filenames)
 {
+#ifdef INLINE_PREDEFINED_LUMPS
+  // CPhipps - removed for RAM efficiency
   // killough 1/31/98: add predefined lumps first
 
   numlumps = num_predefined_lumps;
@@ -360,7 +370,9 @@ void W_InitMultipleFiles(char *const *filenames)
   lumpinfo = malloc(numlumps*sizeof(*lumpinfo));
 
   memcpy(lumpinfo, predefined_lumps, numlumps*sizeof(*lumpinfo));
-
+#else
+  W_AddFile("boomlump.wad");
+#endif
   // open all the files, load headers, and count lumps
   while (*filenames)
     W_AddFile(*filenames++);
@@ -414,10 +426,11 @@ void W_ReadLump(int lump, void *dest)
   if (lump >= numlumps)
     I_Error ("W_ReadLump: %i >= numlumps",lump);
 #endif
-
+#ifdef INLINE_PREDEFINED_LUMPS
   if (l->data)     // killough 1/31/98: predefined lump data
     memcpy(dest, l->data, l->size);
   else
+#endif
     {
       int c;
 
@@ -451,7 +464,7 @@ void *W_CacheLumpNum (int lump, int tag)
 }
 
 // W_CacheLumpName macroized in w_wad.h -- killough
-
+#ifdef INLINE_PREDEFINED_LUMPS
 // WritePredefinedLumpWad
 // Args: Filename - string with filename to write to
 // Returns: void
@@ -505,7 +518,7 @@ void WritePredefinedLumpWad(const char *filename)
   }
  I_Error("Cannot open predefined lumps wad %s for output\n", filename);
 }
-
+#endif
 //----------------------------------------------------------------------------
 //
 // $Log: w_wad.c,v $

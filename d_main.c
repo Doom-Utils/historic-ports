@@ -46,6 +46,7 @@ static const char rcsid[] = "$Id: d_main.c,v 1.47 1998/05/16 09:16:51 killough E
 #include "i_system.h"
 #include "i_sound.h"
 #include "i_video.h"
+#include "i_input.h"
 #include "g_game.h"
 #include "hu_stuff.h"
 #include "wi_stuff.h"
@@ -56,6 +57,8 @@ static const char rcsid[] = "$Id: d_main.c,v 1.47 1998/05/16 09:16:51 killough E
 #include "r_main.h"
 #include "d_main.h"
 #include "d_deh.h"  // Ty 04/08/98 - Externalizations
+#include "strcase.h"
+#include "exit.h"
 
 // DEHacked support - Ty 03/09/97
 void ProcessDehFile(char *filename, char *outfilename);
@@ -323,10 +326,9 @@ static void D_DoomLoop(void)
       debugfile = fopen(filename,"w");
     }
 
-  I_InitGraphics ();
-
+#ifndef LINUX
   atexit(D_QuitNetGame);       // killough
-
+#endif
   for (;;)
     {
       // frame syncronous IO operations
@@ -536,6 +538,10 @@ void CheckIWAD(char *iwadname, GameMode_t *gmode, boolean *hassec)
     int handle;
 
     // Identify IWAD correctly
+#ifdef LINUX
+    // Where is this in Linux? CPhipps
+#define O_BINARY 0
+#endif
     if ( (handle = open (iwadname,O_RDONLY | O_BINARY)) != -1)
     {
       wadinfo_t header;
@@ -1296,15 +1302,17 @@ void D_DoomMain(void)
   // killough 3/2/98: allow -nodraw -noblit generally
   nodrawers = M_CheckParm ("-nodraw");
   noblit = M_CheckParm ("-noblit");
-
+#ifdef INLINE_PRPEDEFINED_LUMPS
   // jff 4/21/98 allow writing predefined lumps out as a wad
   if ((p = M_CheckParm("-dumplumps")) && p < myargc-1)
     WritePredefinedLumpWad(myargv[p+1]);
-
+#endif
     // init subsystems
   puts("V_Init: allocate screens.");
   V_Init();
-
+  
+  I_InitKeyTrans(); // CPhipps - must do before M_LoadDefaults
+  
   puts("M_LoadDefaults: Load system defaults.");
   M_LoadDefaults();              // load before initing other systems
 
@@ -1433,6 +1441,10 @@ void D_DoomMain(void)
       G_SaveGameName(file, slot);       // killough 3/22/98
       G_LoadGame(file, slot, true);     // killough 5/15/98: add command flag
     }
+  // CPhipps - Do this before any game init
+  // because I suspect it is cause of a crash
+  I_InitGraphics ();
+  I_InitInputs (); // CPhipps - needed by my input drivers
 
   if (gameaction != ga_loadgame)
     if (autostart || netgame)

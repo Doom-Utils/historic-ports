@@ -55,8 +55,10 @@ typedef struct
 
   char  name[8];
   int   size;
+#ifdef INLINE_PREDEFINED_LUMPS
+  // CPhipps - removed for RAM efficiency
   const void *data;     // killough 1/31/98: points to predefined lump data
-
+#endif
   // killough 1/31/98: hash table fields, used for ultra-fast hash table lookup
   int index, next;
 
@@ -72,9 +74,11 @@ typedef struct
   int position;
 } lumpinfo_t;
 
+#ifdef INLINE_PREDEFINED_LUMPS
 // killough 1/31/98: predefined lumps
 extern const size_t num_predefined_lumps;
 extern const lumpinfo_t predefined_lumps[];
+#endif
 
 extern void       **lumpcache;
 extern lumpinfo_t *lumpinfo;
@@ -99,9 +103,10 @@ char *AddDefaultExtension(char *, const char *);  // killough 1/18/98
 void ExtractFileBase(const char *, char *);       // killough
 unsigned W_LumpNameHash(const char *s);           // killough 1/31/98
 
+#ifdef INLINE_PREDEFINED_LUMPS
 // Function to write all predefined lumps to a PWAD if requested
 extern void WritePredefinedLumpWad(const char *filename); // jff 5/6/98
-
+#endif
 #endif
 
 //----------------------------------------------------------------------------

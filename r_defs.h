@@ -131,7 +131,6 @@ typedef struct
 //
 // The SideDef.
 //
-
 typedef struct
 {
   fixed_t textureoffset; // add this to the calculated texture column

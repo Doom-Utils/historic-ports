@@ -22,7 +22,12 @@
 static const char
 rcsid[] = "$Id: g_game.c,v 1.58 1998/05/16 09:16:57 killough Exp $";
 
+// CPhipps - Strange but necessary 
+#ifndef LINUX
 #include <time.h>
+#else
+#include <sys/time.h>
+#endif
 #include <stdarg.h>
 
 #include "doomstat.h"
@@ -51,6 +56,7 @@ rcsid[] = "$Id: g_game.c,v 1.58 1998/05/16 09:16:57 killough Exp $";
 #include "d_deh.h"              // Ty 3/27/98 deh declarations
 #include "p_inter.h"
 #include "g_game.h"
+#include "exit.h"
 
 #define SAVEGAMESIZE  0x20000
 #define SAVESTRINGSIZE  24

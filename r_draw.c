@@ -86,6 +86,7 @@ byte    *dc_source;      // first pixel in a column (possibly virtual)
 // 
 
 #ifndef DJGPP     // killough 2/15/98
+#ifndef LINUX // Added CPhipps
 
 void R_DrawColumn (void) 
 { 
@@ -168,7 +169,7 @@ void R_DrawColumn (void)
       }
   }
 } 
-
+#endif
 #endif
 
 // Here is the version of R_DrawColumn that deals with translucent  // phares
@@ -184,7 +185,7 @@ void R_DrawColumn (void)
 // actual code differences are.
 
 #ifndef DJGPP                       // killough 2/21/98: converted to x86 asm
-
+#ifndef LINUX // CPhipps added
 void R_DrawTLColumn (void)                                           
 { 
   int              count; 
@@ -268,7 +269,7 @@ void R_DrawTLColumn (void)
       }
   }
 } 
-
+#endif
 #endif  // killough 2/21/98: converted to x86 asm
 
 //
@@ -478,7 +479,7 @@ fixed_t ds_ystep;
 byte *ds_source;        
 
 #ifndef DJGPP      // killough 2/15/98
-
+#ifndef LINUX // CPhipps added
 void R_DrawSpan (void) 
 { 
   register unsigned position;
@@ -546,7 +547,7 @@ void R_DrawSpan (void)
       count--;
     } 
 } 
-
+#endif
 #endif
 
 //

@@ -43,7 +43,6 @@ rcsid[] = "$Id: info.c,v 1.44 1998/05/12 12:46:36 phares Exp $";
 #endif
 #include "info.h"
 
-
 // ********************************************************************
 // Sprite names
 // ********************************************************************
@@ -4789,7 +4788,9 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
   }
 };
 
-
+#ifdef INLINE_PREDEFINED_LUMPS
+// CPhipps - WHAT??? You store a load of WAD resources TWICE???
+//  How much RAM do you have???
 // ********************************************************************
 // Predefined lumps
 // ********************************************************************
@@ -10722,7 +10723,7 @@ const lumpinfo_t predefined_lumps[]={
 // Calculate how many of them there are
 const size_t num_predefined_lumps =
   sizeof predefined_lumps / sizeof *predefined_lumps;
-
+#endif
 //----------------------------------------------------------------------------
 //
 // $Log: info.c,v $
