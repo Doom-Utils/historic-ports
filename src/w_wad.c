@@ -71,7 +71,7 @@ static void W_ReportLocks(void)
 }
 #endif
 
-static int filelength(int handle)
+static int internal_filelength(int handle)
 {
   struct stat   fileinfo;
   if (fstat(handle,&fileinfo) == -1)
@@ -150,10 +150,10 @@ static void W_AddFile(const char *filename, wad_source_t source)
   // open the file and add to directory
 
   handle = open(filename,O_RDONLY | O_BINARY);
-
+#ifdef HAVE_NET
   if (handle == -1 && D_NetGetWad(filename)) // CPhipps
     handle = open(filename,O_RDONLY | O_BINARY);
-    
+#endif
   if (handle == -1) 
     {
       if (strlen(filename)<=4 ||      // add error check -- killough
@@ -172,7 +172,7 @@ static void W_AddFile(const char *filename, wad_source_t source)
       // single lump file
       fileinfo = &singleinfo;
       singleinfo.filepos = 0;
-      singleinfo.size = LONG(filelength(handle));
+      singleinfo.size = LONG(internal_filelength(handle));
       ExtractFileBase(filename, singleinfo.name);
       numlumps++;
     }

@@ -38,6 +38,10 @@ rcsid[] = "$Id: g_game.c,v 1.36 2000/03/17 20:50:30 cph Exp $";
 
 #include <stdarg.h>
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "doomstat.h"
 #include "f_finale.h"
 #include "m_argv.h"
@@ -724,7 +728,9 @@ void G_Ticker (void)
   if (mapcolor_plyr[consoleplayer] != mapcolor_me) {
     // Changed my multiplayer colour - Inform the whole game
     int net_cl = LONG(mapcolor_me);
+#ifdef HAVE_NET
     D_NetSendMisc(nm_plcolour, sizeof(net_cl), &net_cl);
+#endif
     G_ChangedPlayerColour(consoleplayer, mapcolor_me);
   }
   // do player reborns if needed
@@ -1533,7 +1539,9 @@ void G_SaveGame(int slot, char *description)
   // CPhipps - store info in special_event
   special_event = BT_SPECIAL | (BTS_SAVEGAME & BT_SPECIALMASK) | 
     ((slot << BTS_SAVESHIFT) & BTS_SAVEMASK);
+#ifdef HAVE_NET
   D_NetSendMisc(nm_savegamename, strlen(savedescription)+1, savedescription);
+#endif
 }
 
 // Check for overrun and realloc if necessary -- Lee Killough 1/22/98
@@ -1553,7 +1561,11 @@ void CheckSaveGame(size_t size)
 
 void G_SaveGameName(char *name, size_t size, int slot)
 {
+#ifdef HAVE_snprintf
   snprintf (name, size, "%s/%s%d.dsg", basesavegame, savegamename, slot);
+#else 
+  sprintf (name, "%s/%s%d.dsg", basesavegame, savegamename, slot);
+#endif
 }
 
 void G_DoSaveGame (void)
@@ -2286,7 +2298,11 @@ void doom_printf(const char *s, ...)
   static char msg[MAX_MESSAGE_SIZE];
   va_list v;
   va_start(v,s);
+#ifdef HAVE_vsnprintf
   vsnprintf(msg,sizeof(msg),s,v);        /* print message in buffer */
+#else
+  vsprintf(msg,s,v);
+#endif
   va_end(v);
   players[consoleplayer].message = msg;  // set new message
 }

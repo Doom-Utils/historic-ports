@@ -7,27 +7,25 @@
 #
 #
 gamesdir=$(prefix)/games
-EXTRA_PROGRAMS = lsdoom lxdoom sndserv
-games_PROGRAMS = @BUILD_LSDOOM@ @BUILD_LXDOOM@ @BUILD_SNDSERV@ lxdoom-game-server
+EXTRA_PROGRAMS = lsdldoom lxdoom-game-server
+games_PROGRAMS = @BUILD_SDLDOOM@ @BUILD_SERVER@
 
 if I386_ASM
-ASMS = drawspan.s drawcol.s
+ASMS = drawspan.S drawcol.S drawasm.h
 else
 ASMS = 
 endif
 
-sndserv_SOURCES = version.c l_soundsrv.c sounds.c l_soundgen.c \
-	l_system.c i_system.h l_soundsrv.h l_soundgen.h
-sndserv_LDADD = 
+CFLAGS = @SDL_CFLAGS@ @MIXER_CFLAGS@ @NET_CFLAGS@ @CFLAGS@ 
 
 lxdoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
-lxdoom_game_server_LDADD = 
+lxdoom_game_server_LDADD = @NET_LIBS@ @SDL_LIBS@
 
 COMMON_SRC = \
  am_map.c       g_game.c           p_maputl.h       r_plane.h   \
  am_map.h       g_game.h           p_mobj.c         r_segs.c    \
  hu_lib.c       lprintf.c          p_mobj.h         r_segs.h    \
- d_client.c     hu_lib.h           lprintf.h        p_plats.c   r_sky.c	    \
+ hu_lib.h       lprintf.h          p_plats.c        r_sky.c	\
  d_deh.c        hu_stuff.c         m_argv.c         p_pspr.c    r_sky.h	    \
  d_deh.h        hu_stuff.h         m_argv.h         p_pspr.h    r_state.h   \
  d_englsh.h     i_joy.h            m_bbox.c         p_saveg.c   r_things.c  \
@@ -36,32 +34,34 @@ COMMON_SRC = \
  d_items.h      i_sound.h          m_cheat.h        p_setup.h   s_sound.h   \
  d_main.c       i_system.h         m_fixed.h        p_sight.c   sounds.c    \
  d_main.h       i_video.h          m_menu.c         p_spec.c    sounds.h    \
- info.c         m_menu.h           p_spec.h         st_lib.c    \
+                info.c             m_menu.h         p_spec.h    st_lib.c    \
  d_net.h        info.h             m_misc.c         p_switch.c  st_lib.h    \
  d_player.h     l_joy.c            m_misc.h         p_telept.c  st_stuff.c  \
  m_random.c     p_tick.c           st_stuff.h       l_main.c    i_main.h    \
  d_think.h      m_random.h         p_tick.h         tables.c    \
  d_ticcmd.h     m_swap.h           p_user.c         tables.h    l_system.c  \
- doomdata.h     l_sound.c          p_ceilng.c       p_user.h    v_video.c   \
+ doomdata.h     p_ceilng.c         p_user.h         v_video.c   \
  doomdef.c      p_doors.c          protocol.h       v_video.h   \
  doomdef.h      p_enemy.c          r_bsp.c          version.c   \
  doomstat.c     p_enemy.h          r_bsp.h          version.h   \
  doomstat.h     p_floor.c          r_data.c         w_wad.c	\
  doomtype.h     p_genlin.c         r_data.h         w_wad.h	\
- dstrings.c     l_udp.c            p_inter.c        r_defs.h    wi_stuff.c  \
+ dstrings.c     p_inter.c          r_defs.h         wi_stuff.c  \
  dstrings.h     p_inter.h          r_draw.c         wi_stuff.h  \
  f_finale.c     p_lights.c         r_draw.h         z_bmalloc.c \
  f_finale.h     p_map.c            r_main.c         z_bmalloc.h \
  f_wipe.c       p_map.h            r_main.h         z_zone.c    \
  f_wipe.h       p_maputl.c         r_plane.c        z_zone.h    $(ASMS)
 
-lxdoom_SOURCES = l_video_trans.h   l_video_trans.c  l_video_x.c $(COMMON_SRC)
-lsdoom_SOURCES = l_video_svgalib.c $(COMMON_SRC)
+if HAVE_NET
+NET_CLIENT_SRC = d_client.c l_udp.c
+else
+NET_CLIENT_SRC = d_client.c
+endif
 
-lxdoom_LDADD = @X_LIBS@ @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@ @LIB_XEXT@ @LIB_XDGA@
-lsdoom_LDADD = -lvga
+lsdldoom_SOURCES = l_sdl.c l_video_trans.h l_video_trans.c l_video_sdl.c l_sound_sdl.c qmus2mid.c qmus2mid.h $(COMMON_SRC) $(NET_CLIENT_SRC)
 
-EXTRA_lxdoom_SOURCES  = $(ASMS)
+lsdldoom_LDADD = @MIXER_LIBS@ @NET_LIBS@ @SDL_LIBS@ -lm
 
 #
 # $Log: Makefile.am,v $

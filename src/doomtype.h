@@ -44,14 +44,8 @@ typedef enum {false, true} boolean;
 typedef unsigned char byte;
 #endif
 
-/* cph - Wrapper for the long long type, as Win32 used a different name */
-#ifndef _WIN32
 typedef signed long long int_64_t; 
 typedef unsigned long long uint_64_t; 
-#else
-typedef __int64 int_64_t;
-typedef __int64 int_64_t;
-#endif
 
 /* CPhipps - use limits.h instead of depreciated values.h */
 #include <limits.h>

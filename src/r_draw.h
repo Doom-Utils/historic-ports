@@ -52,10 +52,6 @@ extern const byte     *dc_source;
 // The span blitting interface.
 // Hook in assembler or system specific BLT here.
 
-#ifndef I386
-void R_DrawColumn(void);
-void R_DrawTLColumn(void);      // drawing translucent textures // phares
-#else
 // CPhipps - core rendering high res ASM support
 // For optimal speed at 320xy resolutions we continue to use the 
 //  old hardcoded width asm funcs
@@ -73,7 +69,7 @@ void R_DrawTLColumn_HighRes(void);
 extern void (*R_DrawColumn)(void);
 extern void (*R_DrawTLColumn)(void);
 
-#endif
+
 
 void R_DrawFuzzColumn(void);    // The Spectre/Invisibility effect.
 

@@ -1,25 +1,23 @@
-LxDoom v1.4.4
-=============
+LsdlDoom v1.4.4.4
+=================
 
 Doom is a 3d shoot'em'up game, written by id Software, first released in
 1993. 
 
-LxDoom is a version of Doom, designed to run on Linux either under XFree86 or 
-using SVGALib. It will also run under various Unix variants. Doom is a 3D 
-game originally by id software.
+LsdlDoom is a version of Doom, designed to run on any systen that supports
+SDL. Doom is a 3D game originally by id software.
 
-LxDoom is based on Boom, a freely available port of Doom for DOS, written by 
-TeamTNT (http://www.teamtnt.com/).
+LsdlDoom is based on LxDoom, a freely available Linux specific version of Doom,
+which is released and maintained by Colin Phipps (http://lxdoom.linuxgames.com/)
 
-LxDoom is released and maintained by Colin Phipps (that's me). See the 
-LxDoom home-page at http://lxdoom.linuxgames.com/ for information about 
-Doom and LxDoom.
+LsdlDoom is released and maintained by Jess Haas (jessh@lbjhs.net). See the 
+LsdlDoom home-page at http://firehead.org/~jessh/lsdldoom/ for information 
+about Doom and LsdlDoom.
 
-If you have comments, contributions, or bug reports about LxDoom, please 
-go to http://lxdoom.linuxgames.com/contact.html, which will direct 
-you to the right place to ask.
+If you have comments, contributions, or bug reports about LsdlDoom, please 
+email me at jessh@lbjhs.net
 
-LxDoom is free software - see the files AUTHORS and COPYING for details.
+LsdlDoom is free software - see the files AUTHORS and COPYING for details.
 
 Release Notes
 -------------
@@ -29,7 +27,7 @@ references from /usr/local/games/wads. Also, save games and config files are
 now stored in ~/.lxdoom/
 
 You will also need to recalibrate your mouse sensitivity, since LxDoom v1.4.3 
-changes te sensitivity scale in order to give more fine control.
+changes the sensitivity scale in order to give more fine control.
 
 Requirements
 ------------
@@ -38,20 +36,19 @@ Requirements
   need from these is the "IWAD file", the main Doom data file, called
   doom.wad or doom2.wad. Or, you can use the doom1.wad from the shareware
   release of Doom.
-- a suitable UNIX system to run LxDoom on. I use Debian GNU/Linux 2.1, and
-  have tested LxDoom on several Linux variants.
-- either a working Xwindows setup, or SVGALib. You need the header files for
-  those installed in order to compile LxDoom.
+- a working install of SDL (Simple DirectMedia Layer). To compile you will 
+  nead to eather get the development packages or compile SDL yourself.
+ 
 
-See the file INSTALL for instructions for installing LxDoom.
+See the file INSTALL for instructions for installing LsdlDoom.
 
 Features
 --------
 
 * Boom compatible:
 
-LxDoom is directly based on the source code for Boom (final release 
-2.02). That means that
+LsdlDoom is based on the source code for Boom (final release 2.02). 
+That means that
 
 - all the original Doom & Doom ][ levels work
 - virtually all bug-less Doom & Doom ][ PWAD files should work
@@ -63,7 +60,8 @@ The command line parameters for all these features are the same as for Boom.
 
 * Enhancements from Boom:
 
-LxDoom has been substantially enhanced since Boom, with lots of improvements:
+LsdlDoom has been substantially enhanced since Boom, with lots of improvements:
+(inherited from lxdoom)
 
 - lots of bug fixes and code improvements, many incorporated from MBF
 - support for MBF's enhanced Dehacked support, skies and new code pointers
@@ -73,22 +71,24 @@ LxDoom has been substantially enhanced since Boom, with lots of improvements:
 - auto-loading of wads
 - games can be loaded or the level restarted during a net-game
 
-* X windows - LxDoom uses XFree86 to display the Doom screen, as well as 
-collect keyboard and mouse input. So if you can use XFree86, you should have 
-no problems using LxDoom. 
+* SDL currently suports the following Unix video targets
+  * X windows - SDL can use XFree86 to display the Doom screen, as well as 
+    collect keyboard and mouse input. So if you can use XFree86, you should have 
+    no problems using LsdlDoom. 
 
-* SVGALib version - nearly as fast as DOS Boom with normal video card, and 
-should use the acceleration on accelerated cards supported by SVGALib (not 
-tested yet)
+  * SVGALib - nearly as fast as DOS Boom with normal video card, and 
+    should use the acceleration on accelerated cards supported by SVGALib (not 
+    tested yet)
 
-* High-res - LxDoom can run at resolutions higher than old Doom's fixed 
+  * AALib - ASCII DOOM!!!!!!!!!!!!  
+
+* DirectX5 and Windib support under Windows 9x, 2000 and NT
+
+* High-res - LsdlDoom can run at resolutions higher than old Doom's fixed 
 320x200, in fact as high as 1600x1200 in theory.
 
-* Sound support: If your OS provides /dev/dsp support for your sound card, 
-then LxDoom can also give you the Doom sounds too. Or if you use an 
-alternative driver, which provides equivalent support on a different 
-device (e.g the PC speaker driver) then LxDoom can use that instead. 8 bit 
-sound cards are supported too.
+* Sound support: Sound is supported by SDL. Music requires the SDL_mixer
+library.
 
 * Networking: Network support is included for net-games over TCP/IP based 
 networks. 
@@ -108,29 +108,28 @@ in addition to all the cheat codes that Boom added. Also IDRATE shows the
 current framerate and some other rendering stats, which are useful to
 developers.
 
-* Music interface: Using a compatible music server LxDoom can now play music. 
-You can get a compatible version of musserver from my site.
-
-XFree86 version
+High-Res Support
 ---------------
 
-The XFree86 version of LxDoom is the program lxdoom. You can probably just use 
-your existing XFree86 configuration to run lxdoom with few changes.
+To set the resolution to use, specify the -width and -height parameters to 
+lsdldoom. So:
 
-LxDoom now has hi-res! To set the resolution to use, specify the -width and 
--height parameters to lxdoom. So:
-
-lxdoom <other parameters> -width 640 -height 480
+lsdldoom <other parameters> -width 640 -height 480
 
 gives you a 640x480 window. Bear in mind though that a larger window means that 
-LxDoom has to do more work rendering, so it will run slower on old computers. 
+LsdlDoom has to do more work rendering, so it will run slower on old computers. 
 
-lxdoom remembers the last screen resolution set in this way, so you don't need to 
+lsdldoom remembers the last screen resolution set in this way, so you don't need to 
 add these parameters every time. However, should you wish to override the 
 resolution for the current time you run lxdoom only, you can use the -geometry 
 parameter, e.g. lxdoom -geom 320x200. 
 
-LxDoom can display to most Xwindows displays. It is fastest on 256 colour
+
+XFree86 Notes
+-------------
+
+LsdlDoom can display to most Xwindows displays. It is fastest on 256
+colour
 PseudoColor displays (since this is what Doom was originally written for).
 To change the colour depth of your XFree86 setup, edit your 
 /etc/XF86Config file, and replace any existing DefaultColorDepth lines with:
@@ -144,85 +143,35 @@ Alternatively, if you don't want the change to be permanent, just use
 
 If you normally use X at 24bpp, and LxDoom displays wrongly when used at 24bpp, 
 edit the config file ~/.lxdoom/boom.cfg and change the X_options variable to 
-have value 2. This makes LxDoom work right on my test machines.
+have value 2. This makes LsdlDoom work right on my test machines.
 
 If you use a high graphics resolution or a small monitor, the lxdoom window 
 may be too small for LxDoom to be comfortably playable. In that case, if you 
-have a powerful PC, try running lxdoom with the -2 parameter. This makes the 
+have a powerful PC, try running lsdldoom with the -2 parameter. This makes the 
 window twice as big in both directions. If that is still too small, try the 
 -3 parameter instead.
 
-The problem with the -2 and -3 parameters is that they slow down lxdoom 
+The problem with the -2 and -3 parameters is that they slow down lsdldoom 
 considerably, particularly in high-colour modes. I suggest that you reduce
-the size of your Xwindows display instead while playing LxDoom (in XFree86,
+the size of your Xwindows display instead while playing LsdlDoom (in XFree86,
 normally CRTL-ALT-+/- change the display size). 
 
 For really old machines (low end pentiums, 486's), it is hard to find a
-compromise - lxdoom will either be displayed too small, or will run too
+compromise - lsdldoom will either be displayed too small, or will run too
 slow. For these machines, you can either reduce your screen size in X to
-320x200 (see appendix), or use the SVGALib version.
+320x200 (see appendix), or use the fullscreen option.
 
-lxdoom now only grabs your mouse pointer while actually playing, and it can 
-be released at any time by PAUSEing. If you don't want to use a mouse, use 
-the -nomouse parameter when launching lxdoom.
-
-Some combinations of keys used by lxdoom may be trapped by your window
+Some combinations of keys used by lsdldoom may be trapped by your window
 manager. If you have trouble with the strafe key ALT sticking on for
 example, this is probably due to your window manager grabbing the key
 presses. There are two solutions: change your window manager config, so it
-doesn't trap those keys, or select different keys in lxdoom, via the Key
+doesn't trap those keys, or select different keys in lsdldoom, via the Key
 Bindings menu.
-
-SVGALib Version
----------------
-
-SVGALib is a graphics library developed specifically for Linux/i386, which 
-provides games like LxDoom high-performance graphics functions.
-
-You have to have a compiled version of SVGALib installed to use the SVGALib 
-version of LxDoom, which is the file lsdoom. 
-
-To get higher screen resolutions, you use the -width and -height command line 
-parameters. Just like the Xwindows version, the previous settings are 
-remembered between sessions.
-
-* Security:
-SVGALib provides near-direct hardware access for games that run using it. 
-That is why it is faster than XFree86 for games. BUT that means that you have 
-to be the superuser (root) to run anything that uses it.
-
-So you can run lsdoom as root, _or_ you can make lsdoom always run as root. 
-To do the latter, do the commands (as superuser):
-
-chown root /usr/local/games/lsdoom ; chmod a+rxs /usr/local/games/lsdoom
-
-This tells Linux to always run lsdoom with root privileges, regardless of who 
-runs it. Recent versions of SVGALib will release these privileges once the 
-game is running; however I will not pretend that this is safe, since lsdoom 
-does most of the file reading/writing before it is in graphics mode. It is, 
-however, better than always running it as superuser.
-
-Note: I found that I also had to 'chmod a+r /dev/mouse'; other devices may 
-also require this
-
-* Setup:
-Read the SVGALib documentation for information on configuring your screen, 
-video card and mouse to work nuder it. LxDoom asks SVGALib for all those 
-settings, so you have to edit /etc/vga/libvga.config to set them up. Most 
-video cards are auto-detected, and /dev/mouse and Microsoft serial mouse are 
-usually the default.
-
-Note: A badly configured SVGALib can be a security hazard, can cause your 
-machine to lose keyboard input (try telnetting if possible if this happens, 
-else you have to reboot), or can damage your monitor. I cannot be responsible 
-for any damage caused by improper use of SVGALib, even if my code is directly 
-or indirectly responsible.
 
 Other Devices
 -------------
 
-Items in this section relate to other input/output devices supported by either 
-version of LxDoom.
+Items in this section relate to other input/output devices supported by LsdlDoom.
 
 * Sound:
 You can disable sound support with the '-nosound' parameter. You may want to do 
@@ -231,22 +180,12 @@ this if:
 - your kernel is not compiled with sound support
 - the kernel driver for your card does not provide /dev/dsp support
 - your computer is too slow to cope with sound processing
-- you want to run multiple copies of LxDoom
-
-If you use have an alternative device for producing sound, which is compatible 
-with /dev/dsp, LxDoom can use that as well. You could just symlink /dev/dsp to 
-your other device, or you can:
-
-1) Run LxDoom once with the -nosound parameter.
-2) Exit normally
-3) Edit boom.cfg
-4) Change the line snddevice to the device that sound output should be sent to
-5) Save boom.cfg and try it out!
+- you want to run multiple copies of LsdlDoom
 
 * Joystick:
 If your system is Linux, and you had the Linux joystick headers available
-when you ompiled LxDoom, then LxDoom was compiled with joystick support.
-To use a joystick in LxDoom, run LxDoom once first and then exit. This creates 
+when you compiled LsdlDoom, then LsdlDoom was compiled with joystick support.
+To use a joystick in LsdlDoom, run LsdlDoom once first and then exit. This creates 
 ~/.lxdoom/boom.cfg. 
 
 Edit boom.cfg. There is a use_joystick line - change the number on this line to the 
@@ -257,9 +196,9 @@ To disable the joystick for an individual session, us the '-nojoy' parameter.
 Multi-player - Over a TCP/IP network
 -----------
 
-As of v1.3.7, LxDoom has a client-server system for network games. There is a 
-server program, lxdoom-game-server, that comes with lxdoom. To play a network 
-game, follow these steps:
+As of v1.3.7, LsdlDoom has a client-server system for network games. There
+is a server program, lxdoom-game-server, that comes with lxdoom. To play
+a network game, follow these steps:
 
 - on one computer, which I will call the server, run the lxdoom-game-server 
 program. The parameters you specify to this program control the type of game 
@@ -278,10 +217,10 @@ nice coop game of Doom 2, I run
 
 on vale: 
 lxdoom-game-server -N 2 -l 1 &
-lxdoom -net localhost
+lsdldoom -net localhost
 
 on portico:
-lxdoom -net vale
+lsdldoom -net vale
 
 Happy fragging... but here are some notes:
 
@@ -354,4 +293,3 @@ monitor or video card incorrectly, then damage to your monitor or even worse
 could result. I cannot be held responsible for any such damage. Please read
 the relevant XFree86 docs before trying anything like this; they have similar
 warnings and disclaimers.
-

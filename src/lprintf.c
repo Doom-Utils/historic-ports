@@ -39,6 +39,10 @@ static const char rcsid[] = "$Id: lprintf.c,v 1.4 2000/02/26 19:17:54 cph Exp $"
 #include "lprintf.h"
 #include "i_main.h"
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 int cons_error_mask = -1-LO_INFO; /* all but LO_INFO when redir'd */
 int cons_output_mask = -1;        /* all output enabled */
 
@@ -55,7 +59,11 @@ int lprintf(OutputLevels pri, const char *s, ...)
 
   va_list v;
   va_start(v,s);
+#ifdef HAVE_vsnprintf
   vsnprintf(msg,sizeof(msg),s,v);         /* print message in buffer  */
+#else 
+  vsprintf(msg,s,v);
+#endif
   va_end(v);
 
   if (lvl&cons_output_mask)               /* mask output as specified */
@@ -80,7 +88,11 @@ void I_Error(const char *error, ...)
   char errmsg[MAX_MESSAGE_SIZE];
   va_list argptr;
   va_start(argptr,error);
+#ifdef HAVE_vsnprintf
   vsnprintf(errmsg,sizeof(errmsg),error,argptr);
+#else
+  vsprintf(errmsg,error,argptr);
+#endif
   va_end(argptr);
   fprintf(stderr,"%s\n",errmsg);
 

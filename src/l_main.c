@@ -50,6 +50,7 @@ rcsid[] = "$Id: l_main.c,v 1.14 2000/03/16 13:27:29 cph Exp $";
 #include "m_misc.h"
 #include "i_sound.h"
 #include "i_main.h"
+#include "l_sdl.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -100,6 +101,9 @@ void I_Init(void)
     else
       I_GetTime = I_GetTime_RealTime;
 
+  /* Jess 3/00: hack to allow lsdldoom to shutdown cleanly */ 
+  I_InitSDL();
+
   { 
     /* killough 2/21/98: avoid sound initialization if no sound & no music */
     extern boolean nomusicparm, nosfxparm;
@@ -114,13 +118,14 @@ static void I_SignalHandler(int s)
 {
   char buf[2048];
 
+#ifdef SIGPIPE
   /* CPhipps - report but don't crash on SIGPIPE */
   if (s == SIGPIPE) {
     fprintf(stderr, "Broken pipe\n");
     broken_pipe = 1;
     return;
   }
-
+#endif
   signal(s,SIG_IGN);  /* Ignore future instances of this signal.*/
 
   strcpy(buf,"Exiting on signal: ");
@@ -180,8 +185,7 @@ unsigned int endoom_mode;
 
 static void PrintVer(void)
 {
-  char vbuf[200];
-  printf("%s\n",I_GetVersionString(vbuf,200));
+  printf("LsdlDoom v%s (http://firehead.org/~jessh/lsdldoom/)\n",VERSION);
 }
 
 /* I_EndDoom
@@ -318,23 +322,25 @@ void I_Quit (void)
 uid_t stored_euid = -1;
 #endif
 
-int main(int argc, const char * const * argv)
+int main(int argc, char **argv)
 {
 #ifdef SECURE_UID
   /* First thing, revoke setuid status (if any) */
   stored_euid = geteuid();
-  if (getuid() != stored_euid) 
+  if (getuid() != stored_euid)
+  {
     if (seteuid(getuid()) < 0) 
       fprintf(stderr, "Failed to revoke setuid\n");
     else
       fprintf(stderr, "Revoked uid %d\n",stored_euid);
+  }
 #endif
   /* Version info */
   putchar('\n');
   PrintVer();
 
   myargc = argc;
-  myargv = argv;
+  myargv = (const char* const *)argv;
 
   /*
      killough 1/98:
@@ -356,7 +362,9 @@ int main(int argc, const char * const * argv)
 
   atexit(I_Quit);
   signal(SIGSEGV, I_SignalHandler);
+#ifdef SIGPIPE
   signal(SIGPIPE, I_SignalHandler); /* CPhipps - add SIGPIPE, as this is fatal */
+#endif
   signal(SIGTERM, I_SignalHandler);
   signal(SIGILL,  I_SignalHandler);
   signal(SIGFPE,  I_SignalHandler);

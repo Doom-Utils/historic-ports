@@ -39,6 +39,8 @@
 
 /* Endianess handling. */
 
+#include "SDL.h"
+
 /* cph - First the macros to do the actual byte swapping */
 
 /* leban
@@ -59,24 +61,7 @@
 
 /* CPhipps - now the endianness handling, converting input or output to/from 
  * the machine's endianness to that wanted for this type of I/O
- *
- * To find our own endianness:
- * If available, rely on autoconf'd config.h. Else, the old way...
- * Non-Linux targets should -D__BIG_ENDIAN__; Linux targets can define 
- * it, or rely on the system headers to tell us here.
  */
-
-#ifndef HAVE_CONFIG_H
-#if defined(LINUX) && !defined(__BIG_ENDIAN__)
-/* cph - Get endianess from system headers
- * Suggested by Gwenole Beauchesne */
-#include <endian.h>
-
-#if (__BYTE_ORDER == __BIG_ENDIAN)
-#define __BIG_ENDIAN__
-#endif
-#endif /* LINUX && !__BIG_ENDIAN__ */
-#endif /* not HAVE_CONFIG_H */
 
 /* Macros are named doom_XtoYT, where 
  * X is thing to convert from, Y is thing to convert to, chosen from 
@@ -87,7 +72,7 @@
  * Use separate macros so network could be converted to big-endian later.
  */
 
-#ifdef __BIG_ENDIAN__
+#if ( SDL_BYTEORDER == SDL_BIG_ENDIAN )
 
 #define doom_wtohl(x) doom_swap_l(x)
 #define doom_htowl(x) doom_swap_l(x)

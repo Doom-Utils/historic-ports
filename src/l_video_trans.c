@@ -140,7 +140,7 @@ static void I_Double8Buf(pval* out_buffer, const byte* src)
       register unsigned int twoopixels;
       register unsigned int twomoreopixels;
       unsigned long* oline2ptr = olineptr + SCREENWIDTH*2 / sizeof(*olineptr);
-#ifndef I386
+#ifndef I386_ASM
       unsigned int fouripixels = *ilineptr++;
       twoopixels =	(fouripixels & 0xff000000)
 	|	((fouripixels>>8) & 0xffff00)
@@ -164,7 +164,7 @@ static void I_Double8Buf(pval* out_buffer, const byte* src)
 	       : "=b" (twoopixels), "=c" (twomoreopixels)
 	       : "a" (*ilineptr++) : "%cc", "%edx");
 #endif
-#ifdef __BIG_ENDIAN__
+#if ( SDL_BYTEORDER == SDL_BIG_ENDIAN )
       olineptr[0] = oline2ptr[0] = twoopixels;
       olineptr[1] = oline2ptr[1] = twomoreopixels;
 #else
@@ -201,7 +201,7 @@ static void I_Triple8Buf(pval* out_buffer, const byte* src)
       fouropixels[2] = ((fouripixels<<16) & 0xffff0000)
 	|	((fouripixels<<8) & 0xff00)
 	|	(fouripixels & 0xff);
-#ifdef __BIG_ENDIAN__
+#if ( SDL_BYTEORDER == SDL_BIG_ENDIAN )
       olineptr[0] = fouropixels[0];
       olineptr[lineadd / sizeof (*olineptr)] = fouropixels[0];
       olineptr[2 * lineadd] = fouropixels[0];
@@ -238,7 +238,7 @@ static void I_Copyto16Buf(pval* out_buffer, const byte* src)
 
   if (pixelvals == NULL) return;
 
-#ifndef I386
+#ifndef I386_ASM
   do {
     optr[0] = pixelvals[iptr[0]];
     optr[1] = pixelvals[iptr[1]];
@@ -382,7 +382,7 @@ static void I_Copyto32Buf(pval* out_buffer, const byte* src)
 
   if (pixelvals == NULL) return;
 
-#ifndef I386
+#ifndef I386_ASM
   do {
     optr[0] = pixelvals[iptr[0]];
     optr[1] = pixelvals[iptr[1]];

@@ -58,7 +58,7 @@ typedef int fixed_t;
  * Fixed Point Multiplication
  */
 
-#ifdef I386
+#ifdef I386_ASM
 
 /* killough 5/10/98: In djgpp, use inlined assembly for performance
  * CPhipps - made __inline__ to inline, as specified in the gcc docs
@@ -82,7 +82,7 @@ inline static const fixed_t FixedMul(fixed_t a, fixed_t b)
   return result;
 }
 
-#else /* I386 */
+#else /* I386_ASM */
 
 /* CPhipps - made __inline__ to inline, as specified in the gcc docs
  * Also made const */
@@ -91,13 +91,13 @@ inline static const fixed_t FixedMul(fixed_t a, fixed_t b)
   return (fixed_t)((int_64_t) a*b >> FRACBITS);
 }
 
-#endif /* I386 */
+#endif /* I386_ASM */
 
 /*
  * Fixed Point Division
  */
 
-#ifdef I386
+#ifdef I386_ASM
 
 /* killough 5/10/98: In djgpp, use inlined assembly for performance
  * killough 9/5/98: optimized to reduce the number of branches
@@ -123,7 +123,7 @@ inline static const fixed_t FixedDiv(fixed_t a, fixed_t b)
   return ((a^b)>>31) ^ INT_MAX;
 }
 
-#else /* I386 */
+#else /* I386_ASM */
 /* CPhipps - made __inline__ to inline, as specified in the gcc docs
  * Also made const */
 inline static const fixed_t FixedDiv(fixed_t a, fixed_t b)
@@ -132,7 +132,7 @@ inline static const fixed_t FixedDiv(fixed_t a, fixed_t b)
     (fixed_t)(((int_64_t) a << FRACBITS) / b);
 }
 
-#endif /* I386 */
+#endif /* I386_ASM */
 
 /* CPhipps - 
  * FixedMod - returns a % b, guaranteeing 0<=a<b

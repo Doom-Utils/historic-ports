@@ -38,10 +38,9 @@ rcsid[] = "$Id: l_system.c,v 1.33 2000/02/26 19:18:23 cph Exp $";
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/time.h>
 #include <ctype.h>
 #include <signal.h>
+#include "SDL.h"
 
 #include "i_system.h"
 #include "doomtype.h"
@@ -52,39 +51,13 @@ rcsid[] = "$Id: l_system.c,v 1.33 2000/02/26 19:18:23 cph Exp $";
 #endif
 #include "i_system.h"
 
-void I_uSleep(unsigned long usecs)
-{
-  usleep(usecs);
-}
-
-/* CPhipps - believe it or not, it is possible with consecutive calls to 
- * gettimeofday to receive times out of order, e.g you query the time twice and 
- * the second time is earlier than the first. Cheap'n'cheerful fix here.
- * NOTE: only occurs with bad kernel drivers loaded, e.g. pc speaker drv
- */
-
-static unsigned long lasttimereply;
-static unsigned long basetime;
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
 
 int I_GetTime_RealTime (void)
 {
-  struct timeval tv;
-  struct timezone tz;
-  unsigned long thistimereply;
-
-  gettimeofday(&tv, &tz);
-
-  thistimereply = (tv.tv_sec * TICRATE + (tv.tv_usec * TICRATE) / 1000000);
-
-  /* Fix for time problem */
-  if (!basetime) {
-    basetime = thistimereply; thistimereply = 0;
-  } else thistimereply -= basetime;
-
-  if (thistimereply < lasttimereply)
-    thistimereply = lasttimereply;
-
-  return (lasttimereply = thistimereply);
+  return (SDL_GetTicks()*TICRATE)/1000;
 }
 
 /*
@@ -94,20 +67,13 @@ int I_GetTime_RealTime (void)
  */
 unsigned long I_GetRandomTimeSeed(void)
 {                            
-  /* killough 3/26/98: shuffle random seed, use the clock */ 
+/*  / killough 3/26/98: shuffle random seed, use the clock / 
   struct timeval tv;
   struct timezone tz;
   gettimeofday(&tv,&tz);
   return (tv.tv_sec*1000ul + tv.tv_usec/1000ul);
-}
-
-/* cphipps - I_GetVersionString
- * Returns a version string in the given buffer 
- */
-const char* I_GetVersionString(char* buf, size_t sz)
-{
-  snprintf(buf,sz,"LxDoom v%s (http://lxdoom.linuxgames.com/)",VERSION);
-  return buf;
+*/
+  return(SDL_GetTicks());
 }
 
 /* cphipps - I_SigString

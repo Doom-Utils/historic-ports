@@ -33,6 +33,10 @@
 static const char rcsid[] =
   "$Id: am_map.c,v 1.19 2000/03/14 18:59:38 cph Exp $";
 
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
 #include "doomstat.h"
 #include "st_stuff.h"
 #include "r_main.h"
@@ -712,7 +716,11 @@ boolean AM_Responder
     else if (ch == key_map_mark)
     {
       // Ty 03/27/98 - *not* externalized     
+#ifdef HAVE_snprintf 
       snprintf(buffer, sizeof(buffer), "%s %d", s_AMSTR_MARKEDSPOT, markpointnum);  
+#else
+      sprintf(buffer, "%s %d", s_AMSTR_MARKEDSPOT, markpointnum);
+#endif
       plr->message = buffer;
       AM_addMark();
     }

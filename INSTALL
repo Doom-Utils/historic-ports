@@ -1,10 +1,10 @@
 Basic Installation
 ==================
 
-  1. `cd' to the directory containing the LxDoom distribution (the directory
+  1. `cd' to the directory containing the LsdlDoom distribution (the directory
      this file is in).
 
-  2. Type `./configure' to configure LxDoom for your system.  If you're
+  2. Type `./configure' to configure LsdlDoom for your system.  If you're
      using `csh' on an old version of System V, you might need to type
      `sh ./configure' instead to prevent `csh' from trying to execute
      `configure' itself.
@@ -12,17 +12,17 @@ Basic Installation
      Running `configure' takes awhile.  While running, it prints some
      messages telling which features it is checking for.
 
-  3. Type `make' to compile LxDoom. This may take some time; while it's
+  3. Type `make' to compile LsdlDoom. This may take some time; while it's
      compiling I suggest you read the README, or maybe go and look for some
      good doom levels to play when it's finished :-).
 
-     This should work on all Linux systems, but systems that have a make
+     This should work on all Linux systems , but systems that have a make
      utility other than GNU make may have problems. E.g. you might need to 
      install GNU make, and then use it instead of make for these 
      instructions. I have tested BSD pmake and it works fine.
 
   4. Type `make install-strip' as root, to install the programs, data files 
-     and man pages for LxDoom. If you don't have root access on the machine, 
+     and man pages for LsdlDoom. If you don't have root access on the machine, 
      you should ask the syadmin to do this and the next step for you. 
 
   5. Copy your Doom, Doom 2, Ultimate Doom or Final Doom IWAD (doom.wad or
@@ -43,10 +43,9 @@ Basic Installation
      all sorts of other programs in order to regenerate files that came
      with the distribution.
 
-  7. LxDoom is now ready for use. If /usr/local/games is in your path,
-     you can just run lxdoom or lsdoom, otherwise give the full path.
-     See the README file for information about the choice between lxdoom
-     and lsdoom, getting higher resolutions, etc.
+  7. LsdlDoom is now ready for use. If /usr/local/games is in your path,
+     you can just run lsdldoom, otherwise give the full path. See the 
+     README file for information about getting higher resolutions, etc.
 
 Installation Details
 ====================
@@ -202,3 +201,4 @@ operates.
      script, and exit.
 
 `configure' also accepts some other, not widely useful, options.
+

@@ -38,6 +38,7 @@ rcsid[] = "$Id: m_menu.c,v 1.24 2000/03/17 20:50:30 cph Exp $";
 
 #include <fcntl.h>
 #include <unistd.h>
+#include "SDL.h"
 
 #include "doomdef.h"
 #include "doomstat.h"
@@ -1073,7 +1074,7 @@ static void M_QuitResponse(int ch)
     else
       S_StartSound(NULL,quitsounds[(gametic>>2)&7]);
 
-    I_uSleep(3000000); // cph - 3 s
+    SDL_Delay(3000); // cph - 3 s
     }
   exit(0); // killough
 }

@@ -52,18 +52,23 @@
 #include "lprintf.h"
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
+#include "SDL.h"
 
 static boolean   server;
 static int       remotetic; // Tic expected from the remote
+#ifdef HAVE_NET
 static int       remotesend; // Tic expected by the remote
+#endif
 ticcmd_t         netcmds[MAXPLAYERS][BACKUPTICS];
 static ticcmd_t* localcmds;
+#ifdef HAVE_NET
 static unsigned          numqueuedpackets;
 static packet_header_t** queuedpacket;
+#endif
 doomcom_t*      doomcom;        
 int maketic;
 int ticdup = 1;
+#ifdef HAVE_NET
 static int xtratics = 0;
 
 void D_InitNetGame (void)
@@ -83,7 +88,7 @@ void D_InitNetGame (void)
     doomcom->numnodes = 1;
     do {
       while (!I_GetPacket(packet, 1000)) 
-	I_uSleep(10000);
+	SDL_Delay(10);
     } while (packet->type != PKT_SETUP);
 
     // Get info from the setup packet
@@ -120,7 +125,26 @@ void D_InitNetGame (void)
 
   consoleplayer = displayplayer = doomcom->consoleplayer;
 }
+#else
+void D_InitNetGame (void)
+{
+  int i;
 
+  doomcom = Z_Malloc(sizeof *doomcom, PU_STATIC, NULL);
+  doomcom->consoleplayer = 0;
+  doomcom->numnodes = 0; doomcom->numplayers = 1;
+  localcmds = netcmds[consoleplayer]; 
+
+  for (i=0; i<doomcom->numplayers; i++)
+    playeringame[i] = true;
+  for (; i<MAXPLAYERS; i++)
+    playeringame[i] = false;
+        
+  consoleplayer = displayplayer = doomcom->consoleplayer;
+}
+#endif
+
+#ifdef HAVE_NET
 void D_CheckNetGame(void)
 {
   packet_header_t *packet = Z_Malloc(sizeof(packet_header_t)+1, PU_STATIC, NULL);
@@ -132,7 +156,7 @@ void D_CheckNetGame(void)
 	packet->tic = 0; packet->type = PKT_GO; 
 	*(byte*)(packet+1) = consoleplayer;
 	I_SendPacket(packet, 1 + sizeof *packet);
-	I_uSleep(100000);
+	SDL_Delay(100);
       }
     } while (packet->type != PKT_GO);
   }
@@ -156,7 +180,7 @@ boolean D_NetGetWad(const char* name)
     strcpy(1+(byte*)(packet+1), name);
     I_SendPacket(packet, sizeof(packet_header_t) + strlen(name) + 2);
     
-    I_uSleep(10000);
+    SDL_Delay(10);
   } while (!I_GetPacket(packet, psize) || (packet->type != PKT_WAD));
   Z_Free(packet);
 
@@ -259,19 +283,9 @@ void NetUpdate(void)
     }
     Z_Free(packet);
   }
-  { // Build new ticcmds
-    static int lastmadetic;
-    int newtics = I_GetTime() - lastmadetic;
-
-    lastmadetic += newtics;
-    while (newtics--) {
-      I_StartTic();
-      D_ProcessEvents();
-      if (maketic - gametic > BACKUPTICS/2) break;
-      G_BuildTiccmd(&localcmds[maketic%BACKUPTICS]);
-      maketic++;
-    }
-    if (server && maketic > remotesend) { // Send the tics to the server
+  D_BuildNewTiccmds();
+  { // Send the tics to the server
+    if (server && maketic > remotesend) {
       int sendtics;
       remotesend -= xtratics;
       sendtics = maketic - remotesend;
@@ -293,7 +307,24 @@ void NetUpdate(void)
     }
   }
 }
+#endif
 
+void D_BuildNewTiccmds()
+{
+    static int lastmadetic;
+    int newtics = I_GetTime() - lastmadetic;
+    lastmadetic += newtics;
+    while (newtics--)
+    {
+      I_StartTic();
+      D_ProcessEvents();
+      if (maketic - gametic > BACKUPTICS/2) break;
+      G_BuildTiccmd(&localcmds[maketic%BACKUPTICS]);
+      maketic++;
+    }
+}
+
+#ifdef HAVE_NET
 void D_NetSendMisc(netmisctype_t type, size_t len, void* data) 
 {
   if (server) {
@@ -361,6 +392,7 @@ static void CheckQueuedPackets(void)
     numqueuedpackets = newnum; queuedpacket = newqueue;
   }
 }
+#endif
 
 void TryRunTics (void)
 {
@@ -372,10 +404,14 @@ void TryRunTics (void)
     if (I_GetTime() - entertime > 5) {
       M_Ticker(); return;
     }
+#ifdef HAVE_NET
     NetUpdate();
+#else
+    D_BuildNewTiccmds();
+#endif
     runtics = (server ? remotetic : maketic) - gametic;
     if (!runtics) {
-      I_uSleep(1000);
+      SDL_Delay(1);
       if (I_GetTime() - entertime > 10) {
 	M_Ticker(); return;
       }
@@ -383,16 +419,23 @@ void TryRunTics (void)
   }
 
   while (runtics--) {
+#ifdef HAVE_NET
     if (server) CheckQueuedPackets();
+#endif
     if (advancedemo)
       D_DoAdvanceDemo ();
     M_Ticker ();
     G_Ticker ();
     gametic++;
+#ifdef HAVE_NET
     NetUpdate(); // Keep sending our tics to avoid stalling remote nodes
+#else
+   D_BuildNewTiccmds();
+#endif
   }
 }
 
+#ifdef HAVE_NET
 void D_QuitNetGame (void)
 {
   byte buf[1 + sizeof(packet_header_t)];
@@ -405,10 +448,10 @@ void D_QuitNetGame (void)
 
   for (i=0; i<4; i++) {
     I_SendPacket(packet, 1 + sizeof(packet_header_t));
-    I_uSleep(10000);
+    SDL_Delay(10);
   }
 }
-
+#endif
 //
 // $Log: d_client.c,v $
 // Revision 1.11  2000/02/26 19:23:58  cph

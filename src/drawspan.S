@@ -40,6 +40,7 @@
 // Removed dependence on 256-byte-aligned colormaps
 //
 //================
+#include "drawasm.h"
 
 .text
 .align 8

@@ -6,9 +6,6 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef gid_t
 
-/* Define if you have <sys/wait.h> that is POSIX.1 compatible.  */
-#undef HAVE_SYS_WAIT_H
-
 /* Define as __inline if that's what the C compiler calls it.  */
 #undef inline
 
@@ -27,13 +24,6 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef uid_t
 
-/* Define if your processor stores words with the most significant
-   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
-#undef WORDS_BIGENDIAN
-
-/* Define if the X Window System is missing or not being used.  */
-#undef X_DISPLAY_MISSING
-
 /* Define to strcasecmp, if we have it */
 #undef stricmp
 
@@ -48,9 +38,6 @@
 
 /* Define on I386 target */
 #undef I386
-
-/* Define on big endian target */
-#undef __BIG_ENDIAN__
 
 /* Define for high resolution support */
 #undef HIGHRES
@@ -90,35 +77,23 @@
 /* Define to be the path where Doom WADs are stored */
 #undef DOOMWADDIR
 
-/* Define to be the path to the sound server */
-#undef SNDSERV_PATH
-
-/* Define to be the path to the lxmusserver */
-#undef MUSSERV_PATH
-
-/* Define if you have library -lXext */
-#undef HAVE_LIBXEXT
-
 /* Define if you have the inet_aton function.  */
 #undef HAVE_INET_ATON
 
+/* Define if you have the snprintf function.  */
+#undef HAVE_SNPRINTF
+
+/* Define if you have the vsnprintf function.  */
+#undef HAVE_VSNPRINTF
+
 /* Define if you have the <linux/joystick.h> header file.  */
 #undef HAVE_LINUX_JOYSTICK_H
-
-/* Define if you have the <linux/soundcard.h> header file.  */
-#undef HAVE_LINUX_SOUNDCARD_H
-
-/* Define if you have the <machine/soundcard.h> header file.  */
-#undef HAVE_MACHINE_SOUNDCARD_H
 
 /* Define if you have the <sys/filio.h> header file.  */
 #undef HAVE_SYS_FILIO_H
 
 /* Define if you have the <sys/ioctl.h> header file.  */
 #undef HAVE_SYS_IOCTL_H
-
-/* Define if you have the <sys/soundcard.h> header file.  */
-#undef HAVE_SYS_SOUNDCARD_H
 
 /* Name of package */
 #undef PACKAGE

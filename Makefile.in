@@ -11,7 +11,7 @@
 # PARTICULAR PURPOSE.
 
 #
-# Top level automake Makefile.am for LxDoom
+# Top level automake Makefile.am for LsdlDoom
 #
 # $Id: Makefile.am,v 1.5 2000/03/19 16:28:37 cph Exp $
 #
@@ -69,30 +69,34 @@ host_alias = @host_alias@
 host_triplet = @host@
 target_alias = @target_alias@
 target_triplet = @target@
-BUILD_LSDOOM = @BUILD_LSDOOM@
-BUILD_LXDOOM = @BUILD_LXDOOM@
-BUILD_SNDSERV = @BUILD_SNDSERV@
+BUILD_SDLDOOM = @BUILD_SDLDOOM@
+BUILD_SERVER = @BUILD_SERVER@
 CC = @CC@
-LIB_XDGA = @LIB_XDGA@
-LIB_XEXT = @LIB_XEXT@
 MAKEINFO = @MAKEINFO@
+MIXER_CFLAGS = @MIXER_CFLAGS@
+MIXER_LIBS = @MIXER_LIBS@
+NET_CFLAGS = @NET_CFLAGS@
+NET_LIBS = @NET_LIBS@
 PACKAGE = @PACKAGE@
+SDL_CFLAGS = @SDL_CFLAGS@
+SDL_CONFIG = @SDL_CONFIG@
+SDL_LIBS = @SDL_LIBS@
 VERSION = @VERSION@
 
 docdir = $(prefix)/share/doc/@PACKAGE@
 SUBDIRS = doc data src
-EXTRA_DIST = ChangeLog lxdoom.spec.in
-doc_DATA = ChangeLog README COPYING AUTHORS
+EXTRA_DIST = lsdldoom.spec.in
+doc_DATA = README COPYING AUTHORS
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES =  lxdoom.spec
+CONFIG_CLEAN_FILES =  lsdldoom.spec
 DATA =  $(doc_DATA)
 
 DIST_COMMON =  README ./stamp-h.in AUTHORS COPYING ChangeLog INSTALL \
-Makefile.am Makefile.in NEWS acconfig.h aclocal.m4 config.guess \
-config.h.in config.sub configure configure.in install-sh lxdoom.spec.in \
-missing mkinstalldirs
+Makefile.am Makefile.in NEWS acconfig.h acinclude.m4 aclocal.m4 \
+config.guess config.h.in config.sub configure configure.in install-sh \
+lsdldoom.spec.in missing mkinstalldirs
 
 
 DISTFILES = $(DIST_COMMON) $(SOURCES) $(HEADERS) $(TEXINFOS) $(EXTRA_DIST)
@@ -102,13 +106,13 @@ GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
-$(ACLOCAL_M4):  configure.in 
+$(ACLOCAL_M4):  configure.in  acinclude.m4
 	cd $(srcdir) && $(ACLOCAL)
 
 config.status: $(srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
@@ -143,7 +147,7 @@ distclean-hdr:
 	-rm -f config.h
 
 maintainer-clean-hdr:
-lxdoom.spec: $(top_builddir)/config.status lxdoom.spec.in
+lsdldoom.spec: $(top_builddir)/config.status lsdldoom.spec.in
 	cd $(top_builddir) && CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
 install-docDATA: $(doc_DATA)
@@ -292,10 +296,15 @@ distdir: $(DISTFILES)
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	-chmod 777 $(distdir)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
-	    cp -pr $$d/$$file $(distdir)/$$file; \
+	    cp -pr $$/$$file $(distdir)/$$file; \
 	  else \
 	    test -f $(distdir)/$$file \
 	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
@@ -388,9 +397,9 @@ installdirs mostlyclean-generic distclean-generic clean-generic \
 maintainer-clean-generic clean mostlyclean distclean maintainer-clean
 
 
-rpm:	lxdoom.spec dist
+rpm:	lsdldoom.spec dist
 	mv @PACKAGE@-@VERSION@.tar.gz /usr/src/redhat/SOURCES
-	rpm -bb lxdoom.spec
+	rpm -bb lsdldoom.spec --target=i586-pc-linux-gnu
 
 #
 # $Log: Makefile.am,v $

@@ -1,0 +1,14 @@
+l_video_sdl.c:197:      ((Event->motion.x != screen->w/2)||(Event->motion.y != screen->h/2)))
+l_video_sdl.c:201:      if ( (Event->motion.x < ((screen->w/2)-(screen->w/4))) ||
+l_video_sdl.c:202:           (Event->motion.x > ((screen->w/2)+(screen->w/4))) ||
+l_video_sdl.c:203:           (Event->motion.y < ((screen->h/2)-(screen->h/4))) ||
+l_video_sdl.c:204:           (Event->motion.y > ((screen->h/2)+(screen->h/4))) )
+l_video_sdl.c:205:        SDL_WarpMouse(screen->w/2, screen->h/2);
+l_video_sdl.c:465:      dest_bpp = screen->format->BitsPerPixel;
+l_video_sdl.c:480:    I_SetColourShift(screen->format->Rmask, &redshift);
+l_video_sdl.c:481:    I_SetColourShift(screen->format->Gmask, &greenshift);
+l_video_sdl.c:482:    I_SetColourShift(screen->format->Bmask, &blueshift);
+l_video_sdl.c:487:	  screen->format->palette ? "PseudoColor" : "TrueColor", multiply);
+l_video_sdl.c:490:  out_buffer = (pval *)screen->pixels;
+l_video_sdl.c:494:    screens[0] = (unsigned char *) (screen->pixels); 
+r_things.c:332:      dc_yh = (bottomscreen-1)>>FRACBITS;

@@ -33,6 +33,7 @@
 
 static const char rcsid[] = "$Id: r_main.c,v 1.20 1999/10/31 15:51:45 cphipps Exp $";
 
+#include "SDL.h"
 #include "doomstat.h"
 #include "w_wad.h"
 #include "r_main.h"
@@ -561,20 +562,20 @@ int autodetect_hom = 0;       // killough 2/7/98: HOM autodetection flag
 int rendered_visplanes, rendered_segs, rendered_vissprites;
 boolean rendering_stats;
 
+static int lasttime=0, frames=0,elapsed;
+
 static void R_ShowStats(void)
 {
-#define KEEPTIMES 10
-  static int keeptime[KEEPTIMES], showtime;
-  int now = I_GetTime();
+	int now = SDL_GetTicks();
 
-  if (now - showtime > 35) {
-    doom_printf("Frame rate %d fps\nSegs %d, Visplanes %d, Sprites %d", 
-		(35*KEEPTIMES)/(now - keeptime[0]), rendered_segs, 
-		rendered_visplanes, rendered_vissprites);
-    showtime = now;
-  }
-  memmove(keeptime, keeptime+1, sizeof(keeptime[0]) * (KEEPTIMES-1));
-  keeptime[KEEPTIMES-1] = now;
+	++frames;
+	elapsed=(now-lasttime);
+	if( elapsed >= 2000 )
+	{
+		doom_printf("Frame rate: %d\n",(frames/(elapsed/1000)) );
+		lasttime = now;
+		frames = 0;
+	}
 }
 
 //
@@ -661,26 +662,26 @@ void R_RenderPlayerView (player_t* player)
                     viewwindowy + viewheight/2 - 24, 0, 47, 47, c, VPT_NONE);
       R_DrawViewBorder();
     }
-
+#ifdef HAVE_NET
   // check for new console commands.
   NetUpdate ();
-
+#endif
   // The head node is the last node output.
   R_RenderBSPNode (numnodes-1);
-    
+#ifdef HAVE_NET    
   // Check for new console commands.
   NetUpdate ();
-    
+#endif    
   R_DrawPlanes ();
-    
+#ifdef HAVE_NET    
   // Check for new console commands.
   NetUpdate ();
-    
+#endif    
   R_DrawMasked ();
-
+#ifdef HAVE_NET
   // Check for new console commands.
   NetUpdate ();
-
+#endif
   if (rendering_stats) R_ShowStats();
 }
 

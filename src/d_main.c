@@ -35,10 +35,11 @@
 
 static const char rcsid[] = "$Id: d_main.c,v 1.46 2000/03/27 10:33:49 cph Exp $";
 
-#include <unistd.h>
+//#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include "SDL.h"
 
 #include "doomdef.h"
 #include "doomstat.h"
@@ -184,7 +185,7 @@ static void D_Wipe(void)
       int nowtime, tics;
       do
         {
-	  I_uSleep(10000); // CPhipps - don't thrash cpu in this loop
+	  SDL_Delay(10); // CPhipps - don't thrash cpu in this loop
           nowtime = I_GetTime();
           tics = nowtime - wipestart;
         }
@@ -306,7 +307,11 @@ void D_Display (void)
 
   // menus go directly to the screen
   M_Drawer();          // menu is drawn even on top of everything
+#ifdef HAVE_NET
   NetUpdate();         // send out any new accumulation
+#else
+  D_BuildNewTiccmds();
+#endif
   
   // normal update
   if (!wipe)
@@ -343,9 +348,11 @@ static void D_DoomLoop(void)
 
   // cph - -debugfile opening moved to l_net.c
 
-  I_InitGraphics ();
+//  I_InitGraphics (); Moved to D_DoomMainSetup - Jess
 
+#ifdef HAVE_NET 
   atexit(D_QuitNetGame);       // killough
+#endif
 
   for (;;)
     {
@@ -564,6 +571,8 @@ void D_AddFile (const char *file, wad_source_t source)
 // Return the path where the executable lies -- Lee Killough
 // cph - V.Aguilar (5/30/99) suggested return ~/.lxdoom/, creating
 //  if non-existant
+// FIXME: need beter os independent/windows ver -- JessH@lbjhs.net
+#ifndef _WIN32
 static const char lxdoom_dir[] = {"/.lxdoom/"};
 
 char *D_DoomExeDir(void)
@@ -583,6 +592,14 @@ char *D_DoomExeDir(void)
     }
   return base;
 }
+#else
+static const char lxdoom_dir[] = {"c:\\windows\\system\\"};
+
+char *D_DoomExeDir(void)
+{
+  return lxdoom_dir;
+}
+#endif
 
 // killough 10/98: support -dehout filename
 // cph - made const, don't cache results
@@ -770,6 +787,7 @@ boolean WadFileStatus(char *filename,boolean *isdir)
  * Searches the standard dirs for a named WAD file
  * The dirs are: 
  * . 
+ * $DOOMWADDIR 
  * DOOMWADDIR 
  * ~/doom 
  * /usr/share/games/doom 
@@ -783,7 +801,7 @@ static char* FindWADFile(const char* wfname, const char* ext)
   /* Precalculate a length we will need in the loop */
   size_t	pl = strlen(wfname) + strlen(ext) + 4;
 
-  for (i=0; i<6; i++) {
+  for (i=0; i<8; i++) {
     char	*	p;
     const char	*	d = NULL;
     const char	*	s = NULL;
@@ -794,15 +812,20 @@ static char* FindWADFile(const char* wfname, const char* ext)
       if (!(d = getenv("DOOMWADDIR"))) continue;
     case 0:
       break;
-    case 3:
-      d = "/usr/share/games/doom";
+    case 2:
+      d = DOOMWADDIR;
       break;
     case 4:
+      d = "/usr/share/games/doom";
+      break;
+    case 5:
       d = "/usr/local/share/games/doom";
       break;
-    case 2:
+    case 6:
+      d = D_DoomExeDir();
+    case 3:
       s = "doom";
-    case 5:
+    case 7:
       if (!(d = getenv("HOME"))) continue;
       break;
 #ifdef SIMPLECHECKS
@@ -1274,8 +1297,8 @@ void D_DoomMainSetup(void)
     }
 
     /* cphipps - the main display. This shows the build date, copyright, and game type */
-    lprintf(LO_ALWAYS,"LxDoom (built %s), playing: %s\n"
-	    "LxDoom is released under the GNU General Public license v2.0.\n"
+    lprintf(LO_ALWAYS,"LsdlDoom (built %s), playing: %s\n"
+	    "LsdlDoom is released under the GNU General Public license v2.0.\n"
 	    "You are welcome to redistribute it under certain conditions.\n"
 	    "It comes with ABSOLUTELY NO WARRANTY. See the file COPYING for details.\n",
 	    version_date, doomverstr);
@@ -1374,6 +1397,8 @@ void D_DoomMainSetup(void)
   // killough 3/2/98: allow -nodraw -noblit generally
   nodrawers = M_CheckParm ("-nodraw");
   noblit = M_CheckParm ("-noblit");
+  if (M_CheckParm("-fasttimer"))
+     fastdemo = true;             // run at fastest speed possible
 
 #ifndef NO_PREDEFINED_LUMPS
   // jff 4/21/98 allow writing predefined lumps out as a wad
@@ -1450,6 +1475,7 @@ void D_DoomMainSetup(void)
 	p+=len; if (*p) p++;
       }
       // Filename is now stored as a zero terminated string
+//	    folder = D_DoomExeDir();
       fpath = FindWADFile(fname, ".wad");
       if (!fpath)
         lprintf(LO_WARN, "Failed to autoload %s\n", fname);
@@ -1541,8 +1567,10 @@ void D_DoomMainSetup(void)
   lprintf(LO_INFO,"M_Init: Init miscellaneous info.\n");
   M_Init();
 
+#ifdef HAVE_NET
   // CPhipps - now wait for netgame start
   D_CheckNetGame();
+#endif
 
   //jff 9/3/98 use logical output routine
   lprintf(LO_INFO,"R_Init: Init DOOM refresh daemon - ");
@@ -1627,6 +1655,9 @@ void D_DoomMainSetup(void)
 	  G_DeferedPlayDemo(myargv[p]);
 	  singledemo = true;          // quit after one demo
 	}
+
+  I_InitGraphics (); /* Moved here to fix bug with autostart's and
+                      * netgame's - Jess */
 
   if (slot && ++slot < myargc)
     {

@@ -519,25 +519,23 @@ void R_InitTextures (void)
       texture->height = SHORT(mtexture->height);
       texture->patchcount = SHORT(mtexture->patchcount);
 
-#if 1
-      /* The above was #ifndef SPARC, but i got a mail from
-       * Putera Joseph F NPRI <PuteraJF@Npt.NUWC.Navy.Mil> containing:
-       *   I had to use the memcpy function on a sparc machine.  The
-       *   other one would give me a core dump.
-       * cph - I find it hard to believe that sparc memcpy is broken, 
-       * but I don't believe the pointers to memcpy have to be aligned 
-       * either. Use fast memcpy on other machines anyway.
-       */
-      memcpy(texture->name, mtexture->name, sizeof(texture->name));
-#else
-      /* memcpy seems to assume that its params are aligned on sparc - josh */
-      /* cph - how this can core dump is beyond me */
+        /* Mattias Engdegård emailed me of the following explenation of
+         * why memcpy doesnt work on some systems:
+         * "I suppose it is the mad unaligned allocation
+         * going on (and which gcc in some way manages to cope with
+         * through the __attribute__ ((packed))), and which it forgets
+         * when optimizing memcpy (to a single word move) since it appears
+         * to be aligned. Technically a gcc bug, but I can't blame it when
+         * it's stressed with that amount of
+         * non-standard nonsense."
+	 * So in short the unaligned struct confuses gcc's optimizer so
+	 * i took the memcpy out alltogether to avoid future problems-Jess
+         */
       { 
 	 int j; 
 	 for(j=0;j<sizeof(texture->name);j++) 
 	    texture->name[j]=mtexture->name[j]; 
       }
-#endif
 
       mpatch = mtexture->patches;
       patch = texture->patches;

@@ -190,6 +190,8 @@ typedef struct
 
 // Create any new ticcmds and broadcast to other players.
 void NetUpdate (void);
+// Create any new ticcmds
+void D_BuildNewTiccmds (void);
 
 // Broadcasts special packets to other players
 //  to notify of game exit

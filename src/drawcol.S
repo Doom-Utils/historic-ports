@@ -37,6 +37,7 @@
 // 2/21/98 killough: added translucency support
 //
 //================
+#include "drawasm.h"
 
  .text
  .align 8

@@ -1,6 +1,8 @@
-This file is now the amalgamated list of authors, contributors and credits
-for LxDoom. Hopefully by keeping these all in one place, they will remain
-more accurate.
+This file is the amalgamated list of authors, contributors and credits
+for LsdlDoom. Hopefully by keeping these all in one place, they will remain
+more accurate. This was originally written by Colin Phipps for LxDoom, 
+i have modified it as necesary to fit LsdlDoom. It is now maintained by me, 
+Jess Haas (jessh@lbjhs.net) for LsdlDoom.
 
 Doom was originally written by id software; when playing with any id main
 wad file, you can see their list of credits, which includes the list of
@@ -13,9 +15,9 @@ picked up by TeamTNT (http://www.teamtnt.com/), who produced Boom, a greatly
 debugged and extended version of Doom. The Boom programmers were Lee
 Killough, Jim Flynn, Rand Phares, Ty Halderman.
 
-LxDoom started as a port of Boom to Linux, by me, Colin Phipps
+LxDoom started as a port of Boom to Linux, by Colin Phipps
 (cph@lxdoom.linuxgames.com). After porting the code to Linux, with the help
-of the original released Linux-doom sources, I continued to add bug fixes and
+of the original released Linux-doom sources, he continued to add bug fixes and
 features.
 
 These included many things from MBF (Marine's Best Friend), a further enhanced
@@ -25,15 +27,25 @@ DosDoom (http://frag.com/dosdoom/).
 In October 1999, id Software have re-released the Doom source code under the 
 GNU General Public License. TeamTNT have also changed to the new license,
 and the other sources mentioned above have all allowed their code to be
-GPLed. So LxDoom is now covered by the GPL.
+GPLed. So LsdlDoom and LxDoom are now covered by the GPL.
 
-I'd like to thank TeamTNT for writing such a good engine, which has become
+Sam did the initial work of porting LxDoom to use SDL, Then i (Jess Haas) ran 
+across it and started doing bug fixes and continuing work to make it the most
+portable and "advanced" version of doom that still looks and acts like the 
+origional and maintains the ability to play networked games with lxdoom.
+
+Colin Phipps:
+"I'd like to thank TeamTNT for writing such a good engine, which has become
 the basis for so many others. And I'd like to thank Lee Killough in
 particular. His excellent coding in Boom made it easy to port to Linux and
 indeed other architectures, and his further work in MBF was crucial in 
-enabling me to improve LxDoom. Also thanks go to the DosDoom team.
+enabling me to improve LxDoom. Also thanks go to the DosDoom team."
 
-My thanks also go to all the people below, who have contributed to or
+And I would like to thank Colin Phipps for developing such a good base for my
+further work.
+
+Colin Phipps:
+"My thanks also go to all the people below, who have contributed to or
 otherwise helped LxDoom:
 
 Gady Kozma	gady@math.tau.ac.il
@@ -106,4 +118,7 @@ Everyone who brings us Linux, the best and cheapest OS around.
 If you sent me patches for LxDoom which were included, and I forgot to
 list you, I apologise. Please email me and I will add you. I have only
 just collected these credits together into a single file, something I
-should have done long ago, and I probably forgot many people.
+should have done long ago, and I probably forgot many people."
+
+Colin Phipps
+For developing a great version of doom for me to base my work on.

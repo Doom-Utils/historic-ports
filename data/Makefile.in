@@ -69,14 +69,18 @@ host_alias = @host_alias@
 host_triplet = @host@
 target_alias = @target_alias@
 target_triplet = @target@
-BUILD_LSDOOM = @BUILD_LSDOOM@
-BUILD_LXDOOM = @BUILD_LXDOOM@
-BUILD_SNDSERV = @BUILD_SNDSERV@
+BUILD_SDLDOOM = @BUILD_SDLDOOM@
+BUILD_SERVER = @BUILD_SERVER@
 CC = @CC@
-LIB_XDGA = @LIB_XDGA@
-LIB_XEXT = @LIB_XEXT@
 MAKEINFO = @MAKEINFO@
+MIXER_CFLAGS = @MIXER_CFLAGS@
+MIXER_LIBS = @MIXER_LIBS@
+NET_CFLAGS = @NET_CFLAGS@
+NET_LIBS = @NET_LIBS@
 PACKAGE = @PACKAGE@
+SDL_CFLAGS = @SDL_CFLAGS@
+SDL_CONFIG = @SDL_CONFIG@
+SDL_LIBS = @SDL_LIBS@
 VERSION = @VERSION@
 
 waddir = $(datadir)/games/doom
@@ -97,9 +101,9 @@ GZIP_ENV = --best
 all: all-redirect
 .SUFFIXES:
 $(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu --include-deps data/Makefile
+	cd $(top_srcdir) && $(AUTOMAKE) --gnu data/Makefile
 
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
+Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status $(BUILT_SOURCES)
 	cd $(top_builddir) \
 	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
 
@@ -131,10 +135,15 @@ distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
 subdir = data
 
 distdir: $(DISTFILES)
+	here=`cd $(top_builddir) && pwd`; \
+	top_distdir=`cd $(top_distdir) && pwd`; \
+	distdir=`cd $(distdir) && pwd`; \
+	cd $(top_srcdir) \
+	  && $(AUTOMAKE) --include-deps --build-dir=$$here --srcdir-name=$(top_srcdir) --output-dir=$$top_distdir --gnu data/Makefile
 	@for file in $(DISTFILES); do \
 	  d=$(srcdir); \
 	  if test -d $$d/$$file; then \
-	    cp -pr $$d/$$file $(distdir)/$$file; \
+	    cp -pr $$/$$file $(distdir)/$$file; \
 	  else \
 	    test -f $(distdir)/$$file \
 	    || ln $$d/$$file $(distdir)/$$file 2> /dev/null \
