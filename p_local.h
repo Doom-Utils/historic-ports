@@ -50,7 +50,7 @@
 // but we do not have any moving sectors nearby
 #define MAXRADIUS		32*FRACUNIT
 
-#define GRAVITY		FRACUNIT
+#define GRAVITY		(8192*grav)
 #define MAXMOVE		(30*FRACUNIT)
 
 #define USERANGE		(64*FRACUNIT)
@@ -60,7 +60,7 @@
 // follow a player exlusively for 3 seconds
 #define	BASETHRESHOLD	 	100
 
-
+extern mobj_t* RandomTarget;
 
 //
 // P_TICK
@@ -271,6 +271,8 @@ P_DamageMobj
   mobj_t*	inflictor,
   mobj_t*	source,
   int		damage );
+
+void P_KillMobj(mobj_t* source, mobj_t* target);
 
 
 //

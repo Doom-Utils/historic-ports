@@ -28,9 +28,10 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 #include <ctype.h>
 
 #include "doomdef.h"
+#include "doomstat.h"
 
 #include "z_zone.h"
-#include "v_video.h"
+#include "multires.h"
 
 #include "m_swap.h"
 
@@ -41,6 +42,7 @@ rcsid[] = "$Id: st_lib.c,v 1.4 1997/02/03 16:47:56 b1 Exp $";
 #include "st_stuff.h"
 #include "st_lib.h"
 #include "r_local.h"
+#include "allegvid.h"
 
 
 // in AM_map.c
@@ -122,7 +124,13 @@ STlib_drawNum
     if (n->y - ST_Y < 0)
 	I_Error("drawNum: n->y - ST_Y < 0");
 
-    V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, FG);
+    if (doublebufferflag==1)
+      {
+      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, 5);
+      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, 6);
+      }
+    else
+      V_CopyRect(x, n->y - ST_Y, BG, w*numdigits, h, x, n->y, FG);
 
     // if non-number, do not draw it
     if (num == 1994)
@@ -132,19 +140,41 @@ STlib_drawNum
 
     // in the special case of 0, you draw 0
     if (!num)
-	V_DrawPatch(x - w, n->y, FG, n->p[ 0 ]);
+      {
+      if (doublebufferflag==1)
+        {
+        V_DrawPatch(x - w, n->y, 5, n->p[ 0 ]);
+        V_DrawPatch(x - w, n->y, 6, n->p[ 0 ]);
+        }
+      else
+        V_DrawPatch(x - w, n->y, FG, n->p[ 0 ]);
+      }
 
     // draw the new number
     while (num && numdigits--)
     {
 	x -= w;
-	V_DrawPatch(x, n->y, FG, n->p[ num % 10 ]);
+   if (doublebufferflag==1)
+     {
+     V_DrawPatch(x, n->y, 5, n->p[ num % 10 ]);
+     V_DrawPatch(x, n->y, 6, n->p[ num % 10 ]);
+     }
+   else
+     V_DrawPatch(x, n->y, FG, n->p[ num % 10 ]);
 	num /= 10;
     }
 
     // draw a minus sign if necessary
     if (neg)
-	V_DrawPatch(x - 8, n->y, FG, sttminus);
+      {
+      if (doublebufferflag==1)
+        {
+        V_DrawPatch(x - 8, n->y, 5, sttminus);
+        V_DrawPatch(x - 8, n->y, 6, sttminus);
+        }
+      else
+        V_DrawPatch(x - 8, n->y, FG, sttminus);
+      }
 }
 
 
@@ -182,7 +212,15 @@ STlib_updatePercent
   int			refresh )
 {
     if (refresh && *per->n.on)
-	V_DrawPatch(per->n.x, per->n.y, FG, per->p);
+      {
+      if (doublebufferflag==1)
+        {
+        V_DrawPatch(per->n.x, per->n.y, 5, per->p);
+        V_DrawPatch(per->n.x, per->n.y, 6, per->p);
+        }
+      else
+        V_DrawPatch(per->n.x, per->n.y, FG, per->p);
+      }
     
     STlib_updateNum(&per->n, refresh);
 }
@@ -232,9 +270,21 @@ STlib_updateMultIcon
 	    if (y - ST_Y < 0)
 		I_Error("updateMultIcon: y - ST_Y < 0");
 
-	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+       if (doublebufferflag==1)
+         {
+         V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 5);
+         V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 6);
+         }
+       else
+         V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
 	}
-	V_DrawPatch(mi->x, mi->y, FG, mi->p[*mi->inum]);
+   if (doublebufferflag==1)
+     {
+     V_DrawPatch(mi->x, mi->y, 5, mi->p[*mi->inum]);
+     V_DrawPatch(mi->x, mi->y, 6, mi->p[*mi->inum]);
+     }
+   else
+     V_DrawPatch(mi->x, mi->y, FG, mi->p[*mi->inum]);
 	mi->oldinum = *mi->inum;
     }
 }
@@ -282,9 +332,25 @@ STlib_updateBinIcon
 	    I_Error("updateBinIcon: y - ST_Y < 0");
 
 	if (*bi->val)
-	    V_DrawPatch(bi->x, bi->y, FG, bi->p);
+     {
+     if (doublebufferflag==1)
+       {
+       V_DrawPatch(bi->x, bi->y, 5, bi->p);
+       V_DrawPatch(bi->x, bi->y, 6, bi->p);
+       }
+     else
+       V_DrawPatch(bi->x, bi->y, FG, bi->p);
+     }
 	else
-	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+     {
+     if (doublebufferflag==1)
+       {
+	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 5);
+	    V_CopyRect(x, y-ST_Y, BG, w, h, x, y, 6);
+       }
+     else
+	  V_CopyRect(x, y-ST_Y, BG, w, h, x, y, FG);
+     }
 
 	bi->oldval = *bi->val;
     }

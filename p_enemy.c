@@ -79,7 +79,8 @@ dirtype_t diags[] =
 };
 
 
-
+#define FOUNDTARGET 127
+char CreateAggression (mobj_t *actor);
 
 
 void A_Fall (mobj_t *actor);
@@ -380,7 +381,44 @@ void P_NewChaseDir (mobj_t*	actor)
 
     deltax = actor->target->x - actor->x;
     deltay = actor->target->y - actor->y;
+    if (NewAI)
+      {
+      // if can be seen go to that position.
+      if ( P_CheckSight (actor,actor->target) )
+        {
+        deltax = actor->target->x - actor->x;
+        deltay = actor->target->y - actor->y;
+        actor->lastknownx = actor->target->x;
+        actor->lastknowny = actor->target->y;
+        }
 
+    // Got to last position, find new position. // I am still working on
+                                                //these routines
+    else if ( (actor->lastknownx == actor->target->x) &&
+              (actor->lastknowny == actor->target->y) )
+        {
+        deltax = actor->target->x - actor->x;
+        deltay = actor->target->y - actor->y;
+        actor->lastknownx = actor->target->x;
+        actor->lastknowny = actor->target->y;
+        }
+    // no known last position.
+    else if (actor->lastknownx == NULL) // I am still working on better
+                                        //routines for these.
+        {
+        deltax = actor->target->x - actor->x;
+        deltay = actor->target->y - actor->y;
+        actor->lastknownx = actor->target->x;
+        actor->lastknowny = actor->target->y;
+        }
+    // goto last known position
+    else
+        {
+        deltax = actor->lastknownx - actor->x;
+        deltay = actor->lastknowny - actor->y;
+        }
+      }
+    //end of new ai
     if (deltax>10*FRACUNIT)
 	d[1]= DI_EAST;
     else if (deltax<-10*FRACUNIT)
@@ -604,9 +642,27 @@ void A_KeenDie (mobj_t* mo)
 void A_Look (mobj_t* actor)
 {
     mobj_t*	targ;
-	
+
+if (HumanMad&&(((actor->type == MT_POSSESSED) || (actor->type == MT_SHOTGUY) ||
+   (actor->type == MT_CHAINGUY)) && (P_Random() == 4)))
+   {
+   actor->target = actor;
+   return;
+   }
+
+
     actor->threshold = 0;	// any shot will wake up
     targ = actor->subsector->sector->soundtarget;
+
+    // if either totalwar flag set or RandomInfigit Flag set AND Random
+    // Number is 145. perform Create Aggression.
+    if ( ( ( P_Random() == 145 ) && (RandomInfight) ) || (TotalWar) )
+       {
+       // In Actor has found a target, not need to check for player - exit
+       // procedure.
+       if( CreateAggression(actor) == FOUNDTARGET )
+         return;
+       }
 
     if (targ
 	&& (targ->flags & MF_SHOOTABLE) )
@@ -672,6 +728,26 @@ void A_Look (mobj_t* actor)
 void A_Chase (mobj_t*	actor)
 {
     int		delta;
+int random;
+mobj_t* deathcharge;
+
+// Check for Zombie, Shotgunner and Chaingunner - give random chance for
+// explosion.
+if (HumanExplode&&( ( actor->type == MT_POSSESSED ) || ( actor->type == MT_SHOTGUY ) ||
+         ( actor->type == MT_CHAINGUY  ) ))
+    {
+        random = P_Random() - M_Random();
+        if ( random >= 240 )
+                {
+                // Create Rocket and then "kill" it (causing explosion).
+                deathcharge = P_SpawnMobj (actor->x,
+                                           actor->y,
+                                           actor->z + 4*8*FRACUNIT,
+                                           MT_ROCKET);
+                P_KillMobj(NULL,deathcharge);
+                return;
+                }
+    }
 
     if (actor->reactiontime)
 	actor->reactiontime--;
@@ -683,6 +759,11 @@ void A_Chase (mobj_t*	actor)
 	if (!actor->target
 	    || actor->target->health <= 0)
 	{
+            if (NewAI)
+              {
+              actor->lastknownx=NULL;
+              actor->lastknowny=NULL;
+              }
 	    actor->threshold = 0;
 	}
 	else
@@ -2005,4 +2086,58 @@ void A_PlayerScream (mobj_t* mo)
     }
     
     S_StartSound (mo, sound);
+}
+
+char CreateAggression (mobj_t *actor)
+{
+    // If no random target, actor becomes random target
+    if (RandomTarget==NULL)
+    {
+     RandomTarget = actor;
+     return 0;
+    }
+    // If random target is dead, This actor becomes random target.
+    if (RandomTarget->health < 1)
+    {
+     RandomTarget = actor;
+     return 0;
+    }
+    // Random target exists, attack!!
+    switch (actor->type)
+    {
+     case MT_BRUISER:
+     case MT_CHAINGUY:  // These can cause damage to all in one way or
+     case MT_HEAD:           // another...
+     case MT_KNIGHT:             // e.g hellknight can damage another hellknight
+     case MT_POSSESSED:  // in melee.
+     case MT_SERGEANT:
+     case MT_SHADOWS:
+     case MT_SHOTGUY:
+     case MT_SKULL:
+     case MT_SPIDER:
+     case MT_TROOP:
+     case MT_UNDEAD:
+     case MT_VILE:
+     case MT_WOLFSS:
+       {
+        break;
+       }
+     case MT_BABY:    // These cannot damage their own kind,
+     case MT_CYBORG:  // Do not target their own kind.
+     case MT_FATSO:
+     case MT_PAIN:
+       {
+        if ( (actor->type) == (RandomTarget->type) )
+          return 0;
+        break;
+       }
+     default: // Anything else is not randomly aggressive.
+       {
+        return 0;
+        break;
+       }
+    }
+   actor->target = RandomTarget;
+   P_SetMobjState (actor, actor->info->seestate);
+   return FOUNDTARGET;
 }

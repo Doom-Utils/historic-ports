@@ -52,15 +52,16 @@ void I_ShutdownSound(void);
 //  SFX I/O
 //
 
-// Initialize channels?
-void I_SetChannels();
-
 // Get raw data lump index for sound descriptor.
 int I_GetSfxLumpNum (sfxinfo_t* sfxinfo );
 
 
 // Starts a sound in a particular sound channel.
+#ifdef DJGPP
+SAMPLE*
+#else
 int
+#endif
 I_StartSound
 ( int		id,
   int		vol,
@@ -70,49 +71,40 @@ I_StartSound
 
 
 // Stops a sound channel.
+#ifdef DJGPP
+void I_StopSound(SAMPLE* handle);
+#else
 void I_StopSound(int handle);
+#endif
 
 // Called by S_*() functions
 //  to see if a channel is still playing.
 // Returns 0 if no longer playing, 1 if playing.
+
+#ifdef DJGPP
+int I_SoundIsPlaying(SAMPLE* handle);
+#else
 int I_SoundIsPlaying(int handle);
+#endif
 
 // Updates the volume, separation,
 //  and pitch of a sound channel.
 void
 I_UpdateSoundParams
-( int		handle,
+#ifdef DJGPP
+( SAMPLE* handle,
+#else
+( int handle,
+#endif
   int		vol,
   int		sep,
   int		pitch );
 
+void I_SetSfxVolume(int volume);
 
-//
-//  MUSIC I/O
-//
-void I_InitMusic(void);
-void I_ShutdownMusic(void);
-// Volume.
-void I_SetMusicVolume(int volume);
-// PAUSE game handling.
-void I_PauseSong(int handle);
-void I_ResumeSong(int handle);
-// Registers a song handle to song data.
-int I_RegisterSong(void *data);
-// Called by anything that wishes to start music.
-//  plays a song, and when the song is done,
-//  starts playing it again in an endless loop.
-// Horrible thing to do, considering.
-void
-I_PlaySong
-( int		handle,
-  int		looping );
-// Stops a song over 3 seconds.
-void I_StopSong(int handle);
-// See above (register), then think backwards
-void I_UnRegisterSong(int handle);
-
-
+//check cd player - if curr track is done, go to next track
+void I_CheckCD();
+#include "i_music.h"
 
 #endif
 //-----------------------------------------------------------------------------

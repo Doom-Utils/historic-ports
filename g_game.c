@@ -25,7 +25,9 @@ static const char
 rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "doomdef.h" 
 #include "doomstat.h"
@@ -50,7 +52,7 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "am_map.h"
 
 // Needs access to LFB.
-#include "v_video.h"
+#include "multires.h"
 
 #include "w_wad.h"
 
@@ -71,7 +73,8 @@ rcsid[] = "$Id: g_game.c,v 1.8 1997/02/03 22:45:09 b1 Exp $";
 #include "g_game.h"
 
 
-#define SAVEGAMESIZE	0x2c000
+//#define SAVEGAMESIZE	0x2c000
+#define SAVEGAMESIZE	0x50000
 #define SAVESTRINGSIZE	24
 
 
@@ -141,12 +144,14 @@ short		consistancy[MAXPLAYERS][BACKUPTICS];
  
 byte*		savebuffer;
  
- 
 // 
 // controls (have defaults) 
 // 
 int             key_right;
 int		key_left;
+int             key_lookup;
+int             key_lookdown;
+int             key_lookcenter;
 
 int		key_up;
 int		key_down; 
@@ -155,7 +160,12 @@ int		key_straferight;
 int             key_fire;
 int		key_use;
 int		key_strafe;
-int		key_speed; 
+int		key_speed;
+int             key_nextweapon;
+int             key_jump;
+int             key_map;
+int             key_180;
+int             key_talk;
  
 int             mousebfire; 
 int             mousebstrafe; 
@@ -178,7 +188,7 @@ fixed_t		angleturn[3] = {640, 1280, 320};	// + slow turn
 
 #define SLOWTURNTICS	6 
  
-#define NUMKEYS		256 
+#define NUMKEYS		512
 
 boolean         gamekeydown[NUMKEYS]; 
 int             turnheld;				// for accelerative turning 
@@ -214,7 +224,22 @@ int		bodyqueslot;
  
 void*		statcopy;				// for statistics driver
  
- 
+
+int CheckKey(int keynum)
+  {
+  if ((keynum>>16)>NUMKEYS)
+    I_Error("Invalid key!");
+  else if ((keynum&0xffff)>NUMKEYS)
+    I_Error("Invalid key!");
+
+  if (gamekeydown[keynum>>16])
+    return true;
+  else if (gamekeydown[keynum&0xffff])
+    return true;
+  else
+    return false;
+  }
+
  
 int G_CmdChecksum (ticcmd_t* cmd) 
 { 
@@ -238,7 +263,7 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 { 
     int		i; 
     boolean	strafe;
-    boolean	bstrafe; 
+//    boolean	bstrafe;
     int		speed;
     int		tspeed; 
     int		forward;
@@ -253,18 +278,21 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	consistancy[consoleplayer][maketic%BACKUPTICS]; 
 
  
-    strafe = gamekeydown[key_strafe] || mousebuttons[mousebstrafe] 
-	|| joybuttons[joybstrafe]; 
-    speed = gamekeydown[key_speed] || joybuttons[joybspeed];
- 
+    strafe = CheckKey(key_strafe);
+    speed = CheckKey(key_speed);
+
+    if ((key_shifts&KB_CAPSLOCK_FLAG)==KB_CAPSLOCK_FLAG)
+      speed=!speed;
+
+      
     forward = side = 0;
     
     // use two stage accelerative turning
     // on the keyboard and joystick
     if (joyxmove < 0
 	|| joyxmove > 0  
-	|| gamekeydown[key_right]
-	|| gamekeydown[key_left]) 
+	|| CheckKey(key_right)
+	|| CheckKey(key_left))
 	turnheld += ticdup; 
     else 
 	turnheld = 0; 
@@ -274,15 +302,30 @@ void G_BuildTiccmd (ticcmd_t* cmd)
     else 
 	tspeed = speed;
     
+    //do keylook
+    if (CheckKey(key_lookup))
+      {
+      updownangle+=keylookspeed*64*viewheight;
+      if ((updownangle>>16)>=(viewheight/2))
+        updownangle=(viewheight/2)<<16;
+      }
+    if (CheckKey(key_lookdown))
+      {
+      updownangle-=keylookspeed*64*viewheight;
+      if ((updownangle>>16)<=(-viewheight/2))
+        updownangle=(-viewheight/2)<<16;
+      }
+    if (CheckKey(key_lookcenter))
+      updownangle=0;
     // let movement keys cancel each other out
     if (strafe) 
     { 
-	if (gamekeydown[key_right]) 
+	if (CheckKey(key_right))
 	{
 	    // fprintf(stderr, "strafe right\n");
 	    side += sidemove[speed]; 
 	}
-	if (gamekeydown[key_left]) 
+	if (CheckKey(key_left))
 	{
 	    //	fprintf(stderr, "strafe left\n");
 	    side -= sidemove[speed]; 
@@ -294,10 +337,20 @@ void G_BuildTiccmd (ticcmd_t* cmd)
  
     } 
     else 
-    { 
-	if (gamekeydown[key_right]) 
+    {
+    static int allow180=1;
+
+	if (CheckKey(key_180))
+          {
+          if (allow180)
+            cmd->angleturn -= ANG180>>16;
+          allow180=0;
+          }
+        else
+          allow180=1;
+	if (CheckKey(key_right))
 	    cmd->angleturn -= angleturn[tspeed]; 
-	if (gamekeydown[key_left]) 
+	if (CheckKey(key_left))
 	    cmd->angleturn += angleturn[tspeed]; 
 	if (joyxmove > 0) 
 	    cmd->angleturn -= angleturn[tspeed]; 
@@ -305,12 +358,12 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	    cmd->angleturn += angleturn[tspeed]; 
     } 
  
-    if (gamekeydown[key_up]) 
+    if (CheckKey(key_up))
     {
 	// fprintf(stderr, "up\n");
 	forward += forwardmove[speed]; 
     }
-    if (gamekeydown[key_down]) 
+    if (CheckKey(key_down))
     {
 	// fprintf(stderr, "down\n");
 	forward -= forwardmove[speed]; 
@@ -319,38 +372,39 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	forward += forwardmove[speed]; 
     if (joyymove > 0) 
 	forward -= forwardmove[speed]; 
-    if (gamekeydown[key_straferight]) 
+    if (CheckKey(key_straferight))
 	side += sidemove[speed]; 
-    if (gamekeydown[key_strafeleft]) 
+    if (CheckKey(key_strafeleft))
 	side -= sidemove[speed];
     
     // buttons
     cmd->chatchar = HU_dequeueChatChar(); 
  
-    if (gamekeydown[key_fire] || mousebuttons[mousebfire] 
-	|| joybuttons[joybfire]) 
+    if (CheckKey(key_fire))
 	cmd->buttons |= BT_ATTACK; 
  
-    if (gamekeydown[key_use] || joybuttons[joybuse] ) 
+    if (CheckKey(key_use))
     { 
 	cmd->buttons |= BT_USE;
 	// clear double clicks if hit use button 
 	dclicks = 0;                   
     } 
 
+    if (CheckKey(key_jump))
+      {
+      cmd->buttons |= BT_JUMP;
+      dclicks=0;
+      }
+
     // chainsaw overrides 
     for (i=0 ; i<NUMWEAPONS-1 ; i++)        
-	if (gamekeydown['1'+i]) 
+	if (CheckKey('1'+i))
 	{ 
 	    cmd->buttons |= BT_CHANGE; 
 	    cmd->buttons |= i<<BT_WEAPONSHIFT; 
 	    break; 
 	}
-    
-    // mouse
-    if (mousebuttons[mousebforward]) 
-	forward += forwardmove[speed];
-    
+/*
     // forward double click
     if (mousebuttons[mousebforward] != dclickstate && dclicktime > 1 ) 
     { 
@@ -400,9 +454,21 @@ void G_BuildTiccmd (ticcmd_t* cmd)
 	    dclicks2 = 0; 
 	    dclickstate2 = 0; 
 	} 
-    } 
+    } */
  
-    forward += mousey; 
+    if (!mlookon)
+      forward += mousey;
+    else
+      {
+      if (invertmouse)
+        updownangle-=mousey*viewheight*((keylookspeed*64)>>4);
+      else
+        updownangle+=mousey*viewheight*((keylookspeed*64)>>4);
+      if ((updownangle>>16)>=(viewheight/2))
+        updownangle=(viewheight/2)<<16;
+      if ((updownangle>>16)<=(-viewheight/2))
+        updownangle=(-viewheight/2)<<16;
+      }
     if (strafe) 
 	side += mousex*2; 
     else 
@@ -455,9 +521,7 @@ void G_DoLoadLevel (void)
 
     // DOOM determines the sky texture to be used
     // depending on the current episode, and the game version.
-    if ( (gamemode == commercial)
-	 || ( gamemode == pack_tnt )
-	 || ( gamemode == pack_plut ) )
+    if  (gamemode == commercial)
     {
 	skytexture = R_TextureNumForName ("SKY3");
 	if (gamemap < 12)
@@ -505,7 +569,7 @@ boolean G_Responder (event_t* ev)
 { 
     // allow spy mode changes even during the demo
     if (gamestate == GS_LEVEL && ev->type == ev_keydown 
-	&& ev->data1 == KEY_F12 && (singledemo || !deathmatch) )
+        && ev->data1 == KEYD_F12 && (singledemo || !deathmatch) )
     {
 	// spy mode 
 	do 
@@ -558,18 +622,18 @@ boolean G_Responder (event_t* ev)
     switch (ev->type) 
     { 
       case ev_keydown: 
-	if (ev->data1 == KEY_PAUSE) 
+        if (ev->data1 == KEYD_PAUSE) 
 	{ 
 	    sendpause = true; 
 	    return true; 
 	} 
 	if (ev->data1 <NUMKEYS) 
-	    gamekeydown[ev->data1] = true; 
+	    gamekeydown[ev->data1] = true;
 	return true;    // eat key down events 
  
       case ev_keyup: 
 	if (ev->data1 <NUMKEYS) 
-	    gamekeydown[ev->data1] = false; 
+	    gamekeydown[ev->data1] = false;
 	return false;   // always let key up events filter down 
 		 
       case ev_mouse: 
@@ -674,7 +738,7 @@ void G_Ticker (void)
 	    {
 		static char turbomessage[80];
 		extern char *player_names[4];
-		sprintf (turbomessage, "%s is turbo!",player_names[i]);
+		sprintf (turbomessage, ISTURBOSTR,player_names[i]);
 		players[consoleplayer].message = turbomessage;
 	    }
 			
@@ -703,12 +767,12 @@ void G_Ticker (void)
 	    { 
 		switch (players[i].cmd.buttons & BT_SPECIALMASK) 
 		{ 
-		  case BTS_PAUSE: 
+		  case BTS_PAUSE:
 		    paused ^= 1; 
-		    if (paused) 
-			S_PauseSound (); 
-		    else 
-			S_ResumeSound (); 
+		    if (paused)
+			S_PauseSound ();
+		    else
+			S_ResumeSound ();
 		    break; 
 					 
 		  case BTS_SAVEGAME: 
@@ -821,11 +885,11 @@ void G_PlayerReborn (int player)
  
     p->usedown = p->attackdown = true;	// don't do anything immediately 
     p->playerstate = PST_LIVE;       
-    p->health = MAXHEALTH; 
+    p->health = deh_inithealth;
     p->readyweapon = p->pendingweapon = wp_pistol; 
     p->weaponowned[wp_fist] = true; 
     p->weaponowned[wp_pistol] = true; 
-    p->ammo[am_clip] = 50; 
+    p->ammo[am_clip] = deh_initbullets;
 	 
     for (i=0 ; i<NUMAMMO ; i++) 
 	p->maxammo[i] = maxammo[i]; 
@@ -894,36 +958,44 @@ G_CheckSpot
 // Spawns a player at one of the random death match spots 
 // called at level load and each death 
 //
-void G_DeathMatchSpawnPlayer (int playernum) 
-{ 
-    int             i,j; 
-    int				selections; 
-	 
-    selections = deathmatch_p - deathmatchstarts; 
-    if (selections < 4) 
-	I_Error ("Only %i deathmatch spots, 4 required", selections); 
- 
-    for (j=0 ; j<20 ; j++) 
-    { 
-	i = P_Random() % selections; 
-	if (G_CheckSpot (playernum, &deathmatchstarts[i]) ) 
-	{ 
-	    deathmatchstarts[i].type = playernum+1; 
-	    P_SpawnPlayer (&deathmatchstarts[i]); 
-	    return; 
-	} 
-    } 
- 
-    // no good spot, so the player will probably get stuck 
-    P_SpawnPlayer (&playerstarts[playernum]); 
-} 
+void G_DeathMatchSpawnPlayer (int playernum)
+{
+    int             i,j;
+    int                         selections;
+
+    selections = deathmatch_p - deathmatchstarts;
+    if (selections < 4)
+        I_Error ("Only %i deathmatch spots, 4 required", selections);
+
+    for (j=0 ; j<20 ; j++)
+    {
+        i = P_Random() % selections;
+        if (G_CheckSpot (playernum, &deathmatchstarts[i]) )
+        {
+
+//-CTF(JC)------------------------------------------------------------------
+        if (playernum<4)
+           deathmatchstarts[i].type = playernum+1;
+        else
+           deathmatchstarts[i].type = (4001+playernum)-4;
+//--------------------------------------------------------------------------
+
+            P_SpawnPlayer (&deathmatchstarts[i]);
+            return;
+        }
+    }
+
+    // no good spot, so the player will probably get stuck
+    P_SpawnPlayer (&playerstarts[playernum]);
+}
 
 //
 // G_DoReborn 
 // 
 void G_DoReborn (int playernum) 
 { 
-    int                             i; 
+    int                             i;
+    int oldplayerstart;
 	 
     if (!netgame)
     {
@@ -950,20 +1022,25 @@ void G_DoReborn (int playernum)
 	    return; 
 	}
 	
-	// try to spawn at one of the other players spots 
-	for (i=0 ; i<MAXPLAYERS ; i++)
-	{
-	    if (G_CheckSpot (playernum, &playerstarts[i]) ) 
-	    { 
-		playerstarts[i].type = playernum+1;	// fake as other player 
-		P_SpawnPlayer (&playerstarts[i]); 
-		playerstarts[i].type = i+1;		// restore 
-		return; 
-	    }	    
-	    // he's going to be inside something.  Too bad.
-	}
-	P_SpawnPlayer (&playerstarts[playernum]); 
-    } 
+        // try to spawn at one of the other players spots
+        for (i=0 ; i<MAXPLAYERS ; i++)
+        {
+            if (G_CheckSpot (playernum, &playerstarts[i]) )
+            {
+               oldplayerstart=playerstarts[i].type;
+               if (playernum<4)
+                  playerstarts[i].type = playernum+1; // fake as other player
+               else
+                 playerstarts[i].type = (4001+playernum)-4; // fake as other player
+
+                P_SpawnPlayer (&playerstarts[i]);
+                playerstarts[i].type = oldplayerstart;          // restore
+                return;
+            }
+            // he's going to be inside something.  Too bad.
+        }
+        P_SpawnPlayer (&playerstarts[playernum]);
+    }
 } 
  
  
@@ -1348,7 +1425,8 @@ void G_DoNewGame (void)
     netdemo = false;
     netgame = false;
     deathmatch = false;
-    playeringame[1] = playeringame[2] = playeringame[3] = 0;
+    playeringame[1] = playeringame[2] = playeringame[3] = playeringame[4] =
+                      playeringame[5] = playeringame[6] = playeringame[7] = 0;
     respawnparm = false;
     fastparm = false;
     nomonsters = false;
@@ -1368,7 +1446,6 @@ G_InitNew
   int		map ) 
 { 
     int             i; 
-	 
     if (paused) 
     { 
 	paused = false; 
@@ -1417,6 +1494,31 @@ G_InitNew
 	respawnmonsters = true;
     else
 	respawnmonsters = false;
+
+    if (transluc==2)
+      {  //i just went thru dehacked's item list and enabled things that looked promising
+      mobjinfo[5-1].flags|=MF_TRANSLUC50;
+      mobjinfo[7-1].flags|=MF_TRANSLUC50;
+      mobjinfo[8-1].flags|=MF_TRANSLUC50;
+      mobjinfo[10-1].flags|=MF_TRANSLUC50;
+      mobjinfo[17-1].flags|=MF_TRANSLUC50;
+      mobjinfo[30-1].flags|=MF_TRANSLUC50;
+      mobjinfo[32-1].flags|=MF_TRANSLUC50;
+      mobjinfo[33-1].flags|=MF_TRANSLUC50;
+      mobjinfo[35-1].flags|=MF_TRANSLUC50;
+      mobjinfo[36-1].flags|=MF_TRANSLUC50;
+      mobjinfo[37-1].flags|=MF_TRANSLUC50;
+      mobjinfo[38-1].flags|=MF_TRANSLUC50;
+      mobjinfo[40-1].flags|=MF_TRANSLUC50;
+      mobjinfo[41-1].flags|=MF_TRANSLUC50;
+      mobjinfo[43-1].flags|=MF_TRANSLUC50;
+      mobjinfo[56-1].flags|=MF_TRANSLUC50;
+      mobjinfo[57-1].flags|=MF_TRANSLUC50;
+      mobjinfo[58-1].flags|=MF_TRANSLUC50;
+      mobjinfo[59-1].flags|=MF_TRANSLUC50;
+      mobjinfo[63-1].flags|=MF_TRANSLUC50;
+      mobjinfo[90-1].flags|=MF_TRANSLUC50;
+      }
 		
     if (fastparm || (skill == sk_nightmare && gameskill != sk_nightmare) )
     { 
@@ -1471,7 +1573,7 @@ G_InitNew
 	    skytexture = R_TextureNumForName ("SKY2"); 
 	    break; 
 	  case 3: 
-	    skytexture = R_TextureNumForName ("SKY3"); 
+	    skytexture = R_TextureNumForName ("SKY3");
 	    break; 
 	  case 4:	// Special Edition sky
 	    skytexture = R_TextureNumForName ("SKY4");
@@ -1552,7 +1654,7 @@ void G_BeginRecording (void)
 		
     demo_p = demobuffer;
 	
-    *demo_p++ = VERSION;
+    *demo_p++ = 110;
     *demo_p++ = gameskill; 
     *demo_p++ = gameepisode; 
     *demo_p++ = gamemap; 
@@ -1582,11 +1684,13 @@ void G_DeferedPlayDemo (char* name)
 void G_DoPlayDemo (void) 
 { 
     skill_t skill; 
-    int             i, episode, map; 
+    int             i, episode, map;
+    int demversion;
 	 
     gameaction = ga_nothing; 
-    demobuffer = demo_p = W_CacheLumpName (defdemoname, PU_STATIC); 
-    if ( *demo_p++ != VERSION)
+    demobuffer = demo_p = W_CacheLumpName (defdemoname, PU_STATIC);
+    demversion= *demo_p++;
+    if ( demversion < 109)
     {
       fprintf( stderr, "Demo is from a different game version!\n");
       gameaction = ga_nothing;
@@ -1602,8 +1706,17 @@ void G_DoPlayDemo (void)
     nomonsters = *demo_p++;
     consoleplayer = *demo_p++;
 	
-    for (i=0 ; i<MAXPLAYERS ; i++) 
-	playeringame[i] = *demo_p++; 
+    if (demversion==109)
+      {
+      for (i=0 ; i<4 ; i++)
+        playeringame[i] = *demo_p++;
+      }
+    else
+      {
+      for (i=0 ; i<MAXPLAYERS ; i++)
+        playeringame[i] = *demo_p++;
+      }
+
     if (playeringame[1]) 
     { 
 	netgame = true; 
@@ -1646,13 +1759,16 @@ void G_TimeDemo (char* name)
  
 boolean G_CheckDemoStatus (void) 
 { 
-    int             endtime; 
+    int             endtime;
 	 
     if (timingdemo) 
     { 
-	endtime = I_GetTime (); 
-	I_Error ("timed %i gametics in %i realtics",gametic 
-		 , endtime-starttime); 
+    float fps;
+
+    endtime = I_GetTime ();
+    fps=((float)(gametic*TICRATE))/(endtime-starttime);
+	 I_Error ("timed %i gametics in %i realtics, which equals %i.%i fps",gametic,
+		  endtime-starttime,(int)floor(fps),(int)(floor(fps*10)-floor(fps)*10));
     } 
 	 
     if (demoplayback) 
@@ -1665,7 +1781,8 @@ boolean G_CheckDemoStatus (void)
 	netdemo = false;
 	netgame = false;
 	deathmatch = false;
-	playeringame[1] = playeringame[2] = playeringame[3] = 0;
+	playeringame[1] = playeringame[2] = playeringame[3] = playeringame[4] =
+                  playeringame[5] = playeringame[6] = playeringame[7] = 0;
 	respawnparm = false;
 	fastparm = false;
 	nomonsters = false;

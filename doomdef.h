@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -31,7 +31,7 @@
 //
 // DOOM version
 enum { VERSION =  110 };
-
+#define DOSDOOMVER 61
 
 // Game mode handling - identify IWAD version
 //  to handle IWAD dependend animations etc.
@@ -64,7 +64,12 @@ typedef enum
 {
   english,
   french,
-  german,
+  german1,
+  german2,
+  turkish,
+  swedish,
+  spanish,
+  dutch,
   unknown
 
 } Language_t;
@@ -95,7 +100,8 @@ typedef enum
 // For resize of screen, at start of game.
 // It will not work dynamically, see visplanes.
 //
-#define	BASE_WIDTH		320
+//#define	BASE_WIDTH		320
+#define BASE_WIDTH SCREENWIDTH
 
 // It is educational but futile to change this
 //  scaling e.g. to 2. Drawing of status bar,
@@ -107,16 +113,16 @@ typedef enum
 // Defines suck. C sucks.
 // C++ might sucks for OOP, but it sure is a better C.
 // So there.
-#define SCREENWIDTH  320
+//#define SCREENWIDTH  320
 //SCREEN_MUL*BASE_WIDTH //320
-#define SCREENHEIGHT 200
+//#define SCREENHEIGHT 200
 //(int)(SCREEN_MUL*BASE_WIDTH*INV_ASPECT_RATIO) //200
 
 
 
 
 // The maximum number of players, multiplayer/networking.
-#define MAXPLAYERS		4
+#define MAXPLAYERS		8
 
 // State updates, number of tics / second.
 #define TICRATE		35
@@ -278,6 +284,20 @@ typedef enum
 #define KEYD_RALT	(0x80+0x38)
 
 #define KEYD_LALT	KEYD_RALT
+
+#define KEYD_PRTSCR (0x80+84)
+#define KEYD_PGUP (0x80+73)
+#define KEYD_PGDN (0x80+81)
+#define KEYD_HOME (0x80+71)
+#define KEYD_END (0x80+79)
+
+#define KEYD_MOUSE1 0x100
+#define KEYD_MOUSE2 0x101
+#define KEYD_MOUSE3 0x102
+#define KEYD_JOY1 0x110
+#define KEYD_JOY2 0x111
+#define KEYD_JOY3 0x112
+#define KEYD_JOY4 0x113
 
 // DOOM basic types (boolean),
 //  and max/min values.

@@ -33,6 +33,7 @@ static const char rcsid[] = "$Id: d_net.c,v 1.3 1997/02/03 22:01:47 b1 Exp $";
 #include "g_game.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "strings.h"
 
 #define	NCMD_EXIT		0x80000000
 #define	NCMD_RETRANSMIT		0x40000000
@@ -103,7 +104,7 @@ unsigned NetbufferChecksum (void)
     c = 0x1234567;
 
     // FIXME -endianess?
-#ifdef NORMALUNIX
+#ifdef LINUX
     return 0;			// byte order problems
 #endif
 
@@ -213,7 +214,7 @@ boolean HGetPacket (void)
 
     if (doomcom->datalength != NetbufferSize ())
     {
-	if (debugfile)
+   if (debugfile)
 	    fprintf (debugfile,"bad packet length %i\n",doomcom->datalength);
 	return false;
     }
@@ -484,7 +485,7 @@ void D_ArbitrateNetStart (void)
     if (doomcom->consoleplayer)
     {
 	// listen for setup info from key player
-	printf ("listening for network start info...\n");
+	printf (NETLISTEN);
 	while (1)
 	{
 	    CheckAbort ();
@@ -507,7 +508,7 @@ void D_ArbitrateNetStart (void)
     else
     {
 	// key player, send the setup info
-	printf ("sending network start info...\n");
+	printf (NETSEND);
 	do
 	{
 	    CheckAbort ();
@@ -521,7 +522,7 @@ void D_ArbitrateNetStart (void)
 		if (respawnparm)
 		    netbuffer->retransmitfrom |= 0x10;
 		netbuffer->starttic = startepisode * 64 + startmap;
-		netbuffer->player = VERSION;
+		netbuffer->player = 109;
 		netbuffer->numtics = 0;
 		HSendPacket (i, NCMD_SETUP);
 	    }
@@ -626,9 +627,8 @@ void D_QuitNetGame (void)
 //
 // TryRunTics
 //
-int	frametics[4];
 int	frameon;
-int	frameskip[4];
+int	frameskip[MAXPLAYERS];
 int	oldnettics;
 
 extern	boolean	advancedemo;
@@ -696,18 +696,13 @@ void TryRunTics (void)
 	}
 	else
 	{
-	    if (nettics[0] <= nettics[nodeforplayer[i]])
-	    {
-		gametime--;
-		// printf ("-");
-	    }
-	    frameskip[frameon&3] = (oldnettics > nettics[nodeforplayer[i]]);
-	    oldnettics = nettics[0];
-	    if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3])
-	    {
-		skiptics = 1;
-		// printf ("+");
-	    }
+            if (nettics[0] <= nettics[nodeforplayer[i]])
+                gametime--;
+            frameskip[frameon&7] = (oldnettics > nettics[nodeforplayer[i]]);
+            oldnettics = nettics[0];
+            if (frameskip[0] && frameskip[1] && frameskip[2] && frameskip[3] &&
+                frameskip[4] && frameskip[5] && frameskip[6] && frameskip[7])
+                skiptics = 1;
 	}
     }// demoplayback
 	

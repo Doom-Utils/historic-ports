@@ -22,8 +22,9 @@
 #define __HU_STUFF_H__
 
 #include "d_event.h"
+#include "r_defs.h"
 
-
+extern int showMessages;
 //
 // Globally visible constants.
 //
@@ -43,6 +44,7 @@
 
 #define HU_MSGTIMEOUT	(4*TICRATE)
 
+extern patch_t*		hu_font[HU_FONTSIZE];
 //
 // HEADS UP TEXT
 //

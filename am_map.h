@@ -28,6 +28,8 @@
 #define AM_MSGEXITED (AM_MSGHEADER | ('x'<<8))
 
 
+void resinit_am_map_c(void);
+
 // Called by main loop.
 boolean AM_Responder (event_t* ev);
 

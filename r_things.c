@@ -32,6 +32,7 @@ rcsid[] = "$Id: r_things.c,v 1.5 1997/02/03 16:47:56 b1 Exp $";
 
 #include "doomdef.h"
 #include "m_swap.h"
+#include "m_argv.h"
 
 #include "i_system.h"
 #include "z_zone.h"
@@ -44,7 +45,7 @@ rcsid[] = "$Id: r_things.c,v 1.5 1997/02/03 16:47:56 b1 Exp $";
 
 
 #define MINZ				(FRACUNIT*4)
-#define BASEYCENTER			100
+#define BASEYCENTER ((weirdaspect==1)?100:75)
 
 //void R_DrawColumn (void);
 //void R_DrawFuzzColumn (void);
@@ -73,13 +74,15 @@ typedef struct
 //
 fixed_t		pspritescale;
 fixed_t		pspriteiscale;
+fixed_t		pspritescale2;
+fixed_t		pspriteiscale2;
 
 lighttable_t**	spritelights;
 
 // constant arrays
 //  used for psprite clipping and initializing clipping
-short		negonearray[SCREENWIDTH];
-short		screenheightarray[SCREENWIDTH];
+short		*negonearray;
+short		*screenheightarray;
 
 
 //
@@ -95,6 +98,26 @@ spriteframe_t	sprtemp[29];
 int		maxframe;
 char*		spritename;
 
+//
+// Define MHFX_LAXSPRITEROTATIONS for a temporary fix to the problem
+// of PWADS that define sprite rotations in different orders. This
+// should be regarded as a temporary fix only and might not work
+// properly in all cases. See README.sprites for details and
+// ESPECIALLY before using "-sprnolim" - you have been warned!
+//
+// Basically, this works by removing the checks on two WAD entries that
+// map to the same sprite, having both a "no rotations" version of a
+// sprite and various rotations of a sprite, and so forth. I cannot, so
+// far, see any reason for Doom to check for this internally, as it seems
+// to use the most recently loaded version of a sprite (which is, after all,
+// what we want), so I assume that it is designed to protect against a
+// corrupted IWAD or a buggy PWAD, or something like that.
+//
+#define MHFX_LAXSPRITEROTATIONS
+
+#ifdef MHFX_LAXSPRITEROTATIONS
+int  lax_sprite_rotations=0;
+#endif
 
 
 
@@ -121,12 +144,23 @@ R_InstallSpriteLump
     if (rotation == 0)
     {
 	// the lump should be used for all rotations
-	if (sprtemp[frame].rotate == false)
-	    I_Error ("R_InitSprites: Sprite %s frame %c has "
-		     "multip rot=0 lump", spritename, 'A'+frame);
+        // false=0, true=1, but array initialised to -1
+        // allows doom to have a "no value set yet" boolean value!
 
-	if (sprtemp[frame].rotate == true)
-	    I_Error ("R_InitSprites: Sprite %s frame %c has rotations "
+        if ( (sprtemp[frame].rotate == false)
+#ifdef MHFX_LAXSPRITEROTATIONS
+            && (!lax_sprite_rotations)
+#endif
+           )
+            I_Error ("R_InitSprites: Sprite %s frame %c has "
+                     "multip rot=0 lump", spritename, 'A'+frame);
+
+        if ((sprtemp[frame].rotate == true)
+#ifdef MHFX_LAXSPRITEROTATIONS
+            && (!lax_sprite_rotations)
+#endif
+           )
+            I_Error ("R_InitSprites: Sprite %s frame %c has rotations "
 		     "and a rot=0 lump", spritename, 'A'+frame);
 			
 	sprtemp[frame].rotate = false;
@@ -139,7 +173,11 @@ R_InstallSpriteLump
     }
 	
     // the lump is only used for one rotation
-    if (sprtemp[frame].rotate == false)
+    if ((sprtemp[frame].rotate == false)
+#ifdef MHFX_LAXSPRITEROTATIONS
+            && (!lax_sprite_rotations)
+#endif
+       )
 	I_Error ("R_InitSprites: Sprite %s frame %c has rotations "
 		 "and a rot=0 lump", spritename, 'A'+frame);
 		
@@ -147,7 +185,11 @@ R_InstallSpriteLump
 
     // make 0 based
     rotation--;		
-    if (sprtemp[frame].lump[rotation] != -1)
+    if ((sprtemp[frame].lump[rotation] != -1)
+#ifdef MHFX_LAXSPRITEROTATIONS
+            && (!lax_sprite_rotations)
+#endif
+       )
 	I_Error ("R_InitSprites: Sprite %s : %c : %c "
 		 "has two lumps mapped to it",
 		 spritename, 'A'+frame, '1'+rotation);
@@ -304,6 +346,12 @@ void R_InitSprites (char** namelist)
     {
 	negonearray[i] = -1;
     }
+
+#ifdef MHFX_LAXSPRITEROTATIONS
+    lax_sprite_rotations=( M_CheckParm("-gfixall")
+                          ||
+                           M_CheckParm("-gignrot") );
+#endif
 	
     R_InitSpriteDefs (namelist);
 }
@@ -409,16 +457,42 @@ R_DrawVisSprite
 
     dc_colormap = vis->colormap;
     
-    if (!dc_colormap)
+    if (vis->mobjflags & MF_TRANSLUC)
+      {
+      if (transluc==0)
+        colfunc=R_DrawColumn;
+      else
+        {
+        switch (vis->mobjflags&MF_TRANSLUC)
+          {
+          case MF_TRANSLUC25:
+            colfunc=R_DrawTranslucentColumn25;
+            break;
+          case MF_TRANSLUC50:
+            colfunc=R_DrawTranslucentColumn50;
+            break;
+          case MF_TRANSLUC75:
+            colfunc=R_DrawTranslucentColumn75;
+            break;
+          default:
+            I_Error("Translucency Error!");
+          }
+        }
+      }
+    else if (!dc_colormap)
     {
 	// NULL colormap = shadow draw
 	colfunc = fuzzcolfunc;
     }
     else if (vis->mobjflags & MF_TRANSLATION)
     {
-	colfunc = R_DrawTranslatedColumn;
-	dc_translation = translationtables - 256 +
-	    ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+        colfunc = R_DrawTranslatedColumn;
+        if (vis->playxtra<4)
+           dc_translation = translationtables - 256 +
+               ( (vis->mobjflags & MF_TRANSLATION) >> (MF_TRANSSHIFT-8) );
+        else
+           dc_translation = translationtables - 256 + (vis->playxtra * 256);
+
     }
 	
     dc_iscale = abs(vis->xiscale)>>detailshift;
@@ -549,6 +623,7 @@ void R_ProjectSprite (mobj_t* thing)
     // store information in a vissprite
     vis = R_NewVisSprite ();
     vis->mobjflags = thing->flags;
+    vis->playxtra  = thing->playxtra; //-jc-
     vis->scale = xscale<<detailshift;
     vis->gx = thing->x;
     vis->gy = thing->y;
@@ -692,6 +767,7 @@ void R_DrawPSprite (pspdef_t* psp)
     // store information in a vissprite
     vis = &avis;
     vis->mobjflags = 0;
+    vis->playxtra  = 0; //-jc-
     vis->texturemid = (BASEYCENTER<<FRACBITS)+FRACUNIT/2-(psp->sy-spritetopoffset[lump]);
     vis->x1 = x1 < 0 ? 0 : x1;
     vis->x2 = x2 >= viewwidth ? viewwidth-1 : x2;	
@@ -734,8 +810,12 @@ void R_DrawPSprite (pspdef_t* psp)
 	// local light
 	vis->colormap = spritelights[MAXLIGHTSCALE-1];
     }
-	
+    //yeah, i know this is cheap
+    centery=(viewheight/2); centeryfrac=centery<<16;
     R_DrawVisSprite (vis, vis->x1, vis->x2);
+    centery=viewheight/2+(updownangle>>16);
+    centeryfrac=((viewheight/2)<<16)+updownangle;
+
 }
 
 

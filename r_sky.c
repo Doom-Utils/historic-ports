@@ -34,7 +34,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 // Needed for Flat retrieval.
 #include "r_data.h"
-
+#include "doomstat.h"
 
 #ifdef __GNUG__
 #pragma implementation "r_sky.h"
@@ -57,6 +57,11 @@ int			skytexturemid;
 void R_InitSkyMap (void)
 {
   // skyflatnum = R_FlatNumForName ( SKYFLATNAME );
-    skytexturemid = 100*FRACUNIT;
+  if ((SCREENWIDTH==320)&&(SCREENHEIGHT==200))
+    skytexturemid = (SCREENHEIGHT/2)*FRACUNIT;
+  else
+//    skytexturemid = (SCREENHEIGHT/2)*FRACUNIT;
+    skytexturemid = (SCREENWIDTH*3)*FRACUNIT/8;
+
 }
 

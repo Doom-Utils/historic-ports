@@ -33,7 +33,7 @@ enum
     wipe_ColorXForm,
     
     // weird screen melt
-    wipe_Melt,	
+    wipe_Melt,
 
     wipe_NUMWIPES
 };

@@ -1,0 +1,158 @@
+v0.61 of a DOS port of LinuxDOOM
+
+-This port was mostly written by Chi Hoang (cyhoang@acs.ucalgary.ca)
+-The music code (i_music.*) is written by Kester Maddock (dmaddock@xtra.co.nz)
+-Other code snippets and bug fixes were contributed by various authors
+-The official DosDoom homepage now at http://www.frag.com/dosdoom
+-DOOM is copyright ID software (www.idsoftware.com)
+-This port is not endorsed by id software, so don't bug them about it
+-I am not responsible for any damage that may be done by this program
+-------------------------------------------------------------------------
+
+Make sure you unzipped with directories!!!
+You can get the original linux-doom source at ftp://ftp.idsoftware.com/source/doomsrc.zip
+
+Whats new (in v0.61)
+  -linux support
+  -did a lot of much-needed bug-fixing
+  -added -gwaddir parameter to set location of doom wad(thanks to Martin Howe)
+
+Whats New over the Original Doom:
+  -hicolor
+  -hires
+  -translucency
+  -8-player support
+  -New gameplay options
+  -mlook
+  -new map options
+  -jumping, 180 degree turn key
+  -use definable gravity
+  -a lot of other stuff
+
+User Notes
+  -use wads from doom v1.9!!!!!!!!
+  -networking should only be compatible with doom v1.9 if you don't use extra features
+   (ie: everything in gameplay options must be turned off, gravity should be at default)
+  -Everything in gameplay options MUST be the same for all computers in
+   a network game.
+  -played demos should be from doom v1.9
+  -if you have an order video card without vesa2 linear frame buffer, you
+   might be able to speed up doom by getting SDD at http://www.scitechsoft.com
+  -On a slower machine, dosdoom is slower than the original doom.exe, while
+   on a newer machine, dosdoom is faster than the original doom.exe
+  -using double-buffering may improve speed significantly, but it also could
+   slow things down.
+  -to do networking, rename dosdoom.exe to doom2.exe and run dm.exe
+   (dm.exe is DeathManager which comes with doom v1.9)
+  -You could use CapLock to always run - when its on, use shift to walk
+  -i pumped up maxvisplanes, maxopenings, maxdrawsegs, maxvissprites, and
+   max savegame size for u level designers out there :)
+  -If the DOSDOOM environ var exists, dosdoom will look in that directory
+   for default.cfg
+  -320x100 mode is availiable :)
+  -new cheatcode: type hotaru to kill allmonsters
+  -new cheat code 'showinfo', which will show fps/time/position/kills/etc
+   in single player and fps/time in multiplayer
+  -'showinfo', 'cdnext', 'cdprev', and 'idmus??' are allowed in deathmatch
+  -MIDI support is now in DosDoom - just use the midi file in place of the
+   mus file
+  -To add translucency to a thing, in a DeHackEd file:
+     add  536870912 to Bits line of the Thing for 25% translucency
+     add 1073741824 to Bits line of the Thing for 50% translucency
+     add 1610612736 to Bits line of the Thing for 75% translucency
+  -You can press PrintScreen to take a screenshot at any time
+  -player 5-8 starts are things 4001-4004 (for you level designers out there)
+  -you need a new ipxsetup for 8 player support
+
+New Command Line Parameters;
+  -deh filename Loads a DeHackEd file
+  -gwaddir dir  Sets the location of the doom wad
+  -width ???    Sets x resolution to ??? (default 320)
+  -height ???   sets y resolution to ??? (default 200)
+  -hicolor      Enables hicolor mode
+  -forcevga     Use standard vga for 320x200 even if a vesa mode is availiable
+  -dblbuffer    Use hardware double buffering.  Might be faster, especially at
+                hi-res and hi-color modes.  You could use timedemo to check.
+                This may not work on all computers. (Note: on most video cards,
+                this will be slower if you use lotsa translucency)
+  -heapsize ??? Sets heapsize to ??? megabytes.  (default 6)  Increase if you
+                get out of memory errors at very-high resolutions or big maps
+  -censored     Use this to censor quit messages
+  -cdaudio      Turns on cd-audio support.  Use the new cheat codes CDNEXT
+                and CDPREV to go forward or back a track.  Use IDMUS?? to
+                change to a specific track.
+  -digmid       Enables software wavetable.  You will have to edit the
+                included dosdoom.cfg, so that the patches= line points
+                to either a default.cfg file (from a set of GUS patches)
+                or a .dat file (which can be created from a SoundFont (.sf2)
+                file with the pat2dat utility availiable on my webpage). You
+                can get SoundFont files and GUS patches by following the links
+                at http://www.talula.demon.co.uk/allegro/digmid.html
+  -readmus      Read music card from default.cfg instead of trying to autodetect
+  -readsfx      Read sfx card from default.cfg instead of trying to autodetect
+  -nosound      Turns off all sound
+  -gfixspr    \
+  -gfixflt    |
+  -gfixpat    |- Sprites-in-a-pwad bugfix (Thanks to Martin Howe)
+  -gfixsfp    |  See readme.sprites for more details.
+  -gignrot    |
+  -gfixall    /
+  -dutch      \
+  -french     |
+  -german1    |
+  -german2    |-These will replace the text in doom with
+  -turkish    | a translated version where possible.
+  -swedish    | 
+  -spanish    /
+  -doom2f     \
+  -doom2      |
+  -plutonia   | These let you specify which wad to load.  This allows you to 
+  -tnt        +-keep all the doom wads in one directory. (-doom2f is the
+  -udoom      | french version of doom2)
+  -doom       |
+  -shareware  /
+
+These Command-line Parameters can be Configured in the Options Menu:
+  -notrans      Never use translucency, even if it is specified in a custom wad
+  -fulltrans    Makes fireballs and stuff like that translucent.
+  -mlook        Enables mlook, so when you move the mouse up or down, it'll
+                tilt your view up or down
+  -invertmouse  Makes it so when you move the mouse up, your view tilts down
+                and vice-versa.  Only useful with -mlook
+  -vspeed       Sets the vertical speed for both -mlook and the keyboard
+                look up/down keys.  (default 1000)
+  -novert       Turns off vertical mouse movement.  Useful if you are used
+                to +mlook.
+  -newnmrespawn Makes monsters in Nightmare respawn in place
+  -lessaccurate Stop monsters from being 100% accurate
+  -itemrespawn  Item Respawning
+  -stretchsky   Stretches Sky for Better mlooking
+  -rotatemap    Makes the map view rotate, instead of having the player rotate
+  -newmap       New automap-overlay mode.  Press tab to switch to it.
+                (Thanks to Dave Pearson)
+  -swapstereo   Swaps the stereo channels
+
+Known Bugs:  (don't email me about them)
+  -status bar shows before wipes when using double-buffering
+  -very large heapsizes don't work
+  -some demos get out of sync in dosdoom
+  -Monster infighting and a few minor text messages don't work in .deh files
+   Code frames also don't seem to work
+  -Shoot up/down doesn't work in net play.  I'm still thinking of the best
+   way to solve it without breaking network compatibility
+
+Programming Notes:
+  -This is for the djgpp compiler, v2.01.  Get it at www.delorie.com/djgpp/
+  -You now need allegro 3.0 to compile it.  It is used for a lot of the
+   dos-specific routines.  Get it at http://www.talula.demon.co.uk/allegro/
+  -You also need BCD, a cd-audio playing library to compile dosdoom.  It
+   is availiable at http://brennan.home.ml.org/programming/
+  -I had to rename all of doom's KEY_* vars to KEYD_* because allegro also
+   uses KEY_ variables
+  -I commented out RANGECHECK (in doomdef.h), for more speed, if youre a
+   programmer you should uncomment it
+  -If you recompile my code you'll probably get an exe thats much larger
+   than the one in this release.  That is because i compress my exe
+   with djp (it's like pklite for djgpp programs).  DJP can probably be
+   obtained from the same place you got djgpp.
+

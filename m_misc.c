@@ -30,11 +30,14 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#ifdef DJGPP
+#include <allegro.h>
+#endif
 
 #include <ctype.h>
-
 
 #include "doomdef.h"
 
@@ -47,7 +50,7 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include "i_system.h"
 #include "i_video.h"
-#include "v_video.h"
+#include "multires.h"
 
 #include "hu_stuff.h"
 
@@ -169,28 +172,6 @@ M_ReadFile
 int		usemouse;
 int		usejoystick;
 
-extern int	key_right;
-extern int	key_left;
-extern int	key_up;
-extern int	key_down;
-
-extern int	key_strafeleft;
-extern int	key_straferight;
-
-extern int	key_fire;
-extern int	key_use;
-extern int	key_strafe;
-extern int	key_speed;
-
-extern int	mousebfire;
-extern int	mousebstrafe;
-extern int	mousebforward;
-
-extern int	joybfire;
-extern int	joybstrafe;
-extern int	joybuse;
-extern int	joybspeed;
-
 extern int	viewwidth;
 extern int	viewheight;
 
@@ -204,8 +185,17 @@ extern int	screenblocks;
 extern int	showMessages;
 
 // machine-independent sound params
-extern	int	numChannels;
+int	numChannels;
 
+//machie-dependant
+int snd_musicdevice;
+int snd_sfxdevice;
+int snd_sbport;
+int snd_sbirq;
+int snd_sbdma;
+int snd_mport;
+int showmessages;
+int comport;
 
 // UNIX hack, to be removed.
 #ifdef SNDSERV
@@ -222,14 +212,6 @@ extern char*	chat_macros[];
 
 
 
-typedef struct
-{
-    char*	name;
-    int*	location;
-    int		defaultvalue;
-    int		scantranslate;		// PC scan code hack
-    int		untranslated;		// lousy hack
-} default_t;
 
 default_t	defaults[] =
 {
@@ -244,6 +226,9 @@ default_t	defaults[] =
     {"key_left",&key_left, KEYD_LEFTARROW},
     {"key_up",&key_up, KEYD_UPARROW},
     {"key_down",&key_down, KEYD_DOWNARROW},
+    {"key_lookup",&key_lookup, KEYD_PGUP},
+    {"key_lookdown",&key_lookdown, KEYD_PGDN},
+    {"key_lookcenter",&key_lookcenter,KEYD_HOME},
     {"key_strafeleft",&key_strafeleft, ','},
     {"key_straferight",&key_straferight, '.'},
 
@@ -251,13 +236,33 @@ default_t	defaults[] =
     {"key_use",&key_use, ' '},
     {"key_strafe",&key_strafe, KEYD_RALT},
     {"key_speed",&key_speed, KEYD_RSHIFT},
+    {"key_nextweapon",&key_nextweapon, '/'},
+    {"key_jump",&key_jump, 0},
+    {"key_180",&key_180, 0},
+    {"key_map",&key_map, KEYD_TAB},
+    {"key_talk",&key_talk, 't'},
 
-// UNIX hack, to be removed. 
-#ifdef SNDSERV
-    {"sndserver", (int *) &sndserver_filename, (int) "sndserver"},
-    {"mb_used", &mb_used, 2},
-#endif
-    
+    {"swapstereo",&swapstereo,0},
+    {"mlookon",&mlookon,0},
+    {"invertmouse",&invertmouse,0},
+    {"mlookspeed",&keylookspeed,1000/64},
+    {"translucency",&transluc,1},
+    {"crosshair",&crosshair,0},
+    {"stretchsky",&stretchsky,1},
+    {"rotatemap",&rotatemap,0},
+    {"newhud",&newhud,0},
+    {"newnmrespawn",&newnmrespawn,0},
+    {"itemrespawn",&ItemRespawn,0},
+    {"randominfight",&RandomInfight,0},
+    {"totalwar",&TotalWar,0},
+    {"newai",&NewAI,0},
+    {"lessaccuratemon",&LessAccurateMon,0},
+    {"humanmad",&HumanMad,0},
+    {"humanexplode",&HumanExplode,0},
+    {"grav",&grav,8},
+    {"shootupdown",&shootupdown,0},
+
+
 #endif
 
 #ifdef LINUX
@@ -276,25 +281,34 @@ default_t	defaults[] =
     {"joyb_use",&joybuse,3},
     {"joyb_speed",&joybspeed,2},
 
-    {"screenblocks",&screenblocks, 10},
+    {"screenblocks",&screenblocks, 9},
     {"detaillevel",&detailLevel, 0},
 
     {"snd_channels",&numChannels, 3},
 
+    //this is just to preserve dos's settings
+    {"snd_musicdevice",&snd_musicdevice, 0},
+    {"snd_sfxdevice",&snd_sfxdevice, 0},
+    {"snd_sbport",&snd_sbport, 0},
+    {"snd_sbirq",&snd_sbirq, 0},
+    {"snd_sbdma",&snd_sbdma, 0},
+    {"snd_mport",&snd_mport, 0},
+    {"showmessages",&showmessages, 1},
+    {"comport",&comport, 1},
+    //end of new stuff
 
+    {"usegamma",&usegamma, 0},
 
-    {"usegamma",&usegamma, 3},
-
-    {"chatmacro0", (int *) &chat_macros[0], (int) HUSTR_CHATMACRO0 },
-    {"chatmacro1", (int *) &chat_macros[1], (int) HUSTR_CHATMACRO1 },
-    {"chatmacro2", (int *) &chat_macros[2], (int) HUSTR_CHATMACRO2 },
-    {"chatmacro3", (int *) &chat_macros[3], (int) HUSTR_CHATMACRO3 },
-    {"chatmacro4", (int *) &chat_macros[4], (int) HUSTR_CHATMACRO4 },
-    {"chatmacro5", (int *) &chat_macros[5], (int) HUSTR_CHATMACRO5 },
-    {"chatmacro6", (int *) &chat_macros[6], (int) HUSTR_CHATMACRO6 },
-    {"chatmacro7", (int *) &chat_macros[7], (int) HUSTR_CHATMACRO7 },
-    {"chatmacro8", (int *) &chat_macros[8], (int) HUSTR_CHATMACRO8 },
-    {"chatmacro9", (int *) &chat_macros[9], (int) HUSTR_CHATMACRO9 }
+    {"chatmacro0", (int *) &chat_macros[0], 0},//(int) HUSTR_CHATMACRO0 },
+    {"chatmacro1", (int *) &chat_macros[1], 0},//(int) HUSTR_CHATMACRO1 },
+    {"chatmacro2", (int *) &chat_macros[2], 0},//(int) HUSTR_CHATMACRO2 },
+    {"chatmacro3", (int *) &chat_macros[3], 0},//(int) HUSTR_CHATMACRO3 },
+    {"chatmacro4", (int *) &chat_macros[4], 0},//(int) HUSTR_CHATMACRO4 },
+    {"chatmacro5", (int *) &chat_macros[5], 0},//(int) HUSTR_CHATMACRO5 },
+    {"chatmacro6", (int *) &chat_macros[6], 0},//(int) HUSTR_CHATMACRO6 },
+    {"chatmacro7", (int *) &chat_macros[7], 0},//(int) HUSTR_CHATMACRO7 },
+    {"chatmacro8", (int *) &chat_macros[8], 0},//(int) HUSTR_CHATMACRO8 },
+    {"chatmacro9", (int *) &chat_macros[9], 0} //(int) HUSTR_CHATMACRO9 }
 
 };
 
@@ -307,28 +321,33 @@ char*	defaultfile;
 //
 void M_SaveDefaults (void)
 {
-    int		i;
-    int		v;
-    FILE*	f;
+  int		i;
+  int		v;
+  FILE*	f;
 	
-    f = fopen (defaultfile, "w");
-    if (!f)
-	return; // can't write the file, but don't complain
+  f = fopen (defaultfile, "w");
+  if (!f)
+    return; // can't write the file, but don't complain
 		
-    for (i=0 ; i<numdefaults ; i++)
+  for (i=0 ; i<numdefaults ; i++)
     {
-	if (defaults[i].defaultvalue > -0xfff
-	    && defaults[i].defaultvalue < 0xfff)
-	{
-	    v = *defaults[i].location;
-	    fprintf (f,"%s\t\t%i\n",defaults[i].name,v);
-	} else {
-	    fprintf (f,"%s\t\t\"%s\"\n",defaults[i].name,
-		     * (char **) (defaults[i].location));
-	}
+    if ((defaults[i].defaultvalue > -0xfff
+        && defaults[i].defaultvalue < 0xfff)||(memcmp(defaults[i].name,"key_",4)==0))
+      {
+      v = *defaults[i].location;
+      if (memcmp(defaults[i].name,"key_",4)==0)
+        fprintf (f,"%s\t\t%i\no%s\t\t%i\n",defaults[i].name,I_DoomCode2ScanCode(v&0xffff),defaults[i].name,I_DoomCode2ScanCode(v>>16));
+      else
+        fprintf(f,"%s\t\t%i\n",defaults[i].name,v);
+      }
+    else
+      {
+      fprintf (f,"%s\t\t\"%s\"\n",defaults[i].name,
+               * (char **) (defaults[i].location));
+      }
     }
 	
-    fclose (f);
+  fclose (f);
 }
 
 
@@ -386,19 +405,38 @@ void M_LoadDefaults (void)
 		else
 		    sscanf(strparm, "%i", &parm);
 		for (i=0 ; i<numdefaults ; i++)
+                    {
 		    if (!strcmp(def, defaults[i].name))
-		    {
+		      {
 			if (!isstring)
-			    *defaults[i].location = parm;
+                          {
+                          if (memcmp(defaults[i].name,"key_",4)!=0)
+                            {
+                            *defaults[i].location = parm;
+                            }
+                          else
+                            {
+                            if (parm!=0)
+    			      *defaults[i].location = I_ScanCode2DoomCode(parm);
+                            }
+                          }
 			else
 			    *defaults[i].location =
 				(int) newstring;
 			break;
-		    }
+		      }
+                    if (def[0]=='o')
+                      if (!strcmp(def+1,defaults[i].name))
+                        if (!isstring)
+                          if (memcmp(defaults[i].name,"key_",4)==0)
+                            if (parm!=0)
+                              *defaults[i].location|= I_ScanCode2DoomCode(parm)<<16;
+                    }
 	    }
 	}
 		
 	fclose (f);
+   detailLevel=0;
     }
 }
 
@@ -503,12 +541,15 @@ WritePCXfile
 void M_ScreenShot (void)
 {
     int		i;
-    byte*	linear;
     char	lbmname[12];
+
+#ifdef DJGPP
+    BITMAP *tempbitmap;
+    PALETTE temppal;
+#else
+    byte*	linear;
+#endif
     
-    // munge planar buffer to linear
-    linear = screens[2];
-    I_ReadScreen (linear);
     
     // find a file name to save it to
     strcpy(lbmname,"DOOM00.pcx");
@@ -523,11 +564,22 @@ void M_ScreenShot (void)
     if (i==100)
 	I_Error ("M_ScreenShot: Couldn't create a PCX");
     
+#ifdef DJGPP
+    tempbitmap=create_sub_bitmap(screen,0,0,SCREENWIDTH,SCREENHEIGHT);
+    get_palette(temppal);
+    save_pcx(lbmname,tempbitmap,temppal);
+    destroy_bitmap(tempbitmap);
+#else
+    // munge planar buffer to linear
+    linear = screens[2];
+    I_ReadScreen (linear);
+
     // save the pcx file
     WritePCXfile (lbmname, linear,
 		  SCREENWIDTH, SCREENHEIGHT,
 		  W_CacheLumpName ("PLAYPAL",PU_CACHE));
-	
+#endif
+		  
     players[consoleplayer].message = "screen shot";
 }
 

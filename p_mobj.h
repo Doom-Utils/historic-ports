@@ -198,7 +198,11 @@ typedef enum
     //  use a translation table for player colormaps
     MF_TRANSLATION  	= 0xc000000,
     // Hmm ???.
-    MF_TRANSSHIFT	= 26
+    MF_TRANSSHIFT	= 26,
+    MF_TRANSLUC         = 0x60000000,
+    MF_TRANSLUC25       = 0x20000000,
+    MF_TRANSLUC50       = 0x40000000,
+    MF_TRANSLUC75       = 0x60000000
 
 } mobjflag_t;
 
@@ -283,6 +287,10 @@ typedef struct mobj_s
     // Thing being chased/attacked for tracers.
     struct mobj_s*	tracer;	
     
+    byte   playxtra; //-jc- Colours for players 5-8
+
+    fixed_t lastknownx;
+    fixed_t lastknowny;
 } mobj_t;
 
 

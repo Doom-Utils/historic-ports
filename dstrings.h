@@ -29,13 +29,10 @@
 
 // All important printed strings.
 // Language selection (message strings).
-// Use -DFRENCH etc.
-
-#ifdef FRENCH
-#include "d_french.h"
-#else
-#include "d_englsh.h"
-#endif
+#include "strings.h"
+void initstrings();
+int searchstring(char *origtext, char *newtext);
+void applystrings();
 
 // Misc. other strings.
 #define SAVEGAMENAME	"doomsav"

@@ -266,11 +266,21 @@ boolean PIT_CheckThing (mobj_t* thing)
 	// didn't hit it
 	return true;	
     }
-    
+
+    // This should make it so we won't get stuck on a monster underneath.
+    // Copied from the missile code -- Kilbert
+    if (shootupdown)
+      {
+      if (tmthing->z > thing->z + thing->height)
+         return true;            // overhead
+      if (tmthing->z+tmthing->height < thing->z)
+         return true;            // underneath
+      }
+
     // don't clip against self
     if (thing == tmthing)
 	return true;
-    
+
     // check for skulls slamming into things
     if (tmthing->flags & MF_SKULLFLY)
     {

@@ -25,13 +25,14 @@
 static const char
 rcsid[] = "$Id: f_finale.c,v 1.5 1997/02/03 21:26:34 b1 Exp $";
 
+#include <stdio.h>
 #include <ctype.h>
 
 // Functions.
 #include "i_system.h"
 #include "m_swap.h"
 #include "z_zone.h"
-#include "v_video.h"
+#include "multires.h"
 #include "w_wad.h"
 #include "s_sound.h"
 
@@ -41,6 +42,7 @@ rcsid[] = "$Id: f_finale.c,v 1.5 1997/02/03 21:26:34 b1 Exp $";
 
 #include "doomstat.h"
 #include "r_state.h"
+#include "f_finale.h"
 
 // ?
 //#include "doomstat.h"
@@ -56,31 +58,31 @@ int		finalecount;
 #define	TEXTSPEED	3
 #define	TEXTWAIT	250
 
-char*	e1text = E1TEXT;
-char*	e2text = E2TEXT;
-char*	e3text = E3TEXT;
-char*	e4text = E4TEXT;
+#define	e1text E1TEXT
+#define	e2text E2TEXT
+#define	e3text E3TEXT
+#define	e4text E4TEXT
 
-char*	c1text = C1TEXT;
-char*	c2text = C2TEXT;
-char*	c3text = C3TEXT;
-char*	c4text = C4TEXT;
-char*	c5text = C5TEXT;
-char*	c6text = C6TEXT;
+#define	c1text C1TEXT
+#define	c2text C2TEXT
+#define	c3text C3TEXT
+#define	c4text C4TEXT
+#define	c5text C5TEXT
+#define	c6text C6TEXT
 
-char*	p1text = P1TEXT;
-char*	p2text = P2TEXT;
-char*	p3text = P3TEXT;
-char*	p4text = P4TEXT;
-char*	p5text = P5TEXT;
-char*	p6text = P6TEXT;
+#define	p1text P1TEXT
+#define	p2text P2TEXT
+#define	p3text P3TEXT
+#define	p4text P4TEXT
+#define	p5text P5TEXT
+#define	p6text P6TEXT
 
-char*	t1text = T1TEXT;
-char*	t2text = T2TEXT;
-char*	t3text = T3TEXT;
-char*	t4text = T4TEXT;
-char*	t5text = T5TEXT;
-char*	t6text = T6TEXT;
+#define	t1text T1TEXT
+#define	t2text T2TEXT
+#define	t3text T3TEXT
+#define	t4text T4TEXT
+#define	t5text T5TEXT
+#define	t6text T6TEXT
 
 char*	finaletext;
 char*	finaleflat;
@@ -147,27 +149,51 @@ void F_StartFinale (void)
 	  {
 	    case 6:
 	      finaleflat = "SLIME16";
-	      finaletext = c1text;
+              switch (gamemission) {
+                case doom2:     finaletext = c1text; break;
+                case pack_plut: finaletext = p1text; break;
+                case pack_tnt:  finaletext = t1text; break;
+                case doom: case none:}
 	      break;
 	    case 11:
 	      finaleflat = "RROCK14";
-	      finaletext = c2text;
+              switch (gamemission) {
+                case doom2:     finaletext = c2text; break;
+                case pack_plut: finaletext = p2text; break;
+                case pack_tnt:  finaletext = t2text; break;
+                case doom: case none:}
 	      break;
 	    case 20:
 	      finaleflat = "RROCK07";
-	      finaletext = c3text;
+              switch (gamemission) {
+                case doom2:     finaletext = c3text; break;
+                case pack_plut: finaletext = p3text; break;
+                case pack_tnt:  finaletext = t3text; break;
+                case doom: case none:}
 	      break;
 	    case 30:
 	      finaleflat = "RROCK17";
-	      finaletext = c4text;
+              switch (gamemission) {
+                case doom2:     finaletext = c4text; break;
+                case pack_plut: finaletext = p4text; break;
+                case pack_tnt:  finaletext = t4text; break;
+                case doom: case none:}
 	      break;
 	    case 15:
 	      finaleflat = "RROCK13";
-	      finaletext = c5text;
+              switch (gamemission) {
+                case doom2:     finaletext = c5text; break;
+                case pack_plut: finaletext = p5text; break;
+                case pack_tnt:  finaletext = t5text; break;
+                case doom: case none:}
 	      break;
 	    case 31:
 	      finaleflat = "RROCK19";
-	      finaletext = c6text;
+              switch (gamemission) {
+                case doom2:     finaletext = c6text; break;
+                case pack_plut: finaletext = p6text; break;
+                case pack_tnt:  finaletext = t6text; break;
+                case doom: case none:}
 	      break;
 	    default:
 	      // Ouch.
@@ -262,6 +288,8 @@ void F_TextWrite (void)
 {
     byte*	src;
     byte*	dest;
+    byte*   tempsrc;
+    short*  dest2;
     
     int		x,y,w;
     int		count;
@@ -272,21 +300,38 @@ void F_TextWrite (void)
     
     // erase the entire screen to a tiled background
     src = W_CacheLumpName ( finaleflat , PU_CACHE);
-    dest = screens[0];
 	
-    for (y=0 ; y<SCREENHEIGHT ; y++)
-    {
-	for (x=0 ; x<SCREENWIDTH/64 ; x++)
-	{
-	    memcpy (dest, src+((y&63)<<6), 64);
-	    dest += 64;
-	}
-	if (SCREENWIDTH&63)
-	{
-	    memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
-	    dest += (SCREENWIDTH&63);
-	}
-    }
+    if (BPP==1)
+      {
+      dest = screens[0];
+      for (y=0 ; y<SCREENHEIGHT ; y++)
+        {
+        for (x=0 ; x<SCREENWIDTH/64 ; x++)
+          {
+          memcpy (dest, src+((y&63)<<6), 64);
+          dest += 64;
+          }
+	     if (SCREENWIDTH&63)
+	       {
+	       memcpy (dest, src+((y&63)<<6), SCREENWIDTH&63);
+	       dest += (SCREENWIDTH&63);
+	       }
+        }
+      }
+    else
+      {
+      dest2	= (short *)(screens[0]);
+
+      for (y=0 ;	y<SCREENHEIGHT	; y++)
+        {
+        tempsrc=src+((y&63)<<6);
+        for (x=0;x<SCREENWIDTH;x++)
+          {
+          *dest2=palette_color[tempsrc[x&63]];
+          dest2++;
+          }
+        }
+      }
 
     V_MarkRect (0, 0, SCREENWIDTH, SCREENHEIGHT);
     
@@ -320,7 +365,7 @@ void F_TextWrite (void)
 	w = SHORT (hu_font[c]->width);
 	if (cx+w > SCREENWIDTH)
 	    break;
-	V_DrawPatch(cx, cy, 0, hu_font[c]);
+	V_DrawPatchInDirect(cx, cy, 0, hu_font[c]);
 	cx+=w;
     }
 	
@@ -331,30 +376,25 @@ void F_TextWrite (void)
 // Casting by id Software.
 //   in order of appearance
 //
-typedef struct
-{
-    char		*name;
-    mobjtype_t	type;
-} castinfo_t;
 
 castinfo_t	castorder[] = {
-    {CC_ZOMBIE, MT_POSSESSED},
-    {CC_SHOTGUN, MT_SHOTGUY},
-    {CC_HEAVY, MT_CHAINGUY},
-    {CC_IMP, MT_TROOP},
-    {CC_DEMON, MT_SERGEANT},
-    {CC_LOST, MT_SKULL},
-    {CC_CACO, MT_HEAD},
-    {CC_HELL, MT_KNIGHT},
-    {CC_BARON, MT_BRUISER},
-    {CC_ARACH, MT_BABY},
-    {CC_PAIN, MT_PAIN},
-    {CC_REVEN, MT_UNDEAD},
-    {CC_MANCU, MT_FATSO},
-    {CC_ARCH, MT_VILE},
-    {CC_SPIDER, MT_SPIDER},
-    {CC_CYBER, MT_CYBORG},
-    {CC_HERO, MT_PLAYER},
+    {NULL, MT_POSSESSED},
+    {NULL, MT_SHOTGUY},
+    {NULL, MT_CHAINGUY},
+    {NULL, MT_TROOP},
+    {NULL, MT_SERGEANT},
+    {NULL, MT_SKULL},
+    {NULL, MT_HEAD},
+    {NULL, MT_KNIGHT},
+    {NULL, MT_BRUISER},
+    {NULL, MT_BABY},
+    {NULL, MT_PAIN},
+    {NULL, MT_UNDEAD},
+    {NULL, MT_FATSO},
+    {NULL, MT_VILE},
+    {NULL, MT_SPIDER},
+    {NULL, MT_CYBORG},
+    {NULL, MT_PLAYER},
 
     {NULL,0}
 };
@@ -564,7 +604,7 @@ void F_CastPrint (char* text)
 	}
 		
 	w = SHORT (hu_font[c]->width);
-	V_DrawPatch(cx, 180, 0, hu_font[c]);
+	V_DrawPatchInDirect(cx, 180, 0, hu_font[c]);
 	cx+=w;
     }
 	
@@ -574,8 +614,6 @@ void F_CastPrint (char* text)
 //
 // F_CastDrawer
 //
-void V_DrawPatchFlipped (int x, int y, int scrn, patch_t *patch);
-
 void F_CastDrawer (void)
 {
     spritedef_t*	sprdef;
@@ -585,7 +623,7 @@ void F_CastDrawer (void)
     patch_t*		patch;
     
     // erase the entire screen to a background
-    V_DrawPatch (0,0,0, W_CacheLumpName ("BOSSBACK", PU_CACHE));
+    V_DrawPatchInDirect (0,0,0, W_CacheLumpName ("BOSSBACK", PU_CACHE));
 
     F_CastPrint (castorder[castnum].name);
     
@@ -597,9 +635,9 @@ void F_CastDrawer (void)
 			
     patch = W_CacheLumpNum (lump+firstspritelump, PU_CACHE);
     if (flip)
-	V_DrawPatchFlipped (160,170,0,patch);
+	V_DrawPatchInDirectFlipped (160,170,0,patch);
     else
-	V_DrawPatch (160,170,0,patch);
+	V_DrawPatchInDirect (160,170,0,patch);
 }
 
 
@@ -611,31 +649,52 @@ F_DrawPatchCol
 ( int		x,
   patch_t*	patch,
   int		col )
-{
-    column_t*	column;
-    byte*	source;
-    byte*	dest;
-    byte*	desttop;
-    int		count;
+  {
+  column_t*	column;
+  byte*	source;
+  byte*	dest;
+  byte*	desttop;
+  short* dest2;
+  short* desttop2;
+  int		count;
 	
-    column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
-    desttop = screens[0]+x;
+  column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
 
+  if (BPP==1)
+    {
+    desttop = screens[0]+x+(SCREENWIDTH-320)/2+SCREENWIDTH*((SCREENHEIGHT-200)/2);
     // step through the posts in a column
     while (column->topdelta != 0xff )
-    {
-	source = (byte *)column + 3;
-	dest = desttop + column->topdelta*SCREENWIDTH;
-	count = column->length;
-		
-	while (count--)
-	{
-	    *dest = *source++;
-	    dest += SCREENWIDTH;
-	}
-	column = (column_t *)(  (byte *)column + column->length + 4 );
+      {
+      source = (byte *)column + 3;
+      dest = desttop + column->topdelta*SCREENWIDTH;
+      count = column->length;
+      while (count--)
+        {
+        *dest = *source++;
+        dest += SCREENWIDTH;
+        }
+      column = (column_t *)(  (byte *)column + column->length + 4 );
+      }
     }
-}
+  else
+    {
+    desttop2 = (short *)(screens[0]+2*(x+(SCREENWIDTH-320)/2+SCREENWIDTH*((SCREENHEIGHT-200)/2)));
+    // step through the posts in a column
+    while (column->topdelta != 0xff )
+      {
+      source = (byte *)column + 3;
+      dest2 = desttop2 + column->topdelta*SCREENWIDTH;
+      count = column->length;
+      while (count--)
+        {
+        *dest2 = palette_color[*source++];
+        dest2 += SCREENWIDTH;
+        }
+      column = (column_t *)(  (byte *)column + column->length + 4 );
+      }
+    }
+  }
 
 
 //
@@ -662,7 +721,9 @@ void F_BunnyScroll (void)
     if (scrolled < 0)
 	scrolled = 0;
 		
-    for ( x=0 ; x<SCREENWIDTH ; x++)
+   if ((SCREENWIDTH!=320)||(SCREENHEIGHT!=200))
+     memset(screens[0],2,SCREENWIDTH*SCREENHEIGHT*BPP);
+   for ( x=0 ; x<320 ; x++)
     {
 	if (x+scrolled < 320)
 	    F_DrawPatchCol (x, p1, x+scrolled);
@@ -674,8 +735,8 @@ void F_BunnyScroll (void)
 	return;
     if (finalecount < 1180)
     {
-	V_DrawPatch ((SCREENWIDTH-13*8)/2,
-		     (SCREENHEIGHT-8*8)/2,0, W_CacheLumpName ("END0",PU_CACHE));
+	V_DrawPatchInDirect ((320-13*8)/2,
+		     (200-8*8)/2,0, W_CacheLumpName ("END0",PU_CACHE));
 	laststage = 0;
 	return;
     }
@@ -690,7 +751,7 @@ void F_BunnyScroll (void)
     }
 	
     sprintf (name,"END%i",stage);
-    V_DrawPatch ((SCREENWIDTH-13*8)/2, (SCREENHEIGHT-8*8)/2,0, W_CacheLumpName (name,PU_CACHE));
+    V_DrawPatchInDirect ((320-13*8)/2, (200-8*8)/2,0, W_CacheLumpName (name,PU_CACHE));
 }
 
 
@@ -713,21 +774,21 @@ void F_Drawer (void)
 	{
 	  case 1:
 	    if ( gamemode == retail )
-	      V_DrawPatch (0,0,0,
+	      V_DrawPatchInDirect (0,0,0,
 			 W_CacheLumpName("CREDIT",PU_CACHE));
 	    else
-	      V_DrawPatch (0,0,0,
+	      V_DrawPatchInDirect (0,0,0,
 			 W_CacheLumpName("HELP2",PU_CACHE));
 	    break;
 	  case 2:
-	    V_DrawPatch(0,0,0,
+	    V_DrawPatchInDirect(0,0,0,
 			W_CacheLumpName("VICTORY2",PU_CACHE));
 	    break;
 	  case 3:
 	    F_BunnyScroll ();
 	    break;
 	  case 4:
-	    V_DrawPatch (0,0,0,
+	    V_DrawPatchInDirect (0,0,0,
 			 W_CacheLumpName("ENDPIC",PU_CACHE));
 	    break;
 	}

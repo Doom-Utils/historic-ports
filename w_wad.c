@@ -21,6 +21,19 @@
 //
 //-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
+//
+// This file contains various levels of support 
+// for using sprites and flats directly from a PWAD as well as some minor
+// optimisations for patches. Because there are some PWADs that do arcane
+// things with sprites, it is possible that this feature may not always
+// work (at least, not until I become aware of them and support them) and
+// so this feature can be turned off from the command line if necessary.
+//
+// See the file README.sprites for details.
+//
+// Martin Howe (martin.howe@dial.pipex.com), March 4th 1998
+//
 
 static const char
 rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
@@ -35,11 +48,15 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #include <fcntl.h>
 #include <sys/stat.h>
 //#include <alloca.h>
-//#define O_BINARY		0
+#endif
+
+#ifdef LINUX
+#define O_BINARY              0
 #endif
 
 #include "doomtype.h"
 #include "m_swap.h"
+#include "m_argv.h"
 #include "i_system.h"
 #include "z_zone.h"
 
@@ -47,10 +64,6 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 #pragma implementation "w_wad.h"
 #endif
 #include "w_wad.h"
-
-
-
-
 
 
 //
@@ -63,6 +76,577 @@ int			numlumps;
 
 void**			lumpcache;
 
+#ifdef LINUX
+#define strcmpi strcasecmp
+
+void strupr(char* s)
+  {
+  while (*s) {*s=toupper(*s);s++;}
+  }
+#endif
+
+
+// Sprites, Flats, Patches
+int     sprite_lists=0;         // number of sprite begin..end sections found
+int     flat_lists=0;           // number of flat begin..end sections found
+int     patch_lists=0;          // number of patch begin..end sections found
+int     lax_list_syntax=1;      // use commonly found begin..end syntax
+int     lax_sprite_rot=0;       // disengage sprite rotation/limit checks
+int     group_sprites=0;        // enable sprite optimisations
+int     group_flats=0;          // enable sprite optimisations
+int     group_patches=0;        // enable sprite optimisations
+
+int W_IsS_START(char *name)
+//
+// Is the name a sprite list start flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='S') &&
+             (name[1]=='_') &&
+             (name[2]=='S') &&
+             (name[3]=='T') &&
+             (name[4]=='A') &&
+             (name[5]=='R') &&
+             (name[6]=='T') &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='S') &&
+             (name[1]=='S') &&
+             (name[2]=='_') &&
+             (name[3]=='S') &&
+             (name[4]=='T') &&
+             (name[5]=='A') &&
+             (name[6]=='R') &&
+             (name[7]=='T') );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsS_START: flag SS_START encountered in sprites list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='S';
+     name[1]='_';
+     name[2]='S';
+     name[3]='T';
+     name[4]='A';
+     name[5]='R';
+     name[6]='T';
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsS_END(char *name)
+//
+// Is the name a sprite list end flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='S') &&
+             (name[1]=='_') &&
+             (name[2]=='E') &&
+             (name[3]=='N') &&
+             (name[4]=='D') &&
+             (name[5]== 0 ) &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='S') &&
+             (name[1]=='S') &&
+             (name[2]=='_') &&
+             (name[3]=='E') &&
+             (name[4]=='N') &&
+             (name[5]=='D') &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsS_END: flag SS_END encountered in sprites list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='S';
+     name[1]='_';
+     name[2]='E';
+     name[3]='N';
+     name[4]='D';
+     name[5]= 0 ;
+     name[6]= 0 ;
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsF_START(char *name)
+//
+// Is the name a flat list start flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='F') &&
+             (name[1]=='_') &&
+             (name[2]=='S') &&
+             (name[3]=='T') &&
+             (name[4]=='A') &&
+             (name[5]=='R') &&
+             (name[6]=='T') &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='F') &&
+             (name[1]=='F') &&
+             (name[2]=='_') &&
+             (name[3]=='S') &&
+             (name[4]=='T') &&
+             (name[5]=='A') &&
+             (name[6]=='R') &&
+             (name[7]=='T') );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsF_START: flag FF_START encountered in flats list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='F';
+     name[1]='_';
+     name[2]='S';
+     name[3]='T';
+     name[4]='A';
+     name[5]='R';
+     name[6]='T';
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsF_END(char *name)
+//
+// Is the name a flat list end flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='F') &&
+             (name[1]=='_') &&
+             (name[2]=='E') &&
+             (name[3]=='N') &&
+             (name[4]=='D') &&
+             (name[5]== 0 ) &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='F') &&
+             (name[1]=='F') &&
+             (name[2]=='_') &&
+             (name[3]=='E') &&
+             (name[4]=='N') &&
+             (name[5]=='D') &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsF_END: flag FF_END encountered in flats list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='F';
+     name[1]='_';
+     name[2]='E';
+     name[3]='N';
+     name[4]='D';
+     name[5]= 0 ;
+     name[6]= 0 ;
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsP_START(char *name)
+//
+// Is the name a patch list start flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='P') &&
+             (name[1]=='_') &&
+             (name[2]=='S') &&
+             (name[3]=='T') &&
+             (name[4]=='A') &&
+             (name[5]=='R') &&
+             (name[6]=='T') &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='P') &&
+             (name[1]=='P') &&
+             (name[2]=='_') &&
+             (name[3]=='S') &&
+             (name[4]=='T') &&
+             (name[5]=='A') &&
+             (name[6]=='R') &&
+             (name[7]=='T') );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsP_START: flag PP_START encountered in patches list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='P';
+     name[1]='_';
+     name[2]='S';
+     name[3]='T';
+     name[4]='A';
+     name[5]='R';
+     name[6]='T';
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsP_END(char *name)
+//
+// Is the name a patches list end flag?
+// If lax syntax match, fix up to standard syntax.
+//
+{
+  int result,lax;
+
+  result = ( (name[0]=='P') &&
+             (name[1]=='_') &&
+             (name[2]=='E') &&
+             (name[3]=='N') &&
+             (name[4]=='D') &&
+             (name[5]== 0 ) &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  lax    = ( (!result) &&
+             (name[0]=='P') &&
+             (name[1]=='P') &&
+             (name[2]=='_') &&
+             (name[3]=='E') &&
+             (name[4]=='N') &&
+             (name[5]=='D') &&
+             (name[6]== 0 ) &&
+             (name[7]== 0 ) );
+  if (lax)
+  {
+     if (!lax_list_syntax)
+        I_Error("W_IsP_END: flag PP_END encountered in patches list");
+
+     //fix up flag to standard syntax
+     result=1;
+     name[0]='P';
+     name[1]='_';
+     name[2]='E';
+     name[3]='N';
+     name[4]='D';
+     name[5]= 0 ;
+     name[6]= 0 ;
+     name[7]= 0 ;
+  }
+
+  return result;
+
+}
+
+int W_IsNullName(char *name)
+//
+// Return 1 if the name is null
+//
+{
+  return ( (name[0]==0) &&
+           (name[1]==0) &&
+           (name[2]==0) &&
+           (name[3]==0) &&
+           (name[4]==0) &&
+           (name[5]==0) &&
+           (name[6]==0) &&
+           (name[7]==0) );
+}
+
+int W_IsBadSpriteFlag(char *name)
+//
+// Return 1 if the name is one of the redundant sprite list flags S1_START,
+// S1_END, S2_START or S2_END. These are oft-encountered hacks that some
+// editors need and are not recognised or needed by Doom.
+//
+{
+  return ( ((name[0]=='S') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='S') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 ))
+          ||
+           ((name[0]=='S') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='S') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 )) );
+}
+
+int W_IsBadFlatFlag(char *name)
+//
+// Return 1 if the name is one of the redundant flat list flags F1_START,
+// F1_END, F2_START or F2_END. These are oft-encountered hacks that some
+// editors need and are not recognised or needed by Doom.
+//
+{
+  return ( ((name[0]=='F') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='F') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 ))
+          ||
+           ((name[0]=='F') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='F') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 )) );
+}
+
+int W_IsBadPatchFlag(char *name)
+//
+// Return 1 if the name is one of the redundant patch list flags P1_START,
+// P1_END, P2_START or P2_END. These are oft-encountered hacks that some
+// editors need and are not recognised or needed by Doom.
+//
+{
+  return ( ((name[0]=='P') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='P') &&
+            (name[1]=='1') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 ))
+          ||
+           ((name[0]=='P') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='S') &&
+            (name[4]=='T') &&
+            (name[5]=='A') &&
+            (name[6]=='R') &&
+            (name[7]=='T'))
+          ||
+           ((name[0]=='P') &&
+            (name[1]=='2') &&
+            (name[2]=='_') &&
+            (name[3]=='E') &&
+            (name[4]=='N') &&
+            (name[5]=='D') &&
+            (name[6]== 0 ) &&
+            (name[7]== 0 )) );
+}
+
+void W_FindAndDeleteLump(
+   lumpinfo_t* first,    /* first lump in list - stop when get to it */
+   lumpinfo_t* lump_p,   /* lump just after one to start at          */
+   char *name)           /* name of lump to remove if found          */
+//
+// Find lump by name, starting before specifed pointer.
+// Overwrite name with nulls if found. This is used to remove
+// the originals of sprite entries duplicated in a PWAD, the
+// sprite code doesn't like two sprite lumps of the same name
+// existing in the sprites list. It may also speed things up
+// slightly where flats and ptches are concerned.
+//
+{
+    union {
+        char    s[9];
+	int	x[2];
+    } name8;
+    
+    int		v1;
+    int		v2;
+
+    // make the name into two integers for easy compares
+    strncpy (name8.s,name,8);
+
+    // in case the name was a full 8 chars
+    name8.s[8] = 0;
+
+    v1 = name8.x[0];
+    v2 = name8.x[1];
+
+    do {
+        lump_p--;
+    } while ((lump_p != first)
+             && ((*(int *)lump_p->name != v1)
+                 || (*(int *)&lump_p->name[4] != v2)));
+
+    if (   (*(int *)lump_p->name == v1)
+        && (*(int *)&lump_p->name[4] == v2))
+          memset(lump_p,0,sizeof(lumpinfo_t));
+}
+
+void W_GroupList(int (*startfunc)(char *name),
+                 int (*endfunc)(char *name),
+                 int (*badfunc)(char *name),
+                 char *listtype)
+//
+//  Group the sprite/flat/patch list of the various WADs (including the
+//  IWAD) into one. The supplied functions each specify one of the start,
+//  end and redundant (bad) flag-recognising functions defined previously.
+//
+{
+    int newnumlumps=0;
+    lumpinfo_t* lumpinfo_copy;
+    lumpinfo_t* lump_s;
+    lumpinfo_t* lump_d; /* dest, source */
+    lumpinfo_t* lump_t; /* temp */
+
+    lumpinfo_copy=malloc(numlumps*sizeof(lumpinfo_t));
+    if (!lumpinfo)
+        I_Error ("Couldn't malloc lumpinfo_copy");
+
+    lump_s = lumpinfo;
+    lump_d = lumpinfo_copy;
+
+    /* skip to first s_start flag */
+    while ( (lump_s < lumpinfo+numlumps)
+           &&
+            (!(*startfunc)(lump_s->name)) ) lump_s++;
+    /* copy the first s_start */
+    memcpy(lump_d++,lump_s,sizeof(lumpinfo_t));
+    /* prepare for loop below to skip over imaginary s_end */
+    lump_d++;
+    do
+    { /* skip through entries */
+      if (!(*startfunc)(lump_s->name))
+      {
+         lump_s++;
+      }
+      else
+      {
+        lump_d--; /* skip back to overwrite previous s_end */
+        memset(lump_s++,0,sizeof(lumpinfo_t)); /* zap S_START, go to next */
+        /* copy rest of this sprite group, including the s_end */
+        do {                                                        
+          /* for each sprite, remove the original if it exists */
+          W_FindAndDeleteLump(lumpinfo_copy,lump_d,lump_s->name);
+          /* copy it */
+          memcpy(lump_d,lump_s,sizeof(lumpinfo_t));
+          /* zap the lump in the original list */
+          memset(lump_s++,0,sizeof(lumpinfo_t));
+        } while (!(*endfunc)((lump_d++)->name));
+      }
+    } while (lump_s < lumpinfo+numlumps);
+
+    /* now copy other, non-sprite entries */
+    lump_s = lumpinfo;
+/*  lump_d = at next free slot in lumpinfo_copy */
+    while (lump_s < lumpinfo+numlumps)  /* MAJOR CHANGE: this is now a while loop */
+    { /* skip through entries */        /* instead of a DO loop */
+      if (!W_IsNullName(lump_s->name))
+      {
+        memcpy(lump_d++,lump_s,sizeof(lumpinfo_t));
+      }
+      lump_s++;
+    };
+
+    /* now replace original lumpinfo, squeezing out blanked sprites */
+/*  lump_d = at next "free slot" in lumpinfo_copy */
+    lump_t=lumpinfo;
+    lump_s=lumpinfo_copy;
+    while (lump_s < lump_d) /* MINOR CHANGE: condition was (lump_s != lump_d) */
+    { 
+      if ((!W_IsNullName(lump_s->name)) && (!(*badfunc)(lump_s->name)) )
+      {
+        newnumlumps++;
+        memcpy(lump_t++,lump_s,sizeof(lumpinfo_t));
+      }
+      lump_s++;
+    }
+    printf("Grouped %s: old numlumps=%d, new numlumps=%d\n",
+            listtype,numlumps,newnumlumps);
+//  getchar();
+    numlumps=newnumlumps;
+    free(lumpinfo_copy);
+    realloc(lumpinfo,numlumps*sizeof(lumpinfo_t));
+    if (!lumpinfo)
+	I_Error ("Couldn't realloc lumpinfo");
+}
 
 #define strcmpi	strcasecmp
 
@@ -80,6 +664,7 @@ int filelength (int handle)
 
     return fileinfo.st_size;
 }
+
 
 
 void
@@ -219,6 +804,21 @@ void W_AddFile (char *filename)
 	lump_p->position = LONG(fileinfo->filepos);
 	lump_p->size = LONG(fileinfo->size);
 	strncpy (lump_p->name, fileinfo->name, 8);
+        if (group_sprites)
+        {
+          sprite_lists += (W_IsS_START(lump_p->name));
+          sprite_lists += (W_IsS_END(lump_p->name));
+        }
+        if (group_flats)
+        {
+          flat_lists += (W_IsF_START(lump_p->name));
+          flat_lists += (W_IsF_END(lump_p->name));
+        }
+        if (group_patches)
+        {
+          patch_lists += (W_IsP_START(lump_p->name));
+          patch_lists += (W_IsP_END(lump_p->name));
+        }
     }
 	
     if (reloadname)
@@ -276,6 +876,8 @@ void W_Reload (void)
 
 
 
+
+
 //
 // W_InitMultipleFiles
 // Pass a null terminated list of files to use.
@@ -292,7 +894,27 @@ void W_Reload (void)
 void W_InitMultipleFiles (char** filenames)
 {	
     int		size;
-    
+
+    // command line options for grouping sprites, flats & patches
+    if (M_CheckParm("-gfixsfp"))
+    {                      //turn on basic list group options
+        group_sprites=1;
+        group_flats=1;
+        group_patches=1;
+    }
+    if (M_CheckParm("-gfixall"))
+    {
+        group_sprites=1;   //turn on ALL list group options
+        group_flats=1;
+        group_patches=1;
+        lax_sprite_rot=1;
+    }
+    group_sprites=(group_sprites || (M_CheckParm("-gfixspr")));
+    group_flats=(group_flats || (M_CheckParm("-gfixflt")));
+    group_patches=(group_patches || (M_CheckParm("-gfixpat")));
+    lax_list_syntax=(lax_list_syntax && (!M_CheckParm("-gstrict")));
+    lax_sprite_rot=(lax_sprite_rot || (M_CheckParm("-gignrot")));
+
     // open all the files, load headers, and count lumps
     numlumps = 0;
 
@@ -304,7 +926,25 @@ void W_InitMultipleFiles (char** filenames)
 
     if (!numlumps)
 	I_Error ("W_InitFiles: no files found");
-    
+
+    // check for errors
+    if ((sprite_lists %2) && group_sprites)
+      I_Error("W_InitMultipleFiles: sprite begin..end flags don't match");
+    if ((flat_lists %2)   && group_flats)
+      I_Error("W_InitMultipleFiles: flat begin..end flags don't match");
+    if ((patch_lists %2)  && group_patches)
+      I_Error("W_InitMultipleFiles: patch begin..end flags don't match");
+
+    //group lists
+    if ((sprite_lists >2) && group_sprites)
+       W_GroupList(&W_IsS_START,&W_IsS_END,&W_IsBadSpriteFlag,"sprites");
+    if ((flat_lists >2)   && group_flats)
+       W_GroupList(&W_IsF_START,&W_IsF_END,&W_IsBadFlatFlag,"flats");
+    if ((patch_lists >2)  && group_patches)
+       W_GroupList(&W_IsP_START,&W_IsP_END,&W_IsBadPatchFlag,"patches");
+    if (lax_sprite_rot)
+       printf("Disengaging sprite rotation/limit checks\n");
+
     // set up caching
     size = numlumps * sizeof(*lumpcache);
     lumpcache = malloc (size);
@@ -313,6 +953,7 @@ void W_InitMultipleFiles (char** filenames)
 	I_Error ("Couldn't allocate lumpcache");
 
     memset (lumpcache,0, size);
+
 }
 
 

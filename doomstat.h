@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -41,6 +41,13 @@
 #pragma interface
 #endif
 
+#ifndef DJGPP
+extern short palette_color[256];
+extern int key_shifts;
+extern int KB_CAPSLOCK_FLAG;
+#else
+#include <allegro.h>
+#endif
 
 
 // ------------------------
@@ -285,6 +292,72 @@ extern  int             nettics[MAXNETNODES];
 
 extern  ticcmd_t        netcmds[MAXPLAYERS][BACKUPTICS];
 extern	int		ticdup;
+
+//stuff changed by dehacked patches
+extern int deh_inithealth;
+extern int deh_initbullets;
+extern int deh_maxhealth;
+extern int deh_maxarmor;
+extern int deh_greenac;
+extern int deh_blueac;
+extern int deh_maxsoulhealth;
+extern int deh_soulhealth;
+extern int deh_megahealth;
+extern int deh_godhealth;
+extern int deh_idfaarmor;
+extern int deh_idfaac;
+extern int deh_idkfaarmor;
+extern int deh_idkfaac;
+extern int deh_bfgcells;
+extern int deh_infight;  //not yet implemented!
+
+
+//misc stuff
+extern boolean newhupd;
+extern int newnmrespawn;
+extern int LessAccurateMon;
+extern int rotatemap;
+extern int ItemRespawn;
+extern int showstats;
+extern int novert;
+extern int swapstereo;
+extern int newhud;
+extern int crosshair;
+extern int screenblocks;
+extern int RandomInfight;
+extern int TotalWar;
+extern int NewAI;
+extern int HumanMad;
+extern int HumanExplode;
+extern int stretchsky;
+extern int grav;
+extern int shootupdown;
+
+//cd-audio stuff
+extern int cdaudio;
+extern int cdtrack;
+extern int numtracks;
+extern int starttrack;
+extern volatile int cdcounter;
+
+//okay, heres the resolution/hicolor:
+extern int SCREENWIDTH;
+extern int SCREENHEIGHT;
+extern int SCREENPITCH;
+extern int BPP;    //BYTES per pixel, 1=256 color, 2=hi color
+extern int weirdaspect;   //1 means 8:5 aspect ratio, 0 means 4:3 aspect ratio
+extern short hicolortransmask1;  //mask for hi-color transparancy
+extern short hicolortransmask2;  //mask for hi-color transparancy
+extern char *translucencytable25;
+extern char *translucencytable50;
+extern char *translucencytable75;
+extern int transluc;
+
+//mlook stuff
+extern fixed_t updownangle;
+extern fixed_t keylookspeed;
+extern int mlookon;
+extern int invertmouse;
 
 
 

@@ -26,8 +26,10 @@
 static const char
 rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 
-
 #include <stdio.h>
+#ifdef DJGPP
+#include <bcd.h>
+#endif
 
 #include "i_system.h"
 #include "i_video.h"
@@ -45,6 +47,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 
 #include "p_local.h"
 #include "p_inter.h"
+#include "p_mobj.h"
 
 #include "am_map.h"
 #include "m_cheat.h"
@@ -52,7 +55,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #include "s_sound.h"
 
 // Needs access to LFB.
-#include "v_video.h"
+#include "multires.h"
 
 // State.
 #include "doomstat.h"
@@ -60,6 +63,7 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+#include "allegvid.h"
 
 //
 // STATUS BAR DATA
@@ -83,11 +87,11 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #define ST_TOGGLECHAT		KEYD_ENTER
 
 // Location of status bar
-#define ST_X				0
-#define ST_X2				104
+#define ST_X				(((SCREENWIDTH-320)/2)+0)
+#define ST_X2				(((SCREENWIDTH-320)/2)+104)
 
-#define ST_FX  			143
-#define ST_FY  			169
+#define ST_FX  			(((SCREENWIDTH-320)/2)+143)
+#define ST_FY  			(SCREENHEIGHT-(200-169))
 
 // Should be set to patch width
 //  for tall numbers later on
@@ -114,8 +118,8 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 #define ST_GODFACE			(ST_NUMPAINFACES*ST_FACESTRIDE)
 #define ST_DEADFACE			(ST_GODFACE+1)
 
-#define ST_FACESX			143
-#define ST_FACESY			168
+#define ST_FACESX			(((SCREENWIDTH-320)/2)+143)
+#define ST_FACESY			(SCREENHEIGHT-(200-168))
 
 #define ST_EVILGRINCOUNT		(2*TICRATE)
 #define ST_STRAIGHTFACECOUNT	(TICRATE/2)
@@ -136,106 +140,106 @@ rcsid[] = "$Id: st_stuff.c,v 1.6 1997/02/03 22:45:13 b1 Exp $";
 
 // AMMO number pos.
 #define ST_AMMOWIDTH		3	
-#define ST_AMMOX			44
-#define ST_AMMOY			171
+#define ST_AMMOX			(((SCREENWIDTH-320)/2)+44)
+#define ST_AMMOY			(SCREENHEIGHT-(200-171))
 
 // HEALTH number pos.
 #define ST_HEALTHWIDTH		3	
-#define ST_HEALTHX			90
-#define ST_HEALTHY			171
+#define ST_HEALTHX			(((SCREENWIDTH-320)/2)+90)
+#define ST_HEALTHY			(SCREENHEIGHT-(200-171))
 
 // Weapon pos.
-#define ST_ARMSX			111
-#define ST_ARMSY			172
-#define ST_ARMSBGX			104
-#define ST_ARMSBGY			168
+#define ST_ARMSX			(((SCREENWIDTH-320)/2)+111)
+#define ST_ARMSY			(SCREENHEIGHT-(200-172))
+#define ST_ARMSBGX			(((SCREENWIDTH-320)/2)+104)
+#define ST_ARMSBGY			(SCREENHEIGHT-(200-168))
 #define ST_ARMSXSPACE		12
 #define ST_ARMSYSPACE		10
 
 // Frags pos.
-#define ST_FRAGSX			138
-#define ST_FRAGSY			171	
+#define ST_FRAGSX			(((SCREENWIDTH-320)/2)+138)
+#define ST_FRAGSY			(SCREENHEIGHT-(200-171))
 #define ST_FRAGSWIDTH		2
 
 // ARMOR number pos.
 #define ST_ARMORWIDTH		3
-#define ST_ARMORX			221
-#define ST_ARMORY			171
+#define ST_ARMORX			(((SCREENWIDTH-320)/2)+221)
+#define ST_ARMORY			(SCREENHEIGHT-(200-171))
 
 // Key icon positions.
 #define ST_KEY0WIDTH		8
 #define ST_KEY0HEIGHT		5
-#define ST_KEY0X			239
-#define ST_KEY0Y			171
+#define ST_KEY0X			(((SCREENWIDTH-320)/2)+239)
+#define ST_KEY0Y			(SCREENHEIGHT-(200-171))
 #define ST_KEY1WIDTH		ST_KEY0WIDTH
-#define ST_KEY1X			239
-#define ST_KEY1Y			181
+#define ST_KEY1X			(((SCREENWIDTH-320)/2)+239)
+#define ST_KEY1Y			(SCREENHEIGHT-(200-181))
 #define ST_KEY2WIDTH		ST_KEY0WIDTH
-#define ST_KEY2X			239
-#define ST_KEY2Y			191
+#define ST_KEY2X			(((SCREENWIDTH-320)/2)+239)
+#define ST_KEY2Y			(SCREENHEIGHT-(200-191))
 
 // Ammunition counter.
 #define ST_AMMO0WIDTH		3
 #define ST_AMMO0HEIGHT		6
-#define ST_AMMO0X			288
-#define ST_AMMO0Y			173
+#define ST_AMMO0X			(((SCREENWIDTH-320)/2)+288)
+#define ST_AMMO0Y			(SCREENHEIGHT-(200-173))
 #define ST_AMMO1WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO1X			288
-#define ST_AMMO1Y			179
+#define ST_AMMO1X			(((SCREENWIDTH-320)/2)+288)
+#define ST_AMMO1Y			(SCREENHEIGHT-(200-179))
 #define ST_AMMO2WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO2X			288
-#define ST_AMMO2Y			191
+#define ST_AMMO2X			(((SCREENWIDTH-320)/2)+288)
+#define ST_AMMO2Y			(SCREENHEIGHT-(200-191))
 #define ST_AMMO3WIDTH		ST_AMMO0WIDTH
-#define ST_AMMO3X			288
-#define ST_AMMO3Y			185
+#define ST_AMMO3X			(((SCREENWIDTH-320)/2)+288)
+#define ST_AMMO3Y			(SCREENHEIGHT-(200-185))
 
 // Indicate maximum ammunition.
 // Only needed because backpack exists.
 #define ST_MAXAMMO0WIDTH		3
 #define ST_MAXAMMO0HEIGHT		5
-#define ST_MAXAMMO0X		314
-#define ST_MAXAMMO0Y		173
+#define ST_MAXAMMO0X		(((SCREENWIDTH-320)/2)+314)
+#define ST_MAXAMMO0Y		(SCREENHEIGHT-(200-173))
 #define ST_MAXAMMO1WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO1X		314
-#define ST_MAXAMMO1Y		179
+#define ST_MAXAMMO1X		(((SCREENWIDTH-320)/2)+314)
+#define ST_MAXAMMO1Y		(SCREENHEIGHT-(200-179))
 #define ST_MAXAMMO2WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO2X		314
-#define ST_MAXAMMO2Y		191
+#define ST_MAXAMMO2X		(((SCREENWIDTH-320)/2)+314)
+#define ST_MAXAMMO2Y		(SCREENHEIGHT-(200-191))
 #define ST_MAXAMMO3WIDTH		ST_MAXAMMO0WIDTH
-#define ST_MAXAMMO3X		314
-#define ST_MAXAMMO3Y		185
+#define ST_MAXAMMO3X		(((SCREENWIDTH-320)/2)+314)
+#define ST_MAXAMMO3Y		(SCREENHEIGHT-(200-185))
 
 // pistol
-#define ST_WEAPON0X			110 
-#define ST_WEAPON0Y			172
+#define ST_WEAPON0X			(((SCREENWIDTH-320)/2)+110)
+#define ST_WEAPON0Y			(SCREENHEIGHT-(200-172))
 
 // shotgun
-#define ST_WEAPON1X			122 
-#define ST_WEAPON1Y			172
+#define ST_WEAPON1X			(((SCREENWIDTH-320)/2)+122)
+#define ST_WEAPON1Y			(SCREENHEIGHT-(200-172))
 
 // chain gun
-#define ST_WEAPON2X			134 
-#define ST_WEAPON2Y			172
+#define ST_WEAPON2X			(((SCREENWIDTH-320)/2)+134)
+#define ST_WEAPON2Y			(SCREENHEIGHT-(200-172))
 
 // missile launcher
-#define ST_WEAPON3X			110 
-#define ST_WEAPON3Y			181
+#define ST_WEAPON3X			(((SCREENWIDTH-320)/2)+110)
+#define ST_WEAPON3Y			(SCREENHEIGHT-(200-181))
 
 // plasma gun
-#define ST_WEAPON4X			122 
-#define ST_WEAPON4Y			181
+#define ST_WEAPON4X			(((SCREENWIDTH-320)/2)+122)
+#define ST_WEAPON4Y			(SCREENHEIGHT-(200-181))
 
  // bfg
-#define ST_WEAPON5X			134
-#define ST_WEAPON5Y			181
+#define ST_WEAPON5X			(((SCREENWIDTH-320)/2)+134)
+#define ST_WEAPON5Y			(SCREENHEIGHT-(200-181))
 
 // WPNS title
-#define ST_WPNSX			109 
-#define ST_WPNSY			191
+#define ST_WPNSX			(((SCREENWIDTH-320)/2)+109)
+#define ST_WPNSY			(SCREENHEIGHT-(200-191))
 
  // DETH title
-#define ST_DETHX			109
-#define ST_DETHY			191
+#define ST_DETHX			(((SCREENWIDTH-320)/2)+109)
+#define ST_DETHY			(SCREENHEIGHT-(200-191))
 
 //Incoming messages window location
 //UNUSED
@@ -399,67 +403,101 @@ static int	st_randomnumber;
 // Yeah, right...
 unsigned char	cheat_mus_seq[] =
 {
-    0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff
+//    0xb2, 0x26, 0xb6, 0xae, 0xea, 1, 0, 0, 0xff
+'i','d','m','u','s',1,0,0,0xff
 };
 
 unsigned char	cheat_choppers_seq[] =
 {
-    0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
+//    0xb2, 0x26, 0xe2, 0x32, 0xf6, 0x2a, 0x2a, 0xa6, 0x6a, 0xea, 0xff // id...
+'i','d','c','h','o','p','p','e','r','s',0xff
 };
 
 unsigned char	cheat_god_seq[] =
 {
-    0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff  // iddqd
+//    0xb2, 0x26, 0x26, 0xaa, 0x26, 0xff  // iddqd
+'i','d','d','q','d',0xff
 };
 
 unsigned char	cheat_ammo_seq[] =
 {
-    0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
+//    0xb2, 0x26, 0xf2, 0x66, 0xa2, 0xff	// idkfa
+'i','d','k','f','a',0xff
 };
 
 unsigned char	cheat_ammonokey_seq[] =
 {
-    0xb2, 0x26, 0x66, 0xa2, 0xff	// idfa
+//    0xb2, 0x26, 0x66, 0xa2, 0xff	// idfa
+'i','d','f','a',0xff
 };
 
 
 // Smashing Pumpkins Into Samml Piles Of Putried Debris. 
 unsigned char	cheat_noclip_seq[] =
 {
-    0xb2, 0x26, 0xea, 0x2a, 0xb2,	// idspispopd
-    0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
+//    0xb2, 0x26, 0xea, 0x2a, 0xb2,	// idspispopd
+//    0xea, 0x2a, 0xf6, 0x2a, 0x26, 0xff
+'i','d','s','p','i','s','p','o','p','d',0xff
 };
 
 //
 unsigned char	cheat_commercial_noclip_seq[] =
 {
-    0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
+//    0xb2, 0x26, 0xe2, 0x36, 0xb2, 0x2a, 0xff	// idclip
+'i','d','c','l','i','p',0xff
 }; 
 
 
 
 unsigned char	cheat_powerup_seq[7][10] =
 {
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
+/*    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6e, 0xff }, 	// beholdv
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xea, 0xff }, 	// beholds
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xb2, 0xff }, 	// beholdi
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x6a, 0xff }, 	// beholdr
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xa2, 0xff }, 	// beholda
     { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0x36, 0xff }, 	// beholdl
-    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }		// behold
+    { 0xb2, 0x26, 0x62, 0xa6, 0x32, 0xf6, 0x36, 0x26, 0xff }		// behold*/
+    {'i','d','b','e','h','o','l','d','v',0xff},
+    {'i','d','b','e','h','o','l','d','s',0xff},
+    {'i','d','b','e','h','o','l','d','i',0xff},
+    {'i','d','b','e','h','o','l','d','r',0xff},
+    {'i','d','b','e','h','o','l','d','a',0xff},
+    {'i','d','b','e','h','o','l','d','l',0xff},
+    {'i','d','b','e','h','o','l','d',0xff}
 };
 
 
 unsigned char	cheat_clev_seq[] =
 {
-    0xb2, 0x26,  0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
+//    0xb2, 0x26,  0xe2, 0x36, 0xa6, 0x6e, 1, 0, 0, 0xff	// idclev
+'i','d','c','l','e','v',1,0,0,0xff
 };
 
 
 // my position cheat
 unsigned char	cheat_mypos_seq[] =
 {
-    0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff	// idmypos
+//    0xb2, 0x26, 0xb6, 0xba, 0x2a, 0xf6, 0xea, 0xff	// idmypos
+'i','d','m','y','p','o','s',0xff
+}; 
+
+//new cheats!
+unsigned char	cheat_cdnext_seq[] =
+{
+'c','d','n','e','x','t',0xff
+}; 
+unsigned char	cheat_cdprev_seq[] =
+{
+'c','d','p','r','e','v',0xff
+}; 
+unsigned char	cheat_killall_seq[] =
+{
+'h','o','t','a','r','u',0xff
+}; 
+unsigned char	cheat_showstats_seq[] =
+{
+'s','h','o','w','i','n','f','o',0xff
 }; 
 
 
@@ -486,10 +524,18 @@ cheatseq_t	cheat_choppers = { cheat_choppers_seq, 0 };
 cheatseq_t	cheat_clev = { cheat_clev_seq, 0 };
 cheatseq_t	cheat_mypos = { cheat_mypos_seq, 0 };
 
+//new cheats
+cheatseq_t	cheat_cdnext = { cheat_cdnext_seq, 0 };
+cheatseq_t	cheat_cdprev = { cheat_cdprev_seq, 0 };
+cheatseq_t	cheat_killall = { cheat_killall_seq, 0 };
+cheatseq_t	cheat_showstats = { cheat_showstats_seq, 0 };
+
 
 // 
 extern char*	mapnames[];
 
+//for cdaudio
+char tmpmsgstring[40];
 
 //
 // STATUS BAR CODE
@@ -506,7 +552,15 @@ void ST_refreshBackground(void)
 	if (netgame)
 	    V_DrawPatch(ST_FX, 0, BG, faceback);
 
-	V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
+   if (doublebufferflag==1)
+     {
+     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, 5);
+     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, 6);
+     }
+   else
+     {
+     V_CopyRect(ST_X, 0, BG, ST_WIDTH, ST_HEIGHT, ST_X, ST_Y, FG);
+     }
     }
 
 }
@@ -552,9 +606,9 @@ ST_Responder (event_t* ev)
 	if (plyr->cheats & CF_GODMODE)
 	{
 	  if (plyr->mo)
-	    plyr->mo->health = 100;
+	    plyr->mo->health = deh_godhealth;
 	  
-	  plyr->health = 100;
+	  plyr->health = deh_godhealth;
 	  plyr->message = STSTR_DQDON;
 	}
 	else 
@@ -563,8 +617,14 @@ ST_Responder (event_t* ev)
       // 'fa' cheat for killer fucking arsenal
       else if (cht_CheckCheat(&cheat_ammonokey, ev->data1))
       {
-	plyr->armorpoints = 200;
-	plyr->armortype = 2;
+	if (!plyr->backpack)
+	{
+	    for (i=0 ; i<NUMAMMO ; i++)
+		plyr->maxammo[i] *= 2;
+	    plyr->backpack = true;
+	}
+	plyr->armorpoints = deh_idfaarmor;
+	plyr->armortype = deh_idfaac;
 	
 	for (i=0;i<NUMWEAPONS;i++)
 	  plyr->weaponowned[i] = true;
@@ -577,8 +637,14 @@ ST_Responder (event_t* ev)
       // 'kfa' cheat for key full ammo
       else if (cht_CheckCheat(&cheat_ammo, ev->data1))
       {
-	plyr->armorpoints = 200;
-	plyr->armortype = 2;
+	if (!plyr->backpack)
+	{
+	    for (i=0 ; i<NUMAMMO ; i++)
+		plyr->maxammo[i] *= 2;
+	    plyr->backpack = true;
+	}
+	plyr->armorpoints = deh_idkfaarmor;
+	plyr->armortype = deh_idkfaac;
 	
 	for (i=0;i<NUMWEAPONS;i++)
 	  plyr->weaponowned[i] = true;
@@ -591,35 +657,26 @@ ST_Responder (event_t* ev)
 	
 	plyr->message = STSTR_KFAADDED;
       }
-      // 'mus' cheat for changing music
-      else if (cht_CheckCheat(&cheat_mus, ev->data1))
-      {
-	
-	char	buf[3];
-	int		musnum;
-	
-	plyr->message = STSTR_MUS;
-	cht_GetParam(&cheat_mus, buf);
-	
-	if (gamemode == commercial)
-	{
-	  musnum = mus_runnin + (buf[0]-'0')*10 + buf[1]-'0' - 1;
-	  
-	  if (((buf[0]-'0')*10 + buf[1]-'0') > 35)
-	    plyr->message = STSTR_NOMUS;
-	  else
-	    S_ChangeMusic(musnum, 1);
-	}
-	else
-	{
-	  musnum = mus_e1m1 + (buf[0]-'1')*9 + (buf[1]-'1');
-	  
-	  if (((buf[0]-'1')*9 + buf[1]-'1') > 31)
-	    plyr->message = STSTR_NOMUS;
-	  else
-	    S_ChangeMusic(musnum, 1);
-	}
-      }
+      else if (cht_CheckCheat(&cheat_killall, ev->data1))
+        {
+        int killcount=0;
+        thinker_t* currentthinker;
+
+        currentthinker = thinkercap.next;
+        while (currentthinker != &thinkercap)
+          {
+          if ( (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
+             && ((((((mobj_t *)currentthinker)->flags)&MF_COUNTKILL)==MF_COUNTKILL)||(((mobj_t *)currentthinker)->type==MT_SKULL))
+             && ((((mobj_t *)currentthinker)->health)>0) )
+               {
+               P_DamageMobj((mobj_t *)currentthinker,NULL,NULL,10000);
+               killcount++;
+               }
+          currentthinker = currentthinker->next;
+          }
+        sprintf(tmpmsgstring,"%d Monsters Killed",killcount);
+        plyr->message = tmpmsgstring;
+        }
       // Simplified, accepting both "noclip" and "idspispopd".
       // no clipping mode cheat
       else if ( cht_CheckCheat(&cheat_noclip, ev->data1) 
@@ -678,14 +735,13 @@ ST_Responder (event_t* ev)
       char		buf[3];
       int		epsd;
       int		map;
-      
       cht_GetParam(&cheat_clev, buf);
-      
+
       if (gamemode == commercial)
-      {
-	epsd = 0;
-	map = (buf[0] - '0')*10 + buf[1] - '0';
-      }
+       {
+       epsd = 1;
+       map = (buf[0] - '0')*10 + buf[1] - '0';
+       }
       else
       {
 	epsd = buf[0] - '0';
@@ -698,7 +754,6 @@ ST_Responder (event_t* ev)
 
       if (map < 1)
 	return false;
-      
       // Ohmygod - this is not going to work.
       if ((gamemode == retail)
 	  && ((epsd > 4) || (map > 9)))
@@ -720,6 +775,106 @@ ST_Responder (event_t* ev)
       plyr->message = STSTR_CLEV;
       G_DeferedInitNew(gameskill, epsd, map);
     }    
+  else if (cht_CheckCheat(&cheat_showstats, ev->data1))
+      {
+      showstats=!showstats;
+      }
+      // 'mus' cheat for changing music
+  else if (cht_CheckCheat(&cheat_mus, ev->data1))
+      {
+#ifdef DJGPP
+      if (cdaudio==1)
+        {
+        char buf[3];
+        int temptrack;
+
+        cht_GetParam(&cheat_mus, buf);
+        temptrack=(buf[0]-'0')*10 + buf[1]-'0';
+        if (bcd_track_is_audio(temptrack))
+          {
+          if (bcd_audio_busy())
+            {
+            bcd_stop();
+            I_WaitVBL(70);
+            }
+          cdtrack=temptrack;
+          bcd_play_track(cdtrack);
+          sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+          plyr->message = tmpmsgstring;
+          }
+        else
+          {
+          strcpy(tmpmsgstring,"CD Error: Invalid Track");
+          plyr->message = tmpmsgstring;
+          }
+        }
+      else
+#endif
+        {
+        char	buf[3];
+        int		musnum;
+	
+        plyr->message = STSTR_MUS;
+        cht_GetParam(&cheat_mus, buf);
+	
+        if (gamemode == commercial)
+          {
+          musnum = mus_runnin + (buf[0]-'0')*10 + buf[1]-'0' - 1;
+	  
+          if (((buf[0]-'0')*10 + buf[1]-'0') > 35)
+            plyr->message = STSTR_NOMUS;
+         else
+            S_ChangeMusic(musnum, 1);
+          }
+        else
+          {
+          musnum = mus_e1m1 + (buf[0]-'1')*9 + (buf[1]-'1');
+	  
+          if (((buf[0]-'1')*9 + buf[1]-'1') > 31)
+            plyr->message = STSTR_NOMUS;
+          else
+            S_ChangeMusic(musnum, 1);
+          }
+        }
+      }
+      //the new cheat codes
+#ifdef DJGPP
+  else if (cht_CheckCheat(&cheat_cdnext, ev->data1))
+        {
+        int temptrack;
+        if (bcd_audio_busy())
+          {
+          bcd_stop();
+          I_WaitVBL(70);
+          }
+        temptrack=cdtrack+1;
+        if (temptrack>(numtracks+starttrack-1))
+          temptrack=starttrack;
+        cdtrack=temptrack;
+        bcd_play_track(cdtrack);
+        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+        plyr->message = tmpmsgstring;
+        cdcounter=0;
+        }
+  else if (cht_CheckCheat(&cheat_cdprev, ev->data1))
+        {
+        int temptrack;
+        if (bcd_audio_busy())
+          {
+          bcd_stop();
+          I_WaitVBL(70);
+          }
+        temptrack=cdtrack-1;
+        if (temptrack<starttrack)
+          temptrack=numtracks+starttrack-1;
+        cdtrack=temptrack;
+        bcd_play_track(cdtrack);
+        sprintf(tmpmsgstring,"Playing Track %d on CD",cdtrack);
+        plyr->message = tmpmsgstring;
+        cdcounter=0;
+        }
+#endif
+
   }
   return false;
 }
@@ -1004,6 +1159,9 @@ void ST_doPaletteStuff(void)
     byte*	pal;
     int		cnt;
     int		bzc;
+    int redness;
+
+    redness=0;
 
     cnt = plyr->damagecount;
 
@@ -1023,7 +1181,8 @@ void ST_doPaletteStuff(void)
 	if (palette >= NUMREDPALS)
 	    palette = NUMREDPALS-1;
 
-	palette += STARTREDPALS;
+   redness=palette;
+   palette += STARTREDPALS;
     }
 
     else if (plyr->bonuscount)
@@ -1046,7 +1205,7 @@ void ST_doPaletteStuff(void)
     {
 	st_palette = palette;
 	pal = (byte *) W_CacheLumpNum (lu_palette, PU_CACHE)+palette*768;
-	I_SetPalette (pal);
+	I_SetPalette (pal,redness);
     }
 
 }
@@ -1101,6 +1260,8 @@ void ST_doRefresh(void)
 
 void ST_diffDraw(void)
 {
+
+
     // update all widgets
     ST_drawWidgets(false);
 }
@@ -1115,7 +1276,11 @@ void ST_Drawer (boolean fullscreen, boolean refresh)
     ST_doPaletteStuff();
 
     // If just after ST_Start(), refresh all
-    if (st_firsttime) ST_doRefresh();
+    if (st_firsttime||newhupd)
+      {
+      newhupd=false;
+      ST_doRefresh();
+      }
     // Otherwise, update as little as possible
     else ST_diffDraw();
 
@@ -1458,7 +1623,7 @@ void ST_Stop (void)
     if (st_stopped)
 	return;
 
-    I_SetPalette (W_CacheLumpNum (lu_palette, PU_CACHE));
+    I_SetPalette (W_CacheLumpNum (lu_palette, PU_CACHE),0);
 
     st_stopped = true;
 }
@@ -1467,5 +1632,5 @@ void ST_Init (void)
 {
     veryfirsttime = 0;
     ST_loadData();
-    screens[4] = (byte *) Z_Malloc(ST_WIDTH*ST_HEIGHT, PU_STATIC, 0);
+    screens[4] = (byte *) Z_Malloc(SCREENWIDTH*ST_HEIGHT*BPP, PU_STATIC, 0);
 }

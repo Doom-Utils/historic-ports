@@ -280,7 +280,7 @@ void P_PlayerThink (player_t* player)
     if (cmd->buttons & BT_SPECIAL)
 	cmd->buttons = 0;			
 		
-    if (cmd->buttons & BT_CHANGE)
+    if ((cmd->buttons & BT_CHANGE)&&(!(cmd->buttons&BT_DOSDOOM)))
     {
 	// The actual changing of the weapon is done
 	//  when the weapon psprite can do it
@@ -329,7 +329,16 @@ void P_PlayerThink (player_t* player)
     }
     else
 	player->usedown = false;
-    
+
+    //check for jump
+    if ((cmd->buttons & BT_JUMP)==BT_JUMP)
+      {
+      int onground;
+      onground = (player->mo->z <= player->mo->floorz);
+      if (onground)
+        player->mo->momz+=65536*8;
+      }
+
     // cycle psprites
     P_MovePsprites (player);
     

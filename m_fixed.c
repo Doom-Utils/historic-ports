@@ -39,7 +39,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 
 // Fixme. __USE_C_FIXED__ or something.
-
+/*
 fixed_t
 FixedMul
 ( fixed_t	a,
@@ -47,7 +47,7 @@ FixedMul
 {
     return ((long long) a * (long long) b) >> FRACBITS;
 }
-
+*/
 
 
 //
@@ -71,12 +71,9 @@ FixedDiv2
 ( fixed_t	a,
   fixed_t	b )
 {
-#if 0
-    long long c;
-    c = ((long long)a<<16) / ((long long)b);
-    return (fixed_t) c;
-#endif
+    return (((long long)a<<16) / ((long long)b));
 
+/*
     double c;
 
     c = ((double)a) / ((double)b) * FRACUNIT;
@@ -84,4 +81,5 @@ FixedDiv2
     if (c >= 2147483648.0 || c < -2147483648.0)
 	I_Error("FixedDiv: divide by zero");
     return (fixed_t) c;
+*/
 }

@@ -25,7 +25,6 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 
 #include <stdio.h>
 
-
 #include "z_zone.h"
 #include "doomdef.h"
 #include "st_stuff.h"
@@ -34,9 +33,10 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 
 #include "m_cheat.h"
 #include "i_system.h"
+#include "m_argv.h"
 
 // Needs access to LFB.
-#include "v_video.h"
+#include "multires.h"
 
 // State.
 #include "doomstat.h"
@@ -46,6 +46,7 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 #include "dstrings.h"
 
 #include "am_map.h"
+#include "m_misc.h"
 
 
 // For use if I do walls with outsides/insides
@@ -93,8 +94,8 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 #define AM_PANLEFTKEY	KEYD_LEFTARROW
 #define AM_ZOOMINKEY	'='
 #define AM_ZOOMOUTKEY	'-'
-#define AM_STARTKEY	KEYD_TAB
-#define AM_ENDKEY	KEYD_TAB
+#define AM_STARTKEY	key_map
+#define AM_ENDKEY	key_map
 #define AM_GOBIGKEY	'0'
 #define AM_FOLLOWKEY	'f'
 #define AM_GRIDKEY	'g'
@@ -115,15 +116,18 @@ static const char rcsid[] = "$Id: am_map.c,v 1.4 1997/02/03 21:24:33 b1 Exp $";
 // pulls out to 0.5x in 1 second
 #define M_ZOOMOUT       ((int) (FRACUNIT/1.02))
 
-// translates between frame-buffer and map distances
-#define FTOM(x) FixedMul(((x)<<16),scale_ftom)
+// translates between frame-buffer and map distances - moved down with rest of functions
+#define FTOM(x) FixedMul( ((x)<<16) ,scale_ftom)
 #define MTOF(x) (FixedMul((x),scale_mtof)>>16)
+
 // translates between frame-buffer and map coordinates
 #define CXMTOF(x)  (f_x + MTOF((x)-m_x))
 #define CYMTOF(y)  (f_y + (f_h - MTOF((y)-m_y)))
 
 // the following is crap
 #define LINE_NEVERSEE ML_DONTDRAW
+
+#define SBARHEIGHT 32
 
 typedef struct
 {
@@ -219,8 +223,8 @@ static int 	grid = 0;
 static int 	leveljuststarted = 1; 	// kluge until AM_LevelInit() is called
 
 boolean    	automapactive = false;
-static int 	finit_width = SCREENWIDTH;
-static int 	finit_height = SCREENHEIGHT - 32;
+static int 	finit_width;
+static int 	finit_height;
 
 // location of window on screen
 static int 	f_x;
@@ -284,22 +288,31 @@ static int markpointnum = 0; // next point to be assigned
 
 static int followplayer = 1; // specifies whether to follow the player around
 
-static unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
-static cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
+//static unsigned char cheat_amap_seq[] = { 0xb2, 0x26, 0x26, 0x2e, 0xff };
+static unsigned char cheat_amap_seq[] = { 'i','d','d','t', 0xff };
+cheatseq_t cheat_amap = { cheat_amap_seq, 0 };
 
 static boolean stopped = true;
 
 extern boolean viewactive;
 //extern byte screens[][SCREENWIDTH*SCREENHEIGHT];
-
-
+int newhud=false;
+boolean newhupd=false;
 
 void
-V_MarkRect
-( int	x,
-  int	y,
-  int	width,
-  int	height );
+AM_rotate
+( fixed_t*	x,
+  fixed_t*	y,
+  angle_t	a );
+
+void resinit_am_map_c(void)
+  {
+  finit_width = SCREENWIDTH;
+  finit_height = SCREENHEIGHT - 32;
+
+  if (M_CheckParm("-newmap"))
+    newhud=true;
+  }
 
 // Calculates the slope and slope according to the x-axis of a line
 // segment in map coordinates (with the upright y-axis n' all) so
@@ -460,7 +473,10 @@ void AM_initVariables(void)
     int pnum;
     static event_t st_notify = { ev_keyup, AM_MSGENTERED };
 
-    automapactive = true;
+    if (newhud==true)
+      automapactive = true;
+    else
+      automapactive=2;
     fb = screens[0];
 
     f_oldloc.x = MAXINT;
@@ -624,7 +640,7 @@ AM_Responder
 
     if (!automapactive)
     {
-	if (ev->type == ev_keydown && ev->data1 == AM_STARTKEY)
+	if (ev->type == ev_keydown && ((ev->data1 == (AM_STARTKEY>>16))||(ev->data1 == (AM_STARTKEY&0xffff))) )
 	{
 	    AM_Start ();
 	    viewactive = false;
@@ -662,11 +678,6 @@ AM_Responder
 	    mtof_zoommul = M_ZOOMIN;
 	    ftom_zoommul = M_ZOOMOUT;
 	    break;
-	  case AM_ENDKEY:
-	    bigstate = 0;
-	    viewactive = true;
-	    AM_Stop ();
-	    break;
 	  case AM_GOBIGKEY:
 	    bigstate = !bigstate;
 	    if (bigstate)
@@ -695,8 +706,25 @@ AM_Responder
 	    plr->message = AMSTR_MARKSCLEARED;
 	    break;
 	  default:
-	    cheatstate=0;
-	    rc = false;
+            if ((ev->data1==(AM_ENDKEY>>16))||(ev->data1==(AM_ENDKEY&0xffff)))
+              {
+              if ( automapactive == 1 )
+                {
+                newhupd=true;
+                automapactive=2;
+                }
+              else
+                {
+                bigstate = 0;
+                viewactive = true;
+                AM_Stop ();
+                }
+              }
+            else
+              {
+              cheatstate=0;
+	      rc = false;
+              }
 	}
 	if (!deathmatch && cht_CheckCheat(&cheat_amap, ev->data1))
 	{
@@ -783,7 +811,7 @@ void AM_doFollowPlayer(void)
 //
 void AM_updateLightLev(void)
 {
-    static nexttic = 0;
+    static int nexttic = 0;
     //static int litelevels[] = { 0, 3, 5, 6, 6, 7, 7, 7 };
     static int litelevels[] = { 0, 4, 7, 10, 12, 14, 15, 15 };
     static int litelevelscnt = 0;
@@ -832,7 +860,7 @@ void AM_Ticker (void)
 //
 void AM_clearFB(int color)
 {
-    memset(fb, color, f_w*f_h);
+    memset(fb, color, f_w*f_h*BPP);
 }
 
 
@@ -856,21 +884,21 @@ AM_clipMline
 	TOP	=8
     };
     
-    register	outcode1 = 0;
-    register	outcode2 = 0;
-    register	outside;
+    register	int outcode1 = 0;
+    register	int outcode2 = 0;
+    register	int outside;
     
     fpoint_t	tmp;
     int		dx;
     int		dy;
 
     
-#define DOOUTCODE(oc, mx, my) \
-    (oc) = 0; \
-    if ((my) < 0) (oc) |= TOP; \
-    else if ((my) >= f_h) (oc) |= BOTTOM; \
-    if ((mx) < 0) (oc) |= LEFT; \
-    else if ((mx) >= f_w) (oc) |= RIGHT;
+#define DOOUTCODE(oc, mx, my)\
+        (oc) = 0;\
+        if ((my) < 0) (oc) |= TOP;\
+        else if ((my) >= f_h) (oc) |= BOTTOM;\
+        if ((mx) < 0) (oc) |= LEFT;\
+        else if ((mx) >= f_w) (oc) |= RIGHT;
 
     
     // do trivial rejects and outcodes
@@ -974,8 +1002,10 @@ AM_clipMline
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
+// two functions - one for 8bpp, one for 16bpp
+
 void
-AM_drawFline
+AM_drawFline8
 ( fline_t*	fl,
   int		color )
 {
@@ -989,7 +1019,7 @@ AM_drawFline
     register int ay;
     register int d;
     
-    static fuck = 0;
+    static int fuck = 0;
 
     // For debugging only
     if (      fl->a.x < 0 || fl->a.x >= f_w
@@ -1000,8 +1030,6 @@ AM_drawFline
 	fprintf(stderr, "fuck %d \r", fuck++);
 	return;
     }
-
-#define PUTDOT(xx,yy,cc) fb[(yy)*f_w+(xx)]=(cc)
 
     dx = fl->b.x - fl->a.x;
     ax = 2 * (dx<0 ? -dx : dx);
@@ -1019,7 +1047,7 @@ AM_drawFline
 	d = ay - ax/2;
 	while (1)
 	{
-	    PUTDOT(x,y,color);
+       fb[(y)*f_w+(x)]=(color);
 	    if (x == fl->b.x) return;
 	    if (d>=0)
 	    {
@@ -1035,7 +1063,83 @@ AM_drawFline
 	d = ax - ay/2;
 	while (1)
 	{
-	    PUTDOT(x, y, color);
+       fb[(y)*f_w+(x)]=(color);
+	    if (y == fl->b.y) return;
+	    if (d >= 0)
+	    {
+		x += sx;
+		d -= ay;
+	    }
+	    y += sy;
+	    d += ax;
+	}
+    }
+}
+
+void
+AM_drawFline16
+( fline_t*	fl,
+  int		color )
+{
+    register int x;
+    register int y;
+    register int dx;
+    register int dy;
+    register int sx;
+    register int sy;
+    register int ax;
+    register int ay;
+    register int d;
+    
+    static int fuck = 0;
+
+    short *tempbuffer;
+
+
+    tempbuffer=(short *)fb;
+    // For debugging only
+    if (      fl->a.x < 0 || fl->a.x >= f_w
+	   || fl->a.y < 0 || fl->a.y >= f_h
+	   || fl->b.x < 0 || fl->b.x >= f_w
+	   || fl->b.y < 0 || fl->b.y >= f_h)
+    {
+	fprintf(stderr, "fuck %d \r", fuck++);
+	return;
+    }
+
+    dx = fl->b.x - fl->a.x;
+    ax = 2 * (dx<0 ? -dx : dx);
+    sx = dx<0 ? -1 : 1;
+
+    dy = fl->b.y - fl->a.y;
+    ay = 2 * (dy<0 ? -dy : dy);
+    sy = dy<0 ? -1 : 1;
+
+    x = fl->a.x;
+    y = fl->a.y;
+
+    if (ax > ay)
+    {
+	d = ay - ax/2;
+	while (1)
+	{
+       tempbuffer[(y)*f_w+(x)]=palette_color[color];
+	    if (x == fl->b.x) return;
+	    if (d>=0)
+	    {
+		y += sy;
+		d -= ax;
+	    }
+	    x += sx;
+	    d += ay;
+	}
+    }
+    else
+    {
+	d = ax - ay/2;
+	while (1)
+	{
+       tempbuffer[(y)*f_w+(x)]=palette_color[color];
 	    if (y == fl->b.y) return;
 	    if (d >= 0)
 	    {
@@ -1049,6 +1153,22 @@ AM_drawFline
 }
 
 
+
+void
+AM_drawFline
+( fline_t*	fl,
+  int		color )
+{
+if ( automapactive == 1 )
+  color = GREENS + (GREENRANGE/2)+(color%(GREENRANGE/2));
+
+  if (BPP==1)
+  AM_drawFline8(fl,color);
+else
+  AM_drawFline16(fl,color);
+}
+
+
 //
 // Clip lines, draw visible part sof lines.
 //
@@ -1059,6 +1179,8 @@ AM_drawMline
 {
     static fline_t fl;
 
+   if ( automapactive == 1 )
+      color = GREENS + (GREENRANGE/2)+(color%(GREENRANGE/2));
     if (AM_clipMline(ml, &fl))
 	AM_drawFline(&fl, color); // draws it on frame buffer using fb coords
 }
@@ -1125,6 +1247,23 @@ void AM_drawWalls(void)
 	l.a.y = lines[i].v1->y;
 	l.b.x = lines[i].v2->x;
 	l.b.y = lines[i].v2->y;
+
+        if (rotatemap)
+          {
+          // rotate map point around player location
+          // negative angles rotate 2D points counter clockwise
+          l.a.x -= plr->mo->x;
+          l.b.x -= plr->mo->x;
+          l.a.y -= plr->mo->y;
+          l.b.y -= plr->mo->y;
+          AM_rotate(&l.a.x, &l.a.y, -plr->mo->angle+ANG90);
+          AM_rotate(&l.b.x, &l.b.y, -plr->mo->angle+ANG90);
+          l.a.x += plr->mo->x;
+          l.b.x += plr->mo->x;
+          l.a.y += plr->mo->y;
+          l.b.y += plr->mo->y;
+          }
+
 	if (cheating || (lines[i].flags & ML_MAPPED))
 	{
 	    if ((lines[i].flags & LINE_NEVERSEE) && !cheating)
@@ -1241,19 +1380,24 @@ void AM_drawPlayers(void)
 {
     int		i;
     player_t*	p;
-    static int 	their_colors[] = { GREENS, GRAYS, BROWNS, REDS };
+    static int 	their_colors[] = { GREENS, GRAYS, BROWNS, REDS, GREENS, GRAYS, BROWNS, REDS };
     int		their_color = -1;
     int		color;
 
     if (!netgame)
     {
+    if (rotatemap)
+      i=ANG90;
+    else
+      i=plr->mo->angle;
+
 	if (cheating)
 	    AM_drawLineCharacter
 		(cheat_player_arrow, NUMCHEATPLYRLINES, 0,
-		 plr->mo->angle, WHITE, plr->mo->x, plr->mo->y);
+		 i, WHITE, plr->mo->x, plr->mo->y);
 	else
 	    AM_drawLineCharacter
-		(player_arrow, NUMPLYRLINES, 0, plr->mo->angle,
+		(player_arrow, NUMPLYRLINES, 0, i,
 		 WHITE, plr->mo->x, plr->mo->y);
 	return;
     }
@@ -1288,17 +1432,29 @@ AM_drawThings
 {
     int		i;
     mobj_t*	t;
+    fixed_t     x,y;
 
     for (i=0;i<numsectors;i++)
     {
 	t = sectors[i].thinglist;
 	while (t)
-	{
-	    AM_drawLineCharacter
-		(thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
-		 16<<FRACBITS, t->angle, colors+lightlev, t->x, t->y);
-	    t = t->snext;
-	}
+	  {
+          x = t->x;
+          y = t->y;
+          if (rotatemap)
+            {
+            // rotate coordinates so they are on the map correctly
+            x -= plr->mo->x;
+            y -= plr->mo->y;
+            AM_rotate(&x, &y, -plr->mo->angle+ANG90);
+            x += plr->mo->x;
+            y += plr->mo->y;
+            }
+  	  AM_drawLineCharacter
+  	    (thintriangle_guy, NUMTHINTRIANGLEGUYLINES,
+  	    16<<FRACBITS, t->angle, colors+lightlev, x, y);
+  	  t = t->snext;
+          }
     }
 }
 
@@ -1324,22 +1480,32 @@ void AM_drawMarks(void)
 }
 
 void AM_drawCrosshair(int color)
-{
+  {
+  if (BPP==1)
     fb[(f_w*(f_h+1))/2] = color; // single point for now
+  else
+    {
+    short *tempbuffer;
 
+    tempbuffer=(short *)fb;
+    fb[(f_w*(f_h+1))/2] = palette_color[color]; // single point for now
+    }
 }
 
 void AM_Drawer (void)
 {
     if (!automapactive) return;
 
-    AM_clearFB(BACKGROUND);
+    fb=screens[0];
+    if ( automapactive == 2 )
+      AM_clearFB(BACKGROUND);
+
     if (grid)
 	AM_drawGrid(GRIDCOLORS);
     AM_drawWalls();
     AM_drawPlayers();
     if (cheating==2)
-	AM_drawThings(THINGCOLORS, THINGRANGE);
+      AM_drawThings(THINGCOLORS, THINGRANGE);
     AM_drawCrosshair(XHAIRCOLORS);
 
     AM_drawMarks();

@@ -368,13 +368,13 @@ P_TouchSpecialThing
     {
 	// armor
       case SPR_ARM1:
-	if (!P_GiveArmor (player, 1))
+	if (!P_GiveArmor (player, deh_greenac))
 	    return;
 	player->message = GOTARMOR;
 	break;
 		
       case SPR_ARM2:
-	if (!P_GiveArmor (player, 2))
+	if (!P_GiveArmor (player, deh_blueac))
 	    return;
 	player->message = GOTMEGA;
 	break;
@@ -382,25 +382,25 @@ P_TouchSpecialThing
 	// bonus items
       case SPR_BON1:
 	player->health++;		// can go over 100%
-	if (player->health > 200)
-	    player->health = 200;
+	if (player->health > deh_maxhealth)
+	    player->health = deh_maxhealth;
 	player->mo->health = player->health;
 	player->message = GOTHTHBONUS;
 	break;
 	
       case SPR_BON2:
 	player->armorpoints++;		// can go over 100%
-	if (player->armorpoints > 200)
-	    player->armorpoints = 200;
+	if (player->armorpoints > deh_maxarmor)
+	    player->armorpoints = deh_maxarmor;
 	if (!player->armortype)
-	    player->armortype = 1;
+	    player->armortype = deh_greenac;
 	player->message = GOTARMBONUS;
 	break;
 	
       case SPR_SOUL:
-	player->health += 100;
-	if (player->health > 200)
-	    player->health = 200;
+	player->health += deh_soulhealth;
+	if (player->health > deh_maxsoulhealth)
+	    player->health = deh_maxsoulhealth;
 	player->mo->health = player->health;
 	player->message = GOTSUPER;
 	sound = sfx_getpow;
@@ -409,9 +409,9 @@ P_TouchSpecialThing
       case SPR_MEGA:
 	if (gamemode != commercial)
 	    return;
-	player->health = 200;
+	player->health = deh_megahealth;
 	player->mo->health = player->health;
-	P_GiveArmor (player,2);
+	P_GiveArmor (player,deh_blueac);
 	player->message = GOTMSPHERE;
 	sound = sfx_getpow;
 	break;
@@ -853,7 +853,7 @@ P_DamageMobj
 	
 	if (player->armortype)
 	{
-	    if (player->armortype == 1)
+	    if (player->armortype == deh_greenac)
 		saved = damage/3;
 	    else
 		saved = damage/2;
@@ -872,7 +872,8 @@ P_DamageMobj
 	    player->health = 0;
 	
 	player->attacker = source;
-	player->damagecount += damage;	// add damage after armor / invuln
+   if (damage>0)
+     player->damagecount += damage;	// add damage after armor / invuln
 
 	if (player->damagecount > 100)
 	    player->damagecount = 100;	// teleport stomp does 10k points...

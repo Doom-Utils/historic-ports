@@ -31,10 +31,6 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include <stdarg.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include <pc.h>
-#include <go32.h>
-#include <dpmi.h>
-#include <sys/nearptr.h>
 
 #include "doomdef.h"
 #include "m_misc.h"
@@ -43,17 +39,16 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 #include "d_net.h"
 #include "g_game.h"
+#include "m_argv.h"
+#include "w_wad.h"
+#include "z_zone.h"
 
 #ifdef __GNUG__
 #pragma implementation "i_system.h"
 #endif
 #include "i_system.h"
 
-
-
-
 int	mb_used = 6;
-
 
 void
 I_Tactile
@@ -78,16 +73,60 @@ int  I_GetHeapSize (void)
 }
 
 byte* I_ZoneBase (int*	size)
-{
-    *size = mb_used*1024*1024;
-    return (byte *) malloc (*size);
+  {
+  int p;
+
+  p = M_CheckParm ("-heapsize");
+  if (p && p < myargc-1)
+    {
+    mb_used=atoi(myargv[p+1]);
+    }
+
+  printf ("Heapsize: %d Megabytes\n",mb_used);
+  *size = mb_used*1024*1024;
+  return (byte *) malloc (*size);
 }
 
 
+//
+// I_Init
+//
+void I_Init (void)
+{
+if (!M_CheckParm("-nosound"))
+  I_InitSound();
+    //  I_InitGraphics();
+}
+
+//
+// I_Quit
+//
+void I_Quit (void)
+{
+   if (demorecording)
+      G_CheckDemoStatus();
+
+    D_QuitNetGame ();
+    if (!M_CheckParm("-nosound"))
+      {
+      I_ShutdownSound();
+      I_ShutdownMusic();
+      }
+    M_SaveDefaults ();
+    I_ShutdownGraphics();
+
+    exit(0);
+}
+
+
+void I_WaitVBL(int count)
+{
+usleep (count * (1000000/70) );
+}
 
 //
 // I_GetTime
-// returns time in 1/70th second tics
+// returns time in 1/TICRATE second tics
 //
 int  I_GetTime (void)
 {
@@ -102,47 +141,18 @@ int  I_GetTime (void)
     newtics = (tp.tv_sec-basetime)*TICRATE + tp.tv_usec*TICRATE/1000000;
     return newtics;
 }
-
-
-
-//
-// I_Init
-//
-void I_Init (void)
+int  I_GetMilliTime (void)
 {
-    I_InitSound();
-    //  I_InitGraphics();
-}
-
-//
-// I_Quit
-//
-void I_Quit (void)
-{
-    D_QuitNetGame ();
-    I_ShutdownSound();
-    I_ShutdownMusic();
-    M_SaveDefaults ();
-    I_ShutdownGraphics();
-    exit(0);
-}
-
-void I_WaitVBL(int count)
-{
-/*
-#ifdef SGI
-    sginap(1);                                           
-#else
-#ifdef SUN
-    sleep(0);
-#else
-    usleep (count * (1000000/70) );                                
-#endif
-#endif
-*/
-while ((inportb(0x3da)&8)!=8);
-while ((inportb(0x3da)&8)==8);
-
+    struct timeval	tp;
+    struct timezone	tzp;
+    int			newtics;
+    static int		basetime=0;
+  
+    gettimeofday(&tp, &tzp);
+    if (!basetime)
+	basetime = tp.tv_sec;
+    newtics = (tp.tv_sec-basetime)*1000 + tp.tv_usec*1000/1000000;
+    return newtics;
 }
 
 void I_BeginRead(void)
@@ -173,21 +183,26 @@ void I_Error (char *error, ...)
 {
     va_list	argptr;
 
-    // Message first.
-    va_start (argptr,error);
-    fprintf (stderr, "Error: ");
-    vfprintf (stderr,error,argptr);
-    fprintf (stderr, "\n");
-    va_end (argptr);
-
-    fflush( stderr );
-
     // Shutdown. Here might be other errors.
     if (demorecording)
 	G_CheckDemoStatus();
 
     D_QuitNetGame ();
+    if (!M_CheckParm("-nosound"))
+      {
+      I_ShutdownSound();
+      I_ShutdownMusic();
+      }
     I_ShutdownGraphics();
     
+    // Message last, so i actually prints on the screen
+    va_start (argptr,error);
+//    fprintf (stderr, "Error: ");
+    vfprintf (stdout,error,argptr);
+    fprintf (stdout, "\n");
+    va_end (argptr);
+    fflush( stdout );
+
+
     exit(-1);
 }

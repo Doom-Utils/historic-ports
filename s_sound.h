@@ -30,6 +30,7 @@
 
 
 
+extern int nosound;
 //
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,

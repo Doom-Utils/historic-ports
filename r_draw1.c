@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -37,15 +37,10 @@ rcsid[] = "$Id: r_draw.c,v 1.4 1997/02/03 16:47:55 b1 Exp $";
 #include "r_local.h"
 
 // Needs access to LFB (guess what).
-#include "v_video.h"
+#include "multires.h"
 
 // State.
 #include "doomstat.h"
-
-
-// ?
-#define MAXWIDTH			1120
-#define MAXHEIGHT			832
 
 // status bar height at bottom of screen
 #define SBARHEIGHT		32
@@ -66,34 +61,49 @@ int		scaledviewwidth;
 int		viewheight;
 int		viewwindowx;
 int		viewwindowy; 
-byte*		ylookup[MAXHEIGHT]; 
-int		columnofs[MAXWIDTH]; 
-
-// Color tables for different players,
-//  translate a limited part to another
-//  (color ramps used for  suit colors).
-//
-byte		translations[3][256];	
- 
- 
 
 
-//
-// R_DrawColumn
-// Source is the top of the column to scale.
-//
-lighttable_t*		dc_colormap; 
-int			dc_x; 
-int			dc_yl; 
-int			dc_yh; 
-fixed_t			dc_iscale; 
-fixed_t			dc_texturemid;
-
-// first pixel in a column (possibly virtual) 
-byte*			dc_source;		
-
-// just for profiling 
+// just for profiling
 int			dccount;
+
+//
+// Spectre/Invisibility.
+//
+#define FUZZTABLE		50 
+#define FUZZOFF	1
+
+extern int fuzzoffset[FUZZTABLE];
+int	fuzzpos;
+
+
+void resinit_r_draw_c8(void)
+  {
+  int i;
+
+  for (i=0;i<FUZZTABLE;i++)
+    fuzzoffset[i]*=SCREENWIDTH;
+  fuzzpos=0;
+
+  #ifdef DJGPP
+//  #ifdef __GNUC__
+  //fixme -replace screenwidth with pitch
+  asm("
+    movl _SCREENWIDTH, %%eax
+    movl $rdc8width1+2, %%ebx
+    movl %%eax, (%%ebx)
+    movl $rdc8width2+2, %%ebx
+    movl %%eax, (%%ebx)
+    ":::"%eax","%ebx");
+/*  asm("
+    movl _SCREENWIDTH, %%eax
+    movl $rdc8width1+2, %%ebx
+    movl %%eax, (%%ebx)
+    shll $1, %%eax
+    movl $rdc8width2+2, %%ebx
+    movl %%eax, (%%ebx)
+  ":::"%eax","%ebx");*/
+  #endif
+  }
 
 //
 // A column is a vertical slice/span from a wall texture that,
@@ -101,18 +111,21 @@ int			dccount;
 //  will always have constant z depth.
 // Thus a special case loop for very fast rendering can
 //  be used. It has also been used with Wolfenstein 3D.
-// 
-void R_DrawColumn (void) 
+
+
+//#ifndef __GNUC__
+#ifndef DJGPP
+void R_DrawColumn8 (void)
 { 
     int			count; 
     byte*		dest; 
     fixed_t		frac;
     fixed_t		fracstep;	 
  
-    count = dc_yh - dc_yl; 
+    count = dc_yh - dc_yl+1;
 
     // Zero length, column does not exceed a pixel.
-    if (count < 0) 
+    if (count <= 0)
 	return; 
 				 
 #ifdef RANGECHECK 
@@ -144,134 +157,146 @@ void R_DrawColumn (void)
 	dest += SCREENWIDTH; 
 	frac += fracstep;
 	
-    } while (count--); 
+    } while (--count);
 } 
+#else
 
+void R_DrawColumn8(void)  //heres a leet asm version
+  {
+  asm("
+   pushl %%ebp
 
+	movl _dc_yl,%%edx
+	movl _dc_yh,%%eax
+	subl %%edx,%%eax
+	leal 1(%%eax),%%ebx
+	testl %%ebx,%%ebx
+	jle rdc8done
+	movl _dc_x,%%eax
+	movl _ylookup(,%%edx,4),%%esi
+	addl _columnofs(,%%eax,4),%%esi
+	movl _dc_iscale,%%edi
+	movl %%edx,%%eax
+	subl _centery,%%eax
+	imull %%edi,%%eax
+	movl _dc_texturemid,%%ecx
+	addl %%eax,%%ecx
 
-// UNUSED.
-// Loop unrolled.
-#if 0
-void R_DrawColumn (void) 
-{ 
-    int			count; 
-    byte*		source;
-    byte*		dest;
-    byte*		colormap;
-    
-    unsigned		frac;
-    unsigned		fracstep;
-    unsigned		fracstep2;
-    unsigned		fracstep3;
-    unsigned		fracstep4;	 
- 
-    count = dc_yh - dc_yl + 1; 
+	movl _dc_source,%%ebp
+rdc8width1:
+   subl $12345678, %%esi
 
-    source = dc_source;
-    colormap = dc_colormap;		 
-    dest = ylookup[dc_yl] + columnofs[dc_x];  
-	 
-    fracstep = dc_iscale<<9; 
-    frac = (dc_texturemid + (dc_yl-centery)*dc_iscale)<<9; 
- 
-    fracstep2 = fracstep+fracstep;
-    fracstep3 = fracstep2+fracstep;
-    fracstep4 = fracstep3+fracstep;
-	
-    while (count >= 8) 
-    { 
-	dest[0] = colormap[source[frac>>25]]; 
-	dest[SCREENWIDTH] = colormap[source[(frac+fracstep)>>25]]; 
-	dest[SCREENWIDTH*2] = colormap[source[(frac+fracstep2)>>25]]; 
-	dest[SCREENWIDTH*3] = colormap[source[(frac+fracstep3)>>25]];
-	
-	frac += fracstep4; 
-
-	dest[SCREENWIDTH*4] = colormap[source[frac>>25]]; 
-	dest[SCREENWIDTH*5] = colormap[source[(frac+fracstep)>>25]]; 
-	dest[SCREENWIDTH*6] = colormap[source[(frac+fracstep2)>>25]]; 
-	dest[SCREENWIDTH*7] = colormap[source[(frac+fracstep3)>>25]]; 
-
-	frac += fracstep4; 
-	dest += SCREENWIDTH*8; 
-	count -= 8;
-    } 
-	
-    while (count > 0)
-    { 
-	*dest = colormap[source[frac>>25]]; 
-	dest += SCREENWIDTH; 
-	frac += fracstep; 
-	count--;
-    } 
-}
+	.align 4,0x90
+rdc8loop:
+	movl %%ecx,%%eax
+   xorl %%edx, %%edx
+	shrl $16,%%eax
+	addl %%edi,%%ecx
+	andl $127,%%eax
+rdc8width2:
+	addl $12345678,%%esi
+	movb (%%eax,%%ebp),%%dl
+	movl _dc_colormap,%%eax
+	movb (%%eax,%%edx),%%al
+	movb %%al,(%%esi)
+	decl %%ebx
+	jne rdc8loop
+rdc8done:
+   popl %%ebp
+  ":::"%eax","%ebx","%ecx","%edx","%esi","%edi");
+  }
 #endif
+/*
+int loopcount,pixelcount;
+void R_DrawColumn8(void)  //heres the original asm version
+  {
+  asm("
+   pushl %%ebp
 
+	movl _dc_yl,%%ebp
+	movl %%ebp,%%ebx
+	movl _ylookup(,%%ebx,4),%%edi
+	movl _dc_x,%%ebx
+	addl _columnofs(,%%ebx,4),%%edi
 
-void R_DrawColumnLow (void) 
-{ 
-    int			count; 
-    byte*		dest; 
-    byte*		dest2;
-    fixed_t		frac;
-    fixed_t		fracstep;	 
- 
-    count = dc_yh - dc_yl; 
-
-    // Zero length.
-    if (count < 0) 
-	return; 
-				 
-#ifdef RANGECHECK 
-    if ((unsigned)dc_x >= SCREENWIDTH
-	|| dc_yl < 0
-	|| dc_yh >= SCREENHEIGHT)
-    {
+	movl _dc_yh,%%eax
+	incl %%eax
+	subl %%ebp,%%eax
+	movl %%eax,_pixelcount
+	js	done8
+	shrl $1,%%eax
+	movl %%eax,_loopcount
 	
-	I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x);
-    }
-    //	dccount++; 
-#endif 
-    // Blocky mode, need to multiply by 2.
-    dc_x <<= 1;
-    
-    dest = ylookup[dc_yl] + columnofs[dc_x];
-    dest2 = ylookup[dc_yl] + columnofs[dc_x+1];
-    
-    fracstep = dc_iscale; 
-    frac = dc_texturemid + (dc_yl-centery)*fracstep;
-    
-    do 
-    {
-	// Hack. Does not work corretly.
-	*dest2 = *dest = dc_colormap[dc_source[(frac>>FRACBITS)&127]];
-	dest += SCREENWIDTH;
-	dest2 += SCREENWIDTH;
-	frac += fracstep; 
+	movl _dc_iscale,%%ecx
 
-    } while (count--);
-}
+	movl _centery,%%eax
+	subl %%ebp,%%eax
+	imull	%%ecx
+	movl _dc_texturemid,%%ebp
+	subl %%eax,%%ebp
+	shll $9,%%ebp
 
+	movl _dc_source,%%esi	
 
+	movl _dc_iscale,%%ebx
+	shll $9,%%ebx
+	movl $patch18+2,%%eax
+	movl %%ebx,(%%eax)
+	movl $patch28+2,%%eax
+	movl %%ebx,(%%eax)
+		
+	movl %%ebp,%%ecx
+	addl %%ebx,%%ebp
+	shrl $25,%%ecx
+	movl %%ebp,%%edx
+	addl %%ebx,%%ebp
+	shrl $25,%%edx
+	movl _dc_colormap,%%eax
+	movl %%eax,%%ebx
+	movb (%%esi,%%ecx),%%al
+	movb (%%esi,%%edx),%%bl
+	movb (%%eax),%%al
+	movb (%%ebx),%%bl
+	
+	testl	$0xfffffffe,_pixelcount
+	jnz doubleloop8
+	jmp checklast8
+	
+	.align 5
+doubleloop8:
+	movl %%ebp,%%ecx
+patch18:
+	addl $0x12345678,%%ebp
+	movb %%al,(%%edi)
+	shrl $25,%%ecx
+	movl %%ebp,%%edx
+patch28:
+	addl $0x12345678,%%ebp
+rdc8width1:
+	movb %%bl,0x12345678(%%edi)
+	shrl $25,%%edx
+	movb (%%esi,%%ecx),%%al
+rdc8width2:
+	addl $0x12345678,%%edi
+	movb (%%esi,%%edx),%%bl
+	decl _loopcount
+	movb (%%eax),%%al
+	movb (%%ebx),%%bl
+	jnz doubleloop8
+	
+checklast8:
+	testl	$1,_pixelcount
+	jz	done8
+	movb %%al,(%%edi)
+done8:
+   popl %%ebp
+  ":::"%eax","%ebx","%ecx","%edx","%esi","%edi");
+  }
+*/
 //
 // Spectre/Invisibility.
 //
-#define FUZZTABLE		50 
-#define FUZZOFF	(SCREENWIDTH)
 
-
-int	fuzzoffset[FUZZTABLE] =
-{
-    FUZZOFF,-FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,
-    FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,
-    FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,
-    FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,
-    FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF,FUZZOFF,-FUZZOFF,FUZZOFF 
-}; 
-
-int	fuzzpos = 0; 
 
 
 //
@@ -282,7 +307,7 @@ int	fuzzpos = 0;
 //  could create the SHADOW effect,
 //  i.e. spectres and invisible players.
 //
-void R_DrawFuzzColumn (void) 
+void R_DrawFuzzColumn8 (void)
 { 
     int			count; 
     byte*		dest; 
@@ -313,32 +338,6 @@ void R_DrawFuzzColumn (void)
     }
 #endif
 
-
-    // Keep till detailshift bug in blocky mode fixed,
-    //  or blocky mode removed.
-    /* WATCOM code 
-    if (detailshift)
-    {
-	if (dc_x & 1)
-	{
-	    outpw (GC_INDEX,GC_READMAP+(2<<8) ); 
-	    outp (SC_INDEX+1,12); 
-	}
-	else
-	{
-	    outpw (GC_INDEX,GC_READMAP); 
-	    outp (SC_INDEX+1,3); 
-	}
-	dest = destview + dc_yl*80 + (dc_x>>1); 
-    }
-    else
-    {
-	outpw (GC_INDEX,GC_READMAP+((dc_x&3)<<8) ); 
-	outp (SC_INDEX+1,1<<(dc_x&3)); 
-	dest = destview + dc_yl*80 + (dc_x>>2); 
-    }*/
-
-    
     // Does not work with blocky mode.
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
@@ -367,8 +366,71 @@ void R_DrawFuzzColumn (void)
     } while (count--); 
 } 
  
+char *translucencytable;
   
+void R_DrawTranslucentColumn8 (void)
+{ 
+    int			count; 
+    unsigned char*		dest;
+    fixed_t		frac;
+    fixed_t		fracstep;	 
  
+    count = dc_yh - dc_yl+1;
+
+    // Zero length, column does not exceed a pixel.
+    if (count <= 0)
+	return; 
+				 
+#ifdef RANGECHECK 
+    if ((unsigned)dc_x >= SCREENWIDTH
+	|| dc_yl < 0
+	|| dc_yh >= SCREENHEIGHT) 
+	I_Error ("R_DrawColumn: %i to %i at %i", dc_yl, dc_yh, dc_x); 
+#endif 
+
+    // Framebuffer destination address.
+    // Use ylookup LUT to avoid multiply with ScreenWidth.
+    // Use columnofs LUT for subwindows? 
+    dest = ylookup[dc_yl] + columnofs[dc_x];  
+
+    // Determine scaling,
+    //  which is the only mapping to be done.
+    fracstep = dc_iscale; 
+    frac = dc_texturemid + (dc_yl-centery)*fracstep; 
+
+    // Inner loop that does the actual texture mapping,
+    //  e.g. a DDA-lile scaling.
+    // This is as fast as it gets.
+    do 
+    {
+	// Re-map color indices from wall texture column
+	//  using a lighting/special effects LUT.
+	*dest = translucencytable[dc_colormap[dc_source[(frac>>FRACBITS)&127]]+256*(*dest)];
+	
+	dest += SCREENWIDTH; 
+	frac += fracstep;
+	
+    } while (--count);
+} 
+ 
+void R_DrawTranslucentColumn258 (void)
+  {
+  translucencytable=translucencytable25;
+  R_DrawTranslucentColumn8();
+  }
+
+void R_DrawTranslucentColumn508 (void)
+  {
+  translucencytable=translucencytable50;
+  R_DrawTranslucentColumn8();
+  }
+
+void R_DrawTranslucentColumn758 (void)
+  {
+  translucencytable=translucencytable75;
+  R_DrawTranslucentColumn8();
+  }
+
 
 //
 // R_DrawTranslatedColumn
@@ -379,10 +441,8 @@ void R_DrawFuzzColumn (void)
 //  of the BaronOfHell, the HellKnight, uses
 //  identical sprites, kinda brightened up.
 //
-byte*	dc_translation;
-byte*	translationtables;
 
-void R_DrawTranslatedColumn (void) 
+void R_DrawTranslatedColumn8 (void)
 { 
     int			count; 
     byte*		dest; 
@@ -405,25 +465,6 @@ void R_DrawTranslatedColumn (void)
 #endif 
 
 
-    // WATCOM VGA specific.
-    /* Keep for fixing.
-    if (detailshift)
-    {
-	if (dc_x & 1)
-	    outp (SC_INDEX+1,12); 
-	else
-	    outp (SC_INDEX+1,3);
-	
-	dest = destview + dc_yl*80 + (dc_x>>1); 
-    }
-    else
-    {
-	outp (SC_INDEX+1,1<<(dc_x&3)); 
-
-	dest = destview + dc_yl*80 + (dc_x>>2); 
-    }*/
-
-    
     // FIXME. As above.
     dest = ylookup[dc_yl] + columnofs[dc_x]; 
 
@@ -456,33 +497,49 @@ void R_DrawTranslatedColumn (void)
 // Assumes a given structure of the PLAYPAL.
 // Could be read from a lump instead.
 //
-void R_InitTranslationTables (void)
+void R_InitTranslationTables8 (void)
 {
-    int		i;
-	
-    translationtables = Z_Malloc (256*3+255, PU_STATIC, 0);
+    int         i,j;
+
+    translationtables = Z_Malloc (256*7+255, PU_STATIC, 0);
     translationtables = (byte *)(( (int)translationtables + 255 )& ~255);
-    
+
     // translate just the 16 green colors
+    j=0x70;
     for (i=0 ; i<256 ; i++)
     {
-	if (i >= 0x70 && i<= 0x7f)
-	{
-	    // map green ramp to gray, brown, red
-	    translationtables[i] = 0x60 + (i&0xf);
-	    translationtables [i+256] = 0x40 + (i&0xf);
-	    translationtables [i+512] = 0x20 + (i&0xf);
-	}
-	else
-	{
-	    // Keep all other colors as is.
-	    translationtables[i] = translationtables[i+256] 
-		= translationtables[i+512] = i;
-	}
+        if (i >= 0x70 && i<= 0x7f)
+        {
+            // map green ramp to gray, brown, red
+            translationtables[i] = 0x60 + (i&0xf);
+            translationtables [i+256] = 0x40 + (i&0xf);
+            translationtables [i+512] = 0x20 + (i&0xf);
+
+            // Map Colours to players 5-8
+            if((i%2)==0) {
+              translationtables [i    +768]  =
+              translationtables [(i+1)+768]  = 10*16 + (j&0xf);
+              translationtables [i    +1024] =
+              translationtables [(i+1)+1024] = 12*16 + (j&0xf)+8;
+              translationtables [i    +1280] =
+              translationtables [(i+1)+1280] = 15*16 + (j&0xf);
+              j++;
+            }
+            translationtables [i+1536] = 1 *16 + (i&0xf);
+        }
+        else
+        {
+            // Keep all other colors as is.
+            translationtables[i] = translationtables[i+256]
+                             = translationtables[i+512]
+                             = translationtables[i+768]
+                             = translationtables[i+1024]
+                             = translationtables[i+1280]
+                             = translationtables[i+1536]
+                             = i;
+        }
     }
 }
-
-
 
 
 //
@@ -497,27 +554,14 @@ void R_InitTranslationTables (void)
 // In consequence, flats are not stored by column (like walls),
 //  and the inner loop has to step in texture space u and v.
 //
-int			ds_y; 
-int			ds_x1; 
-int			ds_x2;
-
-lighttable_t*		ds_colormap; 
-
-fixed_t			ds_xfrac; 
-fixed_t			ds_yfrac; 
-fixed_t			ds_xstep; 
-fixed_t			ds_ystep;
-
-// start of a 64*64 tile image 
-byte*			ds_source;	
-
-// just for profiling
-int			dscount;
 
 
 //
 // Draws the actual span.
-void R_DrawSpan (void) 
+//
+//the c version is no slower than the assembly version
+
+void R_DrawSpan8 (void)
 { 
     fixed_t		xfrac;
     fixed_t		yfrac; 
@@ -563,128 +607,6 @@ void R_DrawSpan (void)
 } 
 
 
-
-// UNUSED.
-// Loop unrolled by 4.
-#if 0
-void R_DrawSpan (void) 
-{ 
-    unsigned	position, step;
-
-    byte*	source;
-    byte*	colormap;
-    byte*	dest;
-    
-    unsigned	count;
-    usingned	spot; 
-    unsigned	value;
-    unsigned	temp;
-    unsigned	xtemp;
-    unsigned	ytemp;
-		
-    position = ((ds_xfrac<<10)&0xffff0000) | ((ds_yfrac>>6)&0xffff);
-    step = ((ds_xstep<<10)&0xffff0000) | ((ds_ystep>>6)&0xffff);
-		
-    source = ds_source;
-    colormap = ds_colormap;
-    dest = ylookup[ds_y] + columnofs[ds_x1];	 
-    count = ds_x2 - ds_x1 + 1; 
-	
-    while (count >= 4) 
-    { 
-	ytemp = position>>4;
-	ytemp = ytemp & 4032;
-	xtemp = position>>26;
-	spot = xtemp | ytemp;
-	position += step;
-	dest[0] = colormap[source[spot]]; 
-
-	ytemp = position>>4;
-	ytemp = ytemp & 4032;
-	xtemp = position>>26;
-	spot = xtemp | ytemp;
-	position += step;
-	dest[1] = colormap[source[spot]];
-	
-	ytemp = position>>4;
-	ytemp = ytemp & 4032;
-	xtemp = position>>26;
-	spot = xtemp | ytemp;
-	position += step;
-	dest[2] = colormap[source[spot]];
-	
-	ytemp = position>>4;
-	ytemp = ytemp & 4032;
-	xtemp = position>>26;
-	spot = xtemp | ytemp;
-	position += step;
-	dest[3] = colormap[source[spot]]; 
-		
-	count -= 4;
-	dest += 4;
-    } 
-    while (count > 0) 
-    { 
-	ytemp = position>>4;
-	ytemp = ytemp & 4032;
-	xtemp = position>>26;
-	spot = xtemp | ytemp;
-	position += step;
-	*dest++ = colormap[source[spot]]; 
-	count--;
-    } 
-} 
-#endif
-
-
-//
-// Again..
-//
-void R_DrawSpanLow (void) 
-{ 
-    fixed_t		xfrac;
-    fixed_t		yfrac; 
-    byte*		dest; 
-    int			count;
-    int			spot; 
-	 
-#ifdef RANGECHECK 
-    if (ds_x2 < ds_x1
-	|| ds_x1<0
-	|| ds_x2>=SCREENWIDTH  
-	|| (unsigned)ds_y>SCREENHEIGHT)
-    {
-	I_Error( "R_DrawSpan: %i to %i at %i",
-		 ds_x1,ds_x2,ds_y);
-    }
-//	dscount++; 
-#endif 
-	 
-    xfrac = ds_xfrac; 
-    yfrac = ds_yfrac; 
-
-    // Blocky mode, need to multiply by 2.
-    ds_x1 <<= 1;
-    ds_x2 <<= 1;
-    
-    dest = ylookup[ds_y] + columnofs[ds_x1];
-  
-    
-    count = ds_x2 - ds_x1; 
-    do 
-    { 
-	spot = ((yfrac>>(16-6))&(63*64)) + ((xfrac>>16)&63);
-	// Lowres/blocky mode does it twice,
-	//  while scale is adjusted appropriately.
-	*dest++ = ds_colormap[ds_source[spot]]; 
-	*dest++ = ds_colormap[ds_source[spot]];
-	
-	xfrac += ds_xstep; 
-	yfrac += ds_ystep; 
-
-    } while (count--); 
-}
-
 //
 // R_InitBuffer 
 // Creats lookup tables that avoid
@@ -693,7 +615,7 @@ void R_DrawSpanLow (void)
 //  of a pixel to draw.
 //
 void
-R_InitBuffer
+R_InitBuffer8
 ( int		width,
   int		height ) 
 { 
@@ -728,7 +650,7 @@ R_InitBuffer
 //  for variable screen sizes
 // Also draws a beveled edge.
 //
-void R_FillBackScreen (void) 
+void R_FillBackScreen8 (void)
 { 
     byte*	src;
     byte*	dest; 
@@ -743,8 +665,8 @@ void R_FillBackScreen (void)
     char	name2[] = "GRNROCK";	
 
     char*	name;
-	
-    if (scaledviewwidth == 320)
+
+    if ((scaledviewwidth == SCREENWIDTH)&&(viewheight==SCREENHEIGHT))
 	return;
 	
     if ( gamemode == commercial)
@@ -755,7 +677,7 @@ void R_FillBackScreen (void)
     src = W_CacheLumpName (name, PU_CACHE); 
     dest = screens[1]; 
 	 
-    for (y=0 ; y<SCREENHEIGHT-SBARHEIGHT ; y++) 
+    for (y=0 ; y<SCREENHEIGHT/*-SBARHEIGHT*/ ; y++)
     { 
 	for (x=0 ; x<SCREENWIDTH/64 ; x++) 
 	{ 
@@ -769,42 +691,55 @@ void R_FillBackScreen (void)
 	    dest += (SCREENWIDTH&63); 
 	} 
     } 
-	
-    patch = W_CacheLumpName ("brdr_t",PU_CACHE);
+	if (SCREENWIDTH==scaledviewwidth)
+     return;
 
-    for (x=0 ; x<scaledviewwidth ; x+=8)
-	V_DrawPatch (viewwindowx+x,viewwindowy-8,1,patch);
-    patch = W_CacheLumpName ("brdr_b",PU_CACHE);
+   if ((viewwindowy-8)>=0)
+     {
+     patch = W_CacheLumpName ("brdr_t",PU_CACHE);
+     for (x=0 ; x<scaledviewwidth ; x+=8)
+       V_DrawPatch (viewwindowx+x,viewwindowy-8,1,patch);
+     }
+   if ((viewwindowy+viewheight+8)<(SCREENHEIGHT-SBARHEIGHT))
+     {
+     patch = W_CacheLumpName ("brdr_b",PU_CACHE);
+     for (x=0 ; x<scaledviewwidth ; x+=8)
+       V_DrawPatch (viewwindowx+x,viewwindowy+viewheight,1,patch);
+     }
+   if ((viewwindowx-8)>=0)
+     {
+     patch = W_CacheLumpName ("brdr_l",PU_CACHE);
+     for (y=0 ; y<viewheight ; y+=8)
+       V_DrawPatch (viewwindowx-8,viewwindowy+y,1,patch);
+     }
+   if ((viewwindowx+scaledviewwidth+8)<SCREENWIDTH)
+     {
+     patch = W_CacheLumpName ("brdr_r",PU_CACHE);
+     for (y=0 ; y<viewheight ; y+=8)
+       V_DrawPatch (viewwindowx+scaledviewwidth,viewwindowy+y,1,patch);
+     }
 
-    for (x=0 ; x<scaledviewwidth ; x+=8)
-	V_DrawPatch (viewwindowx+x,viewwindowy+viewheight,1,patch);
-    patch = W_CacheLumpName ("brdr_l",PU_CACHE);
-
-    for (y=0 ; y<viewheight ; y+=8)
-	V_DrawPatch (viewwindowx-8,viewwindowy+y,1,patch);
-    patch = W_CacheLumpName ("brdr_r",PU_CACHE);
-
-    for (y=0 ; y<viewheight ; y+=8)
-	V_DrawPatch (viewwindowx+scaledviewwidth,viewwindowy+y,1,patch);
-
-
-    // Draw beveled edge. 
-    V_DrawPatch (viewwindowx-8,
+    // Draw beveled edge.
+    if (((viewwindowx-8)>=0)&&((viewwindowy-8)>=0))
+      V_DrawPatch (viewwindowx-8,
 		 viewwindowy-8,
 		 1,
 		 W_CacheLumpName ("brdr_tl",PU_CACHE));
     
-    V_DrawPatch (viewwindowx+scaledviewwidth,
+    if (((viewwindowx+scaledviewwidth+8)<SCREENWIDTH)&&((viewwindowy-8)>=0))
+      V_DrawPatch (viewwindowx+scaledviewwidth,
 		 viewwindowy-8,
 		 1,
 		 W_CacheLumpName ("brdr_tr",PU_CACHE));
-    
-    V_DrawPatch (viewwindowx-8,
+
+    if (((viewwindowx-8)>=0)&&((viewwindowy+viewheight+8)<(SCREENHEIGHT-SBARHEIGHT)))
+      V_DrawPatch (viewwindowx-8,
 		 viewwindowy+viewheight,
 		 1,
 		 W_CacheLumpName ("brdr_bl",PU_CACHE));
     
-    V_DrawPatch (viewwindowx+scaledviewwidth,
+    if (((viewwindowx+scaledviewwidth+8)<SCREENWIDTH)&&((viewwindowy+viewheight+8)<(SCREENHEIGHT-SBARHEIGHT)))
+      V_DrawPatch (viewwindowx+scaledviewwidth,
 		 viewwindowy+viewheight,
 		 1,
 		 W_CacheLumpName ("brdr_br",PU_CACHE));
@@ -815,7 +750,7 @@ void R_FillBackScreen (void)
 // Copy a screen buffer.
 //
 void
-R_VideoErase
+R_VideoErase8
 ( unsigned	ofs,
   int		count ) 
 { 
@@ -833,32 +768,43 @@ R_VideoErase
 // Draws the border around the view
 //  for different size windows?
 //
-void
-V_MarkRect
-( int		x,
-  int		y,
-  int		width,
-  int		height ); 
  
-void R_DrawViewBorder (void) 
+void R_DrawViewBorder8 (void)
 { 
     int		top;
-    int		side;
+    int		side,side2;
     int		ofs;
     int		i; 
- 
-    if (scaledviewwidth == SCREENWIDTH) 
-	return; 
+
+    //if screenwidth>320, draw stuff around status bar, even if scaledviewwidth==SCREENWIDTH
+    if ((SCREENWIDTH>320)&&(SCREENHEIGHT!=viewheight))
+      {
+      ofs=(SCREENHEIGHT-SBARHEIGHT)*SCREENWIDTH;
+      side=(SCREENWIDTH-320)/2; side2=side*2;
+      R_VideoErase8(ofs,side);
+
+      ofs+=(SCREENWIDTH-side);
+      for (i=1;i<SBARHEIGHT;i++)
+        {
+        R_VideoErase8(ofs,side2);
+        ofs+=SCREENWIDTH;
+        }
+      R_VideoErase8(ofs,side);
+      }
+
+//    if (scaledviewwidth == SCREENWIDTH)
+    if (viewheight>=(SCREENHEIGHT-SBARHEIGHT))
+	   return;
   
     top = ((SCREENHEIGHT-SBARHEIGHT)-viewheight)/2; 
     side = (SCREENWIDTH-scaledviewwidth)/2; 
  
     // copy top and one line of left side 
-    R_VideoErase (0, top*SCREENWIDTH+side); 
+    R_VideoErase8 (0, top*SCREENWIDTH+side);
  
     // copy one line of right side and bottom 
     ofs = (viewheight+top)*SCREENWIDTH-side; 
-    R_VideoErase (ofs, top*SCREENWIDTH+side); 
+    R_VideoErase8 (ofs, top*SCREENWIDTH+side);
  
     // copy sides using wraparound 
     ofs = top*SCREENWIDTH + SCREENWIDTH-side; 
@@ -866,9 +812,9 @@ void R_DrawViewBorder (void)
     
     for (i=1 ; i<viewheight ; i++) 
     { 
-	R_VideoErase (ofs, side); 
+	R_VideoErase8 (ofs, side);
 	ofs += SCREENWIDTH; 
-    } 
+    }
 
     // ? 
     V_MarkRect (0,0,SCREENWIDTH, SCREENHEIGHT-SBARHEIGHT); 

@@ -22,43 +22,22 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __V_VIDEO__
-#define __V_VIDEO__
+//this is for 16 bpp modes
+
+#ifndef __V_VIDEO2__
+#define __V_VIDEO2__
 
 #include "doomtype.h"
-
 #include "doomdef.h"
-
 // Needed because we are refering to patches.
 #include "r_data.h"
 
-//
-// VIDEO
-//
-
-#define CENTERY			(SCREENHEIGHT/2)
-
-
-// Screen 0 is the screen updated by I_Update screen.
-// Screen 1 is an extra buffer.
-
-
-
-extern	byte*		screens[5];
-
-extern  int	dirtybox[4];
-
-extern	byte	gammatable[5][256];
-extern	int	usegamma;
-
-
 
 // Allocates buffer screens, call before R_Init.
-void V_Init (void);
-
+void V_Init16 (void);
 
 void
-V_CopyRect
+V_CopyRect16
 ( int		srcx,
   int		srcy,
   int		srcscrn,
@@ -69,23 +48,50 @@ V_CopyRect
   int		destscrn );
 
 void
-V_DrawPatch
+V_DrawPatch16
 ( int		x,
   int		y,
   int		scrn,
   patch_t*	patch);
 
 void
-V_DrawPatchDirect
+V_DrawPatchFlipped16
+( int		x,
+  int		y,
+  int		scrn,
+  patch_t*	patch);
+
+void
+V_DrawPatchDirect16
 ( int		x,
   int		y,
   int		scrn,
   patch_t*	patch );
 
+void  //Stretches bitmap to full screen
+V_DrawPatchInDirect16
+( int		x,
+  int		y,
+  int		scrn,
+  patch_t*	patch );
+
+void  //Stretches bitmap to full screen
+V_DrawPatchInDirectFlipped16
+( int		x,
+  int		y,
+  int		scrn,
+  patch_t*	patch );
+
+void
+V_DrawPatchShrink16
+( int		x,
+  int		y,
+  int		scrn,
+  patch_t*	patch );
 
 // Draw a linear block of pixels into the view buffer.
 void
-V_DrawBlock
+V_DrawBlock16
 ( int		x,
   int		y,
   int		scrn,
@@ -95,7 +101,7 @@ V_DrawBlock
 
 // Reads a linear block of pixels into the view buffer.
 void
-V_GetBlock
+V_GetBlock16
 ( int		x,
   int		y,
   int		scrn,
@@ -105,11 +111,13 @@ V_GetBlock
 
 
 void
-V_MarkRect
+V_MarkRect16
 ( int		x,
   int		y,
   int		width,
   int		height );
+
+void V_DarkenScreen16(int scrn);
 
 #endif
 //-----------------------------------------------------------------------------

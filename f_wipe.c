@@ -28,10 +28,11 @@ static const char rcsid[] = "$Id: f_wipe.c,v 1.2 1997/02/03 22:45:09 b1 Exp $";
 
 #include "z_zone.h"
 #include "i_video.h"
-#include "v_video.h"
+#include "multires.h"
 #include "m_random.h"
 
 #include "doomdef.h"
+#include "doomstat.h"
 
 #include "f_wipe.h"
 
@@ -44,7 +45,7 @@ static boolean	go = 0;
 
 static byte*	wipe_scr_start;
 static byte*	wipe_scr_end;
-static byte*	wipe_scr;
+static byte*	wipe_scr=NULL;
 
 
 void
@@ -75,7 +76,7 @@ wipe_initColorXForm
   int	height,
   int	ticks )
 {
-    memcpy(wipe_scr, wipe_scr_start, width*height);
+    memcpy(wipe_scr, wipe_scr_start, width*height*BPP);
     return 0;
 }
 
@@ -146,12 +147,12 @@ wipe_initMelt
     int i, r;
     
     // copy start screen to main screen
-    memcpy(wipe_scr, wipe_scr_start, width*height);
+    memcpy(wipe_scr, wipe_scr_start, width*height*BPP);
     
     // makes this wipe faster (in theory)
     // to have stuff in column-major format
-    wipe_shittyColMajorXform((short*)wipe_scr_start, width/2, height);
-    wipe_shittyColMajorXform((short*)wipe_scr_end, width/2, height);
+    wipe_shittyColMajorXform((short*)wipe_scr_start, width*BPP/2, height);
+    wipe_shittyColMajorXform((short*)wipe_scr_end, width*BPP/2, height);
     
     // setup initial column positions
     // (y<0 => not ready to scroll yet)
@@ -183,7 +184,7 @@ wipe_doMelt
     short*	d;
     boolean	done = true;
 
-    width/=2;
+    width=width*BPP/2;
 
     while (ticks--)
     {
@@ -274,21 +275,20 @@ wipe_ScreenWipe
 	wipe_initMelt, wipe_doMelt, wipe_exitMelt
     };
 
-    void V_MarkRect(int, int, int, int);
-
     // initial stuff
     if (!go)
     {
 	go = 1;
-	// wipe_scr = (byte *) Z_Malloc(width*height, PU_STATIC, 0); // DEBUG
-	wipe_scr = screens[0];
+   if (wipe_scr==NULL)
+	  wipe_scr = (byte *) Z_Malloc(width*height*BPP, PU_STATIC, 0); // DEBUG
+	//wipe_scr = screens[0];
 	(*wipes[wipeno*3])(width, height, ticks);
     }
 
     // do a piece of wipe-in
     V_MarkRect(0, 0, width, height);
     rc = (*wipes[wipeno*3+1])(width, height, ticks);
-    //  V_DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
+    V_DrawBlock(x, y, 0, width, height, wipe_scr); // DEBUG
 
     // final stuff
     if (rc)

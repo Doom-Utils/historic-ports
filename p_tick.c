@@ -130,7 +130,8 @@ void P_RunThinkers (void)
 void P_Ticker (void)
 {
     int		i;
-    
+
+    RandomTarget=NULL;
     // run the tic
     if (paused)
 	return;

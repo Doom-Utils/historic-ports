@@ -102,6 +102,8 @@ void P_ExplodeMissile (mobj_t* mo)
 
     if (mo->info->deathsound)
 	S_StartSound (mo, mo->info->deathsound);
+    if (transluc==2)
+      mo->flags|=MF_TRANSLUC50;
 }
 
 
@@ -354,7 +356,7 @@ void P_ZMovement (mobj_t* mo)
 // P_NightmareRespawn
 //
 void
-P_NightmareRespawn (mobj_t* mobj)
+P_NightmareRespawnOrig (mobj_t* mobj)
 {
     fixed_t		x;
     fixed_t		y;
@@ -408,6 +410,29 @@ P_NightmareRespawn (mobj_t* mobj)
     P_RemoveMobj (mobj);
 }
 
+void P_NightmareRespawnNew (mobj_t* mobj)
+{
+    fixed_t  x;
+    fixed_t  y;
+    mobjinfo_t*  info;
+
+    x = mobj->x;
+    y = mobj->y;
+
+    // somthing is occupying it's position?
+    if (!P_CheckPosition (mobj, x, y) )
+        return; // no respawn
+
+    // Resurrect monster (Similar to being raised by Arch-vile);
+    S_StartSound (mobj, sfx_slop);
+    info = mobj->info;
+
+    P_SetMobjState (mobj,info->raisestate);
+    mobj->height <<= 2;
+    mobj->flags = info->flags;
+    mobj->health = info->spawnhealth;
+    mobj->target = NULL;
+}
 
 //
 // P_MobjThinker
@@ -467,7 +492,10 @@ void P_MobjThinker (mobj_t* mobj)
 	if (P_Random () > 4)
 	    return;
 
-	P_NightmareRespawn (mobj);
+        if (newnmrespawn)
+ 	   P_NightmareRespawnNew (mobj);
+        else
+ 	   P_NightmareRespawnOrig (mobj);
     }
 
 }
@@ -499,6 +527,8 @@ P_SpawnMobj
     mobj->height = info->height;
     mobj->flags = info->flags;
     mobj->health = info->spawnhealth;
+    mobj->lastknownx=NULL;
+    mobj->lastknowny=NULL;
 
     if (gameskill != sk_nightmare)
 	mobj->reactiontime = info->reactiontime;
@@ -588,7 +618,7 @@ void P_RespawnSpecials (void)
     int			i;
 
     // only respawn items in deathmatch
-    if (deathmatch != 2)
+    if ((deathmatch != 2)&&(ItemRespawn!=1))
 	return;	// 
 
     // nothing left to respawn?
@@ -641,39 +671,67 @@ void P_RespawnSpecials (void)
 //
 void P_SpawnPlayer (mapthing_t* mthing)
 {
-    player_t*		p;
-    fixed_t		x;
-    fixed_t		y;
-    fixed_t		z;
+    player_t*           p;
+    fixed_t             x;
+    fixed_t             y;
+    fixed_t             z;
 
-    mobj_t*		mobj;
+    mobj_t*             mobj;
 
-    int			i;
+    int                 i;
+    int                 consolep; //-jc-
 
     // not playing?
-    if (!playeringame[mthing->type-1])
-	return;					
-		
-    p = &players[mthing->type-1];
+    //-jc-
+    if (mthing->type>4000 && mthing->type<4005) {
+       if (!playeringame[(mthing->type-4001)+4]) return;
+    }
+    else
+       if (!playeringame[mthing->type-1]) return;
+
+    if (mthing->type>4000 && mthing->type<4005)
+       p = &players[(mthing->type-4001)+4];
+    else
+       p = &players[mthing->type-1];
 
     if (p->playerstate == PST_REBORN)
-	G_PlayerReborn (mthing->type-1);
+      {
+       if (mthing->type>4000 && mthing->type<4005)
+          G_PlayerReborn ((mthing->type-4001)+4);
+       else
+          G_PlayerReborn (mthing->type-1);
+       }
 
-    x 		= mthing->x << FRACBITS;
-    y 		= mthing->y << FRACBITS;
-    z		= ONFLOORZ;
-    mobj	= P_SpawnMobj (x,y,z, MT_PLAYER);
+    if (p->playerstate == PST_REBORN)
+        G_PlayerReborn (mthing->type-1);
+
+
+    x           = mthing->x << FRACBITS;
+    y           = mthing->y << FRACBITS;
+    z           = ONFLOORZ;
+    mobj        = P_SpawnMobj (x,y,z, MT_PLAYER);
 
     // set color translations for player sprites
-    if (mthing->type > 1)		
-	mobj->flags |= (mthing->type-1)<<MF_TRANSSHIFT;
-		
-    mobj->angle	= ANG45 * (mthing->angle/45);
+    if (mthing->type > 1)
+      {
+       if (mthing->type>4000 && mthing->type<4005) {
+          mobj->flags |= (mthing->type-4001)<<MF_TRANSSHIFT;
+          mobj->playxtra = mthing->type-4001+4;
+       }
+       else {
+          mobj->flags |= (mthing->type-1)<<MF_TRANSSHIFT;
+          mobj->playxtra=0;
+       }
+      }
+
+    // --end jc--
+
+    mobj->angle = ANG45 * (mthing->angle/45);
     mobj->player = p;
     mobj->health = p->health;
 
     p->mo = mobj;
-    p->playerstate = PST_LIVE;	
+    p->playerstate = PST_LIVE;
     p->refire = 0;
     p->message = NULL;
     p->damagecount = 0;
@@ -684,18 +742,24 @@ void P_SpawnPlayer (mapthing_t* mthing)
 
     // setup gun psprite
     P_SetupPsprites (p);
-    
+
     // give all cards in death match mode
     if (deathmatch)
-	for (i=0 ; i<NUMCARDS ; i++)
-	    p->cards[i] = true;
-			
-    if (mthing->type-1 == consoleplayer)
+        for (i=0 ; i<NUMCARDS ; i++)
+            p->cards[i] = true;
+
+    //-jc-
+    if (mthing->type>4000 && mthing->type<4005)
+       consolep=(mthing->type-4001)+4;
+    else
+       consolep=mthing->type-1;
+
+    if (consolep == consoleplayer)
     {
-	// wake up the status bar
-	ST_Start ();
-	// wake up the heads up text
-	HU_Start ();		
+        // wake up the status bar
+        ST_Start ();
+        // wake up the heads up text
+        HU_Start ();
     }
 }
 
@@ -726,14 +790,20 @@ void P_SpawnMapThing (mapthing_t* mthing)
     }
 	
     // check for players specially
-    if (mthing->type <= 4)
+    // check for players specially
+    //-jc-
+    if ((mthing->type >4000 && mthing->type <4005) ||
+        (mthing->type >0 && mthing->type <5))
     {
-	// save spots for respawning in network games
-	playerstarts[mthing->type-1] = *mthing;
-	if (!deathmatch)
-	    P_SpawnPlayer (mthing);
+        // save spots for respawning in network games
+    if (mthing->type>4000 && mthing->type<4005)
+       playerstarts[(mthing->type-4001)+4] = *mthing;
+    else
+       playerstarts[mthing->type-1] = *mthing;
 
-	return;
+    if (!deathmatch)
+       P_SpawnPlayer (mthing);
+    return;
     }
 
     // check for apropriate skill level
@@ -907,7 +977,9 @@ P_SpawnMissile
 
     // fuzzy player
     if (dest->flags & MF_SHADOW)
-	an += (P_Random()-P_Random())<<20;	
+	an += (P_Random()-P_Random())<<20;
+    else if (LessAccurateMon)
+	an += (P_Random()-P_Random())<<19;
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
@@ -946,26 +1018,33 @@ P_SpawnPlayerMissile
     
     // see which target is to be aimed at
     an = source->angle;
-    slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-    
-    if (!linetarget)
-    {
-	an += 1<<26;
-	slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
 
-	if (!linetarget)
-	{
+    if (shootupdown)
+      {
+      slope=updownangle*5/(4*viewheight);
+      }
+    else
+      {
+      slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+        if (!linetarget)
+        {
+  	  an += 1<<26;
+	  slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
+
+	  if (!linetarget)
+	  {
 	    an -= 2<<26;
 	    slope = P_AimLineAttack (source, an, 16*64*FRACUNIT);
-	}
+	  }
 
-	if (!linetarget)
-	{
+	  if (!linetarget)
+	  {
 	    an = source->angle;
 	    slope = 0;
-	}
-    }
-		
+	  }
+        }
+      }
     x = source->x;
     y = source->y;
     z = source->z + 4*8*FRACUNIT;

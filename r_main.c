@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id:$
@@ -33,13 +33,14 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 
 
 #include "doomdef.h"
+#include "doomstat.h"
 #include "d_net.h"
 
 #include "m_bbox.h"
 
 #include "r_local.h"
 #include "r_sky.h"
-
+#include "st_stuff.h"
 
 
 
@@ -47,7 +48,10 @@ static const char rcsid[] = "$Id: r_main.c,v 1.5 1997/02/03 22:45:12 b1 Exp $";
 // Fineangles in the SCREENWIDTH wide window.
 #define FIELDOFVIEW		2048	
 
-
+fixed_t updownangle=0;
+fixed_t keylookspeed=1000/64;
+int mlookon=0;
+int invertmouse=0;
 
 int			viewangleoffset;
 
@@ -70,7 +74,6 @@ int			framecount;
 
 int			sscount;
 int			linecount;
-int			loopcount;
 
 fixed_t			viewx;
 fixed_t			viewy;
@@ -84,7 +87,7 @@ fixed_t			viewsin;
 player_t*		viewplayer;
 
 // 0 = high, 1 = low
-int			detailshift;	
+//int			detailshift;
 
 //
 // precalculated math tables
@@ -100,7 +103,7 @@ int			viewangletox[FINEANGLES/2];
 // The xtoviewangleangle[] table maps a screen pixel
 // to the lowest viewangle that maps back to x ranges
 // from clipangle to -clipangle.
-angle_t			xtoviewangle[SCREENWIDTH+1];
+angle_t			*xtoviewangle;
 
 
 // UNUSED.
@@ -626,7 +629,8 @@ void R_InitLightTables (void)
 	startmap = ((LIGHTLEVELS-1-i)*2)*NUMCOLORMAPS/LIGHTLEVELS;
 	for (j=0 ; j<MAXLIGHTZ ; j++)
 	{
-	    scale = FixedDiv ((SCREENWIDTH/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
+//	    scale = FixedDiv ((SCREENWIDTH/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
+	    scale = FixedDiv ((320/2*FRACUNIT), (j+1)<<LIGHTZSHIFT);
 	    scale >>= LIGHTSCALESHIFT;
 	    level = startmap - scale/DISTMAP;
 	    
@@ -636,7 +640,7 @@ void R_InitLightTables (void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS-1;
 
-	    zlight[i][j] = colormaps + level*256;
+	    zlight[i][j] = colormaps + level*256*BPP;
 	}
     }
 }
@@ -686,11 +690,11 @@ void R_ExecuteSetViewSize (void)
     }
     else
     {
-	scaledviewwidth = setblocks*32;
-	viewheight = (setblocks*168/10)&~7;
+	scaledviewwidth = (setblocks*SCREENWIDTH/10)&~7;
+	viewheight = (setblocks*(SCREENHEIGHT-ST_HEIGHT)/10)&~7;
     }
     
-    detailshift = setdetail;
+//    detailshift = setdetail;
     viewwidth = scaledviewwidth>>detailshift;
 	
     centery = viewheight/2;
@@ -699,39 +703,45 @@ void R_ExecuteSetViewSize (void)
     centeryfrac = centery<<FRACBITS;
     projection = centerxfrac;
 
-    if (!detailshift)
-    {
+//    if (!detailshift)
+//    {
 	colfunc = basecolfunc = R_DrawColumn;
 	fuzzcolfunc = R_DrawFuzzColumn;
 	transcolfunc = R_DrawTranslatedColumn;
 	spanfunc = R_DrawSpan;
-    }
-    else
-    {
-	colfunc = basecolfunc = R_DrawColumnLow;
-	fuzzcolfunc = R_DrawFuzzColumn;
-	transcolfunc = R_DrawTranslatedColumn;
-	spanfunc = R_DrawSpanLow;
-    }
+//    }
+//    else
+//    {
+//	colfunc = basecolfunc = R_DrawColumnLow;
+//	fuzzcolfunc = R_DrawFuzzColumn;
+//	transcolfunc = R_DrawTranslatedColumn;
+//	spanfunc = R_DrawSpanLow;
+//    }
 
     R_InitBuffer (scaledviewwidth, viewheight);
 	
     R_InitTextureMapping ();
     
     // psprite scales
-    pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
-    pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
-    
+//    pspritescale = FRACUNIT*viewwidth/SCREENWIDTH;
+//    pspriteiscale = FRACUNIT*SCREENWIDTH/viewwidth;
+    pspritescale = FRACUNIT*viewwidth/320;
+    pspriteiscale = FRACUNIT*320/viewwidth;
+    pspritescale2 = FRACUNIT*viewheight/200;
+    pspriteiscale2 = FRACUNIT*200/viewheight;
+
+
     // thing clipping
     for (i=0 ; i<viewwidth ; i++)
 	screenheightarray[i] = viewheight;
     
     // planes
-    for (i=0 ; i<viewheight ; i++)
+    for (i=0 ; i<(viewheight*2) ; i++)
     {
-	dy = ((i-viewheight/2)<<FRACBITS)+FRACUNIT/2;
+	dy = ((i-viewheight)<<FRACBITS)+FRACUNIT/2;
 	dy = abs(dy);
-	yslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+	origyslope[i] = FixedDiv ( (viewwidth<<detailshift)/2*FRACUNIT, dy);
+        yslope=origyslope+(viewheight/2);
     }
 	
     for (i=0 ; i<viewwidth ; i++)
@@ -755,7 +765,7 @@ void R_ExecuteSetViewSize (void)
 	    if (level >= NUMCOLORMAPS)
 		level = NUMCOLORMAPS-1;
 
-	    scalelight[i][j] = colormaps + level*256;
+	    scalelight[i][j] = colormaps + level*256*BPP;
 	}
     }
 }
@@ -848,7 +858,7 @@ void R_SetupFrame (player_t* player)
     {
 	fixedcolormap =
 	    colormaps
-	    + player->fixedcolormap*256*sizeof(lighttable_t);
+	    + player->fixedcolormap*256*sizeof(lighttable_t)*BPP;
 	
 	walllights = scalelightfixed;
 
@@ -857,7 +867,7 @@ void R_SetupFrame (player_t* player)
     }
     else
 	fixedcolormap = 0;
-		
+	
     framecount++;
     validcount++;
 }
@@ -868,7 +878,12 @@ void R_SetupFrame (player_t* player)
 // R_RenderView
 //
 void R_RenderPlayerView (player_t* player)
-{	
+{
+    //hack in mlook
+    centery=viewheight/2+(updownangle>>16);
+    centeryfrac=((viewheight/2)<<16)+updownangle;
+    yslope=origyslope+(viewheight/2)-(updownangle>>16);
+
     R_SetupFrame (player);
 
     // Clear buffers.

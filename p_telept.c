@@ -61,6 +61,10 @@ EV_Teleport
     fixed_t	oldy;
     fixed_t	oldz;
 
+    // don't teleport missiles
+    if (thing->flags & MF_MISSILE)
+	return 0;		
+
     // Don't teleport if hit back of line,
     //  so you can get out of teleporter.
     if (side == 1)		

@@ -55,7 +55,6 @@ extern fixed_t		projection;
 extern int		validcount;
 
 extern int		linecount;
-extern int		loopcount;
 
 
 //
@@ -71,8 +70,8 @@ extern int		loopcount;
 
 #define MAXLIGHTSCALE		48
 #define LIGHTSCALESHIFT		12
-#define MAXLIGHTZ	       128
-#define LIGHTZSHIFT		20
+#define MAXLIGHTZ	       512
+#define LIGHTZSHIFT		18
 
 extern lighttable_t*	scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern lighttable_t*	scalelightfixed[MAXLIGHTSCALE];
@@ -90,7 +89,8 @@ extern lighttable_t*	fixedcolormap;
 // Blocky/low detail mode.
 //B remove this?
 //  0 = high, 1 = low
-extern	int		detailshift;	
+//extern	int		detailshift;
+#define detailshift 0
 
 
 //

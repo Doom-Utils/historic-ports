@@ -42,6 +42,7 @@ rcsid[] = "$Id: s_sound.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 #include "p_local.h"
 
 #include "doomstat.h"
+#include "m_argv.h"
 
 
 // Purpose?
@@ -99,7 +100,11 @@ typedef struct
     void*	origin;
 
     // handle of the sound being played
-    int		handle;
+#ifdef DJGPP
+    SAMPLE*		handle;
+#else
+    int         handle;
+#endif
     
 } channel_t;
 
@@ -126,10 +131,14 @@ static musicinfo_t*	mus_playing=0;
 // following is set
 //  by the defaults code in M_misc:
 // number of channels available
-int			numChannels;	
+//int			numChannels;
+//allegro has 256 virtual channels
+#define numChannels 256
 
 static int		nextcleanup;
 
+
+int nosound=0;
 
 
 //
@@ -164,11 +173,15 @@ void S_Init
 {  
   int		i;
 
+  if (M_CheckParm("-nosound"))
+    {
+    nosound=1;
+    printf("Sound disabled\n");
+    return;
+    }
+
   fprintf( stderr, "S_Init: default sfx volume %d\n", sfxVolume);
 
-  // Whatever these did with DMX, these are rather dummies now.
-  I_SetChannels();
-  
   S_SetSfxVolume(sfxVolume);
   // No music with Linux - another dummy.
   S_SetMusicVolume(musicVolume);
@@ -204,6 +217,7 @@ void S_Start(void)
   int cnum;
   int mnum;
 
+  if (nosound) return;
   // kill all playing sounds at start of level
   //  (trust me - a good idea)
   for (cnum=0 ; cnum<numChannels ; cnum++)
@@ -267,6 +281,7 @@ S_StartSoundAtVolume
   
   mobj_t*	origin = (mobj_t *) origin_p;
   
+  if (nosound) return;
   
   // Debug.
   /*fprintf( stderr,
@@ -403,6 +418,7 @@ S_StartSound
     // if (sfx_id == sfx_sawful)
     // sfx_id = sfx_itemup;
 #endif
+  if (nosound) return;
   
     S_StartSoundAtVolume(origin, sfx_id, snd_SfxVolume);
 
@@ -473,6 +489,7 @@ void S_StopSound(void *origin)
 
     int cnum;
 
+  if (nosound) return;
     for (cnum=0 ; cnum<numChannels ; cnum++)
     {
 	if (channels[cnum].sfxinfo && channels[cnum].origin == origin)
@@ -496,6 +513,7 @@ void S_StopSound(void *origin)
 //
 void S_PauseSound(void)
 {
+  if (nosound) return;
     if (mus_playing && !mus_paused)
     {
 	I_PauseSong(mus_playing->handle);
@@ -505,6 +523,7 @@ void S_PauseSound(void)
 
 void S_ResumeSound(void)
 {
+  if (nosound) return;
     if (mus_playing && mus_paused)
     {
 	I_ResumeSong(mus_playing->handle);
@@ -528,6 +547,7 @@ void S_UpdateSounds(void* listener_p)
     
     mobj_t*	listener = (mobj_t*)listener_p;
 
+  if (nosound) return;
 
     
     // Clean up unused data.
@@ -615,13 +635,16 @@ void S_UpdateSounds(void* listener_p)
 
 void S_SetMusicVolume(int volume)
 {
-    if (volume < 0 || volume > 127)
+  if (nosound) return;
+/*    if (volume < 0 || volume > 15)
     {
 	I_Error("Attempt to set music volume at %d",
 		volume);
-    }    
+    }    */
+    if (volume<0) volume=0;
+    if (volume>15) volume=15;
 
-    I_SetMusicVolume(127);
+//    I_SetMusicVolume(127);
     I_SetMusicVolume(volume);
     snd_MusicVolume = volume;
 }
@@ -631,9 +654,13 @@ void S_SetMusicVolume(int volume)
 void S_SetSfxVolume(int volume)
 {
 
-    if (volume < 0 || volume > 127)
-	I_Error("Attempt to set sfx volume at %d", volume);
+  if (nosound) return;
+/*    if (volume < 0 || volume > 15)
+	   I_Error("Attempt to set sfx volume at %d", volume);*/
+    if (volume<0) volume=0;
+    if (volume>15) volume=15;
 
+    I_SetSfxVolume(volume);
     snd_SfxVolume = volume;
 
 }
@@ -643,6 +670,7 @@ void S_SetSfxVolume(int volume)
 //
 void S_StartMusic(int m_id)
 {
+  if (nosound) return;
     S_ChangeMusic(m_id, false);
 }
 
@@ -654,6 +682,7 @@ S_ChangeMusic
     musicinfo_t*	music;
     char		namebuf[9];
 
+  if (nosound) return;
     if ( (musicnum <= mus_None)
 	 || (musicnum >= NUMMUSIC) )
     {
@@ -688,6 +717,7 @@ S_ChangeMusic
 
 void S_StopMusic(void)
 {
+  if (nosound) return;
     if (mus_playing)
     {
 	if (mus_paused)
@@ -711,6 +741,7 @@ void S_StopChannel(int cnum)
     int		i;
     channel_t*	c = &channels[cnum];
 
+  if (nosound) return;
     if (c->sfxinfo)
     {
 	// stop the sound playing
@@ -762,6 +793,7 @@ S_AdjustSoundParams
     fixed_t	ady;
     angle_t	angle;
 
+  if (nosound) return 1;
     // calculate the distance to sound origin
     //  and clip it if necessary
     adx = abs(listener->x - source->x);
@@ -834,6 +866,7 @@ S_getChannel
     
     channel_t*	c;
 
+  if (nosound) return 0;
     // Find an open channel
     for (cnum=0 ; cnum<numChannels ; cnum++)
     {

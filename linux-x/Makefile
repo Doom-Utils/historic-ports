@@ -4,20 +4,23 @@
 #
 # $Log:$
 #
+VPATH=../
 CC=  gcc  # gcc or g++
 
-#CFLAGS=-g -Wall -DNORMALUNIX -DLINUX # -DUSEASM
-CFLAGS=-g -O3 -Wall -DNORMALUNIX
-#LDFLAGS=-L/usr/X11R6/lib
-#LIBS=-lXext -lX11 -lnsl -lm
-LDFLAGS=
-LIBS=
+CFLAGS=-g -O3 -ffast-math -fomit-frame-pointer -m486 -Wall -DNORMALUNIX -DLINUX -I../
+LDFLAGS=-L/usr/X11R6/lib
+LIBS=-lXext -lX11 -lm
 
 # subdirectory for objects
-O=dos
+O=obj
 
 # not too sophisticated dependency
 OBJS=				\
+		$(O)/optmenu.o		\
+		$(O)/dehacked.o		\
+		$(O)/strings.o		\
+		$(O)/multires.o		\
+		$(O)/funcpntr.o		\
 		$(O)/doomdef.o		\
 		$(O)/doomstat.o		\
 		$(O)/dstrings.o		\
@@ -62,7 +65,8 @@ OBJS=				\
 		$(O)/p_user.o			\
 		$(O)/r_bsp.o			\
 		$(O)/r_data.o			\
-		$(O)/r_draw.o			\
+		$(O)/r_draw1.o			\
+		$(O)/r_draw2.o			\
 		$(O)/r_main.o			\
 		$(O)/r_plane.o		\
 		$(O)/r_segs.o			\
@@ -70,7 +74,8 @@ OBJS=				\
 		$(O)/r_things.o		\
 		$(O)/w_wad.o			\
 		$(O)/wi_stuff.o		\
-		$(O)/v_video.o		\
+		$(O)/v_video1.o		\
+		$(O)/v_video2.o		\
 		$(O)/st_lib.o			\
 		$(O)/st_stuff.o		\
 		$(O)/hu_stuff.o		\
@@ -84,11 +89,11 @@ all:	 $(O)/dosdoom
 
 clean:
 	rm -f *.o *~ *.flc
-	rm -f dos/*
+	rm -f obj/*
 
 $(O)/dosdoom:	$(OBJS) $(O)/i_main.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(O)/i_main.o \
-	-o $(O)/dosdoom $(LIBS)
+	-o $(O)/xdosdoom $(LIBS)
 
 $(O)/%.o:	%.c
 	$(CC) $(CFLAGS) -c $< -o $@

@@ -631,16 +631,25 @@ void R_InitSpriteLumps (void)
 // R_InitColormaps
 //
 void R_InitColormaps (void)
-{
-    int	lump, length;
+  {
+  int	lump, length;
     
-    // Load in the light tables, 
+  if (BPP==1)
+    {
+    // Load in the light tables,
     //  256 byte align tables.
     lump = W_GetNumForName("COLORMAP"); 
-    length = W_LumpLength (lump) + 255; 
+    length = W_LumpLength (lump) + 255;
     colormaps = Z_Malloc (length, PU_STATIC, 0); 
-    colormaps = (byte *)( ((int)colormaps + 255)&~0xff); 
-    W_ReadLump (lump,colormaps); 
+    colormaps = (byte *)( ((int)colormaps + 255)&~0xff);
+    W_ReadLump (lump,colormaps);
+    }
+  else
+    {
+    colormaps = Z_Malloc (34*256*2+255, PU_STATIC, 0);
+    colormaps = (byte *)( ((int)colormaps + 255)&~0xff);
+    //colormap data is set up in set_palette
+    }
 }
 
 
@@ -654,13 +663,13 @@ void R_InitColormaps (void)
 void R_InitData (void)
 {
     R_InitTextures ();
-    printf ("\nInitTextures");
+//    printf ("\nInitTextures");
     R_InitFlats ();
-    printf ("\nInitFlats");
+//    printf ("\nInitFlats");
     R_InitSpriteLumps ();
-    printf ("\nInitSprites");
+//    printf ("\nInitSprites");
     R_InitColormaps ();
-    printf ("\nInitColormaps");
+//    printf ("\nInitColormaps");
 }
 
 

@@ -30,333 +30,337 @@
 //
 // D_Main.C
 //
-#define D_DEVSTR	"Development mode ON.\n"
-#define D_CDROM	"CD-ROM Version: default.cfg from c:\\doomdata\n"
+#define ENGD_DEVSTR	"Development mode ON.\n"
+#define ENGD_CDROM	"CD-ROM Version: default.cfg from c:\\doomdata\n"
 
 //
 //	M_Menu.C
 //
-#define PRESSKEY 	"press a key."
-#define PRESSYN 	"press y or n."
-#define QUITMSG	"are you sure you want to\nquit this great game?"
-#define LOADNET 	"you can't do load while in a net game!\n\n"PRESSKEY
-#define QLOADNET	"you can't quickload during a netgame!\n\n"PRESSKEY
-#define QSAVESPOT	"you haven't picked a quicksave slot yet!\n\n"PRESSKEY
-#define SAVEDEAD 	"you can't save if you aren't playing!\n\n"PRESSKEY
-#define QSPROMPT 	"quicksave over your game named\n\n'%s'?\n\n"PRESSYN
-#define QLPROMPT	"do you want to quickload the game named\n\n'%s'?\n\n"PRESSYN
+#define ENGPRESSKEY 	"press a key."
+#define ENGPRESSYN 	"press y or n."
+#define ENGQUITMSG	"are you sure you want to\nquit this great game?"
+#define ENGLOADNET 	"you can't do load while in a net game!\n\npress a key."
+#define ENGQLOADNET	"you can't quickload during a netgame!\n\npress a key."
+#define ENGQSAVESPOT	"you haven't picked a quicksave slot yet!\n\npress a key."
+#define ENGSAVEDEAD 	"you can't save if you aren't playing!\n\npress a key."
+#define ENGQSPROMPT 	"quicksave over your game named\n\n'%s'?\n\npress y or n."
+#define ENGQLPROMPT	"do you want to quickload the game named\n\n'%s'?\n\npress y or n."
 
-#define NEWGAME	\
+#define ENGNEWGAME	\
 "you can't start a new game\n"\
-"while in a network game.\n\n"PRESSKEY
+"while in a network game.\n\npress a key."
 
-#define NIGHTMARE	\
+#define ENGNIGHTMARE	\
 "are you sure? this skill level\n"\
-"isn't even remotely fair.\n\n"PRESSYN
+"isn't even remotely fair.\n\npress y or n."
 
-#define SWSTRING	\
+#define ENGSWSTRING	\
 "this is the shareware version of doom.\n\n"\
-"you need to order the entire trilogy.\n\n"PRESSKEY
+"you need to order the entire trilogy.\n\npress a key."
 
-#define MSGOFF	"Messages OFF"
-#define MSGON		"Messages ON"
-#define NETEND	"you can't end a netgame!\n\n"PRESSKEY
-#define ENDGAME	"are you sure you want to end the game?\n\n"PRESSYN
+#define ENGMSGOFF	"Messages OFF"
+#define ENGMSGON		"Messages ON"
+#define ENGNETEND	"you can't end a netgame!\n\npress a key."
+#define ENGENDGAME	"are you sure you want to end the game?\n\npress y or n."
 
-#define DOSY		"(press y to quit)"
+#define ENGDOSY		"(press y to quit)"
 
-#define DETAILHI	"High detail"
-#define DETAILLO	"Low detail"
-#define GAMMALVL0	"Gamma correction OFF"
-#define GAMMALVL1	"Gamma correction level 1"
-#define GAMMALVL2	"Gamma correction level 2"
-#define GAMMALVL3	"Gamma correction level 3"
-#define GAMMALVL4	"Gamma correction level 4"
-#define EMPTYSTRING	"empty slot"
+#define ENGDETAILHI	"High detail"
+#define ENGDETAILLO	"Low detail"
+#define ENGGAMMALVL0	"Gamma correction OFF"
+#define ENGGAMMALVL1	"Gamma correction level 1"
+#define ENGGAMMALVL2	"Gamma correction level 2"
+#define ENGGAMMALVL3	"Gamma correction level 3"
+#define ENGGAMMALVL4	"Gamma correction level 4"
+#define ENGEMPTYSTRING	"empty slot"
 
 //
 //	P_inter.C
 //
-#define GOTARMOR	"Picked up the armor."
-#define GOTMEGA	"Picked up the MegaArmor!"
-#define GOTHTHBONUS	"Picked up a health bonus."
-#define GOTARMBONUS	"Picked up an armor bonus."
-#define GOTSTIM	"Picked up a stimpack."
-#define GOTMEDINEED	"Picked up a medikit that you REALLY need!"
-#define GOTMEDIKIT	"Picked up a medikit."
-#define GOTSUPER	"Supercharge!"
+#define ENGGOTARMOR	"Picked up the armor."
+#define ENGGOTMEGA	"Picked up the MegaArmor!"
+#define ENGGOTHTHBONUS	"Picked up a health bonus."
+#define ENGGOTARMBONUS	"Picked up an armor bonus."
+#define ENGGOTSTIM	"Picked up a stimpack."
+#define ENGGOTMEDINEED	"Picked up a medikit that you REALLY need!"
+#define ENGGOTMEDIKIT	"Picked up a medikit."
+#define ENGGOTSUPER	"Supercharge!"
 
-#define GOTBLUECARD	"Picked up a blue keycard."
-#define GOTYELWCARD	"Picked up a yellow keycard."
-#define GOTREDCARD	"Picked up a red keycard."
-#define GOTBLUESKUL	"Picked up a blue skull key."
-#define GOTYELWSKUL	"Picked up a yellow skull key."
-#define GOTREDSKULL	"Picked up a red skull key."
+#define ENGGOTBLUECARD	"Picked up a blue keycard."
+#define ENGGOTYELWCARD	"Picked up a yellow keycard."
+#define ENGGOTREDCARD	"Picked up a red keycard."
+#define ENGGOTBLUESKUL	"Picked up a blue skull key."
+#define ENGGOTYELWSKUL	"Picked up a yellow skull key."
+#define ENGGOTREDSKULL	"Picked up a red skull key."
 
-#define GOTINVUL	"Invulnerability!"
-#define GOTBERSERK	"Berserk!"
-#define GOTINVIS	"Partial Invisibility"
-#define GOTSUIT	"Radiation Shielding Suit"
-#define GOTMAP	"Computer Area Map"
-#define GOTVISOR	"Light Amplification Visor"
-#define GOTMSPHERE	"MegaSphere!"
+#define ENGGOTINVUL	"Invulnerability!"
+#define ENGGOTBERSERK	"Berserk!"
+#define ENGGOTINVIS	"Partial Invisibility"
+#define ENGGOTSUIT	"Radiation Shielding Suit"
+#define ENGGOTMAP	"Computer Area Map"
+#define ENGGOTVISOR	"Light Amplification Visor"
+#define ENGGOTMSPHERE	"MegaSphere!"
 
-#define GOTCLIP	"Picked up a clip."
-#define GOTCLIPBOX	"Picked up a box of bullets."
-#define GOTROCKET	"Picked up a rocket."
-#define GOTROCKBOX	"Picked up a box of rockets."
-#define GOTCELL	"Picked up an energy cell."
-#define GOTCELLBOX	"Picked up an energy cell pack."
-#define GOTSHELLS	"Picked up 4 shotgun shells."
-#define GOTSHELLBOX	"Picked up a box of shotgun shells."
-#define GOTBACKPACK	"Picked up a backpack full of ammo!"
+#define ENGGOTCLIP	"Picked up a clip."
+#define ENGGOTCLIPBOX	"Picked up a box of bullets."
+#define ENGGOTROCKET	"Picked up a rocket."
+#define ENGGOTROCKBOX	"Picked up a box of rockets."
+#define ENGGOTCELL	"Picked up an energy cell."
+#define ENGGOTCELLBOX	"Picked up an energy cell pack."
+#define ENGGOTSHELLS	"Picked up 4 shotgun shells."
+#define ENGGOTSHELLBOX	"Picked up a box of shotgun shells."
+#define ENGGOTBACKPACK	"Picked up a backpack full of ammo!"
 
-#define GOTBFG9000	"You got the BFG9000!  Oh, yes."
-#define GOTCHAINGUN	"You got the chaingun!"
-#define GOTCHAINSAW	"A chainsaw!  Find some meat!"
-#define GOTLAUNCHER	"You got the rocket launcher!"
-#define GOTPLASMA	"You got the plasma gun!"
-#define GOTSHOTGUN	"You got the shotgun!"
-#define GOTSHOTGUN2	"You got the super shotgun!"
+#define ENGGOTBFG9000	"You got the BFG9000!  Oh, yes."
+#define ENGGOTCHAINGUN	"You got the chaingun!"
+#define ENGGOTCHAINSAW	"A chainsaw!  Find some meat!"
+#define ENGGOTLAUNCHER	"You got the rocket launcher!"
+#define ENGGOTPLASMA	"You got the plasma gun!"
+#define ENGGOTSHOTGUN	"You got the shotgun!"
+#define ENGGOTSHOTGUN2	"You got the super shotgun!"
 
 //
 // P_Doors.C
 //
-#define PD_BLUEO	"You need a blue key to activate this object"
-#define PD_REDO	"You need a red key to activate this object"
-#define PD_YELLOWO	"You need a yellow key to activate this object"
-#define PD_BLUEK	"You need a blue key to open this door"
-#define PD_REDK	"You need a red key to open this door"
-#define PD_YELLOWK	"You need a yellow key to open this door"
+#define ENGPD_BLUEO	"You need a blue key to activate this object"
+#define ENGPD_REDO	"You need a red key to activate this object"
+#define ENGPD_YELLOWO	"You need a yellow key to activate this object"
+#define ENGPD_BLUEK	"You need a blue key to open this door"
+#define ENGPD_REDK	"You need a red key to open this door"
+#define ENGPD_YELLOWK	"You need a yellow key to open this door"
 
 //
 //	G_game.C
 //
-#define GGSAVED	"game saved."
+#define ENGGGSAVED	"game saved."
 
 //
 //	HU_stuff.C
 //
-#define HUSTR_MSGU	"[Message unsent]"
+#define ENGHUSTR_MSGU	"[Message unsent]"
 
-#define HUSTR_E1M1	"E1M1: Hangar"
-#define HUSTR_E1M2	"E1M2: Nuclear Plant"
-#define HUSTR_E1M3	"E1M3: Toxin Refinery"
-#define HUSTR_E1M4	"E1M4: Command Control"
-#define HUSTR_E1M5	"E1M5: Phobos Lab"
-#define HUSTR_E1M6	"E1M6: Central Processing"
-#define HUSTR_E1M7	"E1M7: Computer Station"
-#define HUSTR_E1M8	"E1M8: Phobos Anomaly"
-#define HUSTR_E1M9	"E1M9: Military Base"
+#define ENGHUSTR_E1M1	"E1M1: Hangar"
+#define ENGHUSTR_E1M2	"E1M2: Nuclear Plant"
+#define ENGHUSTR_E1M3	"E1M3: Toxin Refinery"
+#define ENGHUSTR_E1M4	"E1M4: Command Control"
+#define ENGHUSTR_E1M5	"E1M5: Phobos Lab"
+#define ENGHUSTR_E1M6	"E1M6: Central Processing"
+#define ENGHUSTR_E1M7	"E1M7: Computer Station"
+#define ENGHUSTR_E1M8	"E1M8: Phobos Anomaly"
+#define ENGHUSTR_E1M9	"E1M9: Military Base"
 
-#define HUSTR_E2M1	"E2M1: Deimos Anomaly"
-#define HUSTR_E2M2	"E2M2: Containment Area"
-#define HUSTR_E2M3	"E2M3: Refinery"
-#define HUSTR_E2M4	"E2M4: Deimos Lab"
-#define HUSTR_E2M5	"E2M5: Command Center"
-#define HUSTR_E2M6	"E2M6: Halls of the Damned"
-#define HUSTR_E2M7	"E2M7: Spawning Vats"
-#define HUSTR_E2M8	"E2M8: Tower of Babel"
-#define HUSTR_E2M9	"E2M9: Fortress of Mystery"
+#define ENGHUSTR_E2M1	"E2M1: Deimos Anomaly"
+#define ENGHUSTR_E2M2	"E2M2: Containment Area"
+#define ENGHUSTR_E2M3	"E2M3: Refinery"
+#define ENGHUSTR_E2M4	"E2M4: Deimos Lab"
+#define ENGHUSTR_E2M5	"E2M5: Command Center"
+#define ENGHUSTR_E2M6	"E2M6: Halls of the Damned"
+#define ENGHUSTR_E2M7	"E2M7: Spawning Vats"
+#define ENGHUSTR_E2M8	"E2M8: Tower of Babel"
+#define ENGHUSTR_E2M9	"E2M9: Fortress of Mystery"
 
-#define HUSTR_E3M1	"E3M1: Hell Keep"
-#define HUSTR_E3M2	"E3M2: Slough of Despair"
-#define HUSTR_E3M3	"E3M3: Pandemonium"
-#define HUSTR_E3M4	"E3M4: House of Pain"
-#define HUSTR_E3M5	"E3M5: Unholy Cathedral"
-#define HUSTR_E3M6	"E3M6: Mt. Erebus"
-#define HUSTR_E3M7	"E3M7: Limbo"
-#define HUSTR_E3M8	"E3M8: Dis"
-#define HUSTR_E3M9	"E3M9: Warrens"
+#define ENGHUSTR_E3M1	"E3M1: Hell Keep"
+#define ENGHUSTR_E3M2	"E3M2: Slough of Despair"
+#define ENGHUSTR_E3M3	"E3M3: Pandemonium"
+#define ENGHUSTR_E3M4	"E3M4: House of Pain"
+#define ENGHUSTR_E3M5	"E3M5: Unholy Cathedral"
+#define ENGHUSTR_E3M6	"E3M6: Mt. Erebus"
+#define ENGHUSTR_E3M7	"E3M7: Limbo"
+#define ENGHUSTR_E3M8	"E3M8: Dis"
+#define ENGHUSTR_E3M9	"E3M9: Warrens"
 
-#define HUSTR_E4M1	"E4M1: Hell Beneath"
-#define HUSTR_E4M2	"E4M2: Perfect Hatred"
-#define HUSTR_E4M3	"E4M3: Sever The Wicked"
-#define HUSTR_E4M4	"E4M4: Unruly Evil"
-#define HUSTR_E4M5	"E4M5: They Will Repent"
-#define HUSTR_E4M6	"E4M6: Against Thee Wickedly"
-#define HUSTR_E4M7	"E4M7: And Hell Followed"
-#define HUSTR_E4M8	"E4M8: Unto The Cruel"
-#define HUSTR_E4M9	"E4M9: Fear"
+#define ENGHUSTR_E4M1	"E4M1: Hell Beneath"
+#define ENGHUSTR_E4M2	"E4M2: Perfect Hatred"
+#define ENGHUSTR_E4M3	"E4M3: Sever The Wicked"
+#define ENGHUSTR_E4M4	"E4M4: Unruly Evil"
+#define ENGHUSTR_E4M5	"E4M5: They Will Repent"
+#define ENGHUSTR_E4M6	"E4M6: Against Thee Wickedly"
+#define ENGHUSTR_E4M7	"E4M7: And Hell Followed"
+#define ENGHUSTR_E4M8	"E4M8: Unto The Cruel"
+#define ENGHUSTR_E4M9	"E4M9: Fear"
 
-#define HUSTR_1	"level 1: entryway"
-#define HUSTR_2	"level 2: underhalls"
-#define HUSTR_3	"level 3: the gantlet"
-#define HUSTR_4	"level 4: the focus"
-#define HUSTR_5	"level 5: the waste tunnels"
-#define HUSTR_6	"level 6: the crusher"
-#define HUSTR_7	"level 7: dead simple"
-#define HUSTR_8	"level 8: tricks and traps"
-#define HUSTR_9	"level 9: the pit"
-#define HUSTR_10	"level 10: refueling base"
-#define HUSTR_11	"level 11: 'o' of destruction!"
+#define ENGHUSTR_1	"level 1: entryway"
+#define ENGHUSTR_2	"level 2: underhalls"
+#define ENGHUSTR_3	"level 3: the gantlet"
+#define ENGHUSTR_4	"level 4: the focus"
+#define ENGHUSTR_5	"level 5: the waste tunnels"
+#define ENGHUSTR_6	"level 6: the crusher"
+#define ENGHUSTR_7	"level 7: dead simple"
+#define ENGHUSTR_8	"level 8: tricks and traps"
+#define ENGHUSTR_9	"level 9: the pit"
+#define ENGHUSTR_10	"level 10: refueling base"
+#define ENGHUSTR_11	"level 11: 'o' of destruction!"
 
-#define HUSTR_12	"level 12: the factory"
-#define HUSTR_13	"level 13: downtown"
-#define HUSTR_14	"level 14: the inmost dens"
-#define HUSTR_15	"level 15: industrial zone"
-#define HUSTR_16	"level 16: suburbs"
-#define HUSTR_17	"level 17: tenements"
-#define HUSTR_18	"level 18: the courtyard"
-#define HUSTR_19	"level 19: the citadel"
-#define HUSTR_20	"level 20: gotcha!"
+#define ENGHUSTR_12	"level 12: the factory"
+#define ENGHUSTR_13	"level 13: downtown"
+#define ENGHUSTR_14	"level 14: the inmost dens"
+#define ENGHUSTR_15	"level 15: industrial zone"
+#define ENGHUSTR_16	"level 16: suburbs"
+#define ENGHUSTR_17	"level 17: tenements"
+#define ENGHUSTR_18	"level 18: the courtyard"
+#define ENGHUSTR_19	"level 19: the citadel"
+#define ENGHUSTR_20	"level 20: gotcha!"
 
-#define HUSTR_21	"level 21: nirvana"
-#define HUSTR_22	"level 22: the catacombs"
-#define HUSTR_23	"level 23: barrels o' fun"
-#define HUSTR_24	"level 24: the chasm"
-#define HUSTR_25	"level 25: bloodfalls"
-#define HUSTR_26	"level 26: the abandoned mines"
-#define HUSTR_27	"level 27: monster condo"
-#define HUSTR_28	"level 28: the spirit world"
-#define HUSTR_29	"level 29: the living end"
-#define HUSTR_30	"level 30: icon of sin"
+#define ENGHUSTR_21	"level 21: nirvana"
+#define ENGHUSTR_22	"level 22: the catacombs"
+#define ENGHUSTR_23	"level 23: barrels o' fun"
+#define ENGHUSTR_24	"level 24: the chasm"
+#define ENGHUSTR_25	"level 25: bloodfalls"
+#define ENGHUSTR_26	"level 26: the abandoned mines"
+#define ENGHUSTR_27	"level 27: monster condo"
+#define ENGHUSTR_28	"level 28: the spirit world"
+#define ENGHUSTR_29	"level 29: the living end"
+#define ENGHUSTR_30	"level 30: icon of sin"
 
-#define HUSTR_31	"level 31: wolfenstein"
-#define HUSTR_32	"level 32: grosse"
+#define ENGHUSTR_31	"level 31: wolfenstein"
+#define ENGHUSTR_32	"level 32: grosse"
 
-#define PHUSTR_1	"level 1: congo"
-#define PHUSTR_2	"level 2: well of souls"
-#define PHUSTR_3	"level 3: aztec"
-#define PHUSTR_4	"level 4: caged"
-#define PHUSTR_5	"level 5: ghost town"
-#define PHUSTR_6	"level 6: baron's lair"
-#define PHUSTR_7	"level 7: caughtyard"
-#define PHUSTR_8	"level 8: realm"
-#define PHUSTR_9	"level 9: abattoire"
-#define PHUSTR_10	"level 10: onslaught"
-#define PHUSTR_11	"level 11: hunted"
+#define ENGPHUSTR_1	"level 1: congo"
+#define ENGPHUSTR_2	"level 2: well of souls"
+#define ENGPHUSTR_3	"level 3: aztec"
+#define ENGPHUSTR_4	"level 4: caged"
+#define ENGPHUSTR_5	"level 5: ghost town"
+#define ENGPHUSTR_6	"level 6: baron's lair"
+#define ENGPHUSTR_7	"level 7: caughtyard"
+#define ENGPHUSTR_8	"level 8: realm"
+#define ENGPHUSTR_9	"level 9: abattoire"
+#define ENGPHUSTR_10	"level 10: onslaught"
+#define ENGPHUSTR_11	"level 11: hunted"
 
-#define PHUSTR_12	"level 12: speed"
-#define PHUSTR_13	"level 13: the crypt"
-#define PHUSTR_14	"level 14: genesis"
-#define PHUSTR_15	"level 15: the twilight"
-#define PHUSTR_16	"level 16: the omen"
-#define PHUSTR_17	"level 17: compound"
-#define PHUSTR_18	"level 18: neurosphere"
-#define PHUSTR_19	"level 19: nme"
-#define PHUSTR_20	"level 20: the death domain"
+#define ENGPHUSTR_12	"level 12: speed"
+#define ENGPHUSTR_13	"level 13: the crypt"
+#define ENGPHUSTR_14	"level 14: genesis"
+#define ENGPHUSTR_15	"level 15: the twilight"
+#define ENGPHUSTR_16	"level 16: the omen"
+#define ENGPHUSTR_17	"level 17: compound"
+#define ENGPHUSTR_18	"level 18: neurosphere"
+#define ENGPHUSTR_19	"level 19: nme"
+#define ENGPHUSTR_20	"level 20: the death domain"
 
-#define PHUSTR_21	"level 21: slayer"
-#define PHUSTR_22	"level 22: impossible mission"
-#define PHUSTR_23	"level 23: tombstone"
-#define PHUSTR_24	"level 24: the final frontier"
-#define PHUSTR_25	"level 25: the temple of darkness"
-#define PHUSTR_26	"level 26: bunker"
-#define PHUSTR_27	"level 27: anti-christ"
-#define PHUSTR_28	"level 28: the sewers"
-#define PHUSTR_29	"level 29: odyssey of noises"
-#define PHUSTR_30	"level 30: the gateway of hell"
+#define ENGPHUSTR_21	"level 21: slayer"
+#define ENGPHUSTR_22	"level 22: impossible mission"
+#define ENGPHUSTR_23	"level 23: tombstone"
+#define ENGPHUSTR_24	"level 24: the final frontier"
+#define ENGPHUSTR_25	"level 25: the temple of darkness"
+#define ENGPHUSTR_26	"level 26: bunker"
+#define ENGPHUSTR_27	"level 27: anti-christ"
+#define ENGPHUSTR_28	"level 28: the sewers"
+#define ENGPHUSTR_29	"level 29: odyssey of noises"
+#define ENGPHUSTR_30	"level 30: the gateway of hell"
 
-#define PHUSTR_31	"level 31: cyberden"
-#define PHUSTR_32	"level 32: go 2 it"
+#define ENGPHUSTR_31	"level 31: cyberden"
+#define ENGPHUSTR_32	"level 32: go 2 it"
 
-#define THUSTR_1	"level 1: system control"
-#define THUSTR_2	"level 2: human bbq"
-#define THUSTR_3	"level 3: power control"
-#define THUSTR_4	"level 4: wormhole"
-#define THUSTR_5	"level 5: hanger"
-#define THUSTR_6	"level 6: open season"
-#define THUSTR_7	"level 7: prison"
-#define THUSTR_8	"level 8: metal"
-#define THUSTR_9	"level 9: stronghold"
-#define THUSTR_10	"level 10: redemption"
-#define THUSTR_11	"level 11: storage facility"
+#define ENGTHUSTR_1	"level 1: system control"
+#define ENGTHUSTR_2	"level 2: human bbq"
+#define ENGTHUSTR_3	"level 3: power control"
+#define ENGTHUSTR_4	"level 4: wormhole"
+#define ENGTHUSTR_5	"level 5: hanger"
+#define ENGTHUSTR_6	"level 6: open season"
+#define ENGTHUSTR_7	"level 7: prison"
+#define ENGTHUSTR_8	"level 8: metal"
+#define ENGTHUSTR_9	"level 9: stronghold"
+#define ENGTHUSTR_10	"level 10: redemption"
+#define ENGTHUSTR_11	"level 11: storage facility"
 
-#define THUSTR_12	"level 12: crater"
-#define THUSTR_13	"level 13: nukage processing"
-#define THUSTR_14	"level 14: steel works"
-#define THUSTR_15	"level 15: dead zone"
-#define THUSTR_16	"level 16: deepest reaches"
-#define THUSTR_17	"level 17: processing area"
-#define THUSTR_18	"level 18: mill"
-#define THUSTR_19	"level 19: shipping/respawning"
-#define THUSTR_20	"level 20: central processing"
+#define ENGTHUSTR_12	"level 12: crater"
+#define ENGTHUSTR_13	"level 13: nukage processing"
+#define ENGTHUSTR_14	"level 14: steel works"
+#define ENGTHUSTR_15	"level 15: dead zone"
+#define ENGTHUSTR_16	"level 16: deepest reaches"
+#define ENGTHUSTR_17	"level 17: processing area"
+#define ENGTHUSTR_18	"level 18: mill"
+#define ENGTHUSTR_19	"level 19: shipping/respawning"
+#define ENGTHUSTR_20	"level 20: central processing"
 
-#define THUSTR_21	"level 21: administration center"
-#define THUSTR_22	"level 22: habitat"
-#define THUSTR_23	"level 23: lunar mining project"
-#define THUSTR_24	"level 24: quarry"
-#define THUSTR_25	"level 25: baron's den"
-#define THUSTR_26	"level 26: ballistyx"
-#define THUSTR_27	"level 27: mount pain"
-#define THUSTR_28	"level 28: heck"
-#define THUSTR_29	"level 29: river styx"
-#define THUSTR_30	"level 30: last call"
+#define ENGTHUSTR_21	"level 21: administration center"
+#define ENGTHUSTR_22	"level 22: habitat"
+#define ENGTHUSTR_23	"level 23: lunar mining project"
+#define ENGTHUSTR_24	"level 24: quarry"
+#define ENGTHUSTR_25	"level 25: baron's den"
+#define ENGTHUSTR_26	"level 26: ballistyx"
+#define ENGTHUSTR_27	"level 27: mount pain"
+#define ENGTHUSTR_28	"level 28: heck"
+#define ENGTHUSTR_29	"level 29: river styx"
+#define ENGTHUSTR_30	"level 30: last call"
 
-#define THUSTR_31	"level 31: pharaoh"
-#define THUSTR_32	"level 32: caribbean"
+#define ENGTHUSTR_31	"level 31: pharaoh"
+#define ENGTHUSTR_32	"level 32: caribbean"
 
-#define HUSTR_CHATMACRO1	"I'm ready to kick butt!"
-#define HUSTR_CHATMACRO2	"I'm OK."
-#define HUSTR_CHATMACRO3	"I'm not looking too good!"
-#define HUSTR_CHATMACRO4	"Help!"
-#define HUSTR_CHATMACRO5	"You suck!"
-#define HUSTR_CHATMACRO6	"Next time, scumbag..."
-#define HUSTR_CHATMACRO7	"Come here!"
-#define HUSTR_CHATMACRO8	"I'll take care of it."
-#define HUSTR_CHATMACRO9	"Yes"
-#define HUSTR_CHATMACRO0	"No"
+#define ENGHUSTR_CHATMACRO1	"I'm ready to kick butt!"
+#define ENGHUSTR_CHATMACRO2	"I'm OK."
+#define ENGHUSTR_CHATMACRO3	"I'm not looking too good!"
+#define ENGHUSTR_CHATMACRO4	"Help!"
+#define ENGHUSTR_CHATMACRO5	"You suck!"
+#define ENGHUSTR_CHATMACRO6	"Next time, scumbag..."
+#define ENGHUSTR_CHATMACRO7	"Come here!"
+#define ENGHUSTR_CHATMACRO8	"I'll take care of it."
+#define ENGHUSTR_CHATMACRO9	"Yes"
+#define ENGHUSTR_CHATMACRO0	"No"
 
-#define HUSTR_TALKTOSELF1	"You mumble to yourself"
-#define HUSTR_TALKTOSELF2	"Who's there?"
-#define HUSTR_TALKTOSELF3	"You scare yourself"
-#define HUSTR_TALKTOSELF4	"You start to rave"
-#define HUSTR_TALKTOSELF5	"You've lost it..."
+#define ENGHUSTR_TALKTOSELF1	"You mumble to yourself"
+#define ENGHUSTR_TALKTOSELF2	"Who's there?"
+#define ENGHUSTR_TALKTOSELF3	"You scare yourself"
+#define ENGHUSTR_TALKTOSELF4	"You start to rave"
+#define ENGHUSTR_TALKTOSELF5	"You've lost it..."
 
-#define HUSTR_MESSAGESENT	"[Message Sent]"
+#define ENGHUSTR_MESSAGESENT	"[Message Sent]"
 
 // The following should NOT be changed unless it seems
 // just AWFULLY necessary
 
-#define HUSTR_PLRGREEN	"Green: "
-#define HUSTR_PLRINDIGO	"Indigo: "
-#define HUSTR_PLRBROWN	"Brown: "
-#define HUSTR_PLRRED		"Red: "
+#define ENGHUSTR_PLRGREEN	"Green: "
+#define ENGHUSTR_PLRINDIGO	"Indigo: "
+#define ENGHUSTR_PLRBROWN	"Brown: "
+#define ENGHUSTR_PLRRED		"Red: "
+#define ENGHUSTR_PLRGOLD	"Gold: "
+#define ENGHUSTR_PLRBLUE	"Blue: "
+#define ENGHUSTR_PLRDKBLUE	"DkBlue: "
+#define ENGHUSTR_PLRPINK	"Pink: "
 
-#define HUSTR_KEYGREEN	'g'
-#define HUSTR_KEYINDIGO	'i'
-#define HUSTR_KEYBROWN	'b'
-#define HUSTR_KEYRED	'r'
+#define ENGHUSTR_KEYGREEN	"g"
+#define ENGHUSTR_KEYINDIGO	"i"
+#define ENGHUSTR_KEYBROWN "b"
+#define ENGHUSTR_KEYRED	"r"
 
 //
 //	AM_map.C
 //
 
-#define AMSTR_FOLLOWON	"Follow Mode ON"
-#define AMSTR_FOLLOWOFF	"Follow Mode OFF"
+#define ENGAMSTR_FOLLOWON	"Follow Mode ON"
+#define ENGAMSTR_FOLLOWOFF	"Follow Mode OFF"
 
-#define AMSTR_GRIDON	"Grid ON"
-#define AMSTR_GRIDOFF	"Grid OFF"
+#define ENGAMSTR_GRIDON	"Grid ON"
+#define ENGAMSTR_GRIDOFF	"Grid OFF"
 
-#define AMSTR_MARKEDSPOT	"Marked Spot"
-#define AMSTR_MARKSCLEARED	"All Marks Cleared"
+#define ENGAMSTR_MARKEDSPOT	"Marked Spot"
+#define ENGAMSTR_MARKSCLEARED	"All Marks Cleared"
 
 //
 //	ST_stuff.C
 //
 
-#define STSTR_MUS		"Music Change"
-#define STSTR_NOMUS		"IMPOSSIBLE SELECTION"
-#define STSTR_DQDON		"Degreelessness Mode On"
-#define STSTR_DQDOFF	"Degreelessness Mode Off"
+#define ENGSTSTR_MUS		"Music Change"
+#define ENGSTSTR_NOMUS		"IMPOSSIBLE SELECTION"
+#define ENGSTSTR_DQDON		"Degreelessness Mode On"
+#define ENGSTSTR_DQDOFF	"Degreelessness Mode Off"
 
-#define STSTR_KFAADDED	"Very Happy Ammo Added"
-#define STSTR_FAADDED	"Ammo (no keys) Added"
+#define ENGSTSTR_KFAADDED	"Very Happy Ammo Added"
+#define ENGSTSTR_FAADDED	"Ammo (no keys) Added"
 
-#define STSTR_NCON		"No Clipping Mode ON"
-#define STSTR_NCOFF		"No Clipping Mode OFF"
+#define ENGSTSTR_NCON		"No Clipping Mode ON"
+#define ENGSTSTR_NCOFF		"No Clipping Mode OFF"
 
-#define STSTR_BEHOLD	"inVuln, Str, Inviso, Rad, Allmap, or Lite-amp"
-#define STSTR_BEHOLDX	"Power-up Toggled"
+#define ENGSTSTR_BEHOLD	"inVuln, Str, Inviso, Rad, Allmap, or Lite-amp"
+#define ENGSTSTR_BEHOLDX	"Power-up Toggled"
 
-#define STSTR_CHOPPERS	"... doesn't suck - GM"
-#define STSTR_CLEV		"Changing Level..."
+#define ENGSTSTR_CHOPPERS	"... doesn't suck - GM"
+#define ENGSTSTR_CLEV		"Changing Level..."
 
 //
 //	F_Finale.C
 //
-#define E1TEXT \
+#define ENGE1TEXT \
 "Once you beat the big badasses and\n"\
 "clean out the moon base you're supposed\n"\
 "to win, aren't you? Aren't you? Where's\n"\
@@ -374,7 +378,7 @@
 "sequel, Inferno!\n"
 
 
-#define E2TEXT \
+#define ENGE2TEXT \
 "You've done it! The hideous cyber-\n"\
 "demon lord that ruled the lost Deimos\n"\
 "moon base has been slain and you\n"\
@@ -394,7 +398,7 @@
 "DOOM! -- Inferno."
 
 
-#define E3TEXT \
+#define ENGE3TEXT \
 "The loathsome spiderdemon that\n"\
 "masterminded the invasion of the moon\n"\
 "bases and caused so much death has had\n"\
@@ -414,7 +418,7 @@
 "door with you ..."
 
 
-#define E4TEXT \
+#define ENGE4TEXT \
 "the spider mastermind must have sent forth\n"\
 "its legions of hellspawn before your\n"\
 "final confrontation with that terrible\n"\
@@ -435,7 +439,7 @@
 
 // after level 6, put this:
 
-#define C1TEXT \
+#define ENGC1TEXT \
 "YOU HAVE ENTERED DEEPLY INTO THE INFESTED\n" \
 "STARPORT. BUT SOMETHING IS WRONG. THE\n" \
 "MONSTERS HAVE BROUGHT THEIR OWN REALITY\n" \
@@ -451,7 +455,7 @@
 
 // After level 11, put this:
 
-#define C2TEXT \
+#define ENGC2TEXT \
 "YOU HAVE WON! YOUR VICTORY HAS ENABLED\n" \
 "HUMANKIND TO EVACUATE EARTH AND ESCAPE\n"\
 "THE NIGHTMARE.  NOW YOU ARE THE ONLY\n"\
@@ -473,7 +477,7 @@
 
 // After level 20, put this:
 
-#define C3TEXT \
+#define ENGC3TEXT \
 "YOU ARE AT THE CORRUPT HEART OF THE CITY,\n"\
 "SURROUNDED BY THE CORPSES OF YOUR ENEMIES.\n"\
 "YOU SEE NO WAY TO DESTROY THE CREATURES'\n"\
@@ -487,7 +491,7 @@
 
 // After level 29, put this:
 
-#define C4TEXT \
+#define ENGC4TEXT \
 "THE HORRENDOUS VISAGE OF THE BIGGEST\n"\
 "DEMON YOU'VE EVER SEEN CRUMBLES BEFORE\n"\
 "YOU, AFTER YOU PUMP YOUR ROCKETS INTO\n"\
@@ -508,7 +512,7 @@
 
 // Before level 31, put this:
 
-#define C5TEXT \
+#define ENGC5TEXT \
 "CONGRATULATIONS, YOU'VE FOUND THE SECRET\n"\
 "LEVEL! LOOKS LIKE IT'S BEEN BUILT BY\n"\
 "HUMANS, RATHER THAN DEMONS. YOU WONDER\n"\
@@ -518,7 +522,7 @@
 
 // Before level 32, put this:
 
-#define C6TEXT \
+#define ENGC6TEXT \
 "CONGRATULATIONS, YOU'VE FOUND THE\n"\
 "SUPER SECRET LEVEL!  YOU'D BETTER\n"\
 "BLAZE THROUGH THIS ONE!\n"
@@ -526,7 +530,7 @@
 
 // after map 06	
 
-#define P1TEXT  \
+#define ENGP1TEXT  \
 "You gloat over the steaming carcass of the\n"\
 "Guardian.  With its death, you've wrested\n"\
 "the Accelerator from the stinking claws\n"\
@@ -543,7 +547,7 @@
 
 // after map 11
 
-#define P2TEXT \
+#define ENGP2TEXT \
 "Even the deadly Arch-Vile labyrinth could\n"\
 "not stop you, and you've gotten to the\n"\
 "prototype Accelerator which is soon\n"\
@@ -554,7 +558,7 @@
 
 // after map 20
 
-#define P3TEXT \
+#define ENGP3TEXT \
 "You've bashed and battered your way into\n"\
 "the heart of the devil-hive.  Time for a\n"\
 "Search-and-Destroy mission, aimed at the\n"\
@@ -568,7 +572,7 @@
 
 // after map 30
 
-#define P4TEXT \
+#define ENGP4TEXT \
 "The Gatekeeper's evil face is splattered\n"\
 "all over the place.  As its tattered corpse\n"\
 "collapses, an inverted Gate forms and\n"\
@@ -584,7 +588,7 @@
 
 // before map 31
 
-#define P5TEXT \
+#define ENGP5TEXT \
 "You've found the second-hardest level we\n"\
 "got. Hope you have a saved game a level or\n"\
 "two previous.  If not, be prepared to die\n"\
@@ -592,13 +596,13 @@
 
 // before map 32
 
-#define P6TEXT \
+#define ENGP6TEXT \
 "Betcha wondered just what WAS the hardest\n"\
 "level we had ready for ya?  Now you know.\n"\
 "No one gets out alive."
 
 
-#define T1TEXT \
+#define ENGT1TEXT \
 "You've fought your way out of the infested\n"\
 "experimental labs.   It seems that UAC has\n"\
 "once again gulped it down.  With their\n"\
@@ -613,7 +617,7 @@
 "laying around."
 
 
-#define T2TEXT \
+#define ENGT2TEXT \
 "You hear the grinding of heavy machinery\n"\
 "ahead.  You sure hope they're not stamping\n"\
 "out new hellspawn, but you're ready to\n"\
@@ -625,7 +629,7 @@
 "You don't plan to go down easy."
 
 
-#define T3TEXT \
+#define ENGT3TEXT \
 "The vista opening ahead looks real damn\n"\
 "familiar. Smells familiar, too -- like\n"\
 "fried excrement. You didn't like this\n"\
@@ -635,7 +639,7 @@
 "Hefting your gun, an evil grin trickles\n"\
 "onto your face. Time to take some names."
 
-#define T4TEXT \
+#define ENGT4TEXT \
 "Suddenly, all is silent, from one horizon\n"\
 "to the other. The agonizing echo of Hell\n"\
 "fades away, the nightmare sky turns to\n"\
@@ -649,7 +653,7 @@
 "ruined skull of the demon-spitter."
 
 
-#define T5TEXT \
+#define ENGT5TEXT \
 "What now? Looks totally different. Kind\n"\
 "of like King Tut's condo. Well,\n"\
 "whatever's here can't be any worse\n"\
@@ -657,7 +661,7 @@
 "to let sleeping gods lie.."
 
 
-#define T6TEXT \
+#define ENGT6TEXT \
 "Time for a vacation. You've burst the\n"\
 "bowels of hell and by golly you're ready\n"\
 "for a break. You mutter to yourself,\n"\
@@ -674,24 +678,92 @@
 //
 // Character cast strings F_FINALE.C
 //
-#define CC_ZOMBIE	"ZOMBIEMAN"
-#define CC_SHOTGUN	"SHOTGUN GUY"
-#define CC_HEAVY	"HEAVY WEAPON DUDE"
-#define CC_IMP	"IMP"
-#define CC_DEMON	"DEMON"
-#define CC_LOST	"LOST SOUL"
-#define CC_CACO	"CACODEMON"
-#define CC_HELL	"HELL KNIGHT"
-#define CC_BARON	"BARON OF HELL"
-#define CC_ARACH	"ARACHNOTRON"
-#define CC_PAIN	"PAIN ELEMENTAL"
-#define CC_REVEN	"REVENANT"
-#define CC_MANCU	"MANCUBUS"
-#define CC_ARCH	"ARCH-VILE"
-#define CC_SPIDER	"THE SPIDER MASTERMIND"
-#define CC_CYBER	"THE CYBERDEMON"
-#define CC_HERO	"OUR HERO"
+#define ENGCC_ZOMBIE	"ZOMBIEMAN"
+#define ENGCC_SHOTGUN	"SHOTGUN GUY"
+#define ENGCC_HEAVY	"HEAVY WEAPON DUDE"
+#define ENGCC_IMP	"IMP"
+#define ENGCC_DEMON	"DEMON"
+#define ENGCC_LOST	"LOST SOUL"
+#define ENGCC_CACO	"CACODEMON"
+#define ENGCC_HELL	"HELL KNIGHT"
+#define ENGCC_BARON	"BARON OF HELL"
+#define ENGCC_ARACH	"ARACHNOTRON"
+#define ENGCC_PAIN	"PAIN ELEMENTAL"
+#define ENGCC_REVEN	"REVENANT"
+#define ENGCC_MANCU	"MANCUBUS"
+#define ENGCC_ARCH	"ARCH-VILE"
+#define ENGCC_SPIDER	"THE SPIDER MASTERMIND"
+#define ENGCC_CYBER	"THE CYBERDEMON"
+#define ENGCC_HERO	"OUR HERO"
 
+//new strings
+#define ENGV_INITSTR    "V_Init: allocate screens.\n"
+#define ENGM_LDEFSTR    "M_LoadDefaults: Load system defaults.\n"
+#define ENGZ_INITSTR    "Z_Init: Init zone memory allocation daemon. \n"
+#define ENGW_INITSTR    "W_Init: Init WADfiles.\n"
+#define ENGM_INITSTR    "M_Init: Init miscellaneous info.\n"
+#define ENGR_INITSTR    "R_Init: Init DOOM refresh daemon - "
+#define ENGP_INITSTR    "\nP_Init: Init Playloop state.\n"
+#define ENGI_INITSTR    "I_Init: Setting up machine state.\n"
+#define ENGD_CHKNETSTR  "D_CheckNetGame: Checking network game status.\n"
+#define ENGS_INITSTR    "S_Init: Setting up sound.\n"
+#define ENGHU_INITSTR   "HU_Init: Setting up heads up display.\n"
+#define ENGST_INITSTR   "ST_Init: Init status bar.\n"
+#define ENGNETLISTEN    "listening for network start info...\n"
+#define ENGNETSEND      "sending network start info...\n"
+#define ENGTURBOSCLSTR  "turbo scale: %i%%\n"
+#define ENGISTURBOSTR   "%s is turbo!"
+
+#define ENGMODMSG\
+	    "===========================================================================\n"\
+	    "ATTENTION:  This version of DOOM has been modified.  If you would like to\n"\
+	    "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n"\
+	    "        You will not receive technical support for modified games.\n"\
+	    "                      press enter to continue\n"\
+	    "===========================================================================\n"
+#define ENGNOSWMSG\
+	    "===========================================================================\n"\
+	    "             This version is NOT SHAREWARE, do not distribute!\n"\
+	    "         Please report software piracy to the SPA: 1-800-388-PIR8\n"\
+	    "===========================================================================\n"
+#define ENGNOSWMSG2\
+	    "===========================================================================\n"\
+	    "                            Do not distribute!\n"\
+	    "         Please report software piracy to the SPA: 1-800-388-PIR8\n"\
+	    "===========================================================================\n"
+#define ENGSWMSG\
+	    "===========================================================================\n"\
+	    "                                Shareware!\n"\
+	    "===========================================================================\n"
+#define ENGUDOOMSTART\
+ "                         The Ultimate DOOM Startup v%i.%i                        "
+#define ENGSHAREDOOMSTART\
+ "                            DOOM Shareware Startup v%i.%i                        "
+#define ENGREGDOOMSTART\
+ "                            DOOM Registered Startup v%i.%i                       "
+#define ENGDOOM2START\
+ "                         DOOM 2: Hell on Earth v%i.%i                            "
+#define ENGPLUTSTART\
+ "                   DOOM 2: Plutonia Experiment v%i.%i                            "
+#define ENGTNTSTART\
+ "                     DOOM 2: TNT - Evilution v%i.%i                              "
+#define ENGPUBDOOMSTART\
+ "                     Public DOOM - v%i.%i                                        "
+
+//these are unused.  They're just here for Deh compatibility
+#define ENGI_SDPMI   "I_StartupDPMI\n"
+#define ENGI_SMOUSE  "I_StartupMouse\n"
+#define ENGI_SJOY    "I_StartupJoystick\n"
+#define ENGI_SKEY    "I_StartupKeyboard\n"
+#define ENGI_SSOUND  "I_StartupSound\n"
+#define ENGI_STIMER  "I_StartupTimer()\n"
+#define ENGMOUSEOFF  "Mouse: not present\n"
+#define ENGMOUSEON   "Mouse: detected\n"
+#define ENGDPMI1     "DPMI memory: 0x%x"
+#define ENGDPMI2     ", 0x%x allocated for zone\n"
+#define ENGCOMMVER   "\tcommercial version.\n"
+#define ENGSHAREVER  "\tshareware version.\n"
+#define ENGREGVER    "\tregistered version.\n"
 
 #endif
 //-----------------------------------------------------------------------------

@@ -54,7 +54,14 @@ void M_Init (void);
 // does nothing if menu is already up.
 void M_StartControlPanel (void);
 
+//used in optmenu.c
+int  M_StringWidth(char *string);
 
+void
+M_WriteText
+( int		x,
+  int		y,
+  char*		string);
 
 
 

@@ -49,15 +49,15 @@ planefunction_t		ceilingfunc;
 //
 
 // Here comes the obnoxious "visplane".
-#define MAXVISPLANES	128
+#define MAXVISPLANES	1024
 visplane_t		visplanes[MAXVISPLANES];
 visplane_t*		lastvisplane;
 visplane_t*		floorplane;
 visplane_t*		ceilingplane;
 
 // ?
-#define MAXOPENINGS	SCREENWIDTH*64
-short			openings[MAXOPENINGS];
+#define MAXOPENINGS	SCREENWIDTH*128
+short			*openings;
 short*			lastopening;
 
 
@@ -66,15 +66,15 @@ short*			lastopening;
 //  floorclip starts out SCREENHEIGHT
 //  ceilingclip starts out -1
 //
-short			floorclip[SCREENWIDTH];
-short			ceilingclip[SCREENWIDTH];
+short			*floorclip;
+short			*ceilingclip;
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-int			spanstart[SCREENHEIGHT];
-int			spanstop[SCREENHEIGHT];
+int			*spanstart;
+int			*spanstop;
 
 //
 // texture mapping
@@ -82,16 +82,47 @@ int			spanstop[SCREENHEIGHT];
 lighttable_t**		planezlight;
 fixed_t			planeheight;
 
-fixed_t			yslope[SCREENHEIGHT];
-fixed_t			distscale[SCREENWIDTH];
+fixed_t			*yslope;
+fixed_t			*origyslope;
+fixed_t			*distscale;
 fixed_t			basexscale;
 fixed_t			baseyscale;
 
-fixed_t			cachedheight[SCREENHEIGHT];
-fixed_t			cacheddistance[SCREENHEIGHT];
-fixed_t			cachedxstep[SCREENHEIGHT];
-fixed_t			cachedystep[SCREENHEIGHT];
+fixed_t			*cachedheight;
+fixed_t			*cacheddistance;
+fixed_t			*cachedxstep;
+fixed_t			*cachedystep;
 
+
+void resinit_r_plane_c(void)  //called before anything else
+  {
+  int i;
+
+  //use calloc instead of malloc in case doom depends on global vars being
+  //initialized to 0
+  for (i=0;i<MAXVISPLANES;i++)
+    {
+    unsigned short *blah;
+
+    blah=(unsigned short *)calloc(SCREENWIDTH*2+4,sizeof(unsigned short));
+    visplanes[i].top=blah+1;
+    visplanes[i].bottom=blah+SCREENWIDTH+3;
+    }
+  openings=(short *)calloc(MAXOPENINGS,sizeof(short));
+  floorclip=(short *)calloc(SCREENWIDTH,sizeof(short));
+  ceilingclip=(short *)calloc(SCREENWIDTH,sizeof(short));
+  spanstart=(int *)calloc(SCREENHEIGHT,sizeof(int));
+  spanstop=(int *)calloc(SCREENHEIGHT,sizeof(int));
+
+  origyslope=(fixed_t *)calloc(SCREENHEIGHT*2,sizeof(fixed_t));
+  yslope=origyslope+(SCREENHEIGHT/2);
+  distscale=(fixed_t *)calloc(SCREENWIDTH,sizeof(fixed_t));
+  cachedheight=(fixed_t *)calloc(SCREENHEIGHT,sizeof(fixed_t));
+  cacheddistance=(fixed_t *)calloc(SCREENHEIGHT,sizeof(fixed_t));
+  cachedxstep=(fixed_t *)calloc(SCREENHEIGHT,sizeof(fixed_t));
+  cachedystep=(fixed_t *)calloc(SCREENHEIGHT,sizeof(fixed_t));
+
+  }
 
 
 //
@@ -198,7 +229,7 @@ void R_ClearPlanes (void)
     lastopening = openings;
     
     // texture calculation
-    memset (cachedheight, 0, sizeof(cachedheight));
+    memset (cachedheight, 0, SCREENHEIGHT*sizeof(fixed_t));
 
     // left to right mapping
     angle = (viewangle-ANG90)>>ANGLETOFINESHIFT;
@@ -253,7 +284,7 @@ R_FindPlane
     check->minx = SCREENWIDTH;
     check->maxx = -1;
     
-    memset (check->top,0xff,sizeof(check->top));
+    memset (check->top,0xff,SCREENWIDTH*sizeof(unsigned short));
 		
     return check;
 }
@@ -297,7 +328,7 @@ R_CheckPlane
     }
 
     for (x=intrl ; x<= intrh ; x++)
-	if (pl->top[x] != 0xff)
+	if (pl->top[x] != 0xffff)
 	    break;
 
     if (x > intrh)
@@ -318,7 +349,7 @@ R_CheckPlane
     pl->minx = start;
     pl->maxx = stop;
 
-    memset (pl->top,0xff,sizeof(pl->top));
+    memset (pl->top,0xff,SCREENWIDTH*sizeof(unsigned short));
 		
     return pl;
 }
@@ -395,7 +426,7 @@ void R_DrawPlanes (void)
 	// sky flat
 	if (pl->picnum == skyflatnum)
 	{
-	    dc_iscale = pspriteiscale>>detailshift;
+	    dc_iscale = pspriteiscale2>>stretchsky;
 	    
 	    // Sky is allways drawn full bright,
 	    //  i.e. colormaps[0] is used.
@@ -435,8 +466,8 @@ void R_DrawPlanes (void)
 
 	planezlight = zlight[light];
 
-	pl->top[pl->maxx+1] = 0xff;
-	pl->top[pl->minx-1] = 0xff;
+	pl->top[pl->maxx+1] = 0xffff;
+	pl->top[pl->minx-1] = 0xffff;
 		
 	stop = pl->maxx + 1;
 

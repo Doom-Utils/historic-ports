@@ -43,7 +43,7 @@
 #include "r_plane.h"
 #include "r_data.h"
 #include "r_things.h"
-#include "r_draw.h"
+#include "multires.h"
 
 #endif		// __R_LOCAL__
 //-----------------------------------------------------------------------------

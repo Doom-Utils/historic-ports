@@ -26,9 +26,15 @@
 
 #include "doomtype.h"
 #include "d_event.h"
+#include "p_mobj.h"
 //
 // FINALE
 //
+typedef struct
+{
+    char		*name;
+    mobjtype_t	type;
+} castinfo_t;
 
 // Called by main loop.
 boolean F_Responder (event_t* ev);

@@ -28,6 +28,14 @@
 //
 // MISC
 //
+typedef struct
+{
+    char*	name;
+    int*	location;
+    int		defaultvalue;
+    int		scantranslate;		// PC scan code hack
+    int		untranslated;		// lousy hack
+} default_t;
 
 
 
@@ -55,6 +63,37 @@ M_DrawText
   int		y,
   boolean	direct,
   char*		string );
+
+
+extern int	key_right;
+extern int	key_left;
+extern int      key_lookup;
+extern int      key_lookdown;
+extern int      key_lookcenter;
+extern int	key_up;
+extern int	key_down;
+
+extern int	key_strafeleft;
+extern int	key_straferight;
+
+extern int	key_fire;
+extern int	key_use;
+extern int	key_strafe;
+extern int	key_speed;
+extern int      key_nextweapon;
+extern int      key_jump;
+extern int      key_map;
+extern int      key_180;
+extern int      key_talk;
+
+extern int	mousebfire;
+extern int	mousebstrafe;
+extern int	mousebforward;
+
+extern int	joybfire;
+extern int	joybstrafe;
+extern int	joybuse;
+extern int	joybspeed;
 
 
 #endif

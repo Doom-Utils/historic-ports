@@ -26,6 +26,7 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 #include <ctype.h>
 
 #include "doomdef.h"
+#include "multires.h"
 
 #include "z_zone.h"
 
@@ -42,6 +43,8 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 // Data.
 #include "dstrings.h"
 #include "sounds.h"
+#include "i_system.h"
+#include "m_misc.h"
 
 //
 // Locally used constants, shortcuts.
@@ -52,17 +55,18 @@ rcsid[] = "$Id: hu_stuff.c,v 1.4 1997/02/03 16:47:52 b1 Exp $";
 #define HU_TITLET	(mapnamest[gamemap-1])
 #define HU_TITLEHEIGHT	1
 #define HU_TITLEX	0
-#define HU_TITLEY	(167 - SHORT(hu_font[0]->height))
+#define HU_TITLEY	(SCREENHEIGHT-(200-(167 - SHORT(hu_font[0]->height))))
 
-#define HU_INPUTTOGGLE	't'
+#define HU_INPUTTOGGLE	key_talk
 #define HU_INPUTX	HU_MSGX
 #define HU_INPUTY	(HU_MSGY + HU_MSGHEIGHT*(SHORT(hu_font[0]->height) +1))
 #define HU_INPUTWIDTH	64
 #define HU_INPUTHEIGHT	1
 
+#define HU_CROSSHAIRCOLOR (256-5*16)
+#define SBARHEIGHT 32
 
-
-char*	chat_macros[] =
+char*	chat_macros[10];/* =
 {
     HUSTR_CHATMACRO0,
     HUSTR_CHATMACRO1,
@@ -74,15 +78,15 @@ char*	chat_macros[] =
     HUSTR_CHATMACRO7,
     HUSTR_CHATMACRO8,
     HUSTR_CHATMACRO9
-};
+};*/
 
-char*	player_names[] =
+char*	player_names[MAXPLAYERS];/* =
 {
     HUSTR_PLRGREEN,
     HUSTR_PLRINDIGO,
     HUSTR_PLRBROWN,
     HUSTR_PLRRED
-};
+};*/
 
 
 char			chat_char; // remove later.
@@ -107,12 +111,18 @@ extern boolean		automapactive;
 
 static boolean		headsupactive = false;
 
+
+static hu_textline_t	textlinefps;
+static hu_textline_t	textlinepos;
+static hu_textline_t	textlinestats;
+
+
 //
 // Builtin map names.
 // The actual names can be found in DStrings.h.
 //
 
-char*	mapnames[] =	// DOOM shareware/registered/retail (Ultimate) names.
+char*	mapnames[40];/* =	// DOOM shareware/registered/retail (Ultimate) names.
 {
 
     HUSTR_E1M1,
@@ -164,9 +174,9 @@ char*	mapnames[] =	// DOOM shareware/registered/retail (Ultimate) names.
     "NEWLEVEL",
     "NEWLEVEL",
     "NEWLEVEL"
-};
+};*/
 
-char*	mapnames2[] =	// DOOM 2 map names.
+char*	mapnames2[40];/* =	// DOOM 2 map names.
 {
     HUSTR_1,
     HUSTR_2,
@@ -203,9 +213,9 @@ char*	mapnames2[] =	// DOOM 2 map names.
     HUSTR_31,
     HUSTR_32
 };
+*/
 
-
-char*	mapnamesp[] =	// Plutonia WAD map names.
+char*	mapnamesp[40];/* =	// Plutonia WAD map names.
 {
     PHUSTR_1,
     PHUSTR_2,
@@ -241,10 +251,10 @@ char*	mapnamesp[] =	// Plutonia WAD map names.
     PHUSTR_30,
     PHUSTR_31,
     PHUSTR_32
-};
+};*/
 
 
-char *mapnamest[] =	// TNT WAD map names.
+char *mapnamest[40];/* =	// TNT WAD map names.
 {
     THUSTR_1,
     THUSTR_2,
@@ -281,7 +291,7 @@ char *mapnamest[] =	// TNT WAD map names.
     THUSTR_31,
     THUSTR_32
 };
-
+*/
 
 const char*	shiftxform;
 
@@ -396,7 +406,7 @@ void HU_Init(void)
     int		j;
     char	buffer[9];
 
-    if (french)
+    if (language==french)
 	shiftxform = french_shiftxform;
     else
 	shiftxform = english_shiftxform;
@@ -442,29 +452,50 @@ void HU_Start(void)
 		       HU_TITLEX, HU_TITLEY,
 		       hu_font,
 		       HU_FONTSTART);
+
+
+   //create stuff for showstats cheat
+    HUlib_initTextLine(&textlinefps,
+		       0, 1*(1+hu_font[0]->height),
+		       hu_font,
+		       HU_FONTSTART);
+    HUlib_initTextLine(&textlinepos,
+		       0, 3*(1+hu_font[0]->height),
+		       hu_font,
+		       HU_FONTSTART);
+    HUlib_initTextLine(&textlinestats,
+		       0, 2*(1+hu_font[0]->height),
+		       hu_font,
+		       HU_FONTSTART);
     
+//Raven: Another patch to work with plutonia and tnt properly
+//Raven: Helps display the map names properly in map view mode...
     switch ( gamemode )
     {
       case shareware:
       case registered:
       case retail:
-	s = HU_TITLE;
-	break;
+         s = HU_TITLE;
+         break;
 
-/* FIXME
-      case pack_plut:
-	s = HU_TITLEP;
-	break;
-      case pack_tnt:
-	s = HU_TITLET;
-	break;
-*/
-	
       case commercial:
       default:
-	 s = HU_TITLE2;
-	 break;
+         switch(gamemission)
+         {
+            case pack_plut:
+               s = HU_TITLEP;
+               break;
+            case pack_tnt:
+               s = HU_TITLET;
+               break;
+            case doom2:
+               s = HU_TITLE2;
+               break;
+            case doom:  //Raven: should never happen, but I had to put it in
+            case none:  //Raven: should never happen, but I had to put it in
+      }
     }
+//Raven: End of patch
     
     while (*s)
 	HUlib_addCharToTextLine(&w_title, *(s++));
@@ -483,6 +514,14 @@ void HU_Start(void)
 
 }
 
+void HU_PutPixel(int x,int y,int color)
+  {
+  if (BPP==1)
+    screens[0][y*SCREENWIDTH+x]=color;
+  else
+    ((short *)(screens[0]))[y*SCREENWIDTH+x]=palette_color[color];
+  }
+
 void HU_Drawer(void)
 {
 
@@ -490,6 +529,80 @@ void HU_Drawer(void)
     HUlib_drawIText(&w_chat);
     if (automapactive)
 	HUlib_drawTextLine(&w_title, false);
+
+    //do crosshairs
+    if (crosshair==1)
+      {
+      HU_PutPixel(SCREENWIDTH/2-3,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2-2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2+3,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2-3,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2-2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+3,HU_CROSSHAIRCOLOR);
+      }
+    else if (crosshair==2)
+      {
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      }
+    else if (crosshair==3)
+      {
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2+1,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2+2,(SCREENHEIGHT-SBARHEIGHT)/2,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+1,HU_CROSSHAIRCOLOR);
+      HU_PutPixel(SCREENWIDTH/2,(SCREENHEIGHT-SBARHEIGHT)/2+2,HU_CROSSHAIRCOLOR);
+      }
+
+    //now, draw stats
+    if (showstats)
+      {
+      char textbuf[100];
+      char *s;      
+      static int timelastframe=0,fps=0,numframes=0;
+      int currtime,timediff;
+
+      numframes++;
+      currtime=I_GetMilliTime();
+      timediff=currtime-timelastframe;
+      if (timediff>333)  //update every third of a second
+        {
+        if (timediff<10000)
+          fps=numframes*10000/timediff;
+        else
+          fps=0;
+        timelastframe=currtime;      
+        numframes=0;
+        }
+
+      HUlib_clearTextLine(&textlinefps);
+      sprintf(textbuf,"fps:%d.%d   time:%d:%d%d",
+              fps/10,fps%10,(leveltime/TICRATE)/60,
+              ((leveltime/TICRATE)%60)/10,
+              ((leveltime/TICRATE)%60)%10);
+      s=textbuf; while (*s) HUlib_addCharToTextLine(&textlinefps,*(s++));
+      HUlib_drawTextLine(&textlinefps,0);
+
+      if (!netgame)
+        {
+        HUlib_clearTextLine(&textlinepos);
+        HUlib_clearTextLine(&textlinestats);
+        sprintf(textbuf,"ang=0x%x;x,y=(0x%x,0x%x)",
+              players[consoleplayer].mo->angle,
+              players[consoleplayer].mo->x,
+              players[consoleplayer].mo->y);      
+        s=textbuf; while (*s)HUlib_addCharToTextLine(&textlinepos,*(s++));
+        sprintf(textbuf,"Kills:%d/%d   Items:%d/%d   Secrets:%d/%d",
+              players[consoleplayer].killcount,totalkills,
+              players[consoleplayer].itemcount,totalitems,
+              players[consoleplayer].secretcount,totalsecret);
+        s=textbuf; while (*s)HUlib_addCharToTextLine(&textlinestats,*(s++));
+        HUlib_drawTextLine(&textlinepos,0);
+        HUlib_drawTextLine(&textlinestats,0);
+        }
+      }
+
 
 }
 
@@ -614,6 +727,14 @@ char HU_dequeueChatChar(void)
     return c;
 }
 
+    char		destination_keys[MAXPLAYERS];/* =
+    {
+	HUSTR_KEYGREEN,
+	HUSTR_KEYINDIGO,
+	HUSTR_KEYBROWN,
+	HUSTR_KEYRED
+    };*/
+
 boolean HU_Responder(event_t *ev)
 {
 
@@ -626,13 +747,6 @@ boolean HU_Responder(event_t *ev)
     int			i;
     int			numplayers;
     
-    static char		destination_keys[MAXPLAYERS] =
-    {
-	HUSTR_KEYGREEN,
-	HUSTR_KEYINDIGO,
-	HUSTR_KEYBROWN,
-	HUSTR_KEYRED
-    };
     
     static int		num_nobrainers = 0;
 
@@ -662,7 +776,7 @@ boolean HU_Responder(event_t *ev)
 	    message_counter = HU_MSGTIMEOUT;
 	    eatkey = true;
 	}
-	else if (netgame && ev->data1 == HU_INPUTTOGGLE)
+	else if (netgame && ((ev->data1==(HU_INPUTTOGGLE>>16))||(ev->data1==(HU_INPUTTOGGLE&0xffff))))
 	{
 	    eatkey = chat_on = true;
 	    HUlib_resetIText(&w_chat);
@@ -727,7 +841,7 @@ boolean HU_Responder(event_t *ev)
 	}
 	else
 	{
-	    if (french)
+	    if (language==french)
 		c = ForeignTranslation(c);
 	    if (shiftdown || (c >= 'a' && c <= 'z'))
 		c = shiftxform[c];

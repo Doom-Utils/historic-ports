@@ -23,7 +23,10 @@
 #ifndef __SOUNDS__
 #define __SOUNDS__
 
+#include <stdio.h>    //to avoid a warning
+#ifdef DJGPP
 #include <allegro.h>  //because sfxinfo_struct now has a SAMPLE*
+#endif
 
 //
 // SoundFX struct.
@@ -51,7 +54,11 @@ struct sfxinfo_struct
     int		volume;
 
     // sound data
+    #ifdef DJGPP
     SAMPLE*	data;
+    #else
+    void*       data;
+    #endif
 
     // this is checked every second to see if sound
     // can be thrown out (if 0, then decrement, if -1,
