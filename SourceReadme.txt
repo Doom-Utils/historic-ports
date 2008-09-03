@@ -1,6 +1,6 @@
 Activision and Raven are releasing this code for people to learn from and play with.
-The code is retains its original copyright and can not be used for profit, 
-any work released using this code must contain credit for it.
+This code is copyright Activision 1996-1998
+[edit 2 Sep 2008] The code is release under GNU GPLv2 (see LICENSE)
 
 Issues:
 The DMX sound library is not included with the source due to license issues,
