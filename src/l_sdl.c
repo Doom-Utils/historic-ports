@@ -4,7 +4,7 @@
 
 void I_ShutdownSDL(void)
 {
-	SDL_Quit();
+	//SDL_Quit();
 	return;
 }
 

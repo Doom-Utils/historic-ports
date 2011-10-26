@@ -1,6 +1,17 @@
 This is a log of the changes since LsdlDoom 1.4.1
 For old ChangeLog entry view doc/lxdoom/ChangeLog
 
+* Changes v1.4.4.4 to v1.5
+- Fixed SDL_Mixer code to not use private functions
+- Fixed packed attributes in doomdata.h
+- Fixed compiler warnings
+- Fixed broken key configuration (Gentoo bug 103324)
+- Fix for gcc-4.1 by David Morgan (Gentoo bug #130482)
+- Fix gcc-3.5 errors (Gentoo bug #77846)
+- Fix i386-asm build failure and processor optimization selection
+- Add /usr/share/games/doom-data/ to wad directories to search (for Gentoo)
+- Fixed assembly to not be flaged with a writable/executable stack
+
 * Changes v1.4.4.3 to v1.4.4.4
 - Fixed x86 assembly to compile on non elf targets
 - Fixed segfault with demo's and netgames

@@ -6,9 +6,9 @@
 #
 
 docdir=$(prefix)/share/doc/@PACKAGE@
-man_MANS=lsdldoom.6 boom.cfg.5 lxdoom-game-server.6
+man_MANS=lsdldoom.6 lsdldoom.cfg.5 lsdldoom-game-server.6
 doc_DATA=boom.txt boomref.txt
-EXTRA_DIST=boom.txt boomref.txt lsdldoom.6 boom.cfg.5 lxdoom-game-server.6
+EXTRA_DIST=boom.txt boomref.txt lsdldoom.6 lsdldoom.cfg.5 lsdldoom-game-server.6
 
 #
 # $Log: Makefile.am,v $

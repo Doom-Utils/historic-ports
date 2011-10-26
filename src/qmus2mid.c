@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "qmus2mid.h"
+#include "lprintf.h"
 
 int4 TRACKBUFFERSIZE = 65536L ;  /* 64 Ko */
 
@@ -263,7 +264,7 @@ char FirstChannelAvailable( signed char MUS2MIDchannel[] )
 }
 
 
-int qmus2mid( void *mus, size_t len, FILE *file_mid,
+int qmus2mid( const void *mus, size_t len, FILE *file_mid,
               int nodisplay, int2 division, int BufferSize, int nocomp )
 {
   struct Track track[16] ;
@@ -417,11 +418,16 @@ int qmus2mid( void *mus, size_t len, FILE *file_mid,
           else
             n++ ;
           data = read1( &buflen ) ;
-          TWriteByte( MIDItrack, MUS2MIDcontrol[data], track ) ;
-          if( data == 12 )
-            TWriteByte( MIDItrack, MUSh.channels+1, track ) ;
-          else
-            TWriteByte( MIDItrack, 0, track ) ;
+	  if(data == -1)
+		I_Error("qmus2mid: failed read");
+	  else   //Shouldn't need the else because I_Error exits but it keeps gcc from throwing a warning...
+	  {		
+          	TWriteByte( MIDItrack, MUS2MIDcontrol[data], track ) ;
+          	if( data == 12 )
+            	TWriteByte( MIDItrack, MUSh.channels+1, track ) ;
+          	else
+            	TWriteByte( MIDItrack, 0, track ) ;
+	  }
           break ;
         case 4 :
           data = read1( &buflen ) ;

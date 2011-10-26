@@ -22,7 +22,7 @@
 //-----------------------------------------------------------------------------
 
 static const char
-rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
+rcsid[] = "$Id: l_sound_sdl.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 #include <math.h>
 #include <unistd.h>
@@ -49,6 +49,21 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 #include "d_main.h"
 
+#ifdef HAVE_MIXER
+#include "SDL_mixer.h"
+#include "qmus2mid.h"
+
+/* FIXME: Make this file instance-specific */
+#ifdef _WIN32
+        #define MIDI_TMPFILE    "c:\\windows\\temp\\doom.mid"
+#else
+        #define MIDI_TMPFILE    "/tmp/.lsdlmidi"
+#endif
+
+static Mix_Music *music[2] = { NULL, NULL };
+#endif
+
+
 // The number of internal mixing channels,
 //  the samples calculated for each mixing step,
 //  the size of the 16bit, 2 hardware channel (stereo)
@@ -70,10 +85,6 @@ static int SAMPLECOUNT=		512;
 
 // The actual lengths of all sound effects.
 int 		lengths[NUMSFX];
-
-// The actual output device.
-int	audio_fd;
-
 
 // The channel step amount...
 unsigned int	channelstep[NUM_CHANNELS];
@@ -413,9 +424,13 @@ I_StartSound
     //fprintf( stderr, "starting sound %d", id );
     
     // Returns a handle (not used).
+   #ifndef HAVE_MIXER
     SDL_LockAudio();
+   #endif
     id = addsfx( id, vol, steptable[pitch], sep );
+   #ifndef HAVE_MIXER
     SDL_UnlockAudio();
+   #endif
 
     // fprintf( stderr, "/handle is %d\n", id );
     
@@ -472,12 +487,6 @@ void I_UpdateSound(void *unused, Uint8 *stream, int len)
   // Mixing channel index.
   int				chan;
    
-#ifdef HAVE_MIXER
-extern void music_mixer(void *udata, Uint8 *stream, int len);
-    // Mix in the music
-    music_mixer(NULL, stream, len);
-#endif
-
     // Left and right channel
     //  are in audio stream, alternating.
     leftout = (signed short *)stream;
@@ -486,7 +495,7 @@ extern void music_mixer(void *udata, Uint8 *stream, int len);
 
     // Determine end, for left channel only
     //  (right channel is implicit).
-    leftend = leftout + SAMPLECOUNT*step;
+    leftend = leftout + (len/4)*step;
 
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
@@ -575,7 +584,11 @@ I_UpdateSoundParams
 void I_ShutdownSound(void)
 {    
   fprintf(stderr, "I_ShutdownSound: ");
+ #ifdef HAVE_MIXER
+  Mix_CloseAudio();
+ #else
   SDL_CloseAudio();
+ #endif
   fprintf(stderr, "\n");
 }
 
@@ -589,12 +602,38 @@ I_InitSound()
   // Secure and configure sound device first.
   fprintf( stderr, "I_InitSound: ");
  
-/*  if ( SDL_Init(SDL_INIT_AUDIO) < 0 ) {
+  if ( SDL_Init(SDL_INIT_AUDIO) < 0 ) {
     fprintf(stderr, "Couldn't initialize SDL Audio: %s\n",SDL_GetError());
     return;        
-  } */
+  }
   // Open the audio device
-  audio.freq = SAMPLERATE;
+#ifdef HAVE_MIXER
+  int audio_rate;
+  Uint16 audio_format;
+  int audio_channels;
+  int audio_buffers;
+
+  /* Initialize variables */
+  audio_rate = SAMPLERATE;
+ #if ( SDL_BYTEORDER == SDL_BIG_ENDIAN )
+  audio_format = AUDIO_S16MSB;
+ #else
+  audio_format = AUDIO_S16LSB;
+ #endif
+  audio_channels = 2;
+  SAMPLECOUNT = 512;
+  ;audio_buffers = SAMPLECOUNT*SAMPLERATE/11025;
+  audio_buffers = 4096;
+
+  if (Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) < 0) {
+    fprintf(stderr ,"couldn't open audio with desired format\n");
+    return;
+  }
+
+  Mix_SetPostMix(I_UpdateSound, NULL);
+  fprintf(stderr," configured audio device with %d samples/slice\n", audio_buffers);
+#else 
+ audio.freq = SAMPLERATE;
   #if ( SDL_BYTEORDER == SDL_BIG_ENDIAN )
     audio.format = AUDIO_S16MSB;
   #else
@@ -609,7 +648,7 @@ I_InitSound()
   }
   SAMPLECOUNT = audio.samples;
   fprintf(stderr, " configured audio device with %d samples/slice\n", SAMPLECOUNT);
-
+#endif
     
   // Initialize external data (all sounds) at start, keep static.
   fprintf( stderr, "I_InitSound: ");
@@ -649,41 +688,14 @@ I_InitSound()
 // MUSIC API.
 //
 
-#ifdef HAVE_MIXER
-#include "SDL_mixer.h"
-#include "qmus2mid.h"
-
-/* FIXME: Make this file instance-specific */
-#ifdef _WIN32
-	#define MIDI_TMPFILE	"c:\\windows\\temp\\doom.mid"
-#else
-	#define MIDI_TMPFILE	"/tmp/.lsdlmidi"
-#endif
-
-static Mix_Music *music[2] = { NULL, NULL };
-#endif
-
 void I_ShutdownMusic(void) 
 {
-#ifdef HAVE_MIXER
-  /* Should this be exposed in mixer.h? */
-  extern void close_music(void);
-
-  close_music();
-#endif
   fprintf(stderr, "I_ShutdownMusic: shut down\n");
 }
 
 void I_InitMusic(void)
 {
 #ifdef HAVE_MIXER
-  /* Should this be exposed in mixer.h? */
-  extern int open_music(SDL_AudioSpec *);
-
-  if ( open_music(&audio) < 0 ) {
-    fprintf(stderr, "Unable to open music: %s\n", Mix_GetError());
-    return;
-  }
   fprintf(stderr, "I_InitMusic: music initialized\n");
 #endif
   atexit(I_ShutdownMusic);
@@ -706,11 +718,11 @@ void I_PauseSong (int handle)
 #ifdef HAVE_MIXER
   switch(mus_pause_opt) {
   case 0:
-printf("Stopping song %d (pause)\n", handle);
+    printf("Stopping song %d (pause)\n", handle);
     I_StopSong(handle);
     break;
   case 1:
-printf("Pausing song %d (pause)\n", handle);
+    printf("Pausing song %d (pause)\n", handle);
     Mix_PauseMusic();
     break;
   }
@@ -746,7 +758,7 @@ void I_UnRegisterSong(int handle)
 #endif
 }
 
-int I_RegisterSong(void *data, size_t len)
+int I_RegisterSong(const void *data, size_t len)
 {
 #ifdef HAVE_MIXER
   FILE *midfile;

@@ -50,7 +50,7 @@ struct Track
 };
 
 
-int qmus2mid( void *mus, size_t len, FILE *file_mid,
+int qmus2mid( const void *mus, size_t len, FILE *file_mid,
               int nodisplay, int2 division, int BufferSize, int nocomp );
 
 #endif

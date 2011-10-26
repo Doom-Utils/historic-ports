@@ -32,6 +32,7 @@
 #ifndef __M_FIXED__
 #define __M_FIXED__
 
+#include <stdlib.h>
 #include "doomtype.h"
 
 /*
@@ -50,9 +51,9 @@ typedef int fixed_t;
  * killough 9/05/98: better code seems to be gotten from using inlined C
  */
 
-#ifdef I386
-#define abs(x) ({fixed_t _t = (x), _s = _t >> (8*sizeof _t-1); (_t^_s)-_s;})
-#endif /* I386 */
+//#ifdef I386
+//#define abs(x) ({fixed_t _t = (x), _s = _t >> (8*sizeof _t-1); (_t^_s)-_s;})
+//#endif /* I386 */
 
 /*
  * Fixed Point Multiplication

@@ -674,6 +674,10 @@ R_DrawTLColumn_HighRes:
  popl %ebp
  ret
 
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
+
 //----------------------------------------------------------------------------
 // $Id: drawcol.s,v 1.12 1999/12/13 17:24:45 cphipps Exp $
 //----------------------------------------------------------------------------

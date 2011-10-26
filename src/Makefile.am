@@ -7,7 +7,7 @@
 #
 #
 gamesdir=$(prefix)/games
-EXTRA_PROGRAMS = lsdldoom lxdoom-game-server
+EXTRA_PROGRAMS = lsdldoom lsdldoom-game-server
 games_PROGRAMS = @BUILD_SDLDOOM@ @BUILD_SERVER@
 
 if I386_ASM
@@ -16,10 +16,10 @@ else
 ASMS = 
 endif
 
-CFLAGS = @SDL_CFLAGS@ @MIXER_CFLAGS@ @NET_CFLAGS@ @CFLAGS@ 
+AM_CFLAGS = @SDL_CFLAGS@ @MIXER_CFLAGS@ @NET_CFLAGS@ @CFLAGS@ 
 
-lxdoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
-lxdoom_game_server_LDADD = @NET_LIBS@ @SDL_LIBS@
+lsdldoom_game_server_SOURCES = d_server.c l_udp.c protocol.h l_system.c
+lsdldoom_game_server_LDADD = @NET_LIBS@ @SDL_LIBS@
 
 COMMON_SRC = \
  am_map.c       g_game.c           p_maputl.h       r_plane.h   \

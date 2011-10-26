@@ -148,7 +148,8 @@ byte *V_PatchToBlock(const char* name, const byte *trans,
 void V_SetPalette(unsigned short pal);
 
 // CPhipps - function to plot a pixel
-inline static const void V_PlotPixel(int scrn, int x, int y, byte colour) {
+//inline static const void V_PlotPixel(int scrn, int x, int y, byte colour) {
+inline static void V_PlotPixel(int scrn, int x, int y, byte colour) {
   screens[scrn][x+SCREENWIDTH*y] = colour;
 }
 

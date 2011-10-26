@@ -200,7 +200,7 @@ int     joybspeed;
 #define TURBOTHRESHOLD  0x32
 #define SLOWTURNTICS  6
 #define QUICKREVERSE 32768 // 180 degree reverse                    // phares
-#define NUMKEYS   256
+#define NUMKEYS   512
 
 fixed_t forwardmove[2] = {0x19, 0x32};
 fixed_t sidemove[2]    = {0x18, 0x28};
@@ -875,6 +875,7 @@ void G_Ticker (void)
     case GS_INTERMISSION:
       WI_End();
     default:
+;
     }
     prevgamestate = gamestate;
   }
@@ -2125,7 +2126,8 @@ void G_DoPlayDemo (void)
 
   ExtractFileBase(defdemoname,basename);           // killough
   gameaction = ga_nothing;
-  demobuffer = demo_p = W_CacheLumpNum(demolumpnum = W_GetNumForName(basename));  
+  demolumpnum = W_GetNumForName(basename);
+  demobuffer = demo_p = (byte *) W_CacheLumpNum(demolumpnum);  
   // cph - store lump number for unlocking later
 
   // killough 2/22/98, 2/28/98: autodetect old demos and act accordingly.

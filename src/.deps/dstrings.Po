@@ -1,0 +1,8 @@
+dstrings.o: dstrings.c dstrings.h d_englsh.h \
+ /usr/lib/gcc/i686-pc-linux-gnu/4.4.5/include/stddef.h
+
+dstrings.h:
+
+d_englsh.h:
+
+/usr/lib/gcc/i686-pc-linux-gnu/4.4.5/include/stddef.h:

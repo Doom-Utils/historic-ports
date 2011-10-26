@@ -137,7 +137,7 @@ static void I_SignalHandler(int s)
   if (s==SIGSEGV || s==SIGILL || s==SIGFPE)
     Z_DumpHistory(buf);
 
-  I_Error(buf);
+  I_Error("%s",buf);
 }
 
 /* killough 2/22/98: Add support for ENDBOOM, which is PC-specific
@@ -185,7 +185,7 @@ unsigned int endoom_mode;
 
 static void PrintVer(void)
 {
-  printf("LsdlDoom v%s (http://firehead.org/~jessh/lsdldoom/)\n",VERSION);
+  printf("LsdlDoom v%s (http://jesshaas.com/lsdldoom/)\n",VERSION);
 }
 
 /* I_EndDoom

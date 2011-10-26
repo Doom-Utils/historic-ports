@@ -230,6 +230,7 @@ void D_Display (void)
     case GS_LEVEL:
       V_SetPalette(0); // cph - use default (basic) palette  
     default:
+;
     }
 
     switch (gamestate) {
@@ -243,6 +244,7 @@ void D_Display (void)
       D_PageDrawer();
       break;
     default:
+;
     }
   } else if (gametic) { // In a level
     boolean redrawborderstuff;
@@ -573,7 +575,7 @@ void D_AddFile (const char *file, wad_source_t source)
 //  if non-existant
 // FIXME: need beter os independent/windows ver -- JessH@lbjhs.net
 #ifndef _WIN32
-static const char lxdoom_dir[] = {"/.lxdoom/"};
+static const char lsdldoom_dir[] = {"/.lsdldoom/"};
 
 char *D_DoomExeDir(void)
 {
@@ -583,21 +585,21 @@ char *D_DoomExeDir(void)
       char *home = getenv("HOME");
       size_t len = strlen(home);
 
-      base = malloc(len + strlen(lxdoom_dir) + 1);
+      base = malloc(len + strlen(lsdldoom_dir) + 1);
       strcpy(base, home);
       // I've had trouble with trailing slashes before...
       if (base[len-1] == '/') base[len-1] = 0;
-      strcat(base, lxdoom_dir);
+      strcat(base, lsdldoom_dir);
       mkdir(base, S_IRUSR | S_IWUSR | S_IXUSR); // Make sure it exists
     }
   return base;
 }
 #else
-static const char lxdoom_dir[] = {"c:\\windows\\system\\"};
+static const char lsdldoom_dir[] = {"c:\\windows\\system\\"};
 
 char *D_DoomExeDir(void)
 {
-  return lxdoom_dir;
+  return lsdldoom_dir;
 }
 #endif
 
@@ -801,7 +803,7 @@ static char* FindWADFile(const char* wfname, const char* ext)
   /* Precalculate a length we will need in the loop */
   size_t	pl = strlen(wfname) + strlen(ext) + 4;
 
-  for (i=0; i<8; i++) {
+  for (i=0; i<10; i++) {
     char	*	p;
     const char	*	d = NULL;
     const char	*	s = NULL;
@@ -822,10 +824,16 @@ static char* FindWADFile(const char* wfname, const char* ext)
       d = "/usr/local/share/games/doom";
       break;
     case 6:
+      d = "/usr/share/games/doom-data";
+      break;
+    case 7:
+      d = "/usr/share/games/doom-data/freedoom";
+      break;
+    case 8:
       d = D_DoomExeDir();
     case 3:
       s = "doom";
-    case 7:
+    case 9:
       if (!(d = getenv("HOME"))) continue;
       break;
 #ifdef SIMPLECHECKS
@@ -901,7 +909,7 @@ void IdentifyVersion (void)
 
   // get config file from same directory as executable
 
-  sprintf(basedefault,"%s/boom.cfg", D_DoomExeDir());  // killough
+  sprintf(basedefault,"%s/lsdldoom.cfg", D_DoomExeDir());  // killough
 
   // set save path to -save parm or current dir
 
@@ -1556,11 +1564,11 @@ void D_DoomMainSetup(void)
   // Ty 04/08/98 - Add 5 lines of misc. data, only if nonblank
   // The expectation is that these will be set in a .bex file
   //jff 9/3/98 use logical output routine
-  if (*startup1) lprintf(LO_INFO,startup1);
-  if (*startup2) lprintf(LO_INFO,startup2);
-  if (*startup3) lprintf(LO_INFO,startup3);
-  if (*startup4) lprintf(LO_INFO,startup4);
-  if (*startup5) lprintf(LO_INFO,startup5);
+  if (*startup1) lprintf(LO_INFO,"%s",startup1);
+  if (*startup2) lprintf(LO_INFO,"%s",startup2);
+  if (*startup3) lprintf(LO_INFO,"%s",startup3);
+  if (*startup4) lprintf(LO_INFO,"%s",startup4);
+  if (*startup5) lprintf(LO_INFO,"%s",startup5);
   // End new startup strings
 
   //jff 9/3/98 use logical output routine

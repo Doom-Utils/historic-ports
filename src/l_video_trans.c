@@ -336,7 +336,7 @@ static void I_Copyto24Buf(pval* out_buffer, const byte* src)
     LONG_AT(buffor24bpp+9) = pixelvals[iptr[3]];
     LONG_AT(buffor24bpp+6) = pixelvals[iptr[2]];
     LONG_AT(buffor24bpp+3) = pixelvals[iptr[1]];
-    LONG_AT(buffor24bpp) = pixelvals[iptr[0]];
+    LONG_AT(buffor24bpp+0) = pixelvals[iptr[0]];
     iptr += 4;
     memcpy(optr, buffor24bpp+1, 3*4);
     optr += 3*4; 
@@ -360,7 +360,7 @@ static void I_Double24Buf(pval* out_buffer, const byte* src)
       LONG_AT(buffor24bpp+9) = w = pixelvals[iptr[1]];
       LONG_AT(buffor24bpp+6) = w;
       LONG_AT(buffor24bpp+3) = w = pixelvals[iptr[0]];
-      LONG_AT(buffor24bpp) = w;
+      LONG_AT(buffor24bpp+0) = w;
       iptr += 2;
       memcpy(optr, buffor24bpp+1, 3*4);
       memcpy(optr + (6*SCREENWIDTH / sizeof(*optr)), buffor24bpp+1, 3*4);

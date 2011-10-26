@@ -1,0 +1,3 @@
+drawspan.o: drawspan.S drawasm.h
+
+drawasm.h:

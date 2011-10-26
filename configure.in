@@ -2,6 +2,14 @@ dnl Process this file with autoconf to produce a configure script.
 dnl $Id: configure.in,v 1.16 2000/03/27 10:33:22 cph Exp $
 AC_INIT(src/d_main.c)
 
+dnl --- some defaults for CFLAGS : josh
+if test -z "$CFLAGS" ; then
+        CFLAGS="-O2"
+fi
+dnl -fno-strict-aliasing needed to fix nasty pointers in l_video_trans.c (lines 339 and 363)
+CFLAGS="$CFLAGS -fno-strict-aliasing -ffast-math"
+export CFLAGS
+
 dnl --- Check for system type
 AC_CANONICAL_SYSTEM
 
@@ -9,8 +17,14 @@ case "$target" in
 i?86-*) AC_DEFINE(I386) use_i386_asm=yes ;;
 esac
 
+AM_PROG_AS
 AC_ARG_ENABLE(i386-asm,[  --disable-i386-asm      Do not use i386 assembly], use_i386_asm=no)
 AM_CONDITIONAL(I386_ASM, test "$use_i386_asm" = yes)
+
+if test "$use_i386_asm" = yes; then
+        CFLAGS="$CFLAGS -DI386_ASM"
+	export CFLAGS
+fi
 
 case "$target" in
 *-linux) AC_DEFINE(LINUX) AC_DEFINE(SECURE_UID) ;;
@@ -18,33 +32,18 @@ case "$target" in
 *-freebsd) AC_DEFINE(FREEBSD) ;;
 esac
 
-dnl --- some defaults for CFLAGS : josh
-if test -z "$CFLAGS" ; then 
-	CFLAGS="-O2 -Wall -Winline -Wcast-align -Wwrite-strings -ffast-math -fomit-frame-pointer"
-fi
-export CFLAGS
-
 dnl --- Fire up automake
-AM_INIT_AUTOMAKE(lsdldoom, 1.4.4.4)
+AM_INIT_AUTOMAKE(lsdldoom, 1.5)
 AM_CONFIG_HEADER(config.h)
 
 dnl --- Checks for programs.
 AC_PROG_CC
 
 dnl --- Try for processor optimisations
-AC_ARG_ENABLE(cpu-opt,[  --disable-cpu-opt	  turns off cpu specific optimisations],,[
-case "$target" in
-	# marginal gains from aligning code
-i386-*) SYS_CFLAGS="-m386" ;;
-i486-*) SYS_CFLAGS="-m486" ;;
-	# nothing special for pentium
-	# CMOV op on ppro/II/686 can help us
-i686-*) SYS_CFLAGS="-mcpu=i686 -march=i686" ;;
-esac
+AC_ARG_ENABLE(cpu-opt,[  --disable-cpu-opt        turns off cpu specific opti
+misations],,[
 
-if test "$use_i386_asm" = yes; then
-	SYS_CFLAGS="-DI386_ASM $SYS_CFLAGS"
-fi
+SYS_CFLAGS="-march=native"
 
 echo -n "checking whether $CC supports CPU optimisations $SYS_CFLAGS..."
 echo 'void f(){}' > conftest.c
@@ -89,7 +88,7 @@ AC_CHECK_FUNC(socket,[
      has_net=yes
      NET_CFLAGS="-DHAVE_NET -DHAVE_BSD_NET"
      NET_LIBS=
-     BUILD_SERVER=lxdoom-game-server
+     BUILD_SERVER=lsdldoom-game-server
 ],)
 AC_ARG_ENABLE(net-game,[  --disable-net-game      turns off network game
 support],[

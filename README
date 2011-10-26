@@ -8,10 +8,10 @@ LsdlDoom is a version of Doom, designed to run on any systen that supports
 SDL. Doom is a 3D game originally by id software.
 
 LsdlDoom is based on LxDoom, a freely available Linux specific version of Doom,
-which is released and maintained by Colin Phipps (http://lxdoom.linuxgames.com/)
+which is released and maintained by Colin Phipps
 
-LsdlDoom is released and maintained by Jess Haas (jessh@lbjhs.net). See the 
-LsdlDoom home-page at http://firehead.org/~jessh/lsdldoom/ for information 
+LsdlDoom is released and maintained by Jess Haas (doom AT JessHaas.com). See the 
+LsdlDoom home-page at http://JessHaas.com/lsdldoom/ for information 
 about Doom and LsdlDoom.
 
 If you have comments, contributions, or bug reports about LsdlDoom, please 
