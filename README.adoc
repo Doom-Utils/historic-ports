@@ -1,0 +1,10 @@
+historic source ports
+=====================
+
+This repository contains an effort at collecting many historic source
+ports.  Shared histories are preserved, but each branch should
+represent a single port.
+
+This master branch is purely informative.
+
+Expect forced updates on all branches.
